@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: WO Community API
+  version: 1.0.0
+  description: REST API for the WO Community platform.
+paths:
+  /api/v1/me:
+    get:
+      operationId: me_retrieve
+      summary: Current account
+      tags:
+      - me
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/v1/ping:
+    get:
+      operationId: ping_retrieve
+      summary: API availability check
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ping'
+          description: ''
+  /health/live:
+    get:
+      operationId: health_live_retrieve
+      summary: Liveness probe
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: ''
+  /health/ready:
+    get:
+      operationId: health_ready_retrieve
+      summary: 'Readiness probe: database and cache reachable'
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+          description: ''
+components:
+  schemas:
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+      required:
+      - email
+      - id
+      - roles
+      - status
+    Ping:
+      type: object
+      properties:
+        status:
+          type: string
+        release:
+          type: string
+      required:
+      - release
+      - status
+    Status:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
