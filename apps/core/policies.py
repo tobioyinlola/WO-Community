@@ -57,6 +57,16 @@ def _mfa_age(claims: Claims) -> float | None:
     return time.time() - float(stamp) if isinstance(stamp, int | float) else None
 
 
+def _is_admin_account(user: UserLike, claims: Claims) -> bool:
+    if not _is_active_member(user):
+        return False
+    return bool(set(user.role_names()) & {role.value for role in ADMIN_ROLES})
+
+
+# An active account holding an admin role; no MFA requirement (used to enrol in MFA).
+admin_account = Policy("admin_account", _is_admin_account)
+
+
 def admin_permission(code: str, *, step_up: bool = False) -> Policy:
     """Admin action: the permission, a session that passed MFA, and for
     destructive actions an MFA check that is recent.
@@ -74,7 +84,7 @@ def admin_permission(code: str, *, step_up: bool = False) -> Policy:
         if not set(user.role_names()) & {role.value for role in ADMIN_ROLES}:
             return False
         age = _mfa_age(claims)
-        if age is None:
+        if age is None or age > settings.MFA_SESSION_MAX_AGE_SECONDS:
             raise MfaRequired()
         if step_up and age > settings.STEP_UP_MAX_AGE_SECONDS:
             raise StepUpRequired()

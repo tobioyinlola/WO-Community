@@ -3,6 +3,8 @@ import os
 os.environ.setdefault("DJANGO_SECRET_KEY", "test-key-not-for-production")
 os.environ.setdefault("DATABASE_URL", "postgres://wo:wo@localhost:5433/wo")
 
+from cryptography.fernet import Fernet  # noqa: E402
+
 from .base import *  # noqa: E402,F403
 from .base import REST_FRAMEWORK as _REST_FRAMEWORK  # noqa: E402
 from .keys import ephemeral_jwt_keys  # noqa: E402
@@ -12,6 +14,7 @@ ALLOWED_HOSTS = ["testserver", "localhost"]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 JWT_PRIVATE_KEY, JWT_PUBLIC_KEY = ephemeral_jwt_keys()
+FIELD_ENCRYPTION_KEYS = [Fernet.generate_key().decode()]
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 REST_FRAMEWORK = {

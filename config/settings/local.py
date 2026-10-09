@@ -16,6 +16,8 @@ if not JWT_PRIVATE_KEY:
     JWT_PRIVATE_KEY, JWT_PUBLIC_KEY = ephemeral_jwt_keys()
 
 REFRESH_COOKIE_SECURE = False
+# Development only. Real environments must set FIELD_ENCRYPTION_KEYS.
+FIELD_ENCRYPTION_KEYS = ["87bV-lfLJURYTjAE8FLMf04SC-ZzQs2mb8k2bAqa7E8="]  # nosec B105
 PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )

@@ -126,6 +126,7 @@ REST_FRAMEWORK = {
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
+        "auth_mfa": "20/min",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -139,6 +140,9 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
 }
+
+# Comma separated Fernet keys; the first encrypts, all decrypt (see apps/core/crypto.py).
+FIELD_ENCRYPTION_KEYS = env.list("FIELD_ENCRYPTION_KEYS", default=[])
 
 # --- Authentication tokens -------------------------------------------------
 JWT_ISSUER = env.str("JWT_ISSUER", default="wo-community")
@@ -162,6 +166,13 @@ LOGIN_FAILURE_WINDOW_SECONDS = 600
 PASSWORD_RESET_MAX_PER_EMAIL_PER_HOUR = 3
 # Destructive admin actions need an MFA check no older than this.
 STEP_UP_MAX_AGE_SECONDS = 600
+# An admin session must have passed MFA within this window, however often it refreshes.
+MFA_SESSION_MAX_AGE_SECONDS = 43200
+MFA_ISSUER = "WO Community"
+MFA_CHALLENGE_TTL_SECONDS = 300
+MFA_MAX_FAILURES = 5
+MFA_FAILURE_WINDOW_SECONDS = 600
+MFA_RECOVERY_CODE_COUNT = 10
 # Versions of the documents a member accepts at registration.
 CONSENT_DOCUMENT_VERSIONS = {"terms": "1", "privacy": "1", "conduct": "1", "marketing": "1"}
 

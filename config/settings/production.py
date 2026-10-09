@@ -22,3 +22,4 @@ DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = env.str("DB_SSLMODE"
 # Statement and idle-in-transaction timeouts are applied at database role level.
 
 EMAIL_ADAPTER = require("EMAIL_ADAPTER")
+require("FIELD_ENCRYPTION_KEYS")
