@@ -17,19 +17,24 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
-from apps.accounts import events, mfa, sessions, tokens
+from apps.accounts import events, invitations, mfa, sessions, tokens
+from apps.accounts.exceptions import InvalidToken
 from apps.accounts.models import (
     BLOCKED_STATUSES,
+    ApprovalSource,
     ConsentDocument,
     ConsentRecord,
     EmailToken,
     EmailTokenPurpose,
     RefreshTokenFamily,
     User,
+    UserRole,
+    UserStatus,
 )
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core import ratelimit
+from apps.core.rbac import Role
 
 logger = structlog.get_logger(__name__)
 
@@ -37,13 +42,6 @@ VERIFY_EMAIL = EmailTokenPurpose.VERIFY_EMAIL
 PASSWORD_RESET = EmailTokenPurpose.PASSWORD_RESET
 
 InvalidRefreshToken = sessions.InvalidRefreshToken
-
-
-class InvalidToken(exceptions.ValidationError):
-    default_code = "invalid_token"
-
-    def __init__(self) -> None:
-        super().__init__({"token": ["This link is invalid or has expired."]}, code="invalid_token")
 
 
 class EmailNotVerified(exceptions.PermissionDenied):
@@ -91,39 +89,91 @@ def normalise_email(email: str) -> str:
 # --- Registration and email verification ----------------------------------------
 
 
-def register(*, email: str, password: str, consents: dict[str, bool], ip: str = "") -> None:
-    """Create a pending account, or quietly notify the owner of an existing one.
+def _record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
+    versions = settings.CONSENT_DOCUMENT_VERSIONS
+    ConsentRecord.objects.bulk_create(
+        ConsentRecord(
+            user=user,
+            document=document,
+            version=versions[document],
+            granted=bool(consents.get(document, False)),
+            ip_hash=audit.hash_value(ip),
+        )
+        for document in ConsentDocument.values
+    )
 
-    Both paths look identical to the caller, in content and in timing, so the
-    endpoint cannot be used to discover which addresses are registered.
+
+def register(
+    *,
+    email: str,
+    password: str,
+    consents: dict[str, bool],
+    ip: str = "",
+    invitation_token: str = "",
+) -> bool:
+    """Create an account. Returns True when an invitation approved it on the spot.
+
+    Without a valid invitation the account is pending and a verification email
+    follows; if the address already has an account its owner is told instead.
+    Those two outcomes look identical to the caller, in content and in timing,
+    so the endpoint cannot be used to discover which addresses are registered.
+    A token that is invalid, expired, revoked or issued to another address is
+    ignored, exactly as if none had been sent.
     """
     address = normalise_email(email)
     existing = User.objects.filter(email__iexact=address).first()
     if existing is not None:
         make_password(password)  # keep the cost of both paths comparable
         domain_events.publish(events.RegistrationRepeated(user_id=str(existing.pk)))
-        return
+        return False
     try:
         with transaction.atomic():
-            user = User.objects.create_user(address, password)
-            versions = settings.CONSENT_DOCUMENT_VERSIONS
-            ConsentRecord.objects.bulk_create(
-                ConsentRecord(
-                    user=user,
-                    document=document,
-                    version=versions[document],
-                    granted=bool(consents.get(document, False)),
-                    ip_hash=audit.hash_value(ip),
-                )
-                for document in ConsentDocument.values
+            invitation = (
+                invitations.lock_for_registration(invitation_token, address)
+                if invitation_token
+                else None
             )
-            domain_events.publish(events.UserRegistered(user_id=str(user.pk)))
+            if invitation is not None:
+                user = _create_invited_user(address, password, invitation)
+            else:
+                user = User.objects.create_user(address, password)
+            _record_consents(user, consents, ip)
+            if invitation is not None:
+                invitations.mark_registered(invitation, user)
+                domain_events.publish(events.MemberApproved(user_id=str(user.pk)))
+            else:
+                domain_events.publish(events.UserRegistered(user_id=str(user.pk)))
             audit.record(
-                actor=user, action="auth.registered", target_type="user", target_id=user.pk, ip=ip
+                actor=user,
+                action="auth.registered",
+                target_type="user",
+                target_id=user.pk,
+                after={"approval_source": "invitation"} if invitation is not None else None,
+                ip=ip,
             )
+            return invitation is not None
     except IntegrityError:
         # A concurrent request registered the same address first.
         logger.info("registration_race")
+        return False
+
+
+def _create_invited_user(address: str, password: str, invitation: invitations.Invitation) -> User:
+    """An active, email-verified member. Receiving the link proves control of the mailbox."""
+    now = timezone.now()
+    user = User.objects.create_user(
+        address,
+        password,
+        status=UserStatus.ACTIVE,
+        email_verified_at=now,
+        approved_at=now,
+        approved_by=invitation.invited_by,
+        approval_source=ApprovalSource.INVITATION,
+    )
+    # A mentor invitation also carries the member role, as an approved mentor would.
+    roles = {Role.MEMBER.value, invitation.role}
+    UserRole.objects.bulk_create(UserRole(user=user, role=role) for role in sorted(roles))
+    return user
 
 
 def issue_email_token(user_id: UUID, purpose: str) -> tuple[str, str] | None:
@@ -379,6 +429,14 @@ def session_expiry(raw_refresh_token: str) -> datetime | None:
 
 
 # Admin member commands live in ``membership``; re-exported so other modules use one facade.
+from apps.accounts.invitations import (  # noqa: E402
+    InvitationEmail,
+    bulk_create,
+    create_invitation,
+    resend_invitation,
+    revoke_invitation,
+)
+from apps.accounts.invitations import effective_status as invitation_status  # noqa: E402
 from apps.accounts.membership import (  # noqa: E402
     approve_member,
     reinstate_member,
@@ -389,10 +447,24 @@ from apps.accounts.membership import (  # noqa: E402
 )
 
 __all__ = [
+    "InvitationEmail",
     "approve_member",
+    "bulk_create",
+    "create_invitation",
+    "invitation_status",
+    "resend_invitation",
+    "revoke_invitation",
     "reinstate_member",
     "reject_registration",
     "reset_member_mfa",
     "remove_member",
     "suspend_member",
 ]
+
+
+def issue_invitation_token(invitation_id: UUID, nonce: str) -> InvitationEmail | None:
+    return invitations.issue_token(invitation_id, nonce)
+
+
+def inspect_invitation(raw_token: str) -> invitations.Invitation:
+    return invitations.inspect(raw_token)

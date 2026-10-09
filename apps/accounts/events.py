@@ -57,3 +57,12 @@ class MemberRemoved(DomainEvent):
 
     topic: ClassVar[str] = "accounts.member_removed"
     user_id: str
+
+
+@dataclass(frozen=True)
+class InvitationRequested(DomainEvent):
+    """An invitation email should be sent (first send or resend)."""
+
+    topic: ClassVar[str] = "accounts.invitation_requested"
+    invitation_id: str
+    nonce: str

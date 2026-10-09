@@ -127,6 +127,7 @@ REST_FRAMEWORK = {
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
         "auth_mfa": "20/min",
+        "admin_bulk": "10/hour",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -166,6 +167,10 @@ LOGIN_FAILURE_WINDOW_SECONDS = 600
 PASSWORD_RESET_MAX_PER_EMAIL_PER_HOUR = 3
 # Destructive admin actions need an MFA check no older than this.
 STEP_UP_MAX_AGE_SECONDS = 600
+INVITATION_TTL = timedelta(days=7)
+INVITATION_MAX_MESSAGE_LENGTH = 500
+INVITATION_BULK_MAX_ROWS = 500
+INVITATION_BULK_MAX_BYTES = 256_000
 # An admin session must have passed MFA within this window, however often it refreshes.
 MFA_SESSION_MAX_AGE_SECONDS = 43200
 MFA_ISSUER = "WO Community"

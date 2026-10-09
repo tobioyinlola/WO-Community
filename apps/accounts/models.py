@@ -198,3 +198,54 @@ class RecoveryCode(BaseModel):
 
     def __str__(self) -> str:
         return f"recovery code of {self.user_id}"
+
+
+class InvitationStatus(models.TextChoices):
+    SENT = "sent"
+    OPENED = "opened"
+    REGISTERED = "registered"
+    REVOKED = "revoked"
+
+
+# Roles an invitation may grant. Admin roles are never granted by invitation.
+INVITABLE_ROLES = (Role.MEMBER.value, Role.MENTOR.value)
+
+
+class Invitation(BaseModel):
+    """An admin's invitation to join. Registering through it skips approval."""
+
+    email = models.EmailField(max_length=254)
+    role = models.CharField(max_length=20, default=Role.MEMBER.value)
+    message = models.TextField(blank=True)
+    # Set when the email is built; only the hash is kept. Cleared on resend and revoke.
+    token_hash = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    # Identifies the latest send request, so an older queued email cannot replace its link.
+    send_nonce = models.CharField(max_length=32, blank=True)
+    status = models.CharField(
+        max_length=12, choices=InvitationStatus.choices, default=InvitationStatus.SENT
+    )
+    invited_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    expires_at = models.DateTimeField()
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    registered_at = models.DateTimeField(null=True, blank=True)
+    accepted_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            # At most one live invitation per address, even under concurrent requests.
+            models.UniqueConstraint(
+                Lower("email"),
+                condition=models.Q(status__in=["sent", "opened"]),
+                name="invitation_one_open_per_email",
+            )
+        ]
+        indexes = [models.Index(fields=["status", "created_at"], name="invitation_status_idx")]
+
+    def __str__(self) -> str:
+        return f"invitation {self.pk} ({self.status})"

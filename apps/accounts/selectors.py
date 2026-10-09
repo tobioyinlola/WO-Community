@@ -4,8 +4,9 @@ from datetime import date
 from typing import Any
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 
-from apps.accounts.models import User, UserStatus
+from apps.accounts.models import Invitation, User, UserStatus
 
 STATUSES = tuple(UserStatus.values)
 
@@ -52,3 +53,26 @@ def registration_queue_counts() -> dict[str, int]:
         "registrations_awaiting_approval": pending.filter(email_verified_at__isnull=False).count(),
         "registrations_unverified": pending.filter(email_verified_at__isnull=True).count(),
     }
+
+
+INVITATION_STATUSES = ("sent", "opened", "registered", "revoked", "expired")
+
+
+def list_invitations(*, q: str = "", status: str = "") -> QuerySet[Invitation]:
+    """Invitations newest first. ``expired`` means unused and past its expiry."""
+    queryset = Invitation.objects.select_related("invited_by")
+    if q:
+        queryset = queryset.filter(email__icontains=q)
+    open_states = ["sent", "opened"]
+    now = timezone.now()
+    if status == "expired":
+        queryset = queryset.filter(status__in=open_states, expires_at__lte=now)
+    elif status in open_states:
+        queryset = queryset.filter(status=status, expires_at__gt=now)
+    elif status:
+        queryset = queryset.filter(status=status)
+    return queryset.order_by("-created_at", "-id")
+
+
+def get_invitation(invitation_id: Any) -> Invitation | None:
+    return Invitation.objects.select_related("invited_by").filter(pk=invitation_id).first()
