@@ -19,13 +19,13 @@ from rest_framework import exceptions
 
 from apps.accounts import events, sessions, tokens
 from apps.accounts.models import (
+    BLOCKED_STATUSES,
     ConsentDocument,
     ConsentRecord,
     EmailToken,
     EmailTokenPurpose,
     RefreshTokenFamily,
     User,
-    UserStatus,
 )
 from apps.audit import services as audit
 from apps.core import events as domain_events
@@ -126,7 +126,7 @@ def issue_email_token(user_id: UUID, purpose: str) -> tuple[str, str] | None:
     caller once and never stored.
     """
     user = User.objects.filter(pk=user_id).first()
-    if user is None or user.status in (UserStatus.SUSPENDED, UserStatus.REMOVED):
+    if user is None or user.status in BLOCKED_STATUSES:
         return None
     if purpose == VERIFY_EMAIL:
         if user.email_verified_at is not None:
@@ -185,7 +185,7 @@ def request_password_reset(*, email: str) -> None:
     if ratelimit.hit(key, 3600) > settings.PASSWORD_RESET_MAX_PER_EMAIL_PER_HOUR:
         return
     user = User.objects.filter(email__iexact=address).first()
-    if user is None or user.status in (UserStatus.SUSPENDED, UserStatus.REMOVED):
+    if user is None or user.status in BLOCKED_STATUSES:
         return
     domain_events.publish(events.PasswordResetRequested(user_id=str(user.pk)))
 
@@ -241,7 +241,7 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
     else:
         _burn_password_check(password)
         password_ok = False
-    usable = user is not None and user.status not in (UserStatus.SUSPENDED, UserStatus.REMOVED)
+    usable = user is not None and user.status not in BLOCKED_STATUSES
     if not (user and password_ok and usable):
         ratelimit.hit(account_key, window)
         ratelimit.hit(ip_key, window)
@@ -304,3 +304,21 @@ def revoke_session(user: User, session_id: UUID) -> bool:
 def session_expiry(raw_refresh_token: str) -> datetime | None:
     family = sessions.family_for_token(raw_refresh_token)
     return family.expires_at if family else None
+
+
+# Admin member commands live in ``membership``; re-exported so other modules use one facade.
+from apps.accounts.membership import (  # noqa: E402
+    approve_member,
+    reinstate_member,
+    reject_registration,
+    remove_member,
+    suspend_member,
+)
+
+__all__ = [
+    "approve_member",
+    "reinstate_member",
+    "reject_registration",
+    "remove_member",
+    "suspend_member",
+]

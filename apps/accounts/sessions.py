@@ -9,7 +9,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.models import RefreshTokenFamily, User, UserStatus
+from apps.accounts.models import BLOCKED_STATUSES, RefreshTokenFamily, User
 from apps.audit import services as audit
 
 
@@ -103,7 +103,7 @@ def rotate(raw: str, *, ip: str) -> tuple[User, str]:
                 ip=ip,
             )
             failure = "reuse"
-        elif family.user.status in (UserStatus.SUSPENDED, UserStatus.REMOVED):
+        elif family.user.status in BLOCKED_STATUSES:
             revoke(family, "account_unavailable")
             failure = "account unavailable"
         else:

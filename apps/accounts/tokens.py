@@ -23,7 +23,7 @@ def _min_version_key(user_id: str) -> str:
     return f"jwt:min_version:{user_id}"
 
 
-def issue_access_token(user: User) -> str:
+def issue_access_token(user: User, *, mfa_at: float | None = None) -> str:
     now = timezone.now()
     claims = {
         "iss": settings.JWT_ISSUER,
@@ -34,6 +34,8 @@ def issue_access_token(user: User) -> str:
         "roles": sorted(user.role_names()),
         "tv": user.token_version,
     }
+    if mfa_at is not None:
+        claims["mfa_at"] = int(mfa_at)
     return jwt.encode(claims, settings.JWT_PRIVATE_KEY, algorithm=settings.JWT_ALGORITHM)
 
 

@@ -24,3 +24,36 @@ class RegistrationRepeated(DomainEvent):
 class PasswordResetRequested(DomainEvent):
     topic: ClassVar[str] = "accounts.password_reset_requested"
     user_id: str
+
+
+@dataclass(frozen=True)
+class MemberApproved(DomainEvent):
+    topic: ClassVar[str] = "accounts.member_approved"
+    user_id: str
+
+
+@dataclass(frozen=True)
+class MemberRejected(DomainEvent):
+    topic: ClassVar[str] = "accounts.member_rejected"
+    user_id: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class MemberSuspended(DomainEvent):
+    topic: ClassVar[str] = "accounts.member_suspended"
+    user_id: str
+
+
+@dataclass(frozen=True)
+class MemberReinstated(DomainEvent):
+    topic: ClassVar[str] = "accounts.member_reinstated"
+    user_id: str
+
+
+@dataclass(frozen=True)
+class MemberRemoved(DomainEvent):
+    """Consumers must take the member's public pages down immediately."""
+
+    topic: ClassVar[str] = "accounts.member_removed"
+    user_id: str

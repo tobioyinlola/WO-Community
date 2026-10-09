@@ -14,6 +14,11 @@ class UserStatus(models.TextChoices):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     REMOVED = "removed"
+    REJECTED = "rejected"
+
+
+# Accounts in these states cannot authenticate, refresh or receive account emails.
+BLOCKED_STATUSES = (UserStatus.SUSPENDED, UserStatus.REMOVED, UserStatus.REJECTED)
 
 
 class ApprovalSource(models.TextChoices):
@@ -43,6 +48,12 @@ class User(BaseModel, AbstractBaseUser):
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     approval_source = models.CharField(max_length=12, choices=ApprovalSource.choices, blank=True)
+    # Why the account is in its current state (rejection, suspension, removal).
+    status_reason = models.TextField(blank=True)
+    status_changed_at = models.DateTimeField(null=True, blank=True)
+    status_changed_by = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
     locale = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=64, default="UTC")
     # Bumped on role change or suspension so already issued access tokens stop working.
@@ -69,12 +80,13 @@ class User(BaseModel, AbstractBaseUser):
 
     @property
     def is_active(self) -> bool:  # type: ignore[override]
-        return self.status in (UserStatus.ACTIVE, UserStatus.PENDING)
+        return self.status not in BLOCKED_STATUSES
 
     def role_names(self) -> frozenset[str]:
         cached = getattr(self, "_role_names", None)
         if cached is None:
-            cached = frozenset(self.user_roles.values_list("role", flat=True))
+            # .all() so a prefetch_related("user_roles") in a list view is used.
+            cached = frozenset(role.role for role in self.user_roles.all())
             self._role_names = cached
         return cached
 
