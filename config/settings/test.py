@@ -23,6 +23,7 @@ REST_FRAMEWORK = {
 }
 
 REFRESH_COOKIE_SECURE = False
+CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
 PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )

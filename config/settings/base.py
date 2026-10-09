@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "corsheaders",
     "rest_framework",
     "django_filters",
@@ -25,6 +26,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.profiles",
     "apps.startups",
+    "apps.directory",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -131,6 +133,7 @@ REST_FRAMEWORK = {
         "auth_refresh": "60/min",
         "auth_mfa": "20/min",
         "admin_bulk": "10/hour",
+        "public_search": "60/min",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -206,6 +209,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "dispatch-outbox": {"task": "core.dispatch_outbox", "schedule": 5.0},
     "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
+    "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
 }
@@ -213,6 +217,7 @@ OUTBOX_MAX_ATTEMPTS = 8
 
 # --- Adapters ----------------------------------------------------------------
 EMAIL_ADAPTER = env.str("EMAIL_ADAPTER", default="apps.integrations.email.fake.FakeEmailAdapter")
+CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
 
 # --- Observability -----------------------------------------------------------
 SENTRY_DSN = env.str("SENTRY_DSN", default="")

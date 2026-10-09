@@ -8,6 +8,7 @@ name = Module dependency levels
 type = layers
 layers =
     apps.adminconsole
+    apps.directory
     apps.notifications
     apps.profiles | apps.startups
     apps.accounts | apps.integrations
