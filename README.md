@@ -25,6 +25,10 @@ collide with databases already running on a developer machine. Override with `DB
 
 Useful URLs: `/health/live`, `/health/ready`, `/api/v1/ping`, `/api/v1/schema/`.
 
+Uploads use an in-memory storage and scanner by default. To try real ones, set
+`STORAGE_ADAPTER=apps.integrations.storage.s3.S3Storage` with the MinIO container's endpoint, create the
+`wo-quarantine` and `wo-media` buckets, and start ClamAV with `docker compose --profile scanner up -d`.
+
 ## Quality gates
 
 `make ci` runs everything the pipeline runs: `ruff`, `black --check`, `mypy`, `bandit`,

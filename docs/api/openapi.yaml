@@ -1019,6 +1019,68 @@ paths:
           description: The profile changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/me/profile/photo:
+    put:
+      operationId: me_profile_photo_update
+      description: Upload the image with `POST /uploads` (purpose `profile_photo`)
+        and wait for `ready`. The previous photo's files are deleted. Send the ETag
+        in If-Match.
+      summary: Use a finished upload as your profile photo
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhotoSetRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '412':
+          description: The profile changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: me_profile_photo_destroy
+      summary: Remove your profile photo
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      tags:
+      - profile
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '412':
+          description: The profile changed since the ETag was issued
+        '428':
+          description: If-Match header missing
   /api/v1/me/sessions:
     get:
       operationId: me_sessions_list
@@ -1557,6 +1619,87 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/startups/{startup_id}/logo:
+    put:
+      operationId: startups_logo_update
+      description: Upload the image with `POST /uploads` (purpose `startup_logo`)
+        and wait for `ready`. Owner or a founder. The previous logo's files are deleted.
+      summary: Use a finished upload as the startup's logo
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoSetRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: startups_logo_destroy
+      summary: Remove the startup's logo
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
   /api/v1/startups/{startup_id}/team:
     post:
       operationId: startups_team_create
@@ -1725,6 +1868,107 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/uploads:
+    post:
+      operationId: uploads_create
+      description: 'Post the form''s `form_data`, then the file as the last field
+        named `file`, to the form''s `url`. The file goes straight to storage, never
+        through this API. Then call `POST /uploads/{id}/complete`. Allowed: JPEG,
+        PNG or WebP up to 5 MB.'
+      summary: Reserve an upload and get the form to send the file with
+      tags:
+      - uploads
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadRequestRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadCreated'
+          description: ''
+        '400':
+          description: Invalid purpose, type or size
+        '401':
+          description: Not authenticated
+        '404':
+          description: No such upload
+        '409':
+          description: The file has not arrived, or the upload window closed
+        '429':
+          description: Too many uploads
+  /api/v1/uploads/{upload_id}:
+    get:
+      operationId: uploads_retrieve
+      summary: Status of one of your uploads
+      parameters:
+      - in: path
+        name: upload_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - uploads
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Upload'
+          description: ''
+        '400':
+          description: Invalid purpose, type or size
+        '401':
+          description: Not authenticated
+        '404':
+          description: No such upload
+        '409':
+          description: The file has not arrived, or the upload window closed
+        '429':
+          description: Too many uploads
+  /api/v1/uploads/{upload_id}/complete:
+    post:
+      operationId: uploads_complete_create
+      description: Starts the checks. Poll `GET /uploads/{id}` until the status is
+        `ready` or `rejected`. Calling it again is harmless.
+      summary: Tell the server the file has been uploaded
+      parameters:
+      - in: path
+        name: upload_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - uploads
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Upload'
+          description: ''
+        '400':
+          description: Invalid purpose, type or size
+        '401':
+          description: Not authenticated
+        '404':
+          description: No such upload
+        '409':
+          description: The file has not arrived, or the upload window closed
+        '429':
+          description: Too many uploads
   /health/live:
     get:
       operationId: health_live_retrieve
@@ -1914,6 +2158,10 @@ components:
             type: string
         headline:
           type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
         country:
           type: string
         city:
@@ -1939,6 +2187,10 @@ components:
             type: string
         headline:
           type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
         country:
           type: string
         city:
@@ -2002,6 +2254,17 @@ components:
       required:
       - full_name
       - slug
+    Image:
+      type: object
+      description: Public addresses of the two sizes of a processed image.
+      properties:
+        large:
+          type: string
+        thumb:
+          type: string
+      required:
+      - large
+      - thumb
     Invitation:
       type: object
       properties:
@@ -2153,6 +2416,19 @@ components:
       required:
       - email
       - password
+    LogoSetRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+      required:
+      - upload_id
     Me:
       type: object
       properties:
@@ -2406,6 +2682,19 @@ components:
           maxLength: 300
         directory_opt_in:
           type: boolean
+    PhotoSetRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+      required:
+      - upload_id
     Ping:
       type: object
       properties:
@@ -2434,6 +2723,10 @@ components:
           type: string
         headline:
           type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
         bio:
           type: string
         country:
@@ -2740,6 +3033,10 @@ components:
           type: string
         pitch:
           type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
         sector:
           $ref: '#/components/schemas/NamedSlug'
         stage:
@@ -2784,6 +3081,10 @@ components:
           type: string
         pitch:
           type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
         sector:
           $ref: '#/components/schemas/Named'
         stage:
@@ -2806,6 +3107,7 @@ components:
       - country
       - featured
       - founders
+      - logo
       - name
       - pitch
       - sector
@@ -2876,6 +3178,10 @@ components:
           type: string
         pitch:
           type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
         sector:
           $ref: '#/components/schemas/Named'
         stage:
@@ -2909,6 +3215,7 @@ components:
       - country
       - featured
       - founders
+      - logo
       - name
       - pitch
       - sector
@@ -2938,6 +3245,22 @@ components:
           type: string
       required:
       - status
+    StatusEnum:
+      enum:
+      - pending
+      - processing
+      - ready
+      - rejected
+      - expired
+      - discarded
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `ready` - Ready
+        * `rejected` - Rejected
+        * `expired` - Expired
+        * `discarded` - Discarded
     TeamAddRequest:
       type: object
       description: |-
@@ -3060,6 +3383,122 @@ components:
             $ref: '#/components/schemas/TractionItemRequest'
       required:
       - metrics
+    Upload:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        purpose:
+          allOf:
+          - $ref: '#/components/schemas/UploadPurposeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        reason:
+          type: string
+        width:
+          type: integer
+          readOnly: true
+          nullable: true
+        height:
+          type: integer
+          readOnly: true
+          nullable: true
+        urls:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - expires_at
+      - height
+      - id
+      - purpose
+      - reason
+      - status
+      - urls
+      - width
+    UploadCreated:
+      type: object
+      properties:
+        upload:
+          $ref: '#/components/schemas/Upload'
+        form:
+          $ref: '#/components/schemas/UploadForm'
+        max_size:
+          type: integer
+      required:
+      - form
+      - max_size
+      - upload
+    UploadForm:
+      type: object
+      properties:
+        url:
+          type: string
+        method:
+          type: string
+        form_data:
+          type: object
+          additionalProperties:
+            type: string
+        expires_in:
+          type: integer
+      required:
+      - expires_in
+      - form_data
+      - method
+      - url
+    UploadPurposeEnum:
+      enum:
+      - profile_photo
+      - startup_logo
+      type: string
+      description: |-
+        * `profile_photo` - Profile Photo
+        * `startup_logo` - Startup Logo
+    UploadRequestPurposeEnum:
+      enum:
+      - profile_photo
+      - startup_logo
+      type: string
+      description: |-
+        * `profile_photo` - profile_photo
+        * `startup_logo` - startup_logo
+    UploadRequestRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        purpose:
+          $ref: '#/components/schemas/UploadRequestPurposeEnum'
+        content_type:
+          type: string
+          minLength: 1
+          maxLength: 40
+        size:
+          type: integer
+          minimum: 1
+        filename:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - content_type
+      - purpose
+      - size
     VisibilityEnum:
       enum:
       - private

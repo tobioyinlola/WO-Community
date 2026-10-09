@@ -155,14 +155,39 @@ cacheable (`Cache-Control` with five minute life, ETag, `304` on `If-None-Match`
 Tests: 119 for the directory (access, caching, filters, ordering and paging, search, privacy,
 takedown, refresh, sitemap, featuring, rebuild).
 
+## Slice 8: uploads, profile photos and startup logos (done)
+
+Design and trade-offs are in ADR 0012.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /uploads` | Reserve an upload (purpose `profile_photo` or `startup_logo`, type, size). Returns a pre-signed form: the file goes straight to storage. |
+| `POST /uploads/{id}/complete` | Say the file is there; the checks are queued. Safe to repeat. |
+| `GET /uploads/{id}` | Owner-only status; image addresses appear only when `ready`. |
+| `PUT/DELETE /me/profile/photo` | Attach a ready upload as your photo, or remove it (`If-Match`). |
+| `PUT/DELETE /startups/{id}/logo` | The same for a startup (owner or founder, `If-Match`). |
+
+- JPEG, PNG or WebP up to 5 MB. A worker verifies the real type, scans for malware, rejects absurd
+  dimensions and decompression bombs, applies the orientation, and re-encodes to WebP at 1600 and
+  320 pixels. Metadata and anything hidden in the file do not survive.
+- Failure is closed: if the scanner is unreachable the upload waits and retries, and is never
+  published unscanned. Malware detections are audited.
+- Photos and logos are part of the basics group, so they follow its visibility and now appear on
+  directory cards and pages. Replacing or removing an image deletes its files.
+- Completeness gained a photo (15) and a logo (10) component.
+- New settings: `STORAGE_ADAPTER`, `MALWARE_SCANNER`, `MEDIA_BASE_URL`, bucket names, S3 credentials
+  and `CLAMD_HOST/PORT`. Production refuses to start on the in-memory fakes. A ClamAV container is in
+  `docker-compose.yml` under the optional `scanner` profile.
+
+863 tests passed before this slice; the uploads slice added about 160 more. All gates are clean.
+
 ## Still to do in Stage 1
 
-1. Photo and logo uploads (pre-signed URLs, scan) so those fields can be set and shown on cards.
-2. Admin management of reference lists (the lists are seeded and read-only for now).
-3. A real CDN purger and a real transactional email adapter (providers still undecided).
-4. Analytics capture and the registration, directory and onboarding events.
-5. Google sign-in (proposed to follow once email and password login is settled).
-6. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
+1. Admin management of reference lists (the lists are seeded and read-only for now).
+2. A real CDN purger and a real transactional email adapter (providers still undecided).
+3. Analytics capture and the registration, directory and onboarding events.
+4. Google sign-in (proposed to follow once email and password login is settled).
+5. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
 
 ## Notes
 

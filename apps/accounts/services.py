@@ -86,7 +86,7 @@ def normalise_email(email: str) -> str:
     return email.strip().lower()
 
 
-# --- Registration and email verification ----------------------------------------
+# --- Registration and email verification ---
 
 
 def _record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
@@ -238,7 +238,7 @@ def verify_email(raw_token: str) -> None:
         )
 
 
-# --- Password reset --------------------------------------------------------------
+# --- Password reset ---
 
 
 def request_password_reset(*, email: str) -> None:
@@ -271,7 +271,7 @@ def reset_password(*, raw_token: str, new_password: str, ip: str = "") -> None:
     tokens.revoke_older_tokens(user)
 
 
-# --- Login, refresh, logout ------------------------------------------------------
+# --- Login, refresh, logout ---
 
 _dummy_hash: str | None = None
 
@@ -365,7 +365,7 @@ def refresh(*, raw_refresh_token: str, ip: str) -> LoginResult:
     return LoginResult(user, access, new_refresh)
 
 
-# --- MFA enrolment and step-up ---------------------------------------------------------
+# --- MFA enrolment and step-up ---
 
 
 def mfa_enrolment_required(user: User) -> bool:
@@ -409,7 +409,7 @@ def logout(*, raw_refresh_token: str) -> None:
         sessions.revoke(family, "logout")
 
 
-# --- Sessions --------------------------------------------------------------------
+# --- Sessions ---
 
 
 def list_sessions(user: User) -> Any:

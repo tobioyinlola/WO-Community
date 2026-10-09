@@ -42,3 +42,21 @@ recovery codes in the database, records why in the incident log, and the admin e
 
 Someone is guessing codes for an account whose password they already know. Check the audit log for
 the account, suspend it if the pattern looks hostile, and tell its owner to change their password.
+
+## Uploads stuck in `processing`, or `FailedTask` rows for `uploads.process_upload`
+
+The scanner is probably unreachable. Check `clamd` (host and port in `CLAMD_HOST`/`CLAMD_PORT`) from a
+media worker. Uploads wait and retry on their own and are never published unscanned; once the scanner
+is back they finish. Anything still processing after two hours is rejected by the hourly cleanup
+(`processing_timeout`) and the member can upload again. Replay dead-lettered tasks as usual.
+
+## `upload.malware_detected` in the audit log
+
+A member uploaded a file the scanner flagged. The file was rejected and deleted; nothing was
+published. One detection is usually a compromised device or a test string. Several for one member,
+or for one signature across members, deserve a look: suspend the account if it looks deliberate.
+
+## Quarantine bucket growing
+
+The hourly `uploads.cleanup` job deletes abandoned uploads. If the bucket grows, check that beat is
+running and that the bucket has the lifecycle rule (delete after one day) as a backstop.
