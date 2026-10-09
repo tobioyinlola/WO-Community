@@ -1,8 +1,18 @@
 from django.urls import path
 
-from apps.adminconsole import invitation_views, views
+from apps.adminconsole import featured_views, invitation_views, views
 
 urlpatterns = [
+    path(
+        "admin/startups/<uuid:startup_id>/feature",
+        featured_views.FeatureStartupView.as_view(),
+        name="admin-startup-feature",
+    ),
+    path(
+        "admin/startups/<uuid:startup_id>/unfeature",
+        featured_views.UnfeatureStartupView.as_view(),
+        name="admin-startup-unfeature",
+    ),
     path(
         "admin/invitations",
         invitation_views.InvitationListCreateView.as_view(),
