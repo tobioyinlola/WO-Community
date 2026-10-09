@@ -23,6 +23,9 @@ class RegisterSerializer(StrictSerializer):
     accepted_privacy = serializers.BooleanField()
     accepted_conduct = serializers.BooleanField()
     marketing_consent = serializers.BooleanField(required=False, default=False)
+    invitation_token = serializers.CharField(
+        required=False, allow_blank=True, max_length=200, default=""
+    )
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         errors = {
@@ -43,6 +46,18 @@ class TokenSerializer(StrictSerializer):
 class LoginSerializer(StrictSerializer):
     email = serializers.EmailField(max_length=254)
     password = serializers.CharField(max_length=128, trim_whitespace=False)
+
+
+class InvitationPreviewSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    role = serializers.CharField()
+    message = serializers.CharField(allow_blank=True)
+    expires_at = serializers.DateTimeField()
+
+
+class RegisteredSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    approved = serializers.BooleanField()
 
 
 class ForgotPasswordSerializer(StrictSerializer):

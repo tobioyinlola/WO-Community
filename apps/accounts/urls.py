@@ -12,6 +12,11 @@ urlpatterns = [
         name="session-detail",
     ),
     path("auth/register", auth_views.RegisterView.as_view(), name="auth-register"),
+    path(
+        "auth/invitations/inspect",
+        auth_views.InspectInvitationView.as_view(),
+        name="auth-invitation-inspect",
+    ),
     path("auth/verify-email", auth_views.VerifyEmailView.as_view(), name="auth-verify-email"),
     path("auth/login", auth_views.LoginView.as_view(), name="auth-login"),
     path("auth/refresh", auth_views.RefreshView.as_view(), name="auth-refresh"),

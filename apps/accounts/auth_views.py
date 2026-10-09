@@ -14,9 +14,11 @@ from apps.accounts import services
 from apps.accounts.serializers import (
     AccessTokenSerializer,
     ForgotPasswordSerializer,
+    InvitationPreviewSerializer,
     LoginSerializer,
     MessageSerializer,
     MfaChallengeSerializer,
+    RegisteredSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
     SessionSerializer,
@@ -90,16 +92,18 @@ class RegisterView(PublicAuthView):
     @extend_schema(
         summary="Register an account",
         description="Always answers 202, whether or not the address is already registered. "
-        "The account stays pending until an admin approves it.",
+        "The account stays pending until an admin approves it. With a valid "
+        "`invitation_token` for the same address the account is approved at once and the "
+        "answer is 201 instead.",
         request=RegisterSerializer,
-        responses={202: MessageSerializer},
+        responses={202: MessageSerializer, 201: RegisteredSerializer},
         tags=["auth"],
     )
     def post(self, request: Request) -> Response:
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        services.register(
+        approved = services.register(
             email=data["email"],
             password=data["password"],
             consents={
@@ -109,11 +113,37 @@ class RegisterView(PublicAuthView):
                 "marketing": data["marketing_consent"],
             },
             ip=client_ip(request),
+            invitation_token=data["invitation_token"],
         )
+        if approved:
+            return Response(
+                {"detail": "Your account is ready. You can log in.", "approved": True},
+                status=status.HTTP_201_CREATED,
+            )
         return Response(
             {"detail": "Check your email to confirm your address."},
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class InspectInvitationView(PublicAuthView):
+    throttle_scope = "auth_token"
+
+    @extend_schema(
+        summary="Look up an invitation link",
+        description="Lets the registration page prefill the invited address. Marks the "
+        "invitation as opened.",
+        request=TokenSerializer,
+        responses={200: InvitationPreviewSerializer, 400: OpenApiResponse(description="Invalid")},
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = TokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invitation = services.inspect_invitation(serializer.validated_data["token"])
+        response = Response(InvitationPreviewSerializer(invitation).data)
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class VerifyEmailView(PublicAuthView):
