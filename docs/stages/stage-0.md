@@ -4,7 +4,7 @@
 
 - **Tooling:** `pyproject.toml` with pinned dependencies, `Dockerfile` (Gunicorn, non-root),
   `docker-compose.yml` (PostgreSQL 16, Redis 7, mail catcher, S3 compatible storage, API, worker,
-  beat), `Makefile`, `.env.example`, pre-commit, `.importlinter`, and a CI workflow running every
+  beat), `Makefile`, `.env.example`, pre-commit, `.importlinter`, and `make ci`, which runs every
   gate.
 - **Settings:** split per environment. `base` reads and validates environment variables
   (`config/env.py`); `production` carries the security baseline (HTTPS redirect, HSTS with preload,
