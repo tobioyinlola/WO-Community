@@ -1,0 +1,67 @@
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.local
+    DATABASE_URL: postgres://wo:wo@db:5432/wo
+    REDIS_CACHE_URL: redis://redis:6379/1
+    CELERY_BROKER_URL: redis://redis:6379/0
+  volumes:
+    - .:/app
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wo
+      POSTGRES_PASSWORD: wo
+      POSTGRES_DB: wo
+    ports: ["${DB_PORT:-5433}:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wo"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports: ["${REDIS_PORT:-6380}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  mail:
+    image: axllent/mailpit
+    ports: ["${MAIL_UI_PORT:-8026}:8025", "${MAIL_SMTP_PORT:-1026}:1025"]
+
+  storage:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio-local-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [miniodata:/data]
+
+  api:
+    <<: *app
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *app
+    command: celery -A config worker -l info -Q critical,default,email,media,exports,analytics
+
+  beat:
+    <<: *app
+    command: celery -A config beat -l info
+
+volumes:
+  pgdata:
+  miniodata:

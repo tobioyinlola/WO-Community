@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: wo
+          POSTGRES_PASSWORD: wo
+          POSTGRES_DB: wo
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wo" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6380:6379"]
+    env:
+      DJANGO_SECRET_KEY: ci-only-key
+      DATABASE_URL: postgres://wo:wo@localhost:5433/wo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+      - name: Format and lint
+        run: |
+          ruff check .
+          black --check .
+      - name: Types
+        run: mypy apps config
+      - name: Static analysis and dependency audit
+        run: |
+          bandit -q -c pyproject.toml -r apps config
+          pip-audit
+      - name: Module boundaries
+        run: lint-imports
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Migrations apply and have no drift
+        run: |
+          python manage.py migrate
+          python manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: pytest
+      - name: OpenAPI schema is valid and committed
+        run: |
+          python manage.py spectacular --file /tmp/openapi.yaml --validate --fail-on-warn
+          diff /tmp/openapi.yaml docs/api/openapi.yaml
+      - name: Deploy settings check
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DJANGO_ALLOWED_HOSTS: api.example.com
+          JWT_PRIVATE_KEY: ci
+          JWT_PUBLIC_KEY: ci
+          EMAIL_ADAPTER: apps.integrations.email.fake.FakeEmailAdapter
+        run: python manage.py check --deploy --fail-level WARNING

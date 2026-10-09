@@ -1,0 +1,83 @@
+[project]
+name = "wo-community-backend"
+version = "0.1.0"
+description = "WO Community backend API"
+requires-python = ">=3.12"
+dependencies = [
+  "Django==5.2.17",
+  "djangorestframework==3.17.2",
+  "drf-spectacular==0.28.0",
+  "django-filter==25.2",
+  "django-cors-headers==4.9.0",
+  "django-environ==0.12.0",
+  "django-storages[s3]==1.14.6",
+  "django-celery-beat==2.8.1",
+  "celery[redis]==5.5.3",
+  "psycopg[binary]==3.2.10",
+  "argon2-cffi==25.1.0",
+  "gunicorn==23.0.0",
+  "sentry-sdk==2.39.0",
+  "structlog==25.4.0",
+  "redis==5.2.1",
+  "nh3==0.3.0",
+  "pyjwt[crypto]==2.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.0.3",
+  "pytest-django==4.11.1",
+  "factory-boy==3.3.3",
+  "ruff==0.13.3",
+  "black==26.3.1",
+  "mypy==1.18.2",
+  "django-stubs[compatible-mypy]==5.2.5",
+  "djangorestframework-stubs==3.16.4",
+  "bandit==1.8.6",
+  "pip-audit==2.9.0",
+  "import-linter==2.5.2",
+  "pre-commit==4.3.0",
+]
+
+[tool.setuptools]
+packages = []
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "DJ", "C4"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106", "S311"]
+"config/settings/test.py" = ["S105"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+strict_optional = true
+warn_unused_ignores = true
+exclude = ["migrations/", "/tests/"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "kombu.*", "environ"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+testpaths = ["apps", "tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers"
+
+[tool.bandit]
+exclude_dirs = ["apps/*/tests", "tests"]
