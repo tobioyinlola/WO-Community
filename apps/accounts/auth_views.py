@@ -114,6 +114,7 @@ class RegisterView(PublicAuthView):
             },
             ip=client_ip(request),
             invitation_token=data["invitation_token"],
+            signup={"profile": data["profile"], "startup": data["startup"]},
         )
         if approved:
             return Response(

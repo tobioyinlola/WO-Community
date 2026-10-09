@@ -21,7 +21,10 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "apps.core",
     "apps.audit",
+    "apps.reference",
     "apps.accounts",
+    "apps.profiles",
+    "apps.startups",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -202,6 +205,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "dispatch-outbox": {"task": "core.dispatch_outbox", "schedule": 5.0},
+    "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
 }
