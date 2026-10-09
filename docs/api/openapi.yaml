@@ -4,6 +4,225 @@ info:
   version: 1.0.0
   description: REST API for the WO Community platform.
 paths:
+  /api/v1/admin/invitations:
+    get:
+      operationId: admin_invitations_list
+      summary: List invitations
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - sent
+          - opened
+          - registered
+          - revoked
+          - expired
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `sent` - sent
+          * `opened` - opened
+          * `registered` - registered
+          * `revoked` - revoked
+          * `expired` - expired
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invitation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
+    post:
+      operationId: admin_invitations_create
+      description: Registering through the emailed link approves the member automatically.
+      summary: Invite one person by email
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
+  /api/v1/admin/invitations/{invitation_id}:
+    get:
+      operationId: admin_invitations_retrieve
+      summary: One invitation
+      parameters:
+      - in: path
+        name: invitation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
+  /api/v1/admin/invitations/{invitation_id}/resend:
+    post:
+      operationId: admin_invitations_resend_create
+      description: Issues a new link and expiry; the previous link stops working.
+      summary: Resend an invitation
+      parameters:
+      - in: path
+        name: invitation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
+  /api/v1/admin/invitations/{invitation_id}/revoke:
+    post:
+      operationId: admin_invitations_revoke_create
+      summary: Revoke an invitation
+      parameters:
+      - in: path
+        name: invitation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
+  /api/v1/admin/invitations/bulk:
+    post:
+      operationId: admin_invitations_bulk_create
+      description: 'Send the file''s contents as `csv`. The first row must name the
+        columns: `email` (required), `role` and `message` (optional). Up to 500 rows.
+        Rows that fail are reported and skipped; the rest are invited.'
+      summary: Invite many people from CSV text
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkInvitationRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkReport'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
   /api/v1/admin/members:
     get:
       operationId: admin_members_list
@@ -343,6 +562,29 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/auth/invitations/inspect:
+    post:
+      operationId: auth_invitations_inspect_create
+      description: Lets the registration page prefill the invited address. Marks the
+        invitation as opened.
+      summary: Look up an invitation link
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationPreview'
+          description: ''
+        '400':
+          description: Invalid
   /api/v1/auth/login:
     post:
       operationId: auth_login_create
@@ -606,7 +848,9 @@ paths:
     post:
       operationId: auth_register_create
       description: Always answers 202, whether or not the address is already registered.
-        The account stays pending until an admin approves it.
+        The account stays pending until an admin approves it. With a valid `invitation_token`
+        for the same address the account is approved at once and the answer is 201
+        instead.
       summary: Register an account
       tags:
       - auth
@@ -622,6 +866,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registered'
           description: ''
   /api/v1/auth/verify-email:
     post:
@@ -778,6 +1028,51 @@ components:
       - email
       - id
       - status
+    BulkInvitationRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        csv:
+          type: string
+          minLength: 1
+          maxLength: 300000
+      required:
+      - csv
+    BulkReport:
+      type: object
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkRow'
+      required:
+      - created
+      - rows
+      - skipped
+    BulkRow:
+      type: object
+      properties:
+        row:
+          type: integer
+        email:
+          type: string
+        result:
+          $ref: '#/components/schemas/ResultEnum'
+        reason:
+          type: string
+      required:
+      - email
+      - reason
+      - result
+      - row
     CodeRequest:
       type: object
       description: |-
@@ -807,6 +1102,95 @@ components:
           maxLength: 254
       required:
       - email
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          readOnly: true
+        invited_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        last_sent_at:
+          type: string
+          format: date-time
+        opened_at:
+          type: string
+          format: date-time
+        registered_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - email
+      - expires_at
+      - id
+      - invited_by
+      - last_sent_at
+      - message
+      - opened_at
+      - registered_at
+      - role
+      - status
+    InvitationCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        role:
+          type: string
+          minLength: 1
+          default: member
+          maxLength: 20
+        message:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - email
+    InvitationPreview:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+        message:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - email
+      - expires_at
+      - message
+      - role
     LoginRequest:
       type: object
       description: |-
@@ -1028,12 +1412,26 @@ components:
         marketing_consent:
           type: boolean
           default: false
+        invitation_token:
+          type: string
+          default: ''
+          maxLength: 200
       required:
       - accepted_conduct
       - accepted_privacy
       - accepted_terms
       - email
       - password
+    Registered:
+      type: object
+      properties:
+        detail:
+          type: string
+        approved:
+          type: boolean
+      required:
+      - approved
+      - detail
     ResetPasswordRequest:
       type: object
       description: |-
@@ -1053,6 +1451,14 @@ components:
       required:
       - password
       - token
+    ResultEnum:
+      enum:
+      - created
+      - skipped
+      type: string
+      description: |-
+        * `created` - created
+        * `skipped` - skipped
     Session:
       type: object
       properties:

@@ -98,3 +98,15 @@ def truncate_audit(transactional_db: None):
     yield
     with connection.cursor() as cursor:
         cursor.execute("TRUNCATE audit_auditlog")
+
+
+@pytest.fixture
+def last_invitation_token() -> Callable[[], str]:
+    """The token in the link of the most recent invitation email."""
+
+    def find() -> str:
+        match = re.search(r"invitation=([\w-]+)", FakeEmailAdapter.sent[-1].text_body)
+        assert match, "no invitation link in the last email"
+        return match.group(1)
+
+    return find

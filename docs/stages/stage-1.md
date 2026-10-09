@@ -75,14 +75,36 @@ Design and trade-offs are in ADR 0008.
 
 276 tests pass; all gates are clean.
 
+## Slice 5: invitations (done)
+
+Design and trade-offs are in ADR 0009. All admin endpoints need `invitations.manage` and an MFA
+session.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /admin/invitations` | Invite one person (`email`, optional `role` member or mentor, optional `message`). |
+| `POST /admin/invitations/bulk` | Invite many from CSV text; bad rows are reported and skipped. |
+| `GET /admin/invitations`, `GET /admin/invitations/{id}` | List with `status` (sent, opened, registered, revoked, expired) and search filters; detail. |
+| `POST /admin/invitations/{id}/resend` | New link and expiry; the old link stops working. |
+| `POST /admin/invitations/{id}/revoke` | Kill the link. |
+| `POST /auth/invitations/inspect` | Public: look up a link to prefill the registration page; marks it opened. |
+| `POST /auth/register` with `invitation_token` | Matching address: account is active at once (201 `approved: true`). Otherwise the normal pending flow (202). |
+
+- Only token hashes are stored; exactly one email goes out per create or resend, and a failed send
+  leaves no link behind.
+- One live invitation per address is enforced by the database.
+- Registering through an invitation records `approval_source = invitation` and audits it, and
+  sends the "approved" email.
+
+366 tests pass; all gates are clean.
+
 ## Still to do in Stage 1
 
-1. Invitations (single and bulk) that approve on registration.
-4. Profiles and startups with per-field visibility; registration capturing name, location and
+1. Profiles and startups with per-field visibility; registration capturing name, location and
    startup details (these need the profile models, so they land with that slice).
-5. Public directory read model, search, filters, featured items, caching, sitemap feed.
-6. Real transactional email adapter (provider still undecided), analytics capture and events.
-7. Google sign-in (proposed to follow once email and password login is settled).
+2. Public directory read model, search, filters, featured items, caching, sitemap feed.
+3. Real transactional email adapter (provider still undecided), analytics capture and events.
+4. Google sign-in (proposed to follow once email and password login is settled).
 
 ## Notes
 
