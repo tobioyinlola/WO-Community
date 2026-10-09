@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.audit",
     "apps.accounts",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -112,7 +113,16 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "user": "300/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/min",
+        "user": "300/min",
+        "auth_register": "5/hour",
+        "auth_login": "30/min",
+        "auth_forgot": "5/hour",
+        "auth_token": "20/hour",
+        "auth_refresh": "60/min",
+    },
+    "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
@@ -131,6 +141,22 @@ JWT_ALGORITHM = "EdDSA"
 JWT_PRIVATE_KEY = env.str("JWT_PRIVATE_KEY", default="").replace("\\n", "\n")
 JWT_PUBLIC_KEY = env.str("JWT_PUBLIC_KEY", default="").replace("\\n", "\n")
 JWT_ACCESS_LIFETIME = timedelta(minutes=10)
+
+# --- Accounts ----------------------------------------------------------------
+FRONTEND_BASE_URL = env.str("FRONTEND_BASE_URL", default="http://localhost:5173")
+EMAIL_VERIFY_TTL = timedelta(hours=24)
+PASSWORD_RESET_TTL = timedelta(hours=1)
+REFRESH_SLIDING_LIFETIME = timedelta(days=30)
+REFRESH_ABSOLUTE_LIFETIME = timedelta(days=90)
+REFRESH_COOKIE_NAME = "wo_refresh"
+REFRESH_COOKIE_PATH = "/api/v1/auth/"
+REFRESH_COOKIE_SECURE = env.bool("REFRESH_COOKIE_SECURE", default=True)
+LOGIN_MAX_FAILURES_PER_ACCOUNT = 5
+LOGIN_MAX_FAILURES_PER_IP = 30
+LOGIN_FAILURE_WINDOW_SECONDS = 600
+PASSWORD_RESET_MAX_PER_EMAIL_PER_HOUR = 3
+# Versions of the documents a member accepts at registration.
+CONSENT_DOCUMENT_VERSIONS = {"terms": "1", "privacy": "1", "conduct": "1", "marketing": "1"}
 
 # --- Celery ------------------------------------------------------------------
 CELERY_BROKER_URL = env.str("CELERY_BROKER_URL", default="redis://localhost:6380/0")

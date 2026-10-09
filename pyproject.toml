@@ -77,7 +77,7 @@ django_settings_module = "config.settings.test"
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 testpaths = ["apps", "tests"]
 python_files = ["test_*.py"]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --ds=config.settings.test"
 
 [tool.bandit]
 exclude_dirs = ["apps/*/tests", "tests"]
