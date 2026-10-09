@@ -9,6 +9,7 @@ type = layers
 layers =
     apps.adminconsole
     apps.notifications
+    apps.profiles | apps.startups
     apps.accounts | apps.integrations
-    apps.audit | apps.analytics
+    apps.audit | apps.analytics | apps.reference
     apps.core
