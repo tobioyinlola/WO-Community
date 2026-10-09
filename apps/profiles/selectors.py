@@ -1,0 +1,75 @@
+"""Read side of profiles. All visibility decisions happen here."""
+
+from typing import Any
+from uuid import UUID
+
+from apps.accounts import services as accounts
+from apps.core.visibility import Audience, audience_for, effective_levels, project
+from apps.profiles import domain
+from apps.profiles.models import FounderProfile
+from apps.profiles.services import get_or_create_profile, values_of
+
+
+def levels_of(profile: FounderProfile) -> dict[str, str]:
+    return effective_levels(profile.visibility, domain.DEFAULT_LEVELS)
+
+
+def _groups(profile: FounderProfile) -> dict[str, dict[str, Any]]:
+    skills = [{"slug": s.slug, "name": s.name} for s in profile.skills.all()]
+    return {
+        "basics": {"full_name": profile.full_name, "headline": profile.headline},
+        "bio": {"bio": profile.bio},
+        "location": {"country": profile.country, "city": profile.city},
+        "skills": {"skills": skills, "custom_skills": profile.custom_skills},
+        "links": {
+            "linkedin_url": profile.linkedin_url,
+            "x_url": profile.x_url,
+            "website_url": profile.website_url,
+        },
+        "open_to": {"open_to": profile.open_to},
+    }
+
+
+def project_profile(
+    profile: FounderProfile, audience: Audience, badges: list[str] | None = None
+) -> dict[str, Any] | None:
+    """What ``audience`` may see of a profile, or None if not even the basics.
+
+    A member who hides the basics group is invisible to that audience, so the
+    caller should answer 404 rather than reveal that the profile exists.
+    """
+    levels = levels_of(profile)
+    visible = project(_groups(profile), levels, audience)
+    if "full_name" not in visible:
+        return None
+    visible.update(user_id=profile.user_id, slug=profile.slug, badges=badges or [])
+    return visible
+
+
+def owner_view(profile: FounderProfile, badges: list[str]) -> dict[str, Any]:
+    """Everything, plus the settings that only the owner needs."""
+    full = project(_groups(profile), levels_of(profile), Audience.OWNER)
+    score, next_missing = domain.completeness(values_of(profile))
+    full.update(
+        user_id=profile.user_id,
+        slug=profile.slug,
+        badges=badges,
+        visibility=levels_of(profile),
+        completeness={"score": score, "next_missing_field": next_missing},
+    )
+    return full
+
+
+def own_profile(user_id: UUID) -> tuple[FounderProfile, dict[str, Any]]:
+    profile = get_or_create_profile(user_id)
+    badges = accounts.badges_for([user_id]).get(user_id, [])
+    return profile, owner_view(profile, badges)
+
+
+def profile_for_viewer(viewer: Any, user_id: UUID) -> dict[str, Any] | None:
+    profile = FounderProfile.objects.filter(user_id=user_id).prefetch_related("skills").first()
+    if profile is None:
+        return None
+    audience = audience_for(viewer, frozenset({profile.user_id}))
+    badges = accounts.badges_for([user_id]).get(user_id, [])
+    return project_profile(profile, audience, badges)
