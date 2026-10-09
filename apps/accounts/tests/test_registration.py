@@ -161,3 +161,10 @@ def test_registration_is_rate_limited_per_address(api_client, monkeypatch):
         for n in range(3)
     ]
     assert statuses == [202, 202, 429]
+
+
+def test_breached_password_is_rejected_at_registration(api_client):
+    response = api_client.post(REGISTER_URL, registration_payload(password="Password123!456"))
+    assert response.status_code == 400
+    assert User.objects.count() == 0
+    assert "breach" in str(response.json()["errors"]).lower()

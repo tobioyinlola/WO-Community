@@ -178,3 +178,11 @@ def test_revoking_requires_authentication(api_client, member):
 def test_user_count_is_unchanged_by_reset_requests(api_client, member, run_outbox):
     request_reset(api_client, run_outbox, email="nobody@example.com")
     assert User.objects.count() == 1
+
+
+def test_breached_password_is_rejected_at_reset(api_client, member, run_outbox, last_token):
+    request_reset(api_client, run_outbox)
+    response = api_client.post(RESET_URL, {"token": last_token(), "password": "Password123!456"})
+    assert response.status_code == 400
+    member.refresh_from_db()
+    assert member.check_password(PASSWORD)

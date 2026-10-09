@@ -24,12 +24,44 @@
 
 126 tests pass; all gates are clean.
 
+## Slice 2: breached-password check (done)
+
+- `apps/integrations/passwords`: a `BreachChecker` adapter with a fake and a Have I Been Pwned
+  implementation. Only the first five characters of the SHA-1 leave the process, with response
+  padding. It fails open on timeouts or errors so a provider outage cannot block sign-ups.
+- Wired in as a Django password validator, so registration and password reset both enforce it.
+  Local and test settings use the fake; other environments default to the real lookup
+  (`PASSWORD_BREACH_CHECKER`).
+- Outbound traffic to `api.pwnedpasswords.com` must be on the egress allow list.
+
+## Slice 3: admin approval and member management (done)
+
+New module `adminconsole` (the admin API layer) calling `accounts` through its services.
+
+| Endpoint | Permission | Step-up |
+|---|---|---|
+| `GET /admin/members`, `GET /admin/members/{id}`, `GET /admin/queues` | `members.view` | no |
+| `POST /admin/members/{id}/approve`, `/reject` | `members.approve` | no |
+| `POST /admin/members/{id}/suspend`, `/reinstate` | `members.suspend` | yes |
+| `POST /admin/members/{id}/remove` | `members.remove` | yes |
+
+- Filters on the list (allow-listed): search, status, role, email verified, joined before or
+  after; offset pagination capped at 100; no per-row queries.
+- Approval and rejection email the member (the rejection includes the reason). Suspension and
+  removal end sessions and tokens immediately and are audited with before and after status.
+- Rules and the MFA design are in ADR 0007. These endpoints require an `mfa_at` claim that only
+  the MFA slice can issue, so they are not usable outside tests yet.
+- Differs from the catalogue: member status changes are action sub-resources
+  (`/approve`, `/suspend`, ...) instead of `PATCH /admin/members/{id}/status`, as the API
+  conventions allow for non-CRUD actions.
+
+211 tests pass; all gates are clean.
+
 ## Still to do in Stage 1
 
-1. Admin approval of registrations and the pending queue; member management (approve, reject with
-   reason, suspend, reinstate, remove).
-2. Invitations (single and bulk) that approve on registration.
-3. Admin MFA (TOTP and recovery codes) and step-up for destructive actions.
+1. Invitations (single and bulk) that approve on registration.
+2. Admin MFA (TOTP and recovery codes), the login second step and the step-up endpoint. This is
+   the next slice and is what makes the admin endpoints usable.
 4. Profiles and startups with per-field visibility; registration capturing name, location and
    startup details (these need the profile models, so they land with that slice).
 5. Public directory read model, search, filters, featured items, caching, sitemap feed.
@@ -38,6 +70,6 @@
 
 ## Notes
 
-- The password check uses Django's validators (length 10, common passwords, similarity). A
-  breached-password lookup is not wired yet.
+- Rejected registrations should be purged after 90 days; the retention job arrives with hardening.
+- Suspension and removal do not email the member yet (only approval and rejection do).
 - Idempotency-Key storage is still not needed; it arrives with the first booking or enrolment flow.

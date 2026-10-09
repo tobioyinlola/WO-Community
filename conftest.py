@@ -1,10 +1,12 @@
 import re
+import time
 from collections.abc import Callable
 from unittest import mock
 
 import pytest
 from celery import current_app
 from django.core.cache import cache
+from django.db import connection
 from rest_framework.test import APIClient
 
 from apps.accounts import tokens
@@ -32,11 +34,19 @@ def make_user(db: None) -> Callable[..., User]:
 
 
 @pytest.fixture
-def client_for() -> Callable[[User | None], APIClient]:
-    def build(user: User | None = None) -> APIClient:
+def client_for() -> Callable[..., APIClient]:
+    """A client holding an access token for ``user``.
+
+    ``mfa_age`` is how many seconds ago the user passed an MFA check; leave it
+    out to model a session that never did.
+    """
+
+    def build(user: User | None = None, *, mfa_age: float | None = None) -> APIClient:
         client = APIClient()
         if user is not None:
-            client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens.issue_access_token(user)}")
+            mfa_at = None if mfa_age is None else time.time() - mfa_age
+            token = tokens.issue_access_token(user, mfa_at=mfa_at)
+            client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         return client
 
     return build
@@ -77,3 +87,14 @@ def last_token() -> Callable[[], str]:
 def sent_emails() -> list:
     """Messages the fake email adapter has accepted in this test."""
     return FakeEmailAdapter.sent
+
+
+@pytest.fixture
+def truncate_audit(transactional_db: None):
+    """Transactional tests commit audit rows, and the table refuses DELETE.
+
+    Django's flush skips unmanaged tables, so empty it explicitly afterwards.
+    """
+    yield
+    with connection.cursor() as cursor:
+        cursor.execute("TRUNCATE audit_auditlog")
