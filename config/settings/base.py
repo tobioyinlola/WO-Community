@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.reference",
     "apps.accounts",
+    "apps.uploads",
     "apps.profiles",
     "apps.startups",
     "apps.directory",
@@ -134,6 +135,7 @@ REST_FRAMEWORK = {
         "auth_mfa": "20/min",
         "admin_bulk": "10/hour",
         "public_search": "60/min",
+        "uploads": "30/hour",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -209,6 +211,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "dispatch-outbox": {"task": "core.dispatch_outbox", "schedule": 5.0},
     "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
+    "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
@@ -218,6 +221,33 @@ OUTBOX_MAX_ATTEMPTS = 8
 # --- Adapters ----------------------------------------------------------------
 EMAIL_ADAPTER = env.str("EMAIL_ADAPTER", default="apps.integrations.email.fake.FakeEmailAdapter")
 CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
+STORAGE_ADAPTER = env.str("STORAGE_ADAPTER", default="apps.integrations.storage.fake.FakeStorage")
+MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.fake.FakeScanner")
+
+# --- Uploads and media -------------------------------------------------------
+STORAGE_ENDPOINT_URL = env.str("STORAGE_ENDPOINT_URL", default="")  # set for MinIO
+STORAGE_REGION = env.str("STORAGE_REGION", default="us-east-1")
+STORAGE_ACCESS_KEY_ID = env.str("STORAGE_ACCESS_KEY_ID", default="")
+STORAGE_SECRET_ACCESS_KEY = env.str("STORAGE_SECRET_ACCESS_KEY", default="")
+STORAGE_QUARANTINE_BUCKET = env.str("STORAGE_QUARANTINE_BUCKET", default="wo-quarantine")
+STORAGE_MEDIA_BUCKET = env.str("STORAGE_MEDIA_BUCKET", default="wo-media")
+# Public address of the media bucket: a separate, cookieless domain behind the CDN.
+MEDIA_BASE_URL = env.str("MEDIA_BASE_URL", default="http://localhost:9000/wo-media")
+CLAMD_HOST = env.str("CLAMD_HOST", default="localhost")
+CLAMD_PORT = env.int("CLAMD_PORT", default=3310)
+CLAMD_TIMEOUT = 10
+UPLOAD_ALLOWED_TYPES = ("image/jpeg", "image/png", "image/webp")
+UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+UPLOAD_PRESIGN_TTL_SECONDS = 900
+UPLOAD_DAILY_LIMIT = 20
+UPLOAD_PROCESSING_TIMEOUT = timedelta(hours=2)
+UPLOAD_UNCLAIMED_TTL = timedelta(hours=24)
+UPLOAD_RECORD_RETENTION = timedelta(days=7)
+IMAGE_MAX_PIXELS = 25_000_000
+IMAGE_MAX_SIDE = 10_000
+IMAGE_LARGE_SIDE = 1600
+IMAGE_THUMB_SIDE = 320
+IMAGE_QUALITY = 85
 
 # --- Observability -----------------------------------------------------------
 SENTRY_DSN = env.str("SENTRY_DSN", default="")

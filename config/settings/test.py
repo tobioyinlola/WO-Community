@@ -24,6 +24,9 @@ REST_FRAMEWORK = {
 
 REFRESH_COOKIE_SECURE = False
 CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
+STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
+MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"
+MEDIA_BASE_URL = "https://media.test"
 PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )

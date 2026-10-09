@@ -11,6 +11,7 @@ layers =
     apps.directory
     apps.notifications
     apps.profiles | apps.startups
+    apps.uploads
     apps.accounts | apps.integrations
     apps.audit | apps.analytics | apps.reference
     apps.core

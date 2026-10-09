@@ -23,3 +23,7 @@ DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = env.str("DB_SSLMODE"
 
 EMAIL_ADAPTER = require("EMAIL_ADAPTER")
 require("FIELD_ENCRYPTION_KEYS")
+# Production must not run on the in-memory storage or scanner.
+STORAGE_ADAPTER = require("STORAGE_ADAPTER")
+MALWARE_SCANNER = require("MALWARE_SCANNER")
+MEDIA_BASE_URL = require("MEDIA_BASE_URL")
