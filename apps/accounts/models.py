@@ -95,3 +95,68 @@ class UserRole(BaseModel):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "role"], name="userrole_unique")]
+
+
+class ConsentDocument(models.TextChoices):
+    TERMS = "terms"
+    PRIVACY = "privacy"
+    CONDUCT = "conduct"
+    MARKETING = "marketing"
+
+
+class ConsentRecord(BaseModel):
+    """One versioned grant or withdrawal of consent, kept as history."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="consents")
+    document = models.CharField(max_length=12, choices=ConsentDocument.choices)
+    version = models.CharField(max_length=20)
+    granted = models.BooleanField(default=True)
+    ip_hash = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "document", "version"], name="consent_lookup_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.document} v{self.version} granted={self.granted}"
+
+
+class EmailTokenPurpose(models.TextChoices):
+    VERIFY_EMAIL = "verify_email"
+    PASSWORD_RESET = "password_reset"  # noqa: S105  # nosec B105
+
+
+class EmailToken(BaseModel):
+    """Single use token sent by email. Only its hash is stored."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_tokens")
+    purpose = models.CharField(max_length=20, choices=EmailTokenPurpose.choices)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.purpose} for {self.user_id}"
+
+
+class RefreshTokenFamily(BaseModel):
+    """A login session. The refresh token rotates on every use.
+
+    Presenting a token that is not the current one means it was stolen or
+    replayed, so the whole family is revoked.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refresh_families")
+    current_hash = models.CharField(max_length=64)
+    user_agent = models.CharField(max_length=255, blank=True)
+    ip_hash = models.CharField(max_length=64, blank=True)
+    last_used_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    absolute_expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_reason = models.CharField(max_length=30, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "revoked_at"], name="refresh_user_revoked_idx")]
+
+    def __str__(self) -> str:
+        return f"session {self.pk}"
