@@ -16,6 +16,7 @@ from apps.accounts.serializers import (
     ForgotPasswordSerializer,
     LoginSerializer,
     MessageSerializer,
+    MfaChallengeSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
     SessionSerializer,
@@ -68,6 +69,7 @@ def _token_response(result: services.LoginResult) -> Response:
             "email": result.user.email,
             "status": result.user.status,
         },
+        "mfa_enrolment_required": services.mfa_enrolment_required(result.user),
     }
     response = Response(AccessTokenSerializer(body).data)
     response["Cache-Control"] = "no-store"
@@ -135,10 +137,13 @@ class LoginView(PublicAuthView):
 
     @extend_schema(
         summary="Log in",
-        description="Returns a short lived access token and sets the refresh token cookie.",
+        description="Returns a short lived access token and sets the refresh token cookie. "
+        "Accounts with MFA get a 202 with an `mfa_token` instead; finish with "
+        "`POST /auth/mfa/verify`.",
         request=LoginSerializer,
         responses={
             200: AccessTokenSerializer,
+            202: MfaChallengeSerializer,
             401: OpenApiResponse(description="Invalid credentials"),
             403: OpenApiResponse(description="Email not verified"),
             429: OpenApiResponse(description="Too many attempts"),
@@ -154,6 +159,13 @@ class LoginView(PublicAuthView):
             ip=client_ip(request),
             user_agent=user_agent(request),
         )
+        if isinstance(result, services.MfaChallenge):
+            challenge = Response(
+                {"mfa_required": True, "mfa_token": result.mfa_token},
+                status=status.HTTP_202_ACCEPTED,
+            )
+            challenge["Cache-Control"] = "no-store"
+            return challenge
         return _token_response(result)
 
 

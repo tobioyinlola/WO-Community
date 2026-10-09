@@ -153,6 +153,21 @@ class RemoveView(APIView):
         return Response(MemberSerializer(member).data)
 
 
+class ResetMfaView(APIView):
+    policy = policies.admin_permission("roles.manage", step_up=True)
+
+    @extend_schema(
+        summary="Reset an admin's MFA after they lost their authenticator",
+        description="Super admin only. Ends the admin's sessions; they enrol again at next login.",
+        request=None,
+        responses={200: MemberSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request, user_id: UUID) -> Response:
+        member = services.reset_member_mfa(actor=_actor(request), user_id=user_id, ip=_ip(request))
+        return Response(MemberSerializer(member).data)
+
+
 class QueuesView(APIView):
     policy = policies.admin_permission("members.view")
 

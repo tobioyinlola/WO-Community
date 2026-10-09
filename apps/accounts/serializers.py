@@ -68,6 +68,37 @@ class AccessTokenSerializer(serializers.Serializer):
     token_type = serializers.CharField()
     expires_in = serializers.IntegerField()
     user = AccountSerializer()
+    mfa_enrolment_required = serializers.BooleanField()
+
+
+class MfaChallengeSerializer(serializers.Serializer):
+    mfa_required = serializers.BooleanField()
+    mfa_token = serializers.CharField()
+
+
+class MfaVerifySerializer(StrictSerializer):
+    mfa_token = serializers.CharField(max_length=500)
+    code = serializers.CharField(max_length=32)
+
+
+class CodeSerializer(StrictSerializer):
+    code = serializers.CharField(max_length=32)
+
+
+class MfaEnrolmentSerializer(serializers.Serializer):
+    secret = serializers.CharField()
+    otpauth_uri = serializers.CharField()
+
+
+class MfaConfirmedSerializer(serializers.Serializer):
+    access_token = serializers.CharField()
+    token_type = serializers.CharField()
+    expires_in = serializers.IntegerField()
+    recovery_codes = serializers.ListField(child=serializers.CharField())
+
+
+class RecoveryCodesSerializer(serializers.Serializer):
+    recovery_codes = serializers.ListField(child=serializers.CharField())
 
 
 class MessageSerializer(serializers.Serializer):

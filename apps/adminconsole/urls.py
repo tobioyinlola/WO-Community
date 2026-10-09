@@ -27,6 +27,11 @@ urlpatterns = [
         name="admin-member-reinstate",
     ),
     path(
+        "admin/members/<uuid:user_id>/reset-mfa",
+        views.ResetMfaView.as_view(),
+        name="admin-member-reset-mfa",
+    ),
+    path(
         "admin/members/<uuid:user_id>/remove",
         views.RemoveView.as_view(),
         name="admin-member-remove",
