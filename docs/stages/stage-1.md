@@ -49,8 +49,8 @@ New module `adminconsole` (the admin API layer) calling `accounts` through its s
   after; offset pagination capped at 100; no per-row queries.
 - Approval and rejection email the member (the rejection includes the reason). Suspension and
   removal end sessions and tokens immediately and are audited with before and after status.
-- Rules and the MFA design are in ADR 0007. These endpoints require an `mfa_at` claim that only
-  the MFA slice can issue, so they are not usable outside tests yet.
+- Rules and the MFA policy are in ADR 0007. These endpoints require an `mfa_at` claim, which the
+  MFA flow (slice 4) issues.
 - Differs from the catalogue: member status changes are action sub-resources
   (`/approve`, `/suspend`, ...) instead of `PATCH /admin/members/{id}/status`, as the API
   conventions allow for non-CRUD actions.

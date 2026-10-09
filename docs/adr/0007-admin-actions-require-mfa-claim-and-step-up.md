@@ -5,7 +5,7 @@ Status: accepted (Stage 1)
 ## Decision
 
 - Access tokens may carry `mfa_at`, the time the session last passed an MFA check. Only the MFA
-  flow (a later Stage 1 slice) issues it.
+  flow (ADR 0008) issues it.
 - `policies.admin_permission(code)` requires the permission, an admin role, and an `mfa_at` claim.
   With `step_up=True` the claim must also be newer than `STEP_UP_MAX_AGE_SECONDS` (10 minutes).
   Suspending, reinstating and removing members use step-up; viewing, approving and rejecting do not.
