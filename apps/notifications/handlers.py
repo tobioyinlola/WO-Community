@@ -14,6 +14,11 @@ def register() -> None:
         "critical",
     )
     outbox.register_handler(
+        account_events.InvitationRequested.topic,
+        "notifications.send_invitation_email",
+        "critical",
+    )
+    outbox.register_handler(
         account_events.MemberApproved.topic, "notifications.send_approved_email", "critical"
     )
     outbox.register_handler(

@@ -2,6 +2,7 @@ from uuid import UUID
 
 import structlog
 from celery import shared_task
+from django.db import transaction
 
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
@@ -34,6 +35,20 @@ def send_already_registered_email(event_id: str) -> None:
     contact = accounts.get_contact(user_id) if user_id else None
     if contact is not None:
         emails.send_already_registered(contact.email)
+
+
+@shared_task(name="notifications.send_invitation_email")
+def send_invitation_email(event_id: str) -> None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is None:
+        return
+    # One transaction: if the email cannot be sent, the link is not kept and a retry starts over.
+    with transaction.atomic():
+        issued = accounts.issue_invitation_token(
+            UUID(event.payload["invitation_id"]), event.payload["nonce"]
+        )
+        if issued is not None:
+            emails.send_invitation(issued.to, issued.token, issued.message, issued.expires_at)
 
 
 @shared_task(name="notifications.send_approved_email")

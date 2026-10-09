@@ -1,5 +1,7 @@
 """Plain text transactional emails sent by the accounts module."""
 
+from datetime import datetime
+
 from django.conf import settings
 
 from apps.integrations.email import EmailMessage, get_email_adapter
@@ -30,6 +32,20 @@ def send_already_registered(to: str) -> None:
         f"Log in: {link}\nForgot your password: {reset}\n\n"
         "If this was not you, no action is needed.",
     )
+
+
+def send_invitation(to: str, token: str, message: str, expires_at: datetime) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/register?invitation={token}"
+    lines = ["You have been invited to join WO Community, the community for founders.", ""]
+    if message:
+        lines += ["A note from the team:", message, ""]
+    lines += [
+        "Create your account here:",
+        link,
+        "",
+        f"This invitation is for this email address only and expires on {expires_at:%d %B %Y}.",
+    ]
+    _send(to, "You are invited to join WO Community", "\n".join(lines))
 
 
 def send_approved(to: str) -> None:

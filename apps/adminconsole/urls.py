@@ -1,8 +1,33 @@
 from django.urls import path
 
-from apps.adminconsole import views
+from apps.adminconsole import invitation_views, views
 
 urlpatterns = [
+    path(
+        "admin/invitations",
+        invitation_views.InvitationListCreateView.as_view(),
+        name="admin-invitations",
+    ),
+    path(
+        "admin/invitations/bulk",
+        invitation_views.InvitationBulkView.as_view(),
+        name="admin-invitations-bulk",
+    ),
+    path(
+        "admin/invitations/<uuid:invitation_id>",
+        invitation_views.InvitationDetailView.as_view(),
+        name="admin-invitation",
+    ),
+    path(
+        "admin/invitations/<uuid:invitation_id>/resend",
+        invitation_views.InvitationResendView.as_view(),
+        name="admin-invitation-resend",
+    ),
+    path(
+        "admin/invitations/<uuid:invitation_id>/revoke",
+        invitation_views.InvitationRevokeView.as_view(),
+        name="admin-invitation-revoke",
+    ),
     path("admin/queues", views.QueuesView.as_view(), name="admin-queues"),
     path("admin/members", views.MemberListView.as_view(), name="admin-members"),
     path("admin/members/<uuid:user_id>", views.MemberDetailView.as_view(), name="admin-member"),
