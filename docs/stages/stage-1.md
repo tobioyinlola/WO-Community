@@ -127,14 +127,42 @@ profile and a startup by event handlers, for both normal and invited sign-ups.
 
 744 tests pass; all gates are clean.
 
+## Slice 7: the public directory (done)
+
+Design and trade-offs are in ADR 0011. Everything under `/public` is anonymous, cookie-free and
+cacheable (`Cache-Control` with five minute life, ETag, `304` on `If-None-Match`).
+
+| Endpoint | What it does |
+|---|---|
+| `GET /public/startups` | Browse and search listed startups. Filters: `q`, `country`, `sector`, `stage`, `skills` (comma list, all must match), `featured`; `sort` newest or alphabetical (featured always first); `limit` up to 50; `cursor`. |
+| `GET /public/startups/{slug}` | Startup page: pitch, public description, website, public traction, founders, JSON-LD. |
+| `GET /public/founders`, `GET /public/founders/{slug}` | Founders who made their basics public: only the groups they made public, their listed startups, JSON-LD. |
+| `GET /public/sitemap` | Every public page with its last change, for `sitemap.xml`. |
+| `POST /admin/startups/{id}/feature`, `/unfeature` | Pin a listed startup to the top (admin, MFA, audited). |
+
+- A read model (`PublicStartup`, `PublicFounder`) is rebuilt from events when a profile, startup,
+  approval, suspension or removal changes; an hourly job and `manage.py rebuild_directory` repair
+  drift. Normal lag is seconds; the requirement is five minutes.
+- Suspended or removed members vanish on the next request (read-time status check), not after the
+  refresh. The CDN purge adapter is called on every change (a no-op logger until a CDN exists).
+- Search: full text plus partial-word and typo matching on names; quotes and `-term` use exact
+  rules. Hostile input is plain text. Private data is not in the index, so it cannot be found.
+- Browsing uses keyset cursors (stable while new startups arrive); a search returns its best
+  matches only.
+- Extensions `pg_trgm` and `unaccent` are created by the first directory migration, so the
+  migration user needs permission to create them.
+
+Tests: 119 for the directory (access, caching, filters, ordering and paging, search, privacy,
+takedown, refresh, sitemap, featuring, rebuild).
+
 ## Still to do in Stage 1
 
-1. Public directory read model, search, filters, featured items, caching, sitemap feed (uses the
-   visibility rule above with the public audience).
-2. Photo and logo uploads (pre-signed URLs, scan) so those fields can be set.
-3. Admin management of reference lists (the lists are seeded and read-only for now).
-4. Real transactional email adapter (provider still undecided), analytics capture and events.
+1. Photo and logo uploads (pre-signed URLs, scan) so those fields can be set and shown on cards.
+2. Admin management of reference lists (the lists are seeded and read-only for now).
+3. A real CDN purger and a real transactional email adapter (providers still undecided).
+4. Analytics capture and the registration, directory and onboarding events.
 5. Google sign-in (proposed to follow once email and password login is settled).
+6. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
 
 ## Notes
 

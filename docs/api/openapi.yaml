@@ -562,6 +562,62 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/startups/{startup_id}/feature:
+    post:
+      operationId: admin_startups_feature_create
+      summary: Pin a listed startup to the top of the directory
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Featured'
+          description: ''
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such startup
+        '409':
+          description: Only listed startups can be featured
+  /api/v1/admin/startups/{startup_id}/unfeature:
+    post:
+      operationId: admin_startups_unfeature_create
+      summary: Remove a startup's pin
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Featured'
+          description: ''
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such startup
+        '409':
+          description: Only listed startups can be featured
   /api/v1/auth/invitations/inspect:
     post:
       operationId: auth_invitations_inspect_create
@@ -1122,6 +1178,215 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ping'
           description: ''
+  /api/v1/public/founders:
+    get:
+      operationId: public_founders_list
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: Browse and search founders who made their profile public
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+          minLength: 2
+          default: ''
+          maxLength: 2
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: skills
+        schema:
+          type: string
+          default: ''
+          maxLength: 500
+      - in: query
+        name: sort
+        schema:
+          enum:
+          - newest
+          - alphabetical
+          type: string
+          default: newest
+          minLength: 1
+        description: |-
+          * `newest` - newest
+          * `alphabetical` - alphabetical
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FounderPage'
+          description: ''
+        '400':
+          description: Invalid filter or cursor
+        '429':
+          description: Too many requests
+  /api/v1/public/founders/{slug}:
+    get:
+      operationId: public_founder_detail
+      description: Shows only the field groups the founder made public.
+      summary: One public founder page
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FounderDetail'
+          description: ''
+        '404':
+          description: Not public
+  /api/v1/public/sitemap:
+    get:
+      operationId: public_sitemap_retrieve
+      description: 'For search engines: the front end turns this into sitemap.xml.'
+      summary: Every public page with its last change
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sitemap'
+          description: ''
+  /api/v1/public/startups:
+    get:
+      operationId: public_startups_list
+      description: Listed startups only, with what their owners made public. Featured
+        startups come first. Without `q` results are paged by `cursor`; with `q` you
+        get the best matches only (no cursor), so refine the search instead of paging.
+      summary: Browse and search the startup directory
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+          minLength: 2
+          default: ''
+          maxLength: 2
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: featured
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: sector
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      - in: query
+        name: skills
+        schema:
+          type: string
+          default: ''
+          maxLength: 500
+      - in: query
+        name: sort
+        schema:
+          enum:
+          - newest
+          - alphabetical
+          type: string
+          default: newest
+          minLength: 1
+        description: |-
+          * `newest` - newest
+          * `alphabetical` - alphabetical
+      - in: query
+        name: stage
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupPage'
+          description: ''
+        '400':
+          description: Invalid filter or cursor
+        '429':
+          description: Too many requests
+  /api/v1/public/startups/{slug}:
+    get:
+      operationId: public_startup_detail
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: One listed startup
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupDetail'
+          description: ''
+        '404':
+          description: Not listed
   /api/v1/reference/countries:
     get:
       operationId: reference_countries
@@ -1597,6 +1862,30 @@ components:
       required:
       - code
       - name
+    DirectorySkill:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    Featured:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        featured:
+          type: boolean
+      required:
+      - featured
+      - id
+      - slug
     ForgotPasswordRequest:
       type: object
       description: |-
@@ -1612,6 +1901,107 @@ components:
           maxLength: 254
       required:
       - email
+    FounderCard:
+      type: object
+      properties:
+        slug:
+          type: string
+        full_name:
+          type: string
+        badges:
+          type: array
+          items:
+            type: string
+        headline:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/DirectorySkill'
+      required:
+      - badges
+      - full_name
+      - slug
+    FounderDetail:
+      type: object
+      properties:
+        slug:
+          type: string
+        full_name:
+          type: string
+        badges:
+          type: array
+          items:
+            type: string
+        headline:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/DirectorySkill'
+        bio:
+          type: string
+        custom_skills:
+          type: array
+          items:
+            type: string
+        open_to:
+          type: array
+          items:
+            type: string
+        linkedin_url:
+          type: string
+        x_url:
+          type: string
+        website_url:
+          type: string
+        startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkedStartup'
+        url:
+          type: string
+        structured_data: {}
+      required:
+      - badges
+      - full_name
+      - slug
+      - startups
+      - structured_data
+      - url
+    FounderPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FounderCard'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    FounderRef:
+      type: object
+      properties:
+        slug:
+          type: string
+        full_name:
+          type: string
+        headline:
+          type: string
+      required:
+      - full_name
+      - slug
     Invitation:
       type: object
       properties:
@@ -1727,6 +2117,22 @@ components:
         * `milestone` - milestone
         * `award` - award
         * `partner` - partner
+    LinkedStartup:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        pitch:
+          type: string
+        sector:
+          $ref: '#/components/schemas/Named'
+      required:
+      - name
+      - pitch
+      - sector
+      - slug
     LoginRequest:
       type: object
       description: |-
@@ -1878,6 +2284,16 @@ components:
       required:
       - code
       - mfa_token
+    Named:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
     NamedSlug:
       type: object
       properties:
@@ -2267,6 +2683,34 @@ components:
       - pitch
       - sector
       - stage
+    Sitemap:
+      type: object
+      properties:
+        startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapEntry'
+        founders:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapEntry'
+      required:
+      - founders
+      - startups
+    SitemapEntry:
+      type: object
+      properties:
+        slug:
+          type: string
+        path:
+          type: string
+        lastmod:
+          type: string
+          format: date-time
+      required:
+      - lastmod
+      - path
+      - slug
     Skill:
       type: object
       properties:
@@ -2331,6 +2775,43 @@ components:
       - id
       - slug
       - traction
+    StartupCard:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        pitch:
+          type: string
+        sector:
+          $ref: '#/components/schemas/Named'
+        stage:
+          $ref: '#/components/schemas/Named'
+        country:
+          type: string
+        city:
+          type: string
+        year_founded:
+          type: integer
+          nullable: true
+        featured:
+          type: boolean
+        founders:
+          type: array
+          items:
+            $ref: '#/components/schemas/FounderRef'
+      required:
+      - city
+      - country
+      - featured
+      - founders
+      - name
+      - pitch
+      - sector
+      - slug
+      - stage
+      - year_founded
     StartupCompleteness:
       type: object
       properties:
@@ -2386,6 +2867,70 @@ components:
       - pitch
       - sector
       - stage
+    StartupDetail:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        pitch:
+          type: string
+        sector:
+          $ref: '#/components/schemas/Named'
+        stage:
+          $ref: '#/components/schemas/Named'
+        country:
+          type: string
+        city:
+          type: string
+        year_founded:
+          type: integer
+          nullable: true
+        featured:
+          type: boolean
+        founders:
+          type: array
+          items:
+            $ref: '#/components/schemas/FounderRef'
+        description:
+          type: string
+        website_url:
+          type: string
+        traction:
+          type: array
+          items:
+            $ref: '#/components/schemas/TractionPublic'
+        url:
+          type: string
+        structured_data: {}
+      required:
+      - city
+      - country
+      - featured
+      - founders
+      - name
+      - pitch
+      - sector
+      - slug
+      - stage
+      - structured_data
+      - traction
+      - url
+      - year_founded
+    StartupPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartupCard'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
     Status:
       type: object
       properties:
@@ -2489,6 +3034,18 @@ components:
       - kind
       - value
       - visibility
+    TractionPublic:
+      type: object
+      properties:
+        kind:
+          type: string
+        value: {}
+        as_of_date:
+          type: string
+      required:
+      - as_of_date
+      - kind
+      - value
     TractionReplaceRequest:
       type: object
       description: |-
