@@ -26,5 +26,5 @@ Status: accepted (Stage 1)
 
 ## Consequences
 
-Until the MFA slice lands, no real token carries `mfa_at`, so the admin endpoints cannot be used
-outside tests. That is deliberate: they fail closed rather than run without MFA.
+The MFA flow that issues `mfa_at` is described in ADR 0008. Without it the admin endpoints fail
+closed rather than run without MFA.

@@ -57,11 +57,27 @@ New module `adminconsole` (the admin API layer) calling `accounts` through its s
 
 211 tests pass; all gates are clean.
 
+## Slice 4: admin MFA (done)
+
+Design and trade-offs are in ADR 0008.
+
+- `POST /auth/mfa/enrol` and `/auth/mfa/confirm`: admin accounts set up an authenticator and get
+  10 one-time recovery codes. Confirming also marks the current session as MFA-verified.
+- `POST /auth/login` returns 202 with an `mfa_token` for accounts with MFA; `POST /auth/mfa/verify`
+  finishes the login with a TOTP or recovery code.
+- `POST /auth/mfa/step-up`: fresh check for destructive actions. `POST /auth/mfa/recovery-codes`:
+  replace the recovery codes.
+- `POST /admin/members/{id}/reset-mfa` (super admin, step-up): for a lost authenticator.
+- TOTP secrets are encrypted at rest (`FIELD_ENCRYPTION_KEYS`); codes cannot be replayed;
+  five wrong codes lock code checks for 10 minutes.
+- Access tokens now carry `sid` and, after MFA, `mfa_at`. The admin endpoints from slice 3 are
+  now usable end to end.
+
+276 tests pass; all gates are clean.
+
 ## Still to do in Stage 1
 
 1. Invitations (single and bulk) that approve on registration.
-2. Admin MFA (TOTP and recovery codes), the login second step and the step-up endpoint. This is
-   the next slice and is what makes the admin endpoints usable.
 4. Profiles and startups with per-field visibility; registration capturing name, location and
    startup details (these need the profile models, so they land with that slice).
 5. Public directory read model, search, filters, featured items, caching, sitemap feed.
@@ -70,6 +86,10 @@ New module `adminconsole` (the admin API layer) calling `accounts` through its s
 
 ## Notes
 
+- Keep at least two super admins: recovering the last one means editing the database.
+- `FIELD_ENCRYPTION_KEYS` must be set in every real environment (production refuses to start
+  without it). Generate with
+  `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
 - Rejected registrations should be purged after 90 days; the retention job arrives with hardening.
 - Suspension and removal do not email the member yet (only approval and rejection do).
 - Idempotency-Key storage is still not needed; it arrives with the first booking or enrolment flow.

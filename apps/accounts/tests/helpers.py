@@ -20,3 +20,19 @@ def registration_payload(**overrides):
     }
     payload.update(overrides)
     return payload
+
+
+MFA_VERIFY_URL = "/api/v1/auth/mfa/verify"
+MFA_ENROL_URL = "/api/v1/auth/mfa/enrol"
+MFA_CONFIRM_URL = "/api/v1/auth/mfa/confirm"
+MFA_STEP_UP_URL = "/api/v1/auth/mfa/step-up"
+MFA_RECOVERY_URL = "/api/v1/auth/mfa/recovery-codes"
+
+
+def totp_code(secret: str, offset: int = 0) -> str:
+    """The authenticator code for the current 30 second step, or a neighbouring one."""
+    import time
+
+    import pyotp
+
+    return pyotp.TOTP(secret).at(int(time.time()) + offset * 30)

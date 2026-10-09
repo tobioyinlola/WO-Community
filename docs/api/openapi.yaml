@@ -251,6 +251,38 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/members/{user_id}/reset-mfa:
+    post:
+      operationId: admin_members_reset_mfa_create
+      description: Super admin only. Ends the admin's sessions; they enrol again at
+        next login.
+      summary: Reset an admin's MFA after they lost their authenticator
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Member not found
+        '409':
+          description: The account is not in a state that allows this
   /api/v1/admin/members/{user_id}/suspend:
     post:
       operationId: admin_members_suspend_create
@@ -315,6 +347,8 @@ paths:
     post:
       operationId: auth_login_create
       description: Returns a short lived access token and sets the refresh token cookie.
+        Accounts with MFA get a 202 with an `mfa_token` instead; finish with `POST
+        /auth/mfa/verify`.
       summary: Log in
       tags:
       - auth
@@ -330,6 +364,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaChallenge'
           description: ''
         '401':
           description: Invalid credentials
@@ -347,6 +387,162 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/auth/mfa/confirm:
+    post:
+      operationId: auth_mfa_confirm_create
+      description: Proves the authenticator works. Returns an access token that already
+        counts as MFA-verified, and the recovery codes, which are shown only this
+        once.
+      summary: Confirm MFA enrolment
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodeRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaConfirmed'
+          description: ''
+        '400':
+          description: Invalid code
+        '401':
+          description: Not authenticated or sign-in step expired
+        '403':
+          description: Not an admin account
+        '409':
+          description: MFA is already set up
+        '429':
+          description: Too many wrong codes
+  /api/v1/auth/mfa/enrol:
+    post:
+      operationId: auth_mfa_enrol_create
+      description: Returns the secret and an otpauth URI to show as a QR code. Calling
+        it again before confirming replaces the pending secret.
+      summary: Start MFA enrolment
+      tags:
+      - auth
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaEnrolment'
+          description: ''
+        '400':
+          description: Invalid code
+        '401':
+          description: Not authenticated or sign-in step expired
+        '403':
+          description: Not an admin account
+        '409':
+          description: MFA is already set up
+        '429':
+          description: Too many wrong codes
+  /api/v1/auth/mfa/recovery-codes:
+    post:
+      operationId: auth_mfa_recovery_codes_create
+      description: Needs a current authenticator code. The old codes stop working.
+      summary: Replace recovery codes
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodeRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryCodes'
+          description: ''
+        '400':
+          description: Invalid code
+        '401':
+          description: Not authenticated or sign-in step expired
+        '403':
+          description: Not an admin account
+        '409':
+          description: MFA is already set up
+        '429':
+          description: Too many wrong codes
+  /api/v1/auth/mfa/step-up:
+    post:
+      operationId: auth_mfa_step_up_create
+      description: Returns a new access token whose MFA check is fresh.
+      summary: Re-check MFA for a destructive action
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodeRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '400':
+          description: Invalid code
+        '401':
+          description: Not authenticated or sign-in step expired
+        '403':
+          description: Not an admin account
+        '409':
+          description: MFA is already set up
+        '429':
+          description: Too many wrong codes
+  /api/v1/auth/mfa/verify:
+    post:
+      operationId: auth_mfa_verify_create
+      description: Takes the `mfa_token` from the login response and a code from the
+        authenticator app or an unused recovery code. Sets the refresh cookie.
+      summary: Finish logging in with an MFA code
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaVerifyRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '400':
+          description: Invalid code
+        '401':
+          description: Not authenticated or sign-in step expired
+        '403':
+          description: Not an admin account
+        '409':
+          description: MFA is already set up
+        '429':
+          description: Too many wrong codes
   /api/v1/auth/password/forgot:
     post:
       operationId: auth_password_forgot_create
@@ -559,9 +755,12 @@ components:
           type: integer
         user:
           $ref: '#/components/schemas/Account'
+        mfa_enrolment_required:
+          type: boolean
       required:
       - access_token
       - expires_in
+      - mfa_enrolment_required
       - token_type
       - user
     Account:
@@ -579,6 +778,20 @@ components:
       - email
       - id
       - status
+    CodeRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+      - code
     ForgotPasswordRequest:
       type: object
       description: |-
@@ -688,6 +901,63 @@ components:
           type: string
       required:
       - detail
+    MfaChallenge:
+      type: object
+      properties:
+        mfa_required:
+          type: boolean
+        mfa_token:
+          type: string
+      required:
+      - mfa_required
+      - mfa_token
+    MfaConfirmed:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        recovery_codes:
+          type: array
+          items:
+            type: string
+      required:
+      - access_token
+      - expires_in
+      - recovery_codes
+      - token_type
+    MfaEnrolment:
+      type: object
+      properties:
+        secret:
+          type: string
+        otpauth_uri:
+          type: string
+      required:
+      - otpauth_uri
+      - secret
+    MfaVerifyRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        mfa_token:
+          type: string
+          minLength: 1
+          maxLength: 500
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+      - code
+      - mfa_token
     Ping:
       type: object
       properties:
@@ -722,6 +992,15 @@ components:
           maxLength: 1000
       required:
       - reason
+    RecoveryCodes:
+      type: object
+      properties:
+        recovery_codes:
+          type: array
+          items:
+            type: string
+      required:
+      - recovery_codes
     RegisterRequest:
       type: object
       description: |-
