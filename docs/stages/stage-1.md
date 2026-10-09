@@ -98,13 +98,43 @@ session.
 
 366 tests pass; all gates are clean.
 
+## Slice 6: profiles, startups and visibility (done)
+
+Design and trade-offs are in ADR 0010.
+
+**Registration** now requires the details from the form: `profile` (`full_name`, `country`,
+`city`) and `startup` (`name`, `country`, `city`, `sector`, `stage`, `pitch`). They are validated
+at the door (ISO country, listed sector and stage, markup stripped) and turned into a founder
+profile and a startup by event handlers, for both normal and invited sign-ups.
+
+| Endpoint | What it does |
+|---|---|
+| `GET/PATCH /me/profile` | Your profile with visibility levels, badges, completeness and next missing field. PATCH needs `If-Match`. |
+| `GET/PATCH /me/visibility` | Level (private, members, public) of each profile group. |
+| `GET /members/{user_id}` | Another member's profile, only the groups they share with members. 404 if they hide the basics. |
+| `POST /startups`, `GET /me/startups` | Create a startup (you become its owner and founder); list the ones you are on. |
+| `GET/PATCH /startups/{id}` | Read as the viewer may see it; update (owner or founder; `If-Match`). `directory_opt_in` is owner only. |
+| `PATCH /startups/{id}/visibility` | Level of each startup group (basics, description, website, team). |
+| `PUT /startups/{id}/traction` | Replace the traction list; every entry has its own level. |
+| `POST /startups/{id}/team`, `DELETE .../team/{member_id}` | Add by email (same answer either way) or remove. |
+| `GET /reference/sectors`, `/stages`, `/skills`, `/countries` | Public, cacheable lists. |
+
+- AC-17 is enforced by one rule in `core` and tested exhaustively: every field group at every
+  level for every kind of viewer, over HTTP for members and at the selector for visitors.
+- Completeness scores (profile and startup) name the next field to fill.
+- Profile and startup edits publish events that the directory slice will consume.
+- Plain-text cleaning, https-only links, bands for revenue and funding.
+
+744 tests pass; all gates are clean.
+
 ## Still to do in Stage 1
 
-1. Profiles and startups with per-field visibility; registration capturing name, location and
-   startup details (these need the profile models, so they land with that slice).
-2. Public directory read model, search, filters, featured items, caching, sitemap feed.
-3. Real transactional email adapter (provider still undecided), analytics capture and events.
-4. Google sign-in (proposed to follow once email and password login is settled).
+1. Public directory read model, search, filters, featured items, caching, sitemap feed (uses the
+   visibility rule above with the public audience).
+2. Photo and logo uploads (pre-signed URLs, scan) so those fields can be set.
+3. Admin management of reference lists (the lists are seeded and read-only for now).
+4. Real transactional email adapter (provider still undecided), analytics capture and events.
+5. Google sign-in (proposed to follow once email and password login is settled).
 
 ## Notes
 

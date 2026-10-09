@@ -910,6 +910,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/v1/me/profile:
+    get:
+      operationId: me_profile_retrieve
+      summary: Your own profile, with visibility settings and completeness
+      tags:
+      - profile
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '412':
+          description: The profile changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    patch:
+      operationId: me_profile_partial_update
+      description: Partial update. Send the ETag from the last read in If-Match.
+      summary: Update your profile
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '412':
+          description: The profile changed since the ETag was issued
+        '428':
+          description: If-Match header missing
   /api/v1/me/sessions:
     get:
       operationId: me_sessions_list
@@ -947,6 +1000,115 @@ paths:
           description: No response body
         '404':
           description: Not found
+  /api/v1/me/startups:
+    get:
+      operationId: me_startups_list
+      summary: Startups you own or are on the team of
+      tags:
+      - startups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/me/visibility:
+    get:
+      operationId: me_visibility_retrieve
+      summary: Visibility level of each profile field group
+      tags:
+      - profile
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: ''
+        '401':
+          description: Not authenticated
+        '412':
+          description: The profile changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    patch:
+      operationId: me_visibility_partial_update
+      description: Body maps group names (basics, bio, location, skills, links, open_to)
+        to private, members or public.
+      summary: Change visibility of one or more field groups
+      tags:
+      - profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+          description: ''
+        '401':
+          description: Not authenticated
+        '412':
+          description: The profile changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/members/{user_id}:
+    get:
+      operationId: members_retrieve
+      description: Fields the member keeps private are never included. If they hide
+        even the basics, the profile answers 404.
+      summary: Another member's profile, as members may see it
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - profile
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+        '403':
+          description: Not an approved member
+        '404':
+          description: No such profile, or not visible to you
   /api/v1/ping:
     get:
       operationId: ping_retrieve
@@ -960,6 +1122,344 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ping'
           description: ''
+  /api/v1/reference/countries:
+    get:
+      operationId: reference_countries
+      summary: Countries (ISO 3166-1 alpha-2)
+      tags:
+      - reference
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Country'
+          description: ''
+  /api/v1/reference/sectors:
+    get:
+      operationId: reference_sectors
+      summary: Sectors
+      tags:
+      - reference
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+          description: ''
+  /api/v1/reference/skills:
+    get:
+      operationId: reference_skills
+      summary: Skills
+      tags:
+      - reference
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+          description: ''
+  /api/v1/reference/stages:
+    get:
+      operationId: reference_stages
+      summary: Startup stages
+      tags:
+      - reference
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+          description: ''
+  /api/v1/startups:
+    post:
+      operationId: startups_create
+      description: You become its owner and first founder.
+      summary: Create a startup
+      tags:
+      - startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/startups/{startup_id}:
+    get:
+      operationId: startups_retrieve
+      description: The team sees everything. Other members see only the field groups
+        and traction items marked members or public. A startup whose basics are hidden
+        from you answers 404.
+      summary: One startup, as the viewer may see it
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    patch:
+      operationId: startups_partial_update
+      description: Owner or a founder on the team. Only the owner can change `directory_opt_in`.
+        Send the ETag from the last read in If-Match.
+      summary: Update a startup
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStartupUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/startups/{startup_id}/team:
+    post:
+      operationId: startups_team_create
+      description: The answer is the same whether or not the address belongs to a
+        member. Someone who is not an active member yet is attached when they are
+        approved.
+      summary: Add a person to the team by email
+      parameters:
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamAddRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMember'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/startups/{startup_id}/team/{member_id}:
+    delete:
+      operationId: startups_team_destroy
+      description: The owner can remove anyone except themselves. Members can remove
+        themselves.
+      summary: Remove a team member
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/startups/{startup_id}/traction:
+    put:
+      operationId: startups_traction_update
+      description: Send the complete list; anything not sent is removed. `users`,
+        `revenue_range` and `funding_range` may appear once each.
+      summary: Replace the traction list
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TractionReplaceRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/startups/{startup_id}/visibility:
+    patch:
+      operationId: startups_visibility_partial_update
+      description: 'Groups: basics, description, website, team. Levels: private, members,
+        public. Traction items carry their own level.'
+      summary: Change visibility of startup field groups
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - startups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Startup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed to do this on this startup
+        '404':
+          description: No such startup, or not visible to you
+        '412':
+          description: The startup changed since the ETag was issued
+        '428':
+          description: If-Match header missing
   /health/live:
     get:
       operationId: health_live_retrieve
@@ -1087,6 +1587,16 @@ components:
           maxLength: 32
       required:
       - code
+    Country:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
     ForgotPasswordRequest:
       type: object
       description: |-
@@ -1191,6 +1701,32 @@ components:
       - expires_at
       - message
       - role
+    Item:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    KindEnum:
+      enum:
+      - users
+      - revenue_range
+      - funding_range
+      - milestone
+      - award
+      - partner
+      type: string
+      description: |-
+        * `users` - users
+        * `revenue_range` - revenue_range
+        * `funding_range` - funding_range
+        * `milestone` - milestone
+        * `award` - award
+        * `partner` - partner
     LoginRequest:
       type: object
       description: |-
@@ -1342,6 +1878,118 @@ components:
       required:
       - code
       - mfa_token
+    NamedSlug:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    OpenToEnum:
+      enum:
+      - hiring
+      - mentoring
+      - seeking_mentor
+      - partnerships
+      type: string
+      description: |-
+        * `hiring` - hiring
+        * `mentoring` - mentoring
+        * `seeking_mentor` - seeking_mentor
+        * `partnerships` - partnerships
+    PatchedProfileUpdateRequest:
+      type: object
+      description: Partial update. Fields not listed here (slug, visibility, score)
+        cannot be set.
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        headline:
+          type: string
+          maxLength: 160
+        bio:
+          type: string
+          maxLength: 500
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        city:
+          type: string
+          maxLength: 100
+        skills:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 15
+        custom_skills:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+          maxItems: 10
+        open_to:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpenToEnum'
+        linkedin_url:
+          type: string
+          maxLength: 300
+        x_url:
+          type: string
+          maxLength: 300
+        website_url:
+          type: string
+          maxLength: 300
+    PatchedStartupUpdateRequest:
+      type: object
+      description: Validation shared by create and update.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        pitch:
+          type: string
+          minLength: 1
+          maxLength: 160
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        sector:
+          type: string
+          minLength: 1
+          maxLength: 80
+        stage:
+          type: string
+          minLength: 1
+          maxLength: 80
+        year_founded:
+          type: integer
+          minimum: 1900
+          nullable: true
+        description:
+          type: string
+          maxLength: 5000
+        website_url:
+          type: string
+          maxLength: 300
+        directory_opt_in:
+          type: boolean
     Ping:
       type: object
       properties:
@@ -1352,6 +2000,69 @@ components:
       required:
       - release
       - status
+    Profile:
+      type: object
+      description: Output shape. Every field is optional because hidden groups are
+        left out entirely.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        badges:
+          type: array
+          items:
+            type: string
+        full_name:
+          type: string
+        headline:
+          type: string
+        bio:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+        custom_skills:
+          type: array
+          items:
+            type: string
+        open_to:
+          type: array
+          items:
+            type: string
+        linkedin_url:
+          type: string
+        x_url:
+          type: string
+        website_url:
+          type: string
+        visibility:
+          type: object
+          additionalProperties:
+            type: string
+        completeness:
+          $ref: '#/components/schemas/ProfileCompleteness'
+      required:
+      - badges
+      - slug
+      - user_id
+    ProfileCompleteness:
+      type: object
+      properties:
+        score:
+          type: integer
+        next_missing_field:
+          type: string
+          nullable: true
+      required:
+      - next_missing_field
+      - score
     QueueCounts:
       type: object
       properties:
@@ -1412,6 +2123,10 @@ components:
         marketing_consent:
           type: boolean
           default: false
+        profile:
+          $ref: '#/components/schemas/SignupProfileRequest'
+        startup:
+          $ref: '#/components/schemas/SignupStartupRequest'
         invitation_token:
           type: string
           default: ''
@@ -1422,6 +2137,8 @@ components:
       - accepted_terms
       - email
       - password
+      - profile
+      - startup
     Registered:
       type: object
       properties:
@@ -1487,6 +2204,188 @@ components:
       - id
       - last_used_at
       - user_agent
+    SignupProfileRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - city
+      - country
+      - full_name
+    SignupStartupRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        sector:
+          type: string
+          minLength: 1
+          maxLength: 80
+        stage:
+          type: string
+          minLength: 1
+          maxLength: 80
+        pitch:
+          type: string
+          minLength: 1
+          maxLength: 160
+      required:
+      - city
+      - country
+      - name
+      - pitch
+      - sector
+      - stage
+    Skill:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    Startup:
+      type: object
+      description: Output shape. Fields of hidden groups are absent, not blank.
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        featured:
+          type: boolean
+        traction:
+          type: array
+          items:
+            $ref: '#/components/schemas/TractionOut'
+        name:
+          type: string
+        pitch:
+          type: string
+        sector:
+          $ref: '#/components/schemas/NamedSlug'
+        stage:
+          $ref: '#/components/schemas/NamedSlug'
+        country:
+          type: string
+        city:
+          type: string
+        year_founded:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        website_url:
+          type: string
+        team:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+        owner_id:
+          type: string
+          format: uuid
+        directory_opt_in:
+          type: boolean
+        visibility:
+          type: object
+          additionalProperties:
+            type: string
+        completeness:
+          $ref: '#/components/schemas/StartupCompleteness'
+      required:
+      - featured
+      - id
+      - slug
+      - traction
+    StartupCompleteness:
+      type: object
+      properties:
+        score:
+          type: integer
+        next_missing_field:
+          type: string
+          nullable: true
+      required:
+      - next_missing_field
+      - score
+    StartupCreateRequest:
+      type: object
+      description: Validation shared by create and update.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        pitch:
+          type: string
+          minLength: 1
+          maxLength: 160
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        sector:
+          type: string
+          minLength: 1
+          maxLength: 80
+        stage:
+          type: string
+          minLength: 1
+          maxLength: 80
+        year_founded:
+          type: integer
+          minimum: 1900
+        description:
+          type: string
+          maxLength: 5000
+        website_url:
+          type: string
+          maxLength: 300
+      required:
+      - city
+      - country
+      - name
+      - pitch
+      - sector
+      - stage
     Status:
       type: object
       properties:
@@ -1494,6 +2393,47 @@ components:
           type: string
       required:
       - status
+    TeamAddRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        title:
+          type: string
+          default: ''
+          maxLength: 80
+        is_founder:
+          type: boolean
+          default: false
+      required:
+      - email
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        title:
+          type: string
+        is_founder:
+          type: boolean
+      required:
+      - is_founder
+      - title
     TokenRequest:
       type: object
       description: |-
@@ -1508,6 +2448,71 @@ components:
           maxLength: 200
       required:
       - token
+    TractionItemRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          $ref: '#/components/schemas/KindEnum'
+        value: {}
+        as_of_date:
+          type: string
+          format: date
+        visibility:
+          allOf:
+          - $ref: '#/components/schemas/VisibilityEnum'
+          default: private
+      required:
+      - kind
+      - value
+    TractionOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        value: {}
+        as_of_date:
+          type: string
+          format: date
+        visibility:
+          type: string
+      required:
+      - as_of_date
+      - id
+      - kind
+      - value
+      - visibility
+    TractionReplaceRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TractionItemRequest'
+      required:
+      - metrics
+    VisibilityEnum:
+      enum:
+      - private
+      - members
+      - public
+      type: string
+      description: |-
+        * `private` - private
+        * `members` - members
+        * `public` - public
   securitySchemes:
     bearerAuth:
       type: http
