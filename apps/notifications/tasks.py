@@ -36,6 +36,24 @@ def send_already_registered_email(event_id: str) -> None:
         emails.send_already_registered(contact.email)
 
 
+@shared_task(name="notifications.send_approved_email")
+def send_approved_email(event_id: str) -> None:
+    user_id = _user_id(event_id)
+    contact = accounts.get_contact(user_id) if user_id else None
+    if contact is not None:
+        emails.send_approved(contact.email)
+
+
+@shared_task(name="notifications.send_rejected_email")
+def send_rejected_email(event_id: str) -> None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is None:
+        return
+    contact = accounts.get_contact(UUID(event.payload["user_id"]))
+    if contact is not None:
+        emails.send_rejected(contact.email, event.payload["reason"])
+
+
 @shared_task(name="notifications.send_password_reset_email")
 def send_password_reset_email(event_id: str) -> None:
     user_id = _user_id(event_id)

@@ -32,6 +32,25 @@ def send_already_registered(to: str) -> None:
     )
 
 
+def send_approved(to: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/login"
+    _send(
+        to,
+        "Your WO Community account is approved",
+        f"Welcome aboard. Your account has been approved and you can now log in:\n{link}",
+    )
+
+
+def send_rejected(to: str, reason: str) -> None:
+    _send(
+        to,
+        "Your WO Community registration",
+        "We could not approve your registration at this time.\n\n"
+        f"Reason: {reason}\n\n"
+        "If you think this is a mistake, reply to this email and our team will look again.",
+    )
+
+
 def send_password_reset(to: str, token: str) -> None:
     link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={token}"
     _send(
