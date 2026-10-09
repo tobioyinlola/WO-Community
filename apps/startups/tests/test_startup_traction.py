@@ -1,7 +1,7 @@
-import datetime
 import json
 
 import pytest
+from django.utils import timezone
 
 from apps.core.visibility import Audience
 from apps.startups import selectors
@@ -43,7 +43,7 @@ def test_the_traction_list_is_saved_and_returned(owner_client, startup_id):
 
 def test_an_entry_without_a_date_is_dated_today(owner_client, startup_id):
     put(owner_client, startup_id, [{"kind": "users", "value": 5}])
-    assert TractionMetric.objects.get().as_of_date == datetime.date.today()
+    assert TractionMetric.objects.get().as_of_date == timezone.now().date()
 
 
 def test_putting_replaces_the_whole_list(owner_client, startup_id):

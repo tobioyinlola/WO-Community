@@ -36,6 +36,7 @@ def build_startup(src: PublicStartupSource, founders: list[PublicProfileSource])
         "slug": src.slug,
         "name": view["name"],
         "pitch": view["pitch"],
+        "logo": view.get("logo"),
         "sector": view["sector"],
         "stage": view["stage"],
         "country": view["country"],
@@ -112,7 +113,7 @@ def build_founder(src: PublicProfileSource, startups: list[PublicStartupSource])
         "full_name": view["full_name"],
         "badges": view.get("badges", []),
     }
-    for optional in ("headline", "country", "city"):
+    for optional in ("headline", "country", "city", "photo"):
         if optional in view:
             card[optional] = view[optional]
     if "skills" in view:

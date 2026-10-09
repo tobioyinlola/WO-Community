@@ -69,6 +69,7 @@ def test_a_card_has_the_directory_fields_and_nothing_else(api_client, listed):
         "slug",
         "name",
         "pitch",
+        "logo",
         "sector",
         "stage",
         "country",

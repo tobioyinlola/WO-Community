@@ -50,7 +50,7 @@ def _purge(paths: list[str]) -> None:
         logger.warning("cdn_purge_failed", paths=paths)
 
 
-# --- startups ---------------------------------------------------------------------------------
+# --- startups ---
 
 
 def refresh_startup(startup_id: UUID) -> None:
@@ -82,7 +82,7 @@ def refresh_startup(startup_id: UUID) -> None:
     _purge(purge)
 
 
-# --- founders ---------------------------------------------------------------------------------
+# --- founders ---
 
 
 def refresh_founder(user_id: UUID) -> None:
@@ -109,7 +109,7 @@ def refresh_founder(user_id: UUID) -> None:
     _purge(purge)
 
 
-# --- reactions to changes elsewhere -------------------------------------------------------------
+# --- reactions to changes elsewhere ---
 
 
 def refresh_member(user_id: UUID) -> None:

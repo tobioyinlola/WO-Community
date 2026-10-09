@@ -8,7 +8,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.core.serializers import StrictSerializer
+from apps.core.serializers import ImageSerializer, StrictSerializer
 
 MAX_SKILL_FILTERS = 5
 
@@ -52,7 +52,7 @@ def clean_query(serializer_class: type[StrictSerializer], params: Any) -> dict[s
     return dict(serializer.validated_data)
 
 
-# --- output ---------------------------------------------------------------------------------
+# --- output ---
 
 
 class NamedSerializer(serializers.Serializer):
@@ -76,6 +76,7 @@ class StartupCardSerializer(serializers.Serializer):
     slug = serializers.CharField()
     name = serializers.CharField()
     pitch = serializers.CharField()
+    logo = ImageSerializer(allow_null=True)
     sector = NamedSerializer()
     stage = NamedSerializer()
     country = serializers.CharField()
@@ -103,6 +104,7 @@ class FounderCardSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     badges = serializers.ListField(child=serializers.CharField())
     headline = serializers.CharField(required=False)
+    photo = ImageSerializer(required=False, allow_null=True)
     country = serializers.CharField(required=False)
     city = serializers.CharField(required=False)
     skills = DirectorySkillSerializer(many=True, required=False)

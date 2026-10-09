@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from apps.core import etag, policies
 from apps.profiles import selectors, services
 from apps.profiles.serializers import (
+    PhotoSetSerializer,
     ProfileSerializer,
     ProfileUpdateSerializer,
     VisibilityUpdateSerializer,
@@ -56,6 +57,41 @@ class MyProfileView(APIView):
             data=dict(serializer.validated_data),
             if_match=request.headers.get("If-Match"),
         )
+        profile, view = selectors.own_profile(_uid(request))
+        return etag.add_etag(Response(ProfileSerializer(view).data), profile)
+
+
+class MyPhotoView(APIView):
+    policy = policies.authenticated
+
+    @extend_schema(
+        summary="Use a finished upload as your profile photo",
+        description="Upload the image with `POST /uploads` (purpose `profile_photo`) and wait for "
+        "`ready`. The previous photo's files are deleted. Send the ETag in If-Match.",
+        parameters=[IF_MATCH],
+        request=PhotoSetSerializer,
+        responses={200: ProfileSerializer, **ERRORS},
+        tags=["profile"],
+    )
+    def put(self, request: Request) -> Response:
+        serializer = PhotoSetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.set_photo(
+            user_id=_uid(request),
+            upload_id=serializer.validated_data["upload_id"],
+            if_match=request.headers.get("If-Match"),
+        )
+        profile, view = selectors.own_profile(_uid(request))
+        return etag.add_etag(Response(ProfileSerializer(view).data), profile)
+
+    @extend_schema(
+        summary="Remove your profile photo",
+        parameters=[IF_MATCH],
+        responses={200: ProfileSerializer, **ERRORS},
+        tags=["profile"],
+    )
+    def delete(self, request: Request) -> Response:
+        services.clear_photo(user_id=_uid(request), if_match=request.headers.get("If-Match"))
         profile, view = selectors.own_profile(_uid(request))
         return etag.add_etag(Response(ProfileSerializer(view).data), profile)
 

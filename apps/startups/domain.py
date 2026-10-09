@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 GROUP_FIELDS: dict[str, tuple[str, ...]] = {
-    "basics": ("name", "pitch", "sector", "stage", "country", "city", "year_founded"),
+    "basics": ("name", "pitch", "logo", "sector", "stage", "country", "city", "year_founded"),
     "description": ("description",),
     "website": ("website_url",),
     "team": ("team",),
@@ -38,8 +38,9 @@ COMPLETENESS: tuple[tuple[str, int], ...] = (
     ("description", 20),
     ("year_founded", 10),
     ("website", 10),
-    ("traction", 25),
-    ("team", 20),
+    ("traction", 20),
+    ("team", 15),
+    ("logo", 10),
 )
 
 
@@ -50,6 +51,8 @@ def is_filled(field: str, values: Mapping[str, Any]) -> bool:
         return bool(values.get("description"))
     if field == "year_founded":
         return bool(values.get("year_founded"))
+    if field == "logo":
+        return bool(values.get("logo"))
     if field == "website":
         return bool(values.get("website_url"))
     if field == "traction":

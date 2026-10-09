@@ -18,6 +18,7 @@ from apps.core.visibility import LEVELS
 from apps.reference import selectors as reference
 from apps.startups import domain, events
 from apps.startups.models import Startup, StartupMember, TractionMetric
+from apps.uploads import services as uploads
 
 BASIC_FIELDS = ("name", "pitch", "country", "city", "year_founded")
 TEXT_FIELDS = ("description", "website_url")
@@ -38,6 +39,7 @@ def values_of(startup: Startup) -> dict[str, Any]:
         "year_founded": startup.year_founded,
         "description": startup.description,
         "website_url": startup.website_url,
+        "logo": startup.logo_key,
         "traction_count": startup.traction.count() if startup.pk else 0,
         "team_count": startup.members.count() if startup.pk else 0,
     }
@@ -97,7 +99,7 @@ def create_from_signup(user_id: UUID, details: dict[str, Any]) -> Startup | None
     return create_startup(owner_id=user_id, data=details)
 
 
-# --- who may do what ------------------------------------------------------------------
+# --- who may do what ---
 
 
 def _lock(startup_id: UUID) -> Startup:
@@ -126,7 +128,7 @@ def _require_owner(user_id: UUID, startup: Startup) -> None:
     raise exceptions.NotFound()
 
 
-# --- profile ----------------------------------------------------------------------------
+# --- profile ---
 
 
 def update_startup(
@@ -182,7 +184,7 @@ def set_visibility(
     return startup
 
 
-# --- team ---------------------------------------------------------------------------------
+# --- team ---
 
 
 def add_team_member(
@@ -241,7 +243,7 @@ def link_invited(user_id: UUID, email: str) -> int:
     ).update(user_id=user_id)
 
 
-# --- traction -------------------------------------------------------------------------------
+# --- traction ---
 
 
 def replace_traction(
@@ -286,5 +288,35 @@ def set_featured(*, actor: Any, startup_id: UUID, featured: bool, ip: str = "") 
             target_id=startup.pk,
             ip=ip,
         )
+        _publish(startup)
+    return startup
+
+
+def set_logo(*, user_id: UUID, startup_id: UUID, upload_id: UUID, if_match: str | None) -> Startup:
+    """Use a finished upload as the startup's logo, replacing and deleting the old one."""
+    with transaction.atomic():
+        startup = _lock(startup_id)
+        _require_editor(user_id, startup)
+        etag.assert_matches(if_match, startup)
+        upload = uploads.claim(upload_id=upload_id, owner_id=user_id, purpose="startup_logo")
+        previous = startup.logo_key
+        startup.logo_key = upload.base_key
+        refresh_completeness(startup)
+        startup.save()
+        uploads.release(previous)
+        _publish(startup)
+    return startup
+
+
+def clear_logo(*, user_id: UUID, startup_id: UUID, if_match: str | None) -> Startup:
+    with transaction.atomic():
+        startup = _lock(startup_id)
+        _require_editor(user_id, startup)
+        etag.assert_matches(if_match, startup)
+        previous = startup.logo_key
+        startup.logo_key = ""
+        refresh_completeness(startup)
+        startup.save()
+        uploads.release(previous)
         _publish(startup)
     return startup

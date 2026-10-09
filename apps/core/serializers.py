@@ -20,3 +20,10 @@ class StrictSerializer(serializers.Serializer):
 
 class StrictModelSerializer(serializers.ModelSerializer, StrictSerializer):
     pass
+
+
+class ImageSerializer(serializers.Serializer):
+    """Public addresses of the two sizes of a processed image."""
+
+    large = serializers.CharField()
+    thumb = serializers.CharField()

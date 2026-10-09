@@ -1,9 +1,10 @@
 import datetime
 from typing import Any
 
+from django.utils import timezone
 from rest_framework import serializers
 
-from apps.core.serializers import StrictSerializer
+from apps.core.serializers import ImageSerializer, StrictSerializer
 from apps.core.text import clean_url, plain
 from apps.core.visibility import LEVELS
 from apps.reference import selectors as reference
@@ -39,7 +40,7 @@ class _StartupFields(StrictSerializer):
         return code
 
     def validate_year_founded(self, value: int | None) -> int | None:
-        if value is not None and value > datetime.date.today().year:
+        if value is not None and value > timezone.now().year:
             raise serializers.ValidationError("The year cannot be in the future.")
         return value
 
@@ -111,7 +112,7 @@ class TractionItemSerializer(StrictSerializer):
     visibility = serializers.ChoiceField(choices=LEVELS, required=False, default="private")
 
     def validate_as_of_date(self, value: datetime.date) -> datetime.date:
-        if value > datetime.date.today():
+        if value > timezone.now().date():
             raise serializers.ValidationError("The date cannot be in the future.")
         return value
 
@@ -149,7 +150,11 @@ class TractionReplaceSerializer(StrictSerializer):
         return value
 
 
-# --- output ---------------------------------------------------------------------------------
+# --- output ---
+
+
+class LogoSetSerializer(StrictSerializer):
+    upload_id = serializers.UUIDField()
 
 
 class NamedSlugSerializer(serializers.Serializer):
@@ -187,6 +192,7 @@ class StartupSerializer(serializers.Serializer):
     traction = TractionOutSerializer(many=True)
     name = serializers.CharField(required=False)
     pitch = serializers.CharField(required=False)
+    logo = ImageSerializer(required=False, allow_null=True)
     sector = NamedSlugSerializer(required=False)
     stage = NamedSlugSerializer(required=False)
     country = serializers.CharField(required=False)

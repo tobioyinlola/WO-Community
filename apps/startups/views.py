@@ -11,6 +11,7 @@ from apps.core import etag, policies
 from apps.core.visibility import Audience
 from apps.startups import selectors, services
 from apps.startups.serializers import (
+    LogoSetSerializer,
     StartupCreateSerializer,
     StartupSerializer,
     StartupUpdateSerializer,
@@ -111,6 +112,44 @@ class StartupDetailView(APIView):
             user_id=_uid(request),
             startup_id=startup_id,
             data=dict(serializer.validated_data),
+            if_match=request.headers.get("If-Match"),
+        )
+        return _owner_response(startup_id, _uid(request))
+
+
+class StartupLogoView(APIView):
+    policy = policies.authenticated
+
+    @extend_schema(
+        summary="Use a finished upload as the startup's logo",
+        description="Upload the image with `POST /uploads` (purpose `startup_logo`) and wait for "
+        "`ready`. Owner or a founder. The previous logo's files are deleted.",
+        parameters=[IF_MATCH],
+        request=LogoSetSerializer,
+        responses={200: StartupSerializer, **ERRORS},
+        tags=["startups"],
+    )
+    def put(self, request: Request, startup_id: UUID) -> Response:
+        serializer = LogoSetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.set_logo(
+            user_id=_uid(request),
+            startup_id=startup_id,
+            upload_id=serializer.validated_data["upload_id"],
+            if_match=request.headers.get("If-Match"),
+        )
+        return _owner_response(startup_id, _uid(request))
+
+    @extend_schema(
+        summary="Remove the startup's logo",
+        parameters=[IF_MATCH],
+        responses={200: StartupSerializer, **ERRORS},
+        tags=["startups"],
+    )
+    def delete(self, request: Request, startup_id: UUID) -> Response:
+        services.clear_logo(
+            user_id=_uid(request),
+            startup_id=startup_id,
             if_match=request.headers.get("If-Match"),
         )
         return _owner_response(startup_id, _uid(request))

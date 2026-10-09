@@ -293,7 +293,7 @@ def test_completeness_names_the_next_gap(owner_client):
     assert patched["completeness"] == {"score": 35, "next_missing_field": "year_founded"}
 
 
-def test_a_complete_startup_scores_100(owner_client, startup_id, make_user):
+def test_a_startup_without_a_logo_scores_90(owner_client, startup_id, make_user):
     owner_client.post(f"{detail(startup_id)}/team", {"email": "mate@example.com"})
     owner_client.put(
         f"{detail(startup_id)}/traction",
@@ -302,5 +302,5 @@ def test_a_complete_startup_scores_100(owner_client, startup_id, make_user):
         format="json",
     )
     body = owner_client.get(detail(startup_id)).json()
-    assert body["completeness"] == {"score": 100, "next_missing_field": None}
-    assert Startup.objects.get().completeness_score == 100
+    assert body["completeness"] == {"score": 90, "next_missing_field": "logo"}  # no logo yet
+    assert Startup.objects.get().completeness_score == 90

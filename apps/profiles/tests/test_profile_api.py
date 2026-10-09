@@ -65,7 +65,7 @@ def test_a_full_update_is_saved_and_returned(my_client):
     assert body["skills"] == [{"slug": "payments", "name": "Payments"}]
     assert body["custom_skills"] == ["ZZCUSTOMSKILL"]
     assert body["open_to"] == ["hiring"]
-    assert body["completeness"] == {"score": 100, "next_missing_field": None}
+    assert body["completeness"] == {"score": 85, "next_missing_field": "photo"}  # no photo yet
     assert response["ETag"] != ""
 
 

@@ -14,6 +14,7 @@ from apps.core.visibility import LEVELS
 from apps.profiles import domain, events
 from apps.profiles.models import FounderProfile
 from apps.reference import selectors as reference
+from apps.uploads import services as uploads
 
 SIMPLE_FIELDS = (
     "full_name",
@@ -49,6 +50,7 @@ def values_of(profile: FounderProfile) -> dict[str, Any]:
     values["skills"] = profile.skills.exists() if profile.pk else False
     values["custom_skills"] = profile.custom_skills
     values["open_to"] = profile.open_to
+    values["photo"] = profile.photo_key
     return values
 
 
@@ -109,5 +111,35 @@ def update_visibility(*, user_id: UUID, levels: dict[str, str]) -> FounderProfil
         profile = FounderProfile.objects.select_for_update().get(user_id=user_id)
         profile.visibility = {**profile.visibility, **levels}
         profile.save()
+        domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+    return profile
+
+
+def set_photo(*, user_id: UUID, upload_id: UUID, if_match: str | None) -> FounderProfile:
+    """Use a finished upload as the profile photo, replacing and deleting the old one."""
+    get_or_create_profile(user_id)
+    with transaction.atomic():
+        profile = FounderProfile.objects.select_for_update().get(user_id=user_id)
+        etag.assert_matches(if_match, profile)
+        upload = uploads.claim(upload_id=upload_id, owner_id=user_id, purpose="profile_photo")
+        previous = profile.photo_key
+        profile.photo_key = upload.base_key
+        _refresh_completeness(profile)
+        profile.save()
+        uploads.release(previous)
+        domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+    return profile
+
+
+def clear_photo(*, user_id: UUID, if_match: str | None) -> FounderProfile:
+    get_or_create_profile(user_id)
+    with transaction.atomic():
+        profile = FounderProfile.objects.select_for_update().get(user_id=user_id)
+        etag.assert_matches(if_match, profile)
+        previous = profile.photo_key
+        profile.photo_key = ""
+        _refresh_completeness(profile)
+        profile.save()
+        uploads.release(previous)
         domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
     return profile

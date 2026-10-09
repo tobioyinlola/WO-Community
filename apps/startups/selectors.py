@@ -12,6 +12,7 @@ from apps.core.visibility import Audience, audience_for, can_see, effective_leve
 from apps.startups import domain
 from apps.startups.models import Startup, StartupMember, TractionMetric
 from apps.startups.services import values_of
+from apps.uploads import services as uploads
 
 
 def _queryset() -> QuerySet[Startup]:
@@ -72,6 +73,7 @@ def _groups(startup: Startup, audience: Audience) -> dict[str, dict[str, Any]]:
         "basics": {
             "name": startup.name,
             "pitch": startup.pitch,
+            "logo": uploads.image_urls(startup.logo_key),
             "sector": {"slug": startup.sector.slug, "name": startup.sector.name},
             "stage": {"slug": startup.stage.slug, "name": startup.stage.name},
             "country": startup.country,

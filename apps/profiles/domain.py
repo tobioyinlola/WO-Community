@@ -10,7 +10,7 @@ MAX_CUSTOM_SKILL_LENGTH = 40
 
 # Field groups: each has one visibility level that the member controls.
 GROUP_FIELDS: dict[str, tuple[str, ...]] = {
-    "basics": ("full_name", "headline"),
+    "basics": ("full_name", "headline", "photo"),
     "bio": ("bio",),
     "location": ("country", "city"),
     "skills": ("skills", "custom_skills"),
@@ -34,9 +34,10 @@ COMPLETENESS: tuple[tuple[str, int], ...] = (
     ("headline", 15),
     ("bio", 20),
     ("location", 10),
-    ("skills", 20),
-    ("links", 10),
-    ("open_to", 10),
+    ("skills", 15),
+    ("links", 5),
+    ("open_to", 5),
+    ("photo", 15),
 )
 
 

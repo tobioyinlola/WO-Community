@@ -10,6 +10,7 @@ from apps.core.visibility import Audience, audience_for, effective_levels, proje
 from apps.profiles import domain
 from apps.profiles.models import FounderProfile
 from apps.profiles.services import get_or_create_profile, values_of
+from apps.uploads import services as uploads
 
 
 def levels_of(profile: FounderProfile) -> dict[str, str]:
@@ -19,7 +20,11 @@ def levels_of(profile: FounderProfile) -> dict[str, str]:
 def _groups(profile: FounderProfile) -> dict[str, dict[str, Any]]:
     skills = [{"slug": s.slug, "name": s.name} for s in profile.skills.all()]
     return {
-        "basics": {"full_name": profile.full_name, "headline": profile.headline},
+        "basics": {
+            "full_name": profile.full_name,
+            "headline": profile.headline,
+            "photo": uploads.image_urls(profile.photo_key),
+        },
         "bio": {"bio": profile.bio},
         "location": {"country": profile.country, "city": profile.city},
         "skills": {"skills": skills, "custom_skills": profile.custom_skills},

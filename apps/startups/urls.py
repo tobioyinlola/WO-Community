@@ -11,6 +11,7 @@ urlpatterns = [
         views.StartupVisibilityView.as_view(),
         name="startup-visibility",
     ),
+    path("startups/<uuid:startup_id>/logo", views.StartupLogoView.as_view(), name="startup-logo"),
     path(
         "startups/<uuid:startup_id>/traction",
         views.StartupTractionView.as_view(),

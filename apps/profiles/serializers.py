@@ -2,7 +2,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from apps.core.serializers import StrictSerializer
+from apps.core.serializers import ImageSerializer, StrictSerializer
 from apps.core.text import clean_url, plain
 from apps.core.visibility import LEVELS
 from apps.profiles import domain
@@ -97,6 +97,10 @@ class VisibilityUpdateSerializer(StrictSerializer):
         return {str(g): str(lvl) for g, lvl in data.items()}
 
 
+class PhotoSetSerializer(StrictSerializer):
+    upload_id = serializers.UUIDField()
+
+
 class SkillSerializer(serializers.Serializer):
     slug = serializers.CharField()
     name = serializers.CharField()
@@ -115,6 +119,7 @@ class ProfileSerializer(serializers.Serializer):
     badges = serializers.ListField(child=serializers.CharField())
     full_name = serializers.CharField(required=False)
     headline = serializers.CharField(required=False)
+    photo = ImageSerializer(required=False, allow_null=True)
     bio = serializers.CharField(required=False)
     country = serializers.CharField(required=False)
     city = serializers.CharField(required=False)
