@@ -1,5 +1,7 @@
 """Read side of profiles. All visibility decisions happen here."""
 
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -73,3 +75,30 @@ def profile_for_viewer(viewer: Any, user_id: UUID) -> dict[str, Any] | None:
     audience = audience_for(viewer, frozenset({profile.user_id}))
     badges = accounts.badges_for([user_id]).get(user_id, [])
     return project_profile(profile, audience, badges)
+
+
+@dataclass(frozen=True)
+class PublicProfileSource:
+    """A profile as the public may see it, for the directory's read model."""
+
+    user_id: UUID
+    slug: str
+    view: dict[str, Any]
+    created_at: datetime
+
+
+def public_source(user_id: UUID) -> PublicProfileSource | None:
+    """None unless the member is active and has made their basics public."""
+    profile = FounderProfile.objects.filter(user_id=user_id).prefetch_related("skills").first()
+    if profile is None or not accounts.is_active(user_id):
+        return None
+    badges = accounts.badges_for([user_id]).get(user_id, [])
+    view = project_profile(profile, Audience.PUBLIC, badges)
+    if view is None:
+        return None
+    return PublicProfileSource(user_id, profile.slug, view, profile.created_at)
+
+
+def profile_user_ids() -> list[UUID]:
+    """Every member who has a profile; the directory decides who qualifies."""
+    return list(FounderProfile.objects.values_list("user_id", flat=True))

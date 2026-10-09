@@ -1,10 +1,13 @@
 """Read side of startups. All visibility decisions happen here."""
 
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
 
+from apps.accounts import services as accounts
 from apps.core.visibility import Audience, audience_for, can_see, effective_levels, project
 from apps.startups import domain
 from apps.startups.models import Startup, StartupMember, TractionMetric
@@ -134,3 +137,50 @@ def my_startups(user_id: UUID) -> list[tuple[Startup, dict[str, Any]]]:
 
 def membership(user_id: UUID, startup_id: UUID) -> StartupMember | None:
     return StartupMember.objects.filter(startup_id=startup_id, user_id=user_id).first()
+
+
+@dataclass(frozen=True)
+class PublicStartupSource:
+    """A startup as the public may see it, for the directory's read model."""
+
+    startup_id: UUID
+    owner_id: UUID
+    slug: str
+    view: dict[str, Any]
+    created_at: datetime
+    featured_at: datetime | None
+    founder_ids: list[UUID]
+
+
+def public_source(startup_id: UUID) -> PublicStartupSource | None:
+    """None unless the startup is listed, its owner is active and its basics are public."""
+    startup = get_startup(startup_id)
+    if startup is None or not startup.directory_opt_in:
+        return None
+    if not accounts.is_active(startup.owner_id):
+        return None
+    view = project_startup(startup, Audience.PUBLIC)
+    if view is None:
+        return None
+    founder_ids = [m["user_id"] for m in view.get("team", []) if m["is_founder"]]
+    return PublicStartupSource(
+        startup.pk,
+        startup.owner_id,
+        startup.slug,
+        view,
+        startup.created_at,
+        startup.featured_at,
+        founder_ids,
+    )
+
+
+def startup_ids_of_member(user_id: UUID) -> list[UUID]:
+    """Every startup the user owns or sits on the team of, listed or not."""
+    ids = set(Startup.objects.filter(owner_id=user_id).values_list("pk", flat=True))
+    ids |= set(StartupMember.objects.filter(user_id=user_id).values_list("startup_id", flat=True))
+    return sorted(ids)
+
+
+def listed_startup_ids() -> list[UUID]:
+    """Startups that asked to appear in the public directory."""
+    return list(Startup.objects.filter(directory_opt_in=True).values_list("pk", flat=True))

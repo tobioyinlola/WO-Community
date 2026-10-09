@@ -10,6 +10,7 @@ from django.utils.text import slugify
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.audit import services as audit
 from apps.core import etag
 from apps.core import events as domain_events
 from apps.core.errors import ConflictError
@@ -266,5 +267,24 @@ def replace_traction(
         )
         refresh_completeness(startup)
         startup.save()
+        _publish(startup)
+    return startup
+
+
+def set_featured(*, actor: Any, startup_id: UUID, featured: bool, ip: str = "") -> Startup:
+    """Pin or unpin a listed startup. Only listed startups can be featured."""
+    with transaction.atomic():
+        startup = _lock(startup_id)
+        if featured and not startup.directory_opt_in:
+            raise ConflictError("Only listed startups can be featured.", code="not_listed")
+        startup.featured_at = timezone.now() if featured else None
+        startup.save(update_fields=["featured_at", "updated_at"])
+        audit.record(
+            actor=actor,
+            action="startup.featured" if featured else "startup.unfeatured",
+            target_type="startup",
+            target_id=startup.pk,
+            ip=ip,
+        )
         _publish(startup)
     return startup

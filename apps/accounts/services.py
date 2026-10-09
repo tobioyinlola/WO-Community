@@ -495,3 +495,14 @@ def find_active_member_id(email: str) -> UUID | None:
         email__iexact=normalise_email(email), status=UserStatus.ACTIVE
     ).first()
     return user.pk if user else None
+
+
+def is_active(user_id: UUID) -> bool:
+    return User.objects.filter(pk=user_id, status=UserStatus.ACTIVE).exists()
+
+
+def active_user_ids() -> Any:
+    """Subquery of active member ids, for filtering in other modules' queries."""
+    from apps.accounts import selectors
+
+    return selectors.active_user_ids()
