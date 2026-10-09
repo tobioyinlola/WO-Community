@@ -4,6 +4,144 @@ info:
   version: 1.0.0
   description: REST API for the WO Community platform.
 paths:
+  /api/v1/auth/login:
+    post:
+      operationId: auth_login_create
+      description: Returns a short lived access token and sets the refresh token cookie.
+      summary: Log in
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '401':
+          description: Invalid credentials
+        '403':
+          description: Email not verified
+        '429':
+          description: Too many attempts
+  /api/v1/auth/logout:
+    post:
+      operationId: auth_logout_create
+      description: Unauthenticated endpoint with its own rate limit scope.
+      summary: Log out of this session
+      tags:
+      - auth
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/password/forgot:
+    post:
+      operationId: auth_password_forgot_create
+      description: Always answers 202 so it cannot be used to find registered addresses.
+      summary: Ask for a password reset email
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/auth/password/reset:
+    post:
+      operationId: auth_password_reset_create
+      description: Revokes every session of the account.
+      summary: Choose a new password with a reset token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+        '400':
+          description: Invalid input
+  /api/v1/auth/refresh:
+    post:
+      operationId: auth_refresh_create
+      description: Reads the refresh cookie and requires an X-Requested-With header.
+        Reusing an old refresh token revokes the whole session.
+      summary: Rotate the refresh token and get a new access token
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '401':
+          description: Invalid
+  /api/v1/auth/register:
+    post:
+      operationId: auth_register_create
+      description: Always answers 202, whether or not the address is already registered.
+        The account stays pending until an admin approves it.
+      summary: Register an account
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/v1/auth/verify-email:
+    post:
+      operationId: auth_verify_email_create
+      description: Unauthenticated endpoint with its own rate limit scope.
+      summary: Confirm an email address
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+        '400':
+          description: Invalid token
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -19,6 +157,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/v1/me/sessions:
+    get:
+      operationId: me_sessions_list
+      summary: List your active sessions
+      tags:
+      - me
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Session'
+          description: ''
+  /api/v1/me/sessions/{session_id}:
+    delete:
+      operationId: me_sessions_destroy
+      summary: Revoke one of your sessions
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - me
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          description: Not found
   /api/v1/ping:
     get:
       operationId: ping_retrieve
@@ -66,6 +241,72 @@ paths:
           description: ''
 components:
   schemas:
+    AccessToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/Account'
+      required:
+      - access_token
+      - expires_in
+      - token_type
+      - user
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+      required:
+      - email
+      - id
+      - status
+    ForgotPasswordRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
+    LoginRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - email
+      - password
     Me:
       type: object
       properties:
@@ -86,6 +327,13 @@ components:
       - id
       - roles
       - status
+    Message:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     Ping:
       type: object
       properties:
@@ -96,6 +344,86 @@ components:
       required:
       - release
       - status
+    RegisterRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        accepted_terms:
+          type: boolean
+        accepted_privacy:
+          type: boolean
+        accepted_conduct:
+          type: boolean
+        marketing_consent:
+          type: boolean
+          default: false
+      required:
+      - accepted_conduct
+      - accepted_privacy
+      - accepted_terms
+      - email
+      - password
+    ResetPasswordRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - password
+      - token
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user_agent:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_used_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - expires_at
+      - id
+      - last_used_at
+      - user_agent
     Status:
       type: object
       properties:
@@ -103,6 +431,20 @@ components:
           type: string
       required:
       - status
+    TokenRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - token
   securitySchemes:
     bearerAuth:
       type: http
