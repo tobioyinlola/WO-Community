@@ -89,6 +89,7 @@ def test_partition_creation_is_repeatable():
 
 
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.usefixtures("truncate_audit")
 def test_concurrent_writers_still_produce_a_valid_chain(make_user):
     actor = make_user()
     errors: list[Exception] = []

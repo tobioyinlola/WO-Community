@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.audit",
     "apps.accounts",
+    "apps.notifications",
+    "apps.adminconsole",
 ]
 
 MIDDLEWARE = [
@@ -68,7 +70,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "apps.integrations.passwords.validator.NotBreachedValidator"},
 ]
+PASSWORD_BREACH_CHECKER = env.str(
+    "PASSWORD_BREACH_CHECKER", default="apps.integrations.passwords.hibp.HibpBreachChecker"
+)
 
 LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
@@ -112,7 +118,18 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "120/min", "user": "300/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "120/min",
+        "user": "300/min",
+        "auth_register": "5/hour",
+        "auth_login": "30/min",
+        "auth_forgot": "5/hour",
+        "auth_token": "20/hour",
+        "auth_refresh": "60/min",
+        "auth_mfa": "20/min",
+        "admin_bulk": "10/hour",
+    },
+    "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
@@ -125,12 +142,44 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
+# Comma separated Fernet keys; the first encrypts, all decrypt (see apps/core/crypto.py).
+FIELD_ENCRYPTION_KEYS = env.list("FIELD_ENCRYPTION_KEYS", default=[])
+
 # --- Authentication tokens -------------------------------------------------
 JWT_ISSUER = env.str("JWT_ISSUER", default="wo-community")
 JWT_ALGORITHM = "EdDSA"
 JWT_PRIVATE_KEY = env.str("JWT_PRIVATE_KEY", default="").replace("\\n", "\n")
 JWT_PUBLIC_KEY = env.str("JWT_PUBLIC_KEY", default="").replace("\\n", "\n")
 JWT_ACCESS_LIFETIME = timedelta(minutes=10)
+
+# --- Accounts ----------------------------------------------------------------
+FRONTEND_BASE_URL = env.str("FRONTEND_BASE_URL", default="http://localhost:5173")
+EMAIL_VERIFY_TTL = timedelta(hours=24)
+PASSWORD_RESET_TTL = timedelta(hours=1)
+REFRESH_SLIDING_LIFETIME = timedelta(days=30)
+REFRESH_ABSOLUTE_LIFETIME = timedelta(days=90)
+REFRESH_COOKIE_NAME = "wo_refresh"
+REFRESH_COOKIE_PATH = "/api/v1/auth/"
+REFRESH_COOKIE_SECURE = env.bool("REFRESH_COOKIE_SECURE", default=True)
+LOGIN_MAX_FAILURES_PER_ACCOUNT = 5
+LOGIN_MAX_FAILURES_PER_IP = 30
+LOGIN_FAILURE_WINDOW_SECONDS = 600
+PASSWORD_RESET_MAX_PER_EMAIL_PER_HOUR = 3
+# Destructive admin actions need an MFA check no older than this.
+STEP_UP_MAX_AGE_SECONDS = 600
+INVITATION_TTL = timedelta(days=7)
+INVITATION_MAX_MESSAGE_LENGTH = 500
+INVITATION_BULK_MAX_ROWS = 500
+INVITATION_BULK_MAX_BYTES = 256_000
+# An admin session must have passed MFA within this window, however often it refreshes.
+MFA_SESSION_MAX_AGE_SECONDS = 43200
+MFA_ISSUER = "WO Community"
+MFA_CHALLENGE_TTL_SECONDS = 300
+MFA_MAX_FAILURES = 5
+MFA_FAILURE_WINDOW_SECONDS = 600
+MFA_RECOVERY_CODE_COUNT = 10
+# Versions of the documents a member accepts at registration.
+CONSENT_DOCUMENT_VERSIONS = {"terms": "1", "privacy": "1", "conduct": "1", "marketing": "1"}
 
 # --- Celery ------------------------------------------------------------------
 CELERY_BROKER_URL = env.str("CELERY_BROKER_URL", default="redis://localhost:6380/0")

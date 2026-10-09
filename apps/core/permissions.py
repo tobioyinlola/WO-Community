@@ -18,7 +18,7 @@ class PolicyPermission(BasePermission):
         policy = getattr(view, "policy", None)
         if not isinstance(policy, Policy):
             return False
-        return policy(request.user)
+        return policy(request.user, request.auth if isinstance(request.auth, dict) else None)
 
     def has_object_permission(self, request: Request, view: Any, obj: Any) -> bool:
         object_policy = getattr(view, "object_policy", None)

@@ -23,6 +23,7 @@ _EDITOR = frozenset(
     {"admin.access", "editorial.manage", "courses.manage", "jobs.moderate"},
 )
 _COMMUNITY_ADMIN = _EDITOR | {
+    "members.view",
     "members.approve",
     "members.suspend",
     "members.remove",

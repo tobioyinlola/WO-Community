@@ -7,6 +7,7 @@ root_packages =
 name = Module dependency levels
 type = layers
 layers =
+    apps.adminconsole
     apps.notifications
     apps.accounts | apps.integrations
     apps.audit | apps.analytics

@@ -2,7 +2,7 @@ from rest_framework import authentication, exceptions
 from rest_framework.request import Request
 
 from apps.accounts import tokens
-from apps.accounts.models import User, UserStatus
+from apps.accounts.models import BLOCKED_STATUSES, User
 
 
 class JWTAuthentication(authentication.BaseAuthentication):
@@ -25,7 +25,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
             user = User.objects.get(pk=claims["sub"])
         except (User.DoesNotExist, ValueError) as exc:
             raise exceptions.AuthenticationFailed("Invalid or expired token.") from exc
-        if user.status in (UserStatus.SUSPENDED, UserStatus.REMOVED):
+        if user.status in BLOCKED_STATUSES:
             raise exceptions.AuthenticationFailed("Account is not available.")
         if claims["tv"] != user.token_version:
             raise exceptions.AuthenticationFailed("Invalid or expired token.")
