@@ -17,7 +17,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
-from apps.accounts import events, sessions, tokens
+from apps.accounts import events, mfa, sessions, tokens
 from apps.accounts.models import (
     BLOCKED_STATUSES,
     ConsentDocument,
@@ -70,6 +70,14 @@ class LoginResult:
     user: User
     access_token: str
     refresh_token: str
+
+
+@dataclass(frozen=True)
+class MfaChallenge:
+    """The password was right but a second factor is still needed."""
+
+    user: User
+    mfa_token: str
 
 
 def _token_digest(raw: str) -> str:
@@ -225,7 +233,7 @@ def _failure_keys(address: str, ip: str) -> tuple[str, str]:
     return f"loginfail:acct:{_token_digest(address)}", f"loginfail:ip:{_token_digest(ip)}"
 
 
-def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult:
+def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult | MfaChallenge:
     address = normalise_email(email)
     account_key, ip_key = _failure_keys(address, ip)
     window = settings.LOGIN_FAILURE_WINDOW_SECONDS
@@ -258,6 +266,8 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         raise EmailNotVerified()
 
     ratelimit.reset(account_key)
+    if mfa.has_confirmed_device(user):
+        return MfaChallenge(user, mfa.issue_challenge(user))
     user.mark_login()
     refresh_token, family = sessions.start(user, user_agent=user_agent, ip=ip)
     audit.record(
@@ -268,12 +278,74 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         ip=ip,
         user_agent=user_agent,
     )
-    return LoginResult(user, tokens.issue_access_token(user), refresh_token)
+    access = tokens.issue_access_token(user, session_id=family.pk)
+    return LoginResult(user, access, refresh_token)
+
+
+def complete_mfa_login(*, mfa_token: str, code: str, ip: str, user_agent: str) -> LoginResult:
+    """Second step of login for accounts with MFA."""
+    user, nonce = mfa.redeem_challenge(mfa_token)
+    method = mfa.verify_code(user, code, ip=ip)
+    mfa.burn_challenge(nonce)
+    now = timezone.now()
+    user.mark_login()
+    refresh_token, family = sessions.start(user, user_agent=user_agent, ip=ip, mfa_verified_at=now)
+    audit.record(
+        actor=user,
+        action="auth.login",
+        target_type="session",
+        target_id=family.pk,
+        after={"mfa": method},
+        ip=ip,
+        user_agent=user_agent,
+    )
+    access = tokens.issue_access_token(user, mfa_at=now.timestamp(), session_id=family.pk)
+    return LoginResult(user, access, refresh_token)
 
 
 def refresh(*, raw_refresh_token: str, ip: str) -> LoginResult:
-    user, new_refresh = sessions.rotate(raw_refresh_token, ip=ip)
-    return LoginResult(user, tokens.issue_access_token(user), new_refresh)
+    user, new_refresh, family = sessions.rotate(raw_refresh_token, ip=ip)
+    mfa_at = family.mfa_verified_at.timestamp() if family.mfa_verified_at else None
+    access = tokens.issue_access_token(user, mfa_at=mfa_at, session_id=family.pk)
+    return LoginResult(user, access, new_refresh)
+
+
+# --- MFA enrolment and step-up ---------------------------------------------------------
+
+
+def mfa_enrolment_required(user: User) -> bool:
+    return mfa.enrolment_required(user)
+
+
+def begin_mfa_enrolment(user: User, *, ip: str = "") -> tuple[str, str]:
+    return mfa.begin_enrolment(user, ip=ip)
+
+
+def confirm_mfa_enrolment(
+    user: User, *, code: str, session_id: UUID | None, ip: str = ""
+) -> tuple[str, list[str]]:
+    """Switch MFA on. Returns a fresh access token and the recovery codes."""
+    codes = mfa.confirm_enrolment(user, code, session_id=session_id, ip=ip)
+    mfa_at = timezone.now().timestamp() if session_id else None
+    return tokens.issue_access_token(user, mfa_at=mfa_at, session_id=session_id), codes
+
+
+def step_up(user: User, *, code: str, session_id: UUID | None, ip: str = "") -> str:
+    """Re-check MFA on the current session and return an access token with a fresh claim."""
+    if session_id is None:
+        raise exceptions.PermissionDenied("This token is not tied to a session.")
+    mfa.verify_code(user, code, ip=ip)
+    with transaction.atomic():
+        if sessions.mark_mfa_verified(session_id, user) is None:
+            raise exceptions.PermissionDenied("This session is no longer active.")
+        audit.record(
+            actor=user, action="mfa.step_up", target_type="session", target_id=session_id, ip=ip
+        )
+    return tokens.issue_access_token(user, mfa_at=timezone.now().timestamp(), session_id=session_id)
+
+
+def regenerate_recovery_codes(user: User, *, code: str, ip: str = "") -> list[str]:
+    return mfa.regenerate_recovery_codes(user, code, ip=ip)
 
 
 def logout(*, raw_refresh_token: str) -> None:
@@ -312,6 +384,7 @@ from apps.accounts.membership import (  # noqa: E402
     reinstate_member,
     reject_registration,
     remove_member,
+    reset_member_mfa,
     suspend_member,
 )
 
@@ -319,6 +392,7 @@ __all__ = [
     "approve_member",
     "reinstate_member",
     "reject_registration",
+    "reset_member_mfa",
     "remove_member",
     "suspend_member",
 ]

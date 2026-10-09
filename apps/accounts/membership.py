@@ -14,7 +14,7 @@ from django.utils import timezone
 from rest_framework import exceptions
 
 from apps.accounts import events, sessions, tokens
-from apps.accounts.models import ApprovalSource, User, UserRole, UserStatus
+from apps.accounts.models import ApprovalSource, MfaDevice, RecoveryCode, User, UserRole, UserStatus
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.errors import ConflictError
@@ -199,4 +199,26 @@ def remove_member(*, actor: User, user_id: UUID, reason: str, ip: str = "") -> U
             events.MemberRemoved(user_id=str(target.pk)),
         )
         _cut_off(target)
+        return target
+
+
+def reset_member_mfa(*, actor: User, user_id: UUID, ip: str = "") -> User:
+    """Remove an admin's authenticator after they lost it.
+
+    They must enrol again at their next login. Their sessions end now.
+    """
+    with transaction.atomic():
+        target = _lock_target(actor, user_id)
+        removed, _ = MfaDevice.objects.filter(user=target).delete()
+        if not removed:
+            raise ConflictError("This member has no MFA set up.", code="mfa_not_enrolled")
+        RecoveryCode.objects.filter(user=target).delete()
+        _cut_off(target)
+        audit.record(
+            actor=actor,
+            action="mfa.reset",
+            target_type="user",
+            target_id=target.pk,
+            ip=ip,
+        )
         return target

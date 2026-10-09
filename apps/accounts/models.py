@@ -166,9 +166,35 @@ class RefreshTokenFamily(BaseModel):
     absolute_expires_at = models.DateTimeField()
     revoked_at = models.DateTimeField(null=True, blank=True)
     revoked_reason = models.CharField(max_length=30, blank=True)
+    # When this session last passed an MFA check; carried into every access token.
+    mfa_verified_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [models.Index(fields=["user", "revoked_at"], name="refresh_user_revoked_idx")]
 
     def __str__(self) -> str:
         return f"session {self.pk}"
+
+
+class MfaDevice(BaseModel):
+    """A user's TOTP authenticator. The secret is encrypted at rest."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="mfa_device")
+    secret_encrypted = models.TextField()
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    # Highest time step already accepted, so a code cannot be used twice.
+    last_used_step = models.BigIntegerField(default=0)
+
+    def __str__(self) -> str:
+        return f"mfa device of {self.user_id}"
+
+
+class RecoveryCode(BaseModel):
+    """One time backup code for a lost authenticator. Only its hash is stored."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recovery_codes")
+    code_hash = models.CharField(max_length=64, unique=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"recovery code of {self.user_id}"

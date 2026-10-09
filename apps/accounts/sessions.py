@@ -29,7 +29,9 @@ def _format(family_id: uuid.UUID, secret: str) -> str:
     return f"{family_id}.{secret}"
 
 
-def start(user: User, *, user_agent: str, ip: str) -> tuple[str, RefreshTokenFamily]:
+def start(
+    user: User, *, user_agent: str, ip: str, mfa_verified_at: datetime | None = None
+) -> tuple[str, RefreshTokenFamily]:
     """Open a new session and return the raw refresh token."""
     secret = secrets.token_urlsafe(32)
     now = timezone.now()
@@ -41,6 +43,7 @@ def start(user: User, *, user_agent: str, ip: str) -> tuple[str, RefreshTokenFam
         ip_hash=audit.hash_value(ip),
         expires_at=_sliding_expiry(absolute),
         absolute_expires_at=absolute,
+        mfa_verified_at=mfa_verified_at,
     )
     return _format(family.pk, secret), family
 
@@ -68,7 +71,7 @@ def revoke_all(user: User, reason: str) -> int:
     )
 
 
-def rotate(raw: str, *, ip: str) -> tuple[User, str]:
+def rotate(raw: str, *, ip: str) -> tuple[User, str, RefreshTokenFamily]:
     """Exchange a refresh token for a new one.
 
     The family row is locked so concurrent refreshes cannot both succeed. A
@@ -77,7 +80,7 @@ def rotate(raw: str, *, ip: str) -> tuple[User, str]:
     """
     family_id, secret = _parse(raw)
     failure: str | None = None
-    result: tuple[User, str] | None = None
+    result: tuple[User, str, RefreshTokenFamily] | None = None
     # The revocations below must commit even though the call then fails, so
     # the error is raised only after the transaction block has closed.
     with transaction.atomic():
@@ -112,7 +115,7 @@ def rotate(raw: str, *, ip: str) -> tuple[User, str]:
             family.last_used_at = now
             family.expires_at = _sliding_expiry(family.absolute_expires_at)
             family.save(update_fields=["current_hash", "last_used_at", "expires_at", "updated_at"])
-            result = (family.user, _format(family.pk, new_secret))
+            result = (family.user, _format(family.pk, new_secret), family)
     if result is None:
         raise InvalidRefreshToken(failure or "invalid")
     return result
@@ -125,3 +128,17 @@ def family_for_token(raw: str) -> RefreshTokenFamily | None:
     except InvalidRefreshToken:
         return None
     return RefreshTokenFamily.objects.filter(pk=family_id).first()
+
+
+def mark_mfa_verified(session_id: uuid.UUID, user: User) -> RefreshTokenFamily | None:
+    """Record a fresh MFA check on one of the user's live sessions."""
+    family = (
+        RefreshTokenFamily.objects.select_for_update()
+        .filter(pk=session_id, user=user, revoked_at__isnull=True)
+        .first()
+    )
+    if family is None:
+        return None
+    family.mfa_verified_at = timezone.now()
+    family.save(update_fields=["mfa_verified_at", "updated_at"])
+    return family
