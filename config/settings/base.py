@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.accounts",
     "apps.notifications",
+    "apps.adminconsole",
 ]
 
 MIDDLEWARE = [
@@ -69,7 +70,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "apps.integrations.passwords.validator.NotBreachedValidator"},
 ]
+PASSWORD_BREACH_CHECKER = env.str(
+    "PASSWORD_BREACH_CHECKER", default="apps.integrations.passwords.hibp.HibpBreachChecker"
+)
 
 LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
@@ -155,6 +160,8 @@ LOGIN_MAX_FAILURES_PER_ACCOUNT = 5
 LOGIN_MAX_FAILURES_PER_IP = 30
 LOGIN_FAILURE_WINDOW_SECONDS = 600
 PASSWORD_RESET_MAX_PER_EMAIL_PER_HOUR = 3
+# Destructive admin actions need an MFA check no older than this.
+STEP_UP_MAX_AGE_SECONDS = 600
 # Versions of the documents a member accepts at registration.
 CONSENT_DOCUMENT_VERSIONS = {"terms": "1", "privacy": "1", "conduct": "1", "marketing": "1"}
 

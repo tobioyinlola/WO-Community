@@ -20,4 +20,7 @@ REST_FRAMEWORK = {
 }
 
 REFRESH_COOKIE_SECURE = False
+PASSWORD_BREACH_CHECKER = (
+    "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
+)
 FRONTEND_BASE_URL = "https://app.test"
