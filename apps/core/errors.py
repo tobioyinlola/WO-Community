@@ -27,6 +27,16 @@ class PreconditionFailedError(exceptions.APIException):
     default_code = "precondition_failed"
 
 
+class MfaRequired(exceptions.PermissionDenied):
+    default_detail = "Multi-factor authentication is required for this action."
+    default_code = "mfa_required"
+
+
+class StepUpRequired(exceptions.PermissionDenied):
+    default_detail = "Confirm your identity again to perform this action."
+    default_code = "step_up_required"
+
+
 def _problem(
     http_status: int, code: str, title: str, detail: str, errors: Any = None
 ) -> dict[str, Any]:

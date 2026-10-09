@@ -30,3 +30,15 @@ partition during a maintenance window.
 
 `/health/ready` returns 503 when PostgreSQL or Redis cannot be reached. Instances are removed from
 rotation automatically. Check the database and Redis first, then connection pool saturation.
+
+## An admin lost their authenticator
+
+A super admin calls `POST /admin/members/{id}/reset-mfa` (needs a fresh MFA check). The admin logs
+in with their password, is told `mfa_enrolment_required`, and enrols again. If the person who lost
+their device is the only super admin, an operator deletes their `accounts_mfadevice` row and
+recovery codes in the database, records why in the incident log, and the admin enrols at next login.
+
+## Spike in `mfa.failed` audit entries or 429 on `/auth/mfa/*`
+
+Someone is guessing codes for an account whose password they already know. Check the audit log for
+the account, suspend it if the pattern looks hostile, and tell its owner to change their password.
