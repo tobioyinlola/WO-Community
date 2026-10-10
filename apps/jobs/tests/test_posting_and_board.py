@@ -359,3 +359,12 @@ def test_bad_board_queries_are_refused(reader_client, params):
 def test_search_terms_are_treated_as_text(several, reader_client):
     for hostile in ("%", "' OR 1=1 --", "\\", "a" * 100):
         assert reader_client.get(JOBS, {"q": hostile}).status_code == 200
+
+
+def test_refused_jobs_do_not_use_up_the_daily_allowance(poster_client, monkeypatch):
+    from apps.jobs import services
+
+    monkeypatch.setattr(services, "JOBS_PER_DAY", 2)
+    for _ in range(4):
+        assert post_job(poster_client, title="").status_code == 400
+    assert [post_job(poster_client).status_code for _ in range(3)] == [201, 201, 429]

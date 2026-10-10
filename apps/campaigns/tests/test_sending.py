@@ -403,3 +403,129 @@ def test_delivery_events_from_the_webhook_reach_the_report(admin, everyone, audi
     process_delivery(delivery.pk, FakeEmailAdapter())
     recipient.refresh_from_db()
     assert recipient.opened_at is not None
+
+
+def test_the_kill_switch_takes_effect_within_one_message(
+    admin, everyone, audience, monkeypatch, sent_emails
+):
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    original = FakeEmailAdapter.send
+
+    def pause_after_first(self, message):
+        result = original(self, message)
+        Campaign.objects.filter(pk=campaign.pk).update(status="paused")
+        return result
+
+    monkeypatch.setattr(FakeEmailAdapter, "send", pause_after_first)
+    assert services.send_batch(campaign.pk) is False
+    assert len(marketing(sent_emails)) == 1
+
+
+def test_a_crash_mid_batch_loses_nothing_already_sent(
+    admin, everyone, audience, monkeypatch, sent_emails
+):
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    original = FakeEmailAdapter.send
+    calls = []
+
+    def crash_on_second(self, message):
+        calls.append(message.to)
+        if len(calls) == 2:
+            raise RuntimeError("worker died")
+        return original(self, message)
+
+    monkeypatch.setattr(FakeEmailAdapter, "send", crash_on_second)
+    with pytest.raises(RuntimeError):
+        services.send_batch(campaign.pk)
+    assert campaign.recipients.filter(status="sent").count() == 1  # the first stays recorded
+    assert campaign.recipients.filter(status="queued").count() == 2
+
+
+def test_a_campaign_that_started_cannot_be_deleted_even_if_cancelled(
+    admin, everyone, audience, settings
+):
+    from apps.campaigns.services import Conflict
+
+    settings.CAMPAIGN_BATCH_SIZE = 1
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    services.send_batch(campaign.pk)
+    services.cancel(actor=admin, campaign_id=campaign.pk)
+    with pytest.raises(Conflict):
+        services.delete_campaign(actor=admin, campaign_id=campaign.pk)
+
+
+# --- analytics events ---
+
+
+def event_names(user=None):
+    from apps.analytics.models import AnalyticsEvent
+
+    queryset = AnalyticsEvent.objects.filter(name__startswith="newsletter_")
+    if user is not None:
+        queryset = queryset.filter(actor_id=user.pk)
+    return sorted(queryset.values_list("name", flat=True))
+
+
+def test_newsletter_events_are_recorded_with_campaign_and_segment(admin, everyone, make_user):
+    from apps.analytics.models import AnalyticsEvent
+
+    user = subscriber(make_user, "one@example.com")
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    run(campaign)
+    [event] = AnalyticsEvent.objects.filter(name="newsletter_sent")
+    assert event.actor_id == user.pk
+    assert event.properties == {"campaign": str(campaign.pk), "segment": str(everyone.pk)}
+
+
+def test_delivery_events_are_recorded_once_and_a_click_implies_the_rest(admin, everyone, make_user):
+    user = subscriber(make_user, "one@example.com")
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    run(campaign)
+    message_id = campaign.recipients.get().provider_message_id
+    services.record_delivery("clicked", message_id)
+    services.record_delivery("clicked", message_id)  # a repeat report adds nothing
+    services.record_delivery("opened", message_id)
+    assert event_names(user) == [
+        "newsletter_clicked",
+        "newsletter_delivered",
+        "newsletter_opened",
+        "newsletter_sent",
+    ]
+
+
+def test_bounces_and_complaints_are_not_analytics_events(admin, everyone, make_user):
+    user = subscriber(make_user, "one@example.com")
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    run(campaign)
+    message_id = campaign.recipients.get().provider_message_id
+    services.record_delivery("bounced", message_id)
+    assert event_names(user) == ["newsletter_sent"]
+
+
+def test_unsubscribing_from_a_campaign_is_recorded(admin, everyone, make_user):
+    user = subscriber(make_user, "one@example.com")
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    run(campaign)
+    token = services.unsubscribe_token(user.pk, campaign.pk)
+    services.unsubscribe(token)
+    services.unsubscribe(token)
+    assert event_names(user).count("newsletter_unsubscribed") == 1
+
+
+def test_members_who_opted_out_of_analytics_leave_no_newsletter_events(admin, everyone, make_user):
+    from apps.analytics import services as analytics
+
+    user = subscriber(make_user, "one@example.com")
+    analytics.set_opt_out(user.pk, True)
+    campaign = make_campaign(admin, everyone)
+    services.send_now(actor=admin, campaign_id=campaign.pk)
+    run(campaign)
+    assert event_names(user) == []
+    assert campaign.recipients.get().status == "sent"  # and the mail still went out

@@ -101,10 +101,15 @@ def _lock_post(post_id: UUID, *, open_to_all: bool = True) -> Post:
 
 def _mention(
     *, by: UUID, mentioned: list[UUID], target_type: str, target_id: UUID, post_id: UUID
-) -> None:
-    """Tell the people named in a post or comment. Only active members, never oneself."""
+) -> list[str]:
+    """Tell the people named in a post or comment. Only active members, never oneself.
+
+    Returns the ids of the people told.
+    """
+    told: list[str] = []
     for user_id in dict.fromkeys(accounts.filter_active(mentioned)):
         if user_id != by:
+            told.append(str(user_id))
             domain_events.publish(
                 events.MemberMentioned(
                     user_id=str(user_id),
@@ -114,6 +119,7 @@ def _mention(
                     post_id=str(post_id),
                 )
             )
+    return told
 
 
 def _check_mentions(mentions: list[UUID]) -> list[UUID]:
@@ -200,13 +206,14 @@ def create_post(
         )
         _attach_images(post, images, user_id)
         links.sync(post, html)
-        _mention(
+        post.mentioned = _mention(
             by=user_id,
             mentioned=mention_ids,
             target_type="post",
             target_id=post.pk,
             post_id=post.pk,
         )
+        post.save(update_fields=["mentioned"])
         analytics.track("post_created", actor_id=user_id, properties={"category": category})
     return post
 
@@ -237,17 +244,23 @@ def update_post(
         if "images" in changes:
             released = _attach_images(post, changes["images"], user_id)
         post.edited_at = timezone.now()
+        if "mentions" in changes:
+            fresh = [
+                m for m in _check_mentions(changes["mentions"]) if str(m) not in post.mentioned
+            ]
+            post.mentioned = [
+                *post.mentioned,
+                *_mention(
+                    by=user_id,
+                    mentioned=fresh,
+                    target_type="post",
+                    target_id=post.pk,
+                    post_id=post.pk,
+                ),
+            ]
         post.save()
         for key in released:
             uploads.release(key)
-        if "mentions" in changes:
-            _mention(
-                by=user_id,
-                mentioned=_check_mentions(changes["mentions"]),
-                target_type="post",
-                target_id=post.pk,
-                post_id=post.pk,
-            )
     return post
 
 

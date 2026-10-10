@@ -25,6 +25,8 @@ class Post(BaseModel, SoftDeleteModel):
     featured_at = models.DateTimeField(null=True, blank=True)
     hidden_at = models.DateTimeField(null=True, blank=True)
     edited_at = models.DateTimeField(null=True, blank=True)
+    # Members already told they were mentioned, so editing the post never tells them twice.
+    mentioned = models.JSONField(default=list, blank=True)
     comment_count = models.PositiveIntegerField(default=0)
     reaction_count = models.PositiveIntegerField(default=0)
     reaction_counts = models.JSONField(default=dict, blank=True)
