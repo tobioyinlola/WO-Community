@@ -1,0 +1,153 @@
+from typing import Any
+
+from rest_framework import serializers
+
+from apps.core.serializers import ImageSerializer, StrictSerializer
+from apps.feed.models import CATEGORIES, REACTION_KINDS
+
+MAX_BODY_MARKUP = 20_000  # the raw request; the text limit is applied after cleaning
+
+
+class ImageInputSerializer(StrictSerializer):
+    """Keep an existing image (``image_id``) or add a finished upload (``upload_id``)."""
+
+    image_id = serializers.UUIDField(required=False)
+    upload_id = serializers.UUIDField(required=False)
+    alt = serializers.CharField(required=False, allow_blank=True, max_length=300, default="")
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if ("image_id" in attrs) == ("upload_id" in attrs):
+            raise serializers.ValidationError("Send either image_id or upload_id.")
+        return attrs
+
+
+class PostCreateSerializer(StrictSerializer):
+    category = serializers.ChoiceField(choices=CATEGORIES)
+    body = serializers.CharField(max_length=MAX_BODY_MARKUP, trim_whitespace=False)
+    images = serializers.ListField(
+        child=ImageInputSerializer(), required=False, default=list, max_length=10
+    )
+    startup_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    mentions = serializers.ListField(
+        child=serializers.UUIDField(), required=False, default=list, max_length=20
+    )
+
+
+class PostUpdateSerializer(StrictSerializer):
+    category = serializers.ChoiceField(choices=CATEGORIES, required=False)
+    body = serializers.CharField(max_length=MAX_BODY_MARKUP, trim_whitespace=False, required=False)
+    images = serializers.ListField(child=ImageInputSerializer(), required=False, max_length=10)
+    mentions = serializers.ListField(child=serializers.UUIDField(), required=False, max_length=20)
+
+
+class CommentCreateSerializer(StrictSerializer):
+    body = serializers.CharField(max_length=MAX_BODY_MARKUP, trim_whitespace=False)
+    parent_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    mentions = serializers.ListField(
+        child=serializers.UUIDField(), required=False, default=list, max_length=20
+    )
+
+
+class CommentUpdateSerializer(StrictSerializer):
+    body = serializers.CharField(max_length=MAX_BODY_MARKUP, trim_whitespace=False)
+
+
+class ReactionSerializer(StrictSerializer):
+    kind = serializers.ChoiceField(choices=REACTION_KINDS)
+
+
+class FeedQuerySerializer(StrictSerializer):
+    sort = serializers.ChoiceField(choices=["newest", "engaged"], required=False, default="newest")
+    scope = serializers.ChoiceField(choices=["all", "mine"], required=False, default="all")
+    category = serializers.ChoiceField(choices=CATEGORIES, required=False, default="")
+    country = serializers.RegexField(r"^[A-Za-z]{2}$", required=False, default="")
+    cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=50, default=20)
+
+    def validate_country(self, value: str) -> str:
+        return value.upper()
+
+
+class CommentQuerySerializer(StrictSerializer):
+    cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=50, default=20)
+
+
+class AuthorSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    headline = serializers.CharField(allow_blank=True)
+    photo = ImageSerializer(allow_null=True)
+    slug = serializers.CharField(allow_null=True)
+
+
+class PostStartupSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    logo = ImageSerializer(allow_null=True)
+
+
+class PostImageSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    urls = ImageSerializer()
+    alt = serializers.CharField(allow_blank=True)
+
+
+class PostSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    category = serializers.CharField()
+    body = serializers.CharField(help_text="Sanitised HTML")
+    country = serializers.CharField(allow_blank=True)
+    author = AuthorSerializer()
+    startup = PostStartupSerializer(allow_null=True)
+    images = PostImageSerializer(many=True)
+    created_at = serializers.DateTimeField()
+    edited_at = serializers.DateTimeField(allow_null=True)
+    pinned = serializers.BooleanField()
+    featured = serializers.BooleanField()
+    hidden = serializers.BooleanField(help_text="Only ever true for the author's own view")
+    comment_count = serializers.IntegerField()
+    reaction_count = serializers.IntegerField()
+    reactions = serializers.DictField(child=serializers.IntegerField())
+    my_reactions = serializers.ListField(child=serializers.CharField())
+    mine = serializers.BooleanField()
+
+
+class FeedSerializer(serializers.Serializer):
+    results = PostSerializer(many=True)
+    pinned = PostSerializer(many=True, required=False)
+    next_cursor = serializers.CharField(allow_null=True)
+
+
+class ReplySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    post_id = serializers.UUIDField()
+    parent_id = serializers.UUIDField(allow_null=True)
+    body = serializers.CharField(help_text="Sanitised HTML")
+    author = AuthorSerializer()
+    created_at = serializers.DateTimeField()
+    edited_at = serializers.DateTimeField(allow_null=True)
+    reaction_count = serializers.IntegerField()
+    reactions = serializers.DictField(child=serializers.IntegerField())
+    my_reactions = serializers.ListField(child=serializers.CharField())
+    mine = serializers.BooleanField()
+
+
+class CommentSerializer(ReplySerializer):
+    replies = ReplySerializer(many=True)
+
+
+class CommentListSerializer(serializers.Serializer):
+    results = CommentSerializer(many=True)
+    next_cursor = serializers.CharField(allow_null=True)
+
+
+class ReactionResultSerializer(serializers.Serializer):
+    created = serializers.BooleanField()
+    reactions = serializers.DictField(child=serializers.IntegerField())
+    reaction_count = serializers.IntegerField()
+
+
+class ModerationSerializer(StrictSerializer):
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
