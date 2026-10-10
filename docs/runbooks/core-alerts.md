@@ -128,3 +128,26 @@ access to `www.googleapis.com` (log line `google_keys_unreachable`). A spike of
 `invalid_google_token` (401) usually means `GOOGLE_CLIENT_ID` does not match the id the frontend is
 using, or a client clock is far off. Setting `GOOGLE_CLIENT_ID` to empty switches the feature off
 without a deploy of code; password sign-in is unaffected.
+
+## Link previews not appearing
+
+Cards are filled in by the `feed.fetch_link_preview` task on the `media` queue. Check that the queue
+has a worker and is not backed up. For one address, read `LinkPreview.fail_code`: `blocked_address`,
+`internal_host`, `bad_scheme`, `bad_port` and `credentials_in_url` are deliberate refusals;
+`timeout`, `network_error`, `dns_failure` and `status_NNN` are the site or the network, and are
+retried an hour after someone next links the address; `nothing_to_show` and
+`unsupported_content_type` mean the page offers no usable preview. A burst of `blocked_address` for
+names that look ordinary can mean the resolver is returning private answers; do not loosen the checks,
+fix the resolver.
+
+The media workers should run with outbound access limited to the public internet (no route to the
+VPC, metadata service or internal DNS). The application checks are the second line of defence.
+
+## Notifications not arriving
+
+In-app notices are created by tasks reacting to outbox events (`feed.notify_*`,
+`notifications.notify_approved`). If members report none, look for stuck `OutboxEvent` rows with
+topics `feed.*` and for failures of those tasks. `GET /notifications` should answer 304 when nothing
+changed; a client that never gets 304 is not sending `If-None-Match`. Email notices stop quietly for
+a member who exceeds ten of one kind in an hour (log line `notification_email_throttled`); their
+in-app notices continue.
