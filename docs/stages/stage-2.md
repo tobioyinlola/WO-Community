@@ -31,11 +31,24 @@ Design and trade-offs are in ADR 0019.
 
 Post and comment authors, and the startup on a post, now carry a `following` flag.
 
+## Slice 3: reports and the moderation queue (done)
+
+Design and trade-offs are in ADR 0020.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /posts/{id}/reports`, `POST /comments/{id}/reports` | Report with a reason (spam, harassment, misinformation, illegal, inappropriate, other) and optional details. Once per member per item; 20 a day. |
+| `GET /admin/reports` | The queue, oldest first. Filters: `status` (default open), `target_type`, `reason`. Offset paging. |
+| `GET /admin/reports/{id}` | One report with a look at the content. |
+| `POST /admin/reports/{id}/review` | Mark reviewed, no action needed. |
+| `POST /admin/reports/{id}/action` | Hide or remove the post or comment; closes every open report about it. |
+| `POST /admin/comments/{id}/{hide,unhide,remove}` | Moderate a comment directly. |
+| `GET /admin/queues` | Now includes `open_reports`. |
+
 ## Still to do in Stage 2
 
-1. Reports, the moderation queue (Open, Reviewed, Actioned) and moderation of comments.
-2. Link preview cards with SSRF protection.
-3. Notification centre and delivery of mention and comment notices.
-4. Jobs and opportunities, news and win submissions, events and demo days, campaigns and segments,
+1. Link preview cards with SSRF protection.
+2. Notification centre and delivery of mention, comment and report-outcome notices.
+3. Jobs and opportunities, news and win submissions, events and demo days, campaigns and segments,
    admin queues.
-5. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
+4. The CDN purger (provider decision still pending; revisit before Stage 2 ends).

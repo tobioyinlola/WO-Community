@@ -4,6 +4,111 @@ info:
   version: 1.0.0
   description: REST API for the WO Community platform.
 paths:
+  /api/v1/admin/comments/{comment_id}/hide:
+    post:
+      operationId: admin_comments_hide_create
+      description: 'Actions: hide, unhide, remove (removing takes its replies too).
+        The post''s comment count follows. Every action is written to the audit log.'
+      summary: Moderate a comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/comments/{comment_id}/remove:
+    post:
+      operationId: admin_comments_remove_create
+      description: 'Actions: hide, unhide, remove (removing takes its replies too).
+        The post''s comment count follows. Every action is written to the audit log.'
+      summary: Moderate a comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/comments/{comment_id}/unhide:
+    post:
+      operationId: admin_comments_unhide_create
+      description: 'Actions: hide, unhide, remove (removing takes its replies too).
+        The post''s comment count follows. Every action is written to the audit log.'
+      summary: Moderate a comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
   /api/v1/admin/invitations:
     get:
       operationId: admin_invitations_list
@@ -1012,6 +1117,188 @@ paths:
           description: Unknown list or entry
         '409':
           description: Name or slug taken, entry in use, or the list changed
+  /api/v1/admin/reports:
+    get:
+      operationId: admin_reports_list
+      description: Reports oldest first, open ones by default. Each shows a short
+        look at the post or comment reported and how many open reports it has.
+      summary: The moderation queue
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: reason
+        schema:
+          enum:
+          - spam
+          - harassment
+          - misinformation
+          - illegal
+          - inappropriate
+          - other
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `spam` - spam
+          * `harassment` - harassment
+          * `misinformation` - misinformation
+          * `illegal` - illegal
+          * `inappropriate` - inappropriate
+          * `other` - other
+      - in: query
+        name: status
+        schema:
+          enum:
+          - open
+          - reviewed
+          - actioned
+          type: string
+          default: open
+          minLength: 1
+        description: |-
+          * `open` - open
+          * `reviewed` - reviewed
+          * `actioned` - actioned
+      - in: query
+        name: target_type
+        schema:
+          enum:
+          - post
+          - comment
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `post` - post
+          * `comment` - comment
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminReport'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such report
+  /api/v1/admin/reports/{report_id}:
+    get:
+      operationId: admin_reports_retrieve
+      summary: One report
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReport'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such report
+  /api/v1/admin/reports/{report_id}/action:
+    post:
+      operationId: admin_reports_action_create
+      description: Applies the action to the post or comment and closes every open
+        report about it as actioned. Written to the audit log.
+      summary: Hide or remove what was reported
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportActionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReport'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such report
+  /api/v1/admin/reports/{report_id}/review:
+    post:
+      operationId: admin_reports_review_create
+      summary: Mark a report as reviewed, with no action needed
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReport'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such report
+        '409':
+          description: Already actioned
   /api/v1/admin/startups/{startup_id}/feature:
     post:
       operationId: admin_startups_feature_create
@@ -1582,6 +1869,51 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/comments/{target_id}/reports:
+    post:
+      operationId: comments_reports_create
+      description: You can report only what you can see, and not your own content.
+        Reporting the same thing again answers 200 with the existing report. Limited
+        per member per day.
+      summary: Report to the moderators
+      parameters:
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceived'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceived'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '429':
+          description: Daily limit
   /api/v1/events:
     post:
       operationId: events_create
@@ -2483,6 +2815,51 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/posts/{target_id}/reports:
+    post:
+      operationId: posts_reports_create
+      description: You can report only what you can see, and not your own content.
+        Reporting the same thing again answers 200 with the existing report. Limited
+        per member per day.
+      summary: Report to the moderators
+      parameters:
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceived'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceived'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '429':
+          description: Daily limit
   /api/v1/public/founders:
     get:
       operationId: public_founders_list
@@ -3347,6 +3724,57 @@ components:
       - email
       - id
       - status
+    ActionEnum:
+      enum:
+      - hide
+      - remove
+      type: string
+      description: |-
+        * `hide` - hide
+        * `remove` - remove
+    AdminReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        reason:
+          type: string
+        details:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reporter:
+          $ref: '#/components/schemas/ReportPerson'
+        handled_by:
+          type: string
+          format: uuid
+          nullable: true
+        handled_at:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+        open_reports_on_target:
+          type: integer
+        target:
+          $ref: '#/components/schemas/ReportTarget'
+      required:
+      - created_at
+      - details
+      - handled_at
+      - handled_by
+      - id
+      - note
+      - open_reports_on_target
+      - reason
+      - reporter
+      - status
+      - target
     Author:
       type: object
       properties:
@@ -4732,7 +5160,10 @@ components:
           type: integer
         registrations_unverified:
           type: integer
+        open_reports:
+          type: integer
       required:
+      - open_reports
       - registrations_awaiting_approval
       - registrations_unverified
     ReactionKindEnum:
@@ -4772,6 +5203,22 @@ components:
       - created
       - reaction_count
       - reactions
+    ReasonEnum:
+      enum:
+      - spam
+      - harassment
+      - misinformation
+      - illegal
+      - inappropriate
+      - other
+      type: string
+      description: |-
+        * `spam` - spam
+        * `harassment` - harassment
+        * `misinformation` - misinformation
+        * `illegal` - illegal
+        * `inappropriate` - inappropriate
+        * `other` - other
     ReasonRequest:
       type: object
       description: |-
@@ -4974,6 +5421,108 @@ components:
       - post_id
       - reaction_count
       - reactions
+    ReportActionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - action
+    ReportCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReasonEnum'
+        details:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - reason
+    ReportPerson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    ReportReceived:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        created:
+          type: boolean
+          description: False if you had already reported this
+      required:
+      - created
+      - id
+      - status
+    ReportReviewRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+    ReportTarget:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        post_id:
+          type: string
+          format: uuid
+          nullable: true
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        excerpt:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        author:
+          allOf:
+          - $ref: '#/components/schemas/ReportPerson'
+          nullable: true
+      required:
+      - author
+      - created_at
+      - excerpt
+      - id
+      - post_id
+      - state
+      - type
     ResetPasswordRequest:
       type: object
       description: |-
@@ -5390,6 +5939,16 @@ components:
       required:
       - next_cursor
       - results
+    StateEnum:
+      enum:
+      - visible
+      - hidden
+      - removed
+      type: string
+      description: |-
+        * `visible` - visible
+        * `hidden` - hidden
+        * `removed` - removed
     Status:
       type: object
       properties:
