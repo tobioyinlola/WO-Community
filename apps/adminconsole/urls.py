@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
 from apps.adminconsole import (
+    campaign_views,
     editorial_views,
     event_views,
     featured_views,
@@ -13,6 +14,7 @@ from apps.adminconsole import (
 
 KINDS = "sectors|stages|skills"
 
+CAMPAIGN_ACTIONS = ("send", "schedule", "unschedule", "pause", "resume", "cancel", "test")
 EVENT_ACTIONS = ("publish", "unpublish", "cancel")
 ITEM_ACTIONS = ("publish", "unpublish")
 COMMENT_ACTIONS_ITEM = ("hide", "unhide", "remove")
@@ -23,6 +25,51 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/segments", campaign_views.SegmentsView.as_view(), name="admin-segments"),
+    path(
+        "admin/segments/preview",
+        campaign_views.SegmentPreviewView.as_view(),
+        name="admin-segment-preview",
+    ),
+    path(
+        "admin/segments/<uuid:segment_id>",
+        campaign_views.SegmentView.as_view(),
+        name="admin-segment",
+    ),
+    path(
+        "admin/segments/<uuid:segment_id>/preview",
+        campaign_views.SavedSegmentPreviewView.as_view(),
+        name="admin-segment-saved-preview",
+    ),
+    path(
+        "admin/campaign-templates",
+        campaign_views.TemplatesView.as_view(),
+        name="admin-campaign-templates",
+    ),
+    path(
+        "admin/campaign-templates/<uuid:template_id>",
+        campaign_views.TemplateView.as_view(),
+        name="admin-campaign-template",
+    ),
+    path("admin/campaigns", campaign_views.CampaignsView.as_view(), name="admin-campaigns"),
+    path(
+        "admin/campaigns/<uuid:campaign_id>",
+        campaign_views.CampaignView.as_view(),
+        name="admin-campaign",
+    ),
+    path(
+        "admin/campaigns/<uuid:campaign_id>/report",
+        campaign_views.CampaignReportView.as_view(),
+        name="admin-campaign-report",
+    ),
+    *[
+        path(
+            f"admin/campaigns/<uuid:campaign_id>/{action}",
+            campaign_views.action_view(action).as_view(),
+            name=f"admin-campaign-{action}",
+        )
+        for action in CAMPAIGN_ACTIONS
+    ],
     path("admin/events", event_views.AdminEventsView.as_view(), name="admin-events"),
     path("admin/events/<uuid:event_id>", event_views.AdminEventView.as_view(), name="admin-event"),
     path(
