@@ -74,7 +74,7 @@ EVENTS: dict[str, Spec] = {
         }
     ),
     "member_rejected": Spec(props={"time_to_decision_hours": number(high=100_000)}),
-    "onboarding_completed": Spec(),
+    "onboarding_completed": Spec(props={"time_to_complete_hours": number(high=100_000)}),
     # Profile and directory
     "profile_updated": Spec(props={"completeness": number(high=100)}),
     "directory_viewed": Spec(
