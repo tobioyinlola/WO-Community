@@ -33,3 +33,17 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
     def authenticate_header(self, request: Request) -> str:
         return self.keyword
+
+
+class OptionalJWTAuthentication(JWTAuthentication):
+    """A signed-in member if the token is good, otherwise just an anonymous visitor.
+
+    For endpoints that anyone may call but that behave better when they know who
+    it is (analytics). A bad or expired token never turns into a 401 there.
+    """
+
+    def authenticate(self, request: Request) -> tuple[User, dict] | None:
+        try:
+            return super().authenticate(request)
+        except exceptions.AuthenticationFailed:
+            return None
