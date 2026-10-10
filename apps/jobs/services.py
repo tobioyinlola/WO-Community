@@ -206,8 +206,6 @@ def _check_complete(job: Job) -> None:
 
 def create_job(*, user_id: UUID, data: dict[str, Any], admin: bool = False) -> Job:
     """Post a job. Members' jobs wait for review unless the board is set to auto publish."""
-    if not admin and ratelimit.hit(f"jobs:post:{user_id}", 86400) > JOBS_PER_DAY:
-        raise exceptions.Throttled(wait=86400, detail="Daily limit for new jobs reached.")
     job = Job(
         poster_id=user_id,
         slug=_slug(data.get("title", "")),
@@ -216,6 +214,9 @@ def create_job(*, user_id: UUID, data: dict[str, Any], admin: bool = False) -> J
     )
     _apply_fields(job, data, user_id, is_admin=admin)
     _check_complete(job)
+    # Counted only once the job is valid, so a mistyped form does not cost a day's allowance.
+    if not admin and ratelimit.hit(f"jobs:post:{user_id}", 86400) > JOBS_PER_DAY:
+        raise exceptions.Throttled(wait=86400, detail="Daily limit for new jobs reached.")
     with transaction.atomic():
         now = timezone.now()
         if admin or not JobSettings.load().require_approval:

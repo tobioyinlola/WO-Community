@@ -9,6 +9,7 @@ from django.db.models import Count, QuerySet
 from django.utils import timezone
 from rest_framework import exceptions
 
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.text import plain, text_of
@@ -222,6 +223,7 @@ def review(*, actor: Any, report_id: UUID, note: str = "", ip: str = "") -> Repo
         found.note = plain(note)
         found.save()
         _tell_reporters([found], "reviewed")
+        analytics.track("report_actioned", actor_id=actor.pk, properties={"outcome": "reviewed"})
         audit.record(
             actor=actor,
             action="feed.report_reviewed",
@@ -262,6 +264,7 @@ def act(*, actor: Any, report_id: UUID, action: str, note: str = "", ip: str = "
             )
         )
         _tell_reporters(closing, "actioned")
+        analytics.track("report_actioned", actor_id=actor.pk, properties={"outcome": "actioned"})
         Report.objects.filter(target_type=found.target_type, target_id=found.target_id).exclude(
             status=Report.Status.ACTIONED
         ).update(

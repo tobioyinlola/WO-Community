@@ -14,6 +14,7 @@ from django.utils import timezone
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.campaigns import events, render, segments
 from apps.campaigns.models import (
@@ -86,9 +87,15 @@ def unsubscribe(token: str, *, ip: str = "") -> None:
         accounts.set_marketing_consent(user_id, False, ip=ip)
         notifications.suppress(emails[user_id], "unsubscribed")
         if campaign_id:
-            CampaignRecipient.objects.filter(
+            changed = CampaignRecipient.objects.filter(
                 campaign_id=campaign_id, user_id=user_id, unsubscribed_at__isnull=True
             ).update(unsubscribed_at=timezone.now())
+            if changed:
+                analytics.track(
+                    "newsletter_unsubscribed",
+                    actor_id=user_id,
+                    properties={"campaign": str(campaign_id)},
+                )
 
 
 # --- segments and templates ---
@@ -213,8 +220,8 @@ def delete_campaign(*, actor: Any, campaign_id: UUID, ip: str = "") -> None:
         campaign = _lock(campaign_id)
         if campaign.status in (Campaign.Status.SENDING, Campaign.Status.PAUSED):
             raise Conflict("Cancel a campaign that is sending before removing it.")
-        if campaign.status == Campaign.Status.SENT:
-            raise Conflict("A sent campaign is kept for its report.")
+        if campaign.started_at is not None:
+            raise Conflict("A campaign that has started is kept for its report.")
         audit.record(
             actor=actor,
             action="campaigns.deleted",
@@ -417,56 +424,90 @@ def send_test(*, actor: Any, campaign_id: UUID) -> None:
     get_email_adapter().send(_build(campaign, actor.pk, email, first, test=True))
 
 
+def _event_props(campaign: Campaign) -> dict[str, str]:
+    props = {"campaign": str(campaign.pk)}
+    if campaign.segment_id:
+        props["segment"] = str(campaign.segment_id)
+    return props
+
+
+def _send_row(campaign: Campaign, row_id: UUID, adapter: Any) -> str:
+    """Send to one recipient in its own transaction. Returns "ok", "stop" or "busy".
+
+    One transaction per message means a crash can lose at most the record of the message in
+    flight (the provider's idempotency key stops it going twice), never a whole batch. The
+    campaign's status is read again each time, so the kill switch takes effect within one message.
+    """
+    with transaction.atomic():
+        status = Campaign.objects.filter(pk=campaign.pk).values_list("status", flat=True).first()
+        if status != Campaign.Status.SENDING:
+            return "stop"
+        row = (
+            campaign.recipients.select_for_update(skip_locked=True)
+            .filter(pk=row_id, status=CampaignRecipient.Status.QUEUED)
+            .first()
+        )
+        if row is None:
+            return "ok"  # another worker already has it
+        uid = row.user_id
+        email = accounts.emails_for([uid]).get(uid) if uid else None
+        # Eligibility is checked again at the moment of sending, so an unsubscribe is honoured
+        # immediately even for people queued earlier.
+        if (
+            uid is None
+            or not email
+            or not accounts.has_marketing_consent(uid)
+            or notifications.is_suppressed(email)
+        ):
+            row.status = CampaignRecipient.Status.SKIPPED
+            row.save(update_fields=["status", "updated_at"])
+            return "ok"
+        try:
+            row.provider_message_id = adapter.send(
+                _build(campaign, uid, email, profiles.first_names([uid]).get(uid, ""), test=False)
+            )
+            row.status, row.sent_at = CampaignRecipient.Status.SENT, timezone.now()
+            analytics.track("newsletter_sent", actor_id=uid, properties=_event_props(campaign))
+        except EmailRejected as exc:
+            logger.warning("campaign_email_rejected", code=exc.code)
+            row.status = CampaignRecipient.Status.FAILED
+        except EmailTemporarilyUnavailable:
+            return "busy"  # leave it queued; the next run retries
+        except EmailMisconfigured:
+            Campaign.objects.filter(pk=campaign.pk).update(
+                status=Campaign.Status.PAUSED, updated_at=timezone.now()
+            )
+            logger.error("campaign_paused_provider_misconfigured", campaign_id=str(campaign.pk))
+            return "stop"
+        row.save()
+    return "ok"
+
+
 def send_batch(campaign_id: UUID) -> bool:
     """Send the next batch. Returns True if more remain, so the caller schedules another."""
-    size = settings.CAMPAIGN_BATCH_SIZE
-    with transaction.atomic():
-        campaign = Campaign.objects.select_for_update().filter(pk=campaign_id).first()
-        if campaign is None or campaign.status != Campaign.Status.SENDING:
+    campaign = Campaign.objects.filter(pk=campaign_id).first()
+    if campaign is None or campaign.status != Campaign.Status.SENDING:
+        return False
+    row_ids = list(
+        campaign.recipients.filter(status=CampaignRecipient.Status.QUEUED)
+        .order_by("id")
+        .values_list("pk", flat=True)[: settings.CAMPAIGN_BATCH_SIZE]
+    )
+    adapter = get_email_adapter()
+    for row_id in row_ids:
+        outcome = _send_row(campaign, row_id, adapter)
+        if outcome == "stop":
             return False
-        rows = list(
-            campaign.recipients.select_for_update(skip_locked=True)
-            .filter(status=CampaignRecipient.Status.QUEUED)
-            .order_by("id")[:size]
-        )
-        ids = [r.user_id for r in rows if r.user_id]
-        emails = accounts.emails_for(ids)
-        names = profiles.first_names(ids)
-        adapter = get_email_adapter()
-        for row in rows:
-            uid = row.user_id
-            email = emails.get(uid) if uid else None
-            # Eligibility is checked again at the moment of sending, so an unsubscribe is
-            # honoured immediately even for people queued earlier.
-            if (
-                uid is None
-                or not email
-                or not accounts.has_marketing_consent(uid)
-                or notifications.is_suppressed(email)
-            ):
-                row.status = CampaignRecipient.Status.SKIPPED
-                row.save(update_fields=["status", "updated_at"])
-                continue
-            try:
-                row.provider_message_id = adapter.send(
-                    _build(campaign, uid, email, names.get(uid, ""), test=False)
-                )
-                row.status, row.sent_at = CampaignRecipient.Status.SENT, timezone.now()
-            except EmailRejected as exc:
-                logger.warning("campaign_email_rejected", code=exc.code)
-                row.status = CampaignRecipient.Status.FAILED
-            except EmailTemporarilyUnavailable:
-                return True  # leave the rest queued; the next run retries them
-            except EmailMisconfigured:
-                campaign.status = Campaign.Status.PAUSED
-                campaign.save(update_fields=["status", "updated_at"])
-                logger.error("campaign_paused_provider_misconfigured", campaign_id=str(campaign.pk))
-                return False
-            row.save()
-        remaining = campaign.recipients.filter(status=CampaignRecipient.Status.QUEUED).exists()
+        if outcome == "busy":
+            return True
+    with transaction.atomic():
+        locked = _lock(campaign_id)
+        if locked.status != Campaign.Status.SENDING:
+            return False
+        remaining = locked.recipients.filter(status=CampaignRecipient.Status.QUEUED).exists()
         if not remaining:
-            campaign.status, campaign.finished_at = Campaign.Status.SENT, timezone.now()
-            campaign.save(update_fields=["status", "finished_at", "updated_at"])
+            locked.status, locked.finished_at = Campaign.Status.SENT, timezone.now()
+            locked.save(update_fields=["status", "finished_at", "updated_at"])
         return remaining
 
 
@@ -507,6 +548,26 @@ _TIMESTAMP_KINDS = {
 }
 
 
+def _mark(rows: Any, column: str, event: str | None, now: datetime) -> None:
+    """Stamp rows that do not have this milestone yet, and record the analytics event once each."""
+    fresh = list(rows.filter(**{f"{column}__isnull": True}).values_list("user_id", "campaign_id"))
+    if not fresh:
+        return
+    rows.filter(**{f"{column}__isnull": True}).update(**{column: now})
+    if event is None:
+        return
+    for user_id, campaign_id in fresh:
+        if user_id is not None:
+            analytics.track(event, actor_id=user_id, properties={"campaign": str(campaign_id)})
+
+
+_EVENT_FOR_KIND = {
+    "delivered": "newsletter_delivered",
+    "opened": "newsletter_opened",
+    "clicked": "newsletter_clicked",
+}
+
+
 def record_delivery(kind: str, provider_message_id: str) -> None:
     """Called for each new delivery report from the email provider."""
     column = _TIMESTAMP_KINDS.get(kind)
@@ -514,12 +575,13 @@ def record_delivery(kind: str, provider_message_id: str) -> None:
         return
     rows = CampaignRecipient.objects.filter(provider_message_id=provider_message_id)
     now = timezone.now()
-    rows.filter(**{f"{column}__isnull": True}).update(**{column: now})
     # A click proves delivery and an open, even if the provider never reported them.
-    if kind in ("opened", "clicked"):
-        rows.filter(delivered_at__isnull=True).update(delivered_at=now)
     if kind == "clicked":
-        rows.filter(opened_at__isnull=True).update(opened_at=now)
+        _mark(rows, "delivered_at", "newsletter_delivered", now)
+        _mark(rows, "opened_at", "newsletter_opened", now)
+    elif kind == "opened":
+        _mark(rows, "delivered_at", "newsletter_delivered", now)
+    _mark(rows, column, _EVENT_FOR_KIND.get(kind), now)
 
 
 def report(campaign: Campaign) -> dict[str, Any]:

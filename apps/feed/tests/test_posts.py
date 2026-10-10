@@ -5,7 +5,7 @@ import pytest
 
 from apps.analytics.models import AnalyticsEvent
 from apps.feed.models import Post, PostImage
-from apps.feed.tests.conftest import POSTS, post_url, write_post
+from apps.feed.tests.conftest import POSTS, active, post_url, write_post
 from apps.startups.tests.conftest import STARTUPS, new_startup_body
 
 pytestmark = pytest.mark.django_db
@@ -409,3 +409,22 @@ def test_the_stored_text_matches_the_markup(author_client):
 
 def test_member_only_content_never_reaches_visitors(api_client, post_id):
     assert api_client.get(post_url(post_id)).status_code == 401
+
+
+def test_editing_a_post_does_not_tell_the_same_people_again(
+    author_client, reader, make_user, post_id
+):
+    from apps.core.models import OutboxEvent
+
+    other = active(make_user, "other@example.com")
+
+    def told():
+        return sorted(
+            e.payload["user_id"] for e in OutboxEvent.objects.filter(topic="feed.member_mentioned")
+        )
+
+    edit(author_client, post_id, {"mentions": [str(reader.pk)]})
+    edit(author_client, post_id, {"mentions": [str(reader.pk)], "body": "<p>edited again</p>"})
+    assert told() == [str(reader.pk)]
+    edit(author_client, post_id, {"mentions": [str(reader.pk), str(other.pk)]})
+    assert told() == sorted([str(reader.pk), str(other.pk)])
