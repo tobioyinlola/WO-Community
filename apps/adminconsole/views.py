@@ -17,6 +17,7 @@ from apps.adminconsole.serializers import (
 )
 from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
+from apps.feed import moderation
 
 ERRORS = {
     401: OpenApiResponse(description="Not authenticated"),
@@ -177,4 +178,8 @@ class QueuesView(APIView):
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
-        return Response(QueueCountsSerializer(selectors.registration_queue_counts()).data)
+        counts = {
+            **selectors.registration_queue_counts(),
+            "open_reports": moderation.open_report_count(),
+        }
+        return Response(QueueCountsSerializer(counts).data)

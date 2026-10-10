@@ -93,3 +93,4 @@ class BulkReportSerializer(serializers.Serializer):
 class QueueCountsSerializer(serializers.Serializer):
     registrations_awaiting_approval = serializers.IntegerField()
     registrations_unverified = serializers.IntegerField()
+    open_reports = serializers.IntegerField()
