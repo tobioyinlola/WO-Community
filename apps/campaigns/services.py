@@ -539,3 +539,11 @@ def report(campaign: Campaign) -> dict[str, Any]:
     counts["open_rate"] = round(counts["opened"] / sent, 4) if sent else 0.0
     counts["click_rate"] = round(counts["clicked"] / sent, 4) if sent else 0.0
     return {"recipients": campaign.recipient_count, **counts}
+
+
+def recent_reports(limit: int = 5) -> list[dict[str, Any]]:
+    """The latest finished or running campaigns with their reports, for the dashboard."""
+    rows = Campaign.objects.filter(
+        status__in=[Campaign.Status.SENDING, Campaign.Status.SENT]
+    ).order_by("-started_at")[:limit]
+    return [{"id": c.pk, "name": c.name, "started_at": c.started_at, **report(c)} for c in rows]
