@@ -138,6 +138,18 @@ TYPES: dict[str, Spec] = {
         lambda p: f"/events/{p['event_id']}",
         email=True,
     ),
+    "certificate_ready": Spec(
+        "learning",
+        lambda who, p: f"Your certificate for \"{p.get('title', 'your course')}\" is ready",
+        lambda p: f"/certificates/{p['certificate_id']}",
+        email=True,
+    ),
+    "course_granted": Spec(
+        "learning",
+        lambda who, p: f"You now have access to \"{p.get('title', 'a course')}\"",
+        lambda p: f"/courses/{p['course_id']}",
+        email=True,
+    ),
     "member_approved": Spec(
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),
