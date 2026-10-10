@@ -101,6 +101,18 @@ TYPES: dict[str, Spec] = {
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
+    "win_approved": Spec(
+        "moderation",
+        lambda who, p: f"Your win \"{p.get('title', '')}\" was accepted. Congratulations!",
+        lambda p: "/news",
+        email=True,
+    ),
+    "win_rejected": Spec(
+        "moderation",
+        lambda who, p: f"Your win submission was not accepted: {p.get('reason', '')}",
+        lambda p: "/news",
+        email=True,
+    ),
     "member_approved": Spec(
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),
