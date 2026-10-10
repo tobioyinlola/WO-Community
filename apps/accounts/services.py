@@ -83,6 +83,11 @@ def _token_digest(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def hash_address(address: str) -> str:
+    """A short, stable stand-in for an email address in the audit log."""
+    return _token_digest(address)[:32]
+
+
 def normalise_email(email: str) -> str:
     return email.strip().lower()
 
@@ -90,7 +95,7 @@ def normalise_email(email: str) -> str:
 # --- Registration and email verification ---
 
 
-def _record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
+def record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
     versions = settings.CONSENT_DOCUMENT_VERSIONS
     ConsentRecord.objects.bulk_create(
         ConsentRecord(
@@ -137,10 +142,10 @@ def register(
                 else None
             )
             if invitation is not None:
-                user = _create_invited_user(address, password, invitation)
+                user = create_invited_user(address, password, invitation)
             else:
                 user = User.objects.create_user(address, password)
-            _record_consents(user, consents, ip)
+            record_consents(user, consents, ip)
             if anonymous_id is not None:
                 analytics.identify(anonymous_id, user.pk)  # joins the funnel to the member
             if signup:
@@ -177,7 +182,9 @@ def register(
         return False
 
 
-def _create_invited_user(address: str, password: str, invitation: invitations.Invitation) -> User:
+def create_invited_user(
+    address: str, password: str | None, invitation: invitations.Invitation
+) -> User:
     """An active, email-verified member. Receiving the link proves control of the mailbox."""
     now = timezone.now()
     user = User.objects.create_user(
@@ -336,6 +343,16 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         raise EmailNotVerified()
 
     ratelimit.reset(account_key)
+    return begin_session(user, ip=ip, user_agent=user_agent)
+
+
+def begin_session(
+    user: User, *, ip: str, user_agent: str, method: str = "password"
+) -> LoginResult | MfaChallenge:
+    """Start a session for someone who has just proved who they are.
+
+    Accounts with a second factor get a challenge to finish instead.
+    """
     if mfa.has_confirmed_device(user):
         return MfaChallenge(user, mfa.issue_challenge(user))
     user.mark_login()
@@ -345,6 +362,7 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         action="auth.login",
         target_type="session",
         target_id=family.pk,
+        after={"method": method} if method != "password" else None,
         ip=ip,
         user_agent=user_agent,
     )

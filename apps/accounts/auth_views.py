@@ -10,10 +10,12 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, BaseThrottle, ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.accounts import services
+from apps.accounts import services, social
 from apps.accounts.serializers import (
     AccessTokenSerializer,
     ForgotPasswordSerializer,
+    GoogleRegistrationRequiredSerializer,
+    GoogleSignInSerializer,
     InvitationPreviewSerializer,
     LoginSerializer,
     MessageSerializer,
@@ -199,6 +201,83 @@ class LoginView(PublicAuthView):
             challenge["Cache-Control"] = "no-store"
             return challenge
         return _token_response(result)
+
+
+class GoogleSignInView(PublicAuthView):
+    throttle_scope = "auth_google"
+
+    @extend_schema(
+        summary="Sign in or sign up with Google",
+        description="Send the ID token the browser got from Google. A member who already has "
+        "this address (or this Google login) is signed in exactly as with a password, "
+        "including the MFA step. A new person gets 409 `registration_required` until the "
+        "request also carries `registration` (consents and sign-up details); the account "
+        "is then created pending admin approval, or approved at once with a valid "
+        "`invitation_token` for the same address, and the answer is 201.",
+        request=GoogleSignInSerializer,
+        responses={
+            200: AccessTokenSerializer,
+            201: AccessTokenSerializer,
+            202: MfaChallengeSerializer,
+            401: OpenApiResponse(description="Invalid Google token or account unusable"),
+            403: OpenApiResponse(description="Google address not verified"),
+            404: OpenApiResponse(description="Google sign-in is not configured"),
+            409: GoogleRegistrationRequiredSerializer,
+            503: OpenApiResponse(description="Google could not be reached"),
+        },
+        tags=["auth"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = GoogleSignInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        registration = data.get("registration")
+        if registration is not None:
+            registration = {
+                "consents": {
+                    "terms": registration["accepted_terms"],
+                    "privacy": registration["accepted_privacy"],
+                    "conduct": registration["accepted_conduct"],
+                    "marketing": registration["marketing_consent"],
+                },
+                "signup": {"profile": registration["profile"], "startup": registration["startup"]},
+                "anonymous_id": registration["anonymous_id"],
+                "invitation_token": registration["invitation_token"],
+            }
+        try:
+            outcome = social.sign_in_with_google(
+                id_token=data["id_token"],
+                nonce=data["nonce"],
+                registration=registration,
+                ip=client_ip(request),
+                user_agent=user_agent(request),
+            )
+        except social.RegistrationRequired as needed:
+            response = Response(
+                {
+                    "type": "https://api.wocommunity.example/problems/registration_required",
+                    "title": "Registration required",
+                    "status": 409,
+                    "code": "registration_required",
+                    "detail": "Complete your sign-up details to create an account.",
+                    "email": needed.email,
+                    "name": needed.name,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+            response["Cache-Control"] = "no-store"
+            return response
+        if isinstance(outcome.result, services.MfaChallenge):
+            challenge = Response(
+                {"mfa_required": True, "mfa_token": outcome.result.mfa_token},
+                status=status.HTTP_202_ACCEPTED,
+            )
+            challenge["Cache-Control"] = "no-store"
+            return challenge
+        response = _token_response(outcome.result)
+        if outcome.created:
+            response.status_code = status.HTTP_201_CREATED
+        return response
 
 
 class RefreshView(PublicAuthView):
