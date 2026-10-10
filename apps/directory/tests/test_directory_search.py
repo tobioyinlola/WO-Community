@@ -118,7 +118,7 @@ def test_blank_and_padded_queries_behave_like_browsing(api_client, catalogue):
 def test_searches_are_limited_to_sixty_a_minute_but_browsing_is_not(
     api_client, catalogue, monkeypatch
 ):
-    from apps.directory.views import SearchThrottle
+    from apps.core.public import SearchThrottle
 
     monkeypatch.setattr(SearchThrottle, "THROTTLE_RATES", {"public_search": "2/min"})
     assert [api_client.get(STARTUPS, {"q": "farm"}).status_code for _ in range(3)] == [

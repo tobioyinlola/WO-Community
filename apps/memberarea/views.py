@@ -65,6 +65,7 @@ class SearchHitSerializer(serializers.Serializer):
 class SearchResultSerializer(serializers.Serializer):
     members = SearchHitSerializer(many=True, required=False)
     startups = SearchHitSerializer(many=True, required=False)
+    jobs = SearchHitSerializer(many=True, required=False)
 
 
 class SearchView(APIView):
@@ -73,13 +74,13 @@ class SearchView(APIView):
     throttle_scope = "search"
 
     @extend_schema(
-        summary="Search members and startups",
+        summary="Search members, startups and jobs",
         description="Results are what you may see of each item: someone who hides their basics "
         "from members cannot be found. Tolerates small typos. Jobs, courses and the rest join "
         "as their areas are built.",
         parameters=[
             OpenApiParameter("q", str, required=True, description="2 to 100 characters"),
-            OpenApiParameter("types", str, description="Comma list: members, startups"),
+            OpenApiParameter("types", str, description="Comma list: members, startups, jobs"),
             OpenApiParameter("limit", int, description="Per type, 1 to 20 (default 10)"),
         ],
         responses={

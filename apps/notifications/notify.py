@@ -71,6 +71,36 @@ TYPES: dict[str, Spec] = {
         email=True,
         rate_limited_email=True,
     ),
+    "job_alert": Spec(
+        "jobs",
+        lambda who, p: f"New job matching your alert: {p.get('title', 'a new job')}",
+        lambda p: f"/jobs/{p['job_id']}",
+        email=True,
+        rate_limited_email=True,
+    ),
+    "job_digest": Spec(
+        "jobs",
+        lambda who, p: f"{p.get('count', 0)} new jobs match your alert",
+        lambda p: f"/jobs?alert={p['alert_id']}",
+        email=True,
+    ),
+    "job_approved": Spec(
+        "jobs",
+        lambda who, p: f"Your job \"{p.get('title', '')}\" is now live",
+        lambda p: f"/jobs/{p['job_id']}",
+    ),
+    "job_rejected": Spec(
+        "jobs",
+        lambda who, p: f"Your job \"{p.get('title', '')}\" was not approved: {p.get('reason', '')}",
+        lambda p: f"/jobs/{p['job_id']}",
+        email=True,
+    ),
+    "job_expiring": Spec(
+        "jobs",
+        lambda who, p: f"Your job \"{p.get('title', '')}\" expires in 3 days: renew or close",
+        lambda p: f"/jobs/{p['job_id']}",
+        email=True,
+    ),
     "member_approved": Spec(
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),

@@ -16,6 +16,7 @@ from django.db.models.functions import Greatest
 
 from apps.accounts import services as accounts
 from apps.core.visibility import audience_for
+from apps.jobs import selectors as jobs
 from apps.profiles import selectors as profiles
 from apps.profiles.models import FounderProfile
 from apps.startups import selectors as startups
@@ -95,9 +96,26 @@ def _startups(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
     return hits
 
 
+def _jobs(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
+    """Live jobs only; the board's own text matching, newest first."""
+    rows = jobs.filter_jobs(jobs.live_jobs(), q=query).order_by("-published_at", "-id")[:limit]
+    return [
+        {
+            "type": "job",
+            "id": job.pk,
+            "slug": job.slug,
+            "title": job.title,
+            "subtitle": job.organisation or job.location,
+            "image": None,
+        }
+        for job in rows
+    ]
+
+
 SEARCHERS: dict[str, Callable[[Any, str, int], list[dict[str, Any]]]] = {
     "members": _members,
     "startups": _startups,
+    "jobs": _jobs,
 }
 
 
