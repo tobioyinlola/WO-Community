@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.profiles",
     "apps.startups",
     "apps.directory",
+    "apps.memberarea",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -137,6 +138,7 @@ REST_FRAMEWORK = {
         "auth_register": "5/hour",
         "auth_login": "30/min",
         "auth_google": "30/min",
+        "search": "60/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",

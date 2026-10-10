@@ -67,3 +67,14 @@ class Suppression(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.reason} {self.email_hash[:8]}"
+
+
+class NotificationPreference(BaseModel):
+    """A member's per type, per channel choices. Only departures from the defaults are stored."""
+
+    user = models.OneToOneField(
+        "accounts.User", on_delete=models.CASCADE, related_name="notification_preference"
+    )
+    choices = models.JSONField(default=dict, blank=True)
+    # Set the first time the member saves their choices, even unchanged.
+    confirmed_at = models.DateTimeField(null=True, blank=True)
