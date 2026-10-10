@@ -1609,6 +1609,72 @@ paths:
           description: ''
         '400':
           description: Malformed batch
+  /api/v1/follows:
+    post:
+      operationId: follows_create
+      description: 'Idempotent: following again answers 200. You can only follow someone
+        whose profile (or a startup whose basics) you can see. Up to 500 follows.'
+      summary: Follow a member or a startup
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/follows/{kind}/{target_id}:
+    delete:
+      operationId: follows_destroy
+      description: 'Idempotent: unfollowing someone you do not follow still answers
+        204.'
+      summary: Stop following
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -1661,6 +1727,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/Preference'
           description: ''
+  /api/v1/me/following:
+    get:
+      operationId: me_following_retrieve
+      description: Newest follow first. People and startups you can no longer see
+        are left out.
+      summary: Who you follow
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+      - in: query
+        name: type
+        schema:
+          enum:
+          - member
+          - startup
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `member` - member
+          * `startup` - startup
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowingList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/me/notification-preferences:
     get:
       operationId: me_notification_preferences_retrieve
@@ -2053,12 +2168,14 @@ paths:
         schema:
           enum:
           - all
+          - following
           - mine
           type: string
           default: all
           minLength: 1
         description: |-
           * `all` - all
+          * `following` - following
           * `mine` - mine
       - in: query
         name: sort
@@ -3247,6 +3364,9 @@ components:
         slug:
           type: string
           nullable: true
+        following:
+          type: boolean
+          default: false
       required:
       - headline
       - id
@@ -3535,6 +3655,79 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Post'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    FollowRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+      - type
+    FollowResult:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        following:
+          type: boolean
+      required:
+      - following
+      - id
+      - type
+    FollowingItem:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          nullable: true
+        name:
+          type: string
+        headline:
+          type: string
+        image:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        followed_at:
+          type: string
+          format: date-time
+      required:
+      - followed_at
+      - headline
+      - id
+      - image
+      - name
+      - slug
+      - type
+    FollowingList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowingItem'
         next_cursor:
           type: string
           nullable: true
@@ -4403,6 +4596,9 @@ components:
           allOf:
           - $ref: '#/components/schemas/Image'
           nullable: true
+        following:
+          type: boolean
+          default: false
       required:
       - id
       - logo
@@ -5355,6 +5551,14 @@ components:
             $ref: '#/components/schemas/TractionItemRequest'
       required:
       - metrics
+    TypeEnum:
+      enum:
+      - member
+      - startup
+      type: string
+      description: |-
+        * `member` - member
+        * `startup` - startup
     Upload:
       type: object
       properties:
