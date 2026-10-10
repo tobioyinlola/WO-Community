@@ -202,3 +202,8 @@ def count_by_stage(slugs: list[str]) -> dict[str, int]:
         Startup.objects.filter(stage__slug__in=slugs).values("stage__slug").annotate(n=Count("id"))
     )
     return {row["stage__slug"]: row["n"] for row in rows}
+
+
+def has_traction(user_id: UUID) -> bool:
+    """Whether any startup the user owns or sits on the team of reports a traction figure."""
+    return TractionMetric.objects.filter(startup_id__in=startup_ids_of_member(user_id)).exists()
