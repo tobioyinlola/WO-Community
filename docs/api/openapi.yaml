@@ -693,6 +693,141 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such post
+  /api/v1/admin/dashboard:
+    get:
+      operationId: admin_dashboard_retrieve
+      description: 'Read from summary tables, never from raw events, so it is quick.
+        `refreshed_at` says how fresh they are. The learning, mentorship and revenue
+        sections report `available: false` until those parts of the platform exist.'
+      summary: 'The console home: queues, community, activity and email at a glance'
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/dashboard/funnel:
+    get:
+      operationId: admin_dashboard_funnel_retrieve
+      description: Early steps come from visitors' browsers and only from people who
+        agreed to analytics, so they understate traffic; the later steps are exact.
+      summary: The registration funnel, from directory visit to approval
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Funnel'
+          description: ''
+        '400':
+          description: Bad range
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/dashboard/metrics:
+    get:
+      operationId: admin_dashboard_metrics_list
+      summary: The metrics that can be charted
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricInfo'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/dashboard/refresh:
+    post:
+      operationId: admin_dashboard_refresh_create
+      description: Normally a job does this every hour. Returns 202; the work runs
+        in a worker.
+      summary: Refresh the summary tables now
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          description: Queued
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/dashboard/series:
+    get:
+      operationId: admin_dashboard_series_retrieve
+      description: '`from` and `to` are dates (default: the last 30 days, at most
+        366 days).'
+      summary: One metric, one value per day
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: metric
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Series'
+          description: ''
+        '400':
+          description: Bad metric or range
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/editorial:
     get:
       operationId: admin_editorial_list
@@ -7371,6 +7506,43 @@ components:
       description: |-
         * `hide` - hide
         * `remove` - remove
+    Activity:
+      type: object
+      properties:
+        daily_active:
+          type: integer
+          nullable: true
+        weekly_active:
+          type: integer
+          nullable: true
+        monthly_active:
+          type: integer
+          nullable: true
+        posts_last_7_days:
+          type: integer
+        comments_last_7_days:
+          type: integer
+        reactions_last_7_days:
+          type: integer
+        jobs_live:
+          type: integer
+          nullable: true
+        jobs_posted_last_30_days:
+          type: integer
+        average_hours_to_approval:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - average_hours_to_approval
+      - comments_last_7_days
+      - daily_active
+      - jobs_live
+      - jobs_posted_last_30_days
+      - monthly_active
+      - posts_last_7_days
+      - reactions_last_7_days
+      - weekly_active
     AdminEvent:
       type: object
       properties:
@@ -7943,6 +8115,14 @@ components:
       - name
       - photo
       - slug
+    Availability:
+      type: object
+      properties:
+        available:
+          type: boolean
+          description: False until that part of the platform exists
+      required:
+      - available
     Banner:
       type: object
       properties:
@@ -8112,6 +8292,36 @@ components:
       required:
       - name
       - subject
+    CampaignGlance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        sent:
+          type: integer
+        open_rate:
+          type: number
+          format: double
+        click_rate:
+          type: number
+          format: double
+        unsubscribed:
+          type: integer
+      required:
+      - click_rate
+      - id
+      - name
+      - open_rate
+      - sent
+      - started_at
+      - unsubscribed
     CampaignScheduleRequest:
       type: object
       description: |-
@@ -8281,6 +8491,56 @@ components:
           maxLength: 40000
       required:
       - body
+    Community:
+      type: object
+      properties:
+        active_members:
+          type: integer
+          nullable: true
+        pending_members:
+          type: integer
+          nullable: true
+        registered_last_7_days:
+          type: integer
+          nullable: true
+        registered_last_30_days:
+          type: integer
+        registered_previous_30_days:
+          type: integer
+        growth:
+          type: number
+          format: double
+          nullable: true
+          description: Change on the previous 30 days
+        retention:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+            nullable: true
+        by_country:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountItem'
+        startups_by_sector:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountItem'
+        startups_by_stage:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountItem'
+      required:
+      - active_members
+      - by_country
+      - growth
+      - pending_members
+      - registered_last_30_days
+      - registered_last_7_days
+      - registered_previous_30_days
+      - retention
+      - startups_by_sector
+      - startups_by_stage
     Completeness:
       type: object
       properties:
@@ -8292,6 +8552,16 @@ components:
       required:
       - next_missing_field
       - score
+    CountItem:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - name
     Country:
       type: object
       properties:
@@ -8315,6 +8585,36 @@ components:
           format: uuid
       required:
       - upload_id
+    Dashboard:
+      type: object
+      properties:
+        refreshed_at:
+          type: string
+          format: date-time
+          nullable: true
+        pending:
+          $ref: '#/components/schemas/QueueCounts'
+        community:
+          $ref: '#/components/schemas/Community'
+        activity:
+          $ref: '#/components/schemas/Activity'
+        email:
+          $ref: '#/components/schemas/EmailSnapshot'
+        learning:
+          $ref: '#/components/schemas/Availability'
+        mentorship:
+          $ref: '#/components/schemas/Availability'
+        revenue:
+          $ref: '#/components/schemas/Availability'
+      required:
+      - activity
+      - community
+      - email
+      - learning
+      - mentorship
+      - pending
+      - refreshed_at
+      - revenue
     DirectorySkill:
       type: object
       properties:
@@ -8415,6 +8715,25 @@ components:
         * `funding` - funding
         * `news` - news
         * `announcement` - announcement
+    EmailSnapshot:
+      type: object
+      properties:
+        recent_campaigns:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignGlance'
+        average_open_rate:
+          type: number
+          format: double
+          nullable: true
+        average_click_rate:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - average_click_rate
+      - average_open_rate
+      - recent_campaigns
     Event:
       type: object
       properties:
@@ -8965,6 +9284,48 @@ components:
       description: |-
         * `instant` - instant
         * `daily` - daily
+    Funnel:
+      type: object
+      properties:
+        from_:
+          type: string
+          format: date
+          title: 'From '
+        to:
+          type: string
+          format: date
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/FunnelStep'
+      required:
+      - from_
+      - steps
+      - to
+    FunnelStep:
+      type: object
+      properties:
+        step:
+          type: string
+        title:
+          type: string
+        count:
+          type: number
+          format: double
+        from_previous:
+          type: number
+          format: double
+          nullable: true
+        from_start:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - count
+      - from_previous
+      - from_start
+      - step
+      - title
     GoogleRegistrationRequest:
       type: object
       description: 'What a first-time Google user adds: consents and sign-up details,
@@ -9734,6 +10095,16 @@ components:
           type: string
       required:
       - detail
+    MetricInfo:
+      type: object
+      properties:
+        metric:
+          type: string
+        description:
+          type: string
+      required:
+      - description
+      - metric
     MfaChallenge:
       type: object
       properties:
@@ -10324,6 +10695,19 @@ components:
       required:
       - release
       - status
+    Point:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        value:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - date
+      - value
     Post:
       type: object
       properties:
@@ -11591,6 +11975,27 @@ components:
       required:
       - definition
       - name
+    Series:
+      type: object
+      properties:
+        metric:
+          type: string
+        description:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/Point'
+        total:
+          type: number
+          format: double
+          nullable: true
+          description: Sum, or the average for averaged metrics
+      required:
+      - description
+      - metric
+      - points
+      - total
     Session:
       type: object
       properties:

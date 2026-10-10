@@ -149,15 +149,30 @@ Design and trade-offs are in ADR 0026.
 
 Scheduled: `campaigns.start_due` every minute (also rescues stalled sends).
 
-## Stage 2 is feature complete except for admin dashboards
+## Slice 10: admin dashboards (done)
 
-What remains is the admin dashboards and queues beyond counts.
+Design and trade-offs are in ADR 0027.
 
-## Still to do in Stage 2
+| Endpoint | What it does |
+|---|---|
+| `GET /admin/dashboard` | Console home: waiting queues, community size and growth, retention, members by country, startups by sector and stage, activity (daily, weekly, monthly active; posts, comments, reactions, jobs), email snapshot; learning, mentorship and revenue report `available: false` for now. |
+| `GET /admin/dashboard/metrics` | The metrics that can be charted. |
+| `GET /admin/dashboard/series?metric=&from=&to=` | One metric, one value per day (up to 366 days). |
+| `GET /admin/dashboard/funnel?from=&to=` | Directory visit to approval, with conversion at each step. |
+| `POST /admin/dashboard/refresh` | Queue a refresh now (super admin). |
 
-1. Admin dashboards and summary tables (registrations, active members, funnels, engagement).
-2. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
-3. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
-   monthly partitions for notifications if volume warrants; merge the jobs, news and events
-   sitemaps into the front end's sitemap; set up the marketing sending domain (SPF, DKIM, DMARC,
-   warm-up).
+Scheduled: `adminconsole.refresh_dashboard` hourly.
+
+## Stage 2 status: feature complete
+
+Everything in the Stage 2 scope is built: feed, comments, reactions, follows, reports and
+moderation, link previews, notification centre and preferences, jobs, editorial and win
+submissions, events and demo days, campaigns and segments, and admin queues and dashboards.
+
+## Carried forward
+
+1. The CDN purger (provider decision still pending).
+2. Hardening follow-ups collected during this stage: run the `media` queue with an egress allow
+   list; consider monthly partitions for notifications if volume warrants; merge the jobs, news and
+   events sitemaps into the front end's sitemap; set up the marketing sending domain (SPF, DKIM,
+   DMARC, warm-up); members cannot yet report editorial comments; raw analytics archival.
