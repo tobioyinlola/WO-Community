@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.feed",
     "apps.jobs",
     "apps.editorial",
+    "apps.events",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -168,6 +169,7 @@ SPECTACULAR_SETTINGS = {
         "ApplyMethodEnum": "apps.jobs.models.APPLY_METHODS",
         "EditorialTypeEnum": "apps.editorial.models.ITEM_TYPES",
         "WinKindEnum": "apps.editorial.models.WIN_KINDS",
+        "EventTypeEnum": "apps.events.models.EVENT_TYPES",
         "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
     },
 }
@@ -244,6 +246,7 @@ CELERY_BEAT_SCHEDULE = {
     "feed-purge-link-previews": {"task": "feed.purge_link_previews", "schedule": 86400.0},
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
+    "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
     "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
     "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},

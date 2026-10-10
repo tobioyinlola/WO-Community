@@ -18,6 +18,7 @@ from rest_framework import serializers
 PARSERS: dict[str, Any] = {
     "created_at": datetime.fromisoformat,
     "published_at": datetime.fromisoformat,
+    "starts_at": datetime.fromisoformat,
     "engagement": int,
     "id": uuid.UUID,
 }
