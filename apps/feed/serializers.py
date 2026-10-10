@@ -98,6 +98,14 @@ class PostImageSerializer(serializers.Serializer):
     alt = serializers.CharField(allow_blank=True)
 
 
+class LinkPreviewSerializer(serializers.Serializer):
+    url = serializers.CharField()
+    title = serializers.CharField(allow_blank=True)
+    description = serializers.CharField(allow_blank=True)
+    site_name = serializers.CharField(allow_blank=True)
+    image = ImageSerializer(allow_null=True)
+
+
 class PostSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     category = serializers.CharField()
@@ -106,6 +114,7 @@ class PostSerializer(serializers.Serializer):
     author = AuthorSerializer()
     startup = PostStartupSerializer(allow_null=True)
     images = PostImageSerializer(many=True)
+    previews = LinkPreviewSerializer(many=True, help_text="Cards for links, once fetched")
     created_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField(allow_null=True)
     pinned = serializers.BooleanField()

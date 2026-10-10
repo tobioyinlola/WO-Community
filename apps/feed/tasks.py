@@ -5,6 +5,7 @@ import structlog
 from celery import shared_task
 
 from apps.core.models import OutboxEvent
+from apps.feed import links
 from apps.notifications import notify
 
 logger = structlog.get_logger(__name__)
@@ -67,3 +68,15 @@ def notify_report_outcome(event_id: str) -> None:
         {"outcome": data["outcome"], "target_type": data["target_type"]},
         dedupe_key=f"{event_id}:outcome",
     )
+
+
+@shared_task(name="feed.fetch_link_preview", time_limit=60, soft_time_limit=45)
+def fetch_link_preview(event_id: str) -> None:
+    data = _payload(event_id)
+    if data is not None:
+        links.fetch(data["preview_id"])
+
+
+@shared_task(name="feed.purge_link_previews")
+def purge_link_previews() -> int:
+    return links.purge_unused()
