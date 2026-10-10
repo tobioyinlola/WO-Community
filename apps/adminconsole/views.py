@@ -18,6 +18,7 @@ from apps.adminconsole.serializers import (
 from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
 from apps.feed import moderation
+from apps.jobs import selectors as jobs
 
 ERRORS = {
     401: OpenApiResponse(description="Not authenticated"),
@@ -181,5 +182,6 @@ class QueuesView(APIView):
         counts = {
             **selectors.registration_queue_counts(),
             "open_reports": moderation.open_report_count(),
+            "jobs_awaiting_review": jobs.pending_count(),
         }
         return Response(QueueCountsSerializer(counts).data)
