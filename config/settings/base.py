@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.editorial",
     "apps.events",
     "apps.campaigns",
+    "apps.learning",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -145,6 +146,8 @@ REST_FRAMEWORK = {
         "auth_google": "30/min",
         "search": "60/min",
         "feed_read": "240/min",
+        "lesson_progress": "60/min",
+        "lesson_visitor": "30/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -171,6 +174,8 @@ SPECTACULAR_SETTINGS = {
         "EditorialTypeEnum": "apps.editorial.models.ITEM_TYPES",
         "WinKindEnum": "apps.editorial.models.WIN_KINDS",
         "EventTypeEnum": "apps.events.models.EVENT_TYPES",
+        "LessonTypeEnum": "apps.learning.models.LESSON_TYPES",
+        "CourseLevelEnum": "apps.learning.models.LEVELS",
         "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
     },
 }

@@ -194,3 +194,11 @@ def active_member_counts_by_country() -> dict[str, int]:
         .annotate(n=Count("id"))
     )
     return {row["country"]: row["n"] for row in rows}
+
+
+def full_name_of(user_id: UUID) -> str:
+    """The name on the member's own profile, whatever its visibility (for their own documents)."""
+    return (
+        FounderProfile.objects.filter(user_id=user_id).values_list("full_name", flat=True).first()
+        or ""
+    )

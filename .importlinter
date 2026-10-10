@@ -9,7 +9,7 @@ type = layers
 layers =
     apps.adminconsole
     apps.memberarea | apps.campaigns
-    apps.directory | apps.feed | apps.jobs | apps.editorial | apps.events
+    apps.directory | apps.feed | apps.jobs | apps.editorial | apps.events | apps.learning
     apps.notifications
     apps.profiles | apps.startups
     apps.uploads
