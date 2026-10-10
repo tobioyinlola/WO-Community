@@ -1149,6 +1149,33 @@ paths:
           description: ''
         '400':
           description: Invalid token
+  /api/v1/events:
+    post:
+      operationId: events_create
+      description: Up to 50 events per call. Only events marked as browser events
+        in the registry are accepted, with only their listed properties. Invalid events
+        are reported individually and the rest are kept. Send the visitor's `anonymous_id`
+        only if they agreed to analytics; when signed in it is linked to the member.
+      summary: Report browser events
+      tags:
+      - analytics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+        required: true
+      security:
+      - optionalBearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+          description: ''
+        '400':
+          description: Malformed batch
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -1163,6 +1190,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Me'
+          description: ''
+  /api/v1/me/analytics-preferences:
+    get:
+      operationId: me_analytics_preferences_retrieve
+      summary: Whether you are left out of analytics
+      tags:
+      - analytics
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preference'
+          description: ''
+    put:
+      operationId: me_analytics_preferences_update
+      description: While opted out nothing about you is recorded, by the browser or
+        the server.
+      summary: Leave analytics, or rejoin
+      tags:
+      - analytics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preference'
           description: ''
   /api/v1/me/profile:
     get:
@@ -2259,6 +2323,18 @@ components:
       - email
       - id
       - status
+    BatchResult:
+      type: object
+      properties:
+        accepted:
+          type: integer
+        rejected:
+          type: array
+          items:
+            $ref: '#/components/schemas/RejectedEvent'
+      required:
+      - accepted
+      - rejected
     BulkInvitationRequest:
       type: object
       description: |-
@@ -2338,6 +2414,44 @@ components:
       required:
       - name
       - slug
+    EventBatchRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        anonymous_id:
+          type: string
+          format: uuid
+          nullable: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventItemRequest'
+      required:
+      - events
+    EventItemRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        properties:
+          type: object
+          additionalProperties: {}
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - name
     Featured:
       type: object
       properties:
@@ -2942,6 +3056,30 @@ components:
       required:
       - release
       - status
+    Preference:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        opt_out:
+          type: boolean
+      required:
+      - opt_out
+    PreferenceRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        opt_out:
+          type: boolean
+      required:
+      - opt_out
     Profile:
       type: object
       description: Output shape. Every field is optional because hidden groups are
@@ -3136,6 +3274,10 @@ components:
           $ref: '#/components/schemas/SignupProfileRequest'
         startup:
           $ref: '#/components/schemas/SignupStartupRequest'
+        anonymous_id:
+          type: string
+          format: uuid
+          nullable: true
         invitation_token:
           type: string
           default: ''
@@ -3158,6 +3300,16 @@ components:
       required:
       - approved
       - detail
+    RejectedEvent:
+      type: object
+      properties:
+        index:
+          type: integer
+        reason:
+          type: string
+      required:
+      - index
+      - reason
     ResetPasswordRequest:
       type: object
       description: |-
@@ -3821,3 +3973,8 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    optionalBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Optional: send it when signed in so events are tied to the member.'

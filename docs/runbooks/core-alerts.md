@@ -98,3 +98,25 @@ five minutes off. A 404 means `EMAIL_ADAPTER` is not set to Resend on that envir
 `email_suppressed` log lines and `Suppression` rows show who was blocked. A sudden rise after a send
 points at a bad list or content. Complaints above 0.1% or bounces above 5% on a campaign should pause
 that campaign (the campaigns module will do this automatically).
+
+## Analytics events not reaching the analytics tool
+
+The `analytics.forward` job (every minute, queue `analytics`) moves a cursor through the event table
+and sends batches to the sink. If the tool is down the batch is simply offered again next minute; no
+events are lost, they queue in our own table. Check the worker log for the sink's error, and compare
+`ForwardCursor.last_seq` with the highest `seq` in `analytics_event`. A lag of a few minutes is normal
+(events are held 60 seconds on purpose). Delivery is at least once, so the tool must ignore repeated
+event ids.
+
+## `analytics_event_dropped` in the logs
+
+In production a malformed event is dropped instead of failing the request. A steady stream of these
+means a code path is emitting an event that does not match the registry; the log line names the event
+and the reason. Fix the caller or the registry.
+
+## Analytics partitions
+
+The daily job keeps the next three months of partitions ready. If rows ever land in
+`analytics_event_default`, the job did not run; run `analytics.ensure_partitions` and move the rows.
+The retention job drops partitions older than 13 months. Archive them to object storage first once
+the archive job exists.
