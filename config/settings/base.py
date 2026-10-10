@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.directory",
     "apps.memberarea",
     "apps.feed",
+    "apps.jobs",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -161,6 +162,10 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "JobTypeEnum": "apps.jobs.models.JOB_TYPES",
+        "ApplyMethodEnum": "apps.jobs.models.APPLY_METHODS",
+    },
 }
 
 # Comma separated Fernet keys; the first encrypts, all decrypt (see apps/core/crypto.py).
@@ -233,6 +238,9 @@ CELERY_BEAT_SCHEDULE = {
     "notifications-purge-webhooks": {"task": "notifications.purge_webhooks", "schedule": 86400.0},
     "notifications-purge": {"task": "notifications.purge_notifications", "schedule": 86400.0},
     "feed-purge-link-previews": {"task": "feed.purge_link_previews", "schedule": 86400.0},
+    "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
+    "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
+    "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
     "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
     "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},

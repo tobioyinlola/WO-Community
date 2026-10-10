@@ -67,7 +67,7 @@ def test_matching_ignores_case(searcher, people):
 
 
 def test_unrelated_words_find_nothing(searcher, people):
-    assert find(searcher, "zzqx").json() == {"members": [], "startups": []}
+    assert find(searcher, "zzqx").json() == {"members": [], "startups": [], "jobs": []}
 
 
 def test_a_member_can_find_themselves(searcher):
@@ -181,7 +181,7 @@ def test_limit_is_applied_per_type(searcher, make_user):
         {"q": ""},
         {"q": "a"},
         {"q": "x" * 101},
-        {"q": "ok", "types": "jobs"},
+        {"q": "ok", "types": "courses"},
         {"q": "ok", "limit": 0},
         {"q": "ok", "limit": 21},
         {"q": "ok", "limit": "many"},

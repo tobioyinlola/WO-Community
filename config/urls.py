@@ -17,5 +17,6 @@ urlpatterns = [
     path("api/v1/", include("apps.directory.urls")),
     path("api/v1/", include("apps.memberarea.urls")),
     path("api/v1/", include("apps.feed.urls")),
+    path("api/v1/", include("apps.jobs.urls")),
     path("api/v1/", include("apps.adminconsole.urls")),
 ]
