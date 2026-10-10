@@ -18,6 +18,7 @@ from apps.accounts import services as accounts
 from apps.core.serializers import StrictSerializer
 from apps.feed import selectors as feed
 from apps.jobs import selectors as jobs
+from apps.learning import selectors as learning
 from apps.notifications import services as notifications
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
@@ -30,6 +31,9 @@ TAGS = (
     "founder_active",
     "founder_dormant",
     "job_poster",
+    "learner_free",
+    "learner_paid",
+    "course_completed",
 )
 ROLES = ("member", "mentor")
 PROFILE_COMPLETE_SCORE = 80
@@ -156,6 +160,12 @@ def compile_filters(definition: dict[str, Any]) -> Filters:
             f.exclude.append(feed.active_author_ids(now - timedelta(days=DORMANT_DAYS)))
         elif tag == "job_poster":
             f.include.append(jobs.poster_ids())
+        elif tag == "learner_free":
+            f.include.append(learning.learner_ids("free"))
+        elif tag == "learner_paid":
+            f.include.append(learning.learner_ids("paid"))
+        elif tag == "course_completed":
+            f.include.append(learning.completer_ids())
     return f
 
 

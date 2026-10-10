@@ -289,3 +289,26 @@ def test_a_link_in_a_button_cannot_break_out_of_its_attribute(admin):
         ],
     )
     assert "<script>x()" not in page
+
+
+def test_learning_tags(make_user):
+    from apps.learning import learn
+    from apps.learning.tests.conftest import build_course, lesson_ids
+
+    teacher = make_user(roles=("content_editor",), email="teacher@example.com")
+    free = build_course(teacher, title="Free one")
+    paid = build_course(teacher, title="Paid one", access="paid", price_minor=100, currency="USD")
+    starter = subscriber(make_user, "starter@example.com")
+    finisher = subscriber(make_user, "finisher@example.com")
+    buyer = subscriber(make_user, "buyer@example.com")
+    subscriber(make_user, "bystander@example.com")
+    learn.enrol(user_id=starter.pk, course_id=free.pk)
+    learn.enrol(user_id=finisher.pk, course_id=free.pk)
+    for lesson in lesson_ids(free):
+        learn.update_progress(
+            user_id=finisher.pk, lesson_id=lesson, position_seconds=None, completed=True
+        )
+    learn.grant(actor=teacher, course_id=paid.pk, user_id=buyer.pk)
+    assert emails({"tags": ["learner_free"]}) == ["finisher@example.com", "starter@example.com"]
+    assert emails({"tags": ["learner_paid"]}) == ["buyer@example.com"]
+    assert emails({"tags": ["course_completed"]}) == ["finisher@example.com"]

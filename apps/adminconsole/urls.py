@@ -2,6 +2,7 @@ from django.urls import path, re_path
 
 from apps.adminconsole import (
     campaign_views,
+    course_views,
     dashboard_views,
     editorial_views,
     event_views,
@@ -15,6 +16,7 @@ from apps.adminconsole import (
 
 KINDS = "sectors|stages|skills"
 
+COURSE_ACTIONS = ("publish", "unpublish", "duplicate")
 CAMPAIGN_ACTIONS = ("send", "schedule", "unschedule", "pause", "resume", "cancel", "test")
 EVENT_ACTIONS = ("publish", "unpublish", "cancel")
 ITEM_ACTIONS = ("publish", "unpublish")
@@ -26,6 +28,71 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/courses", course_views.AdminCoursesView.as_view(), name="admin-courses"),
+    path(
+        "admin/courses/<uuid:course_id>",
+        course_views.AdminCourseView.as_view(),
+        name="admin-course",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/cover",
+        course_views.CourseCoverView.as_view(),
+        name="admin-course-cover",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/modules",
+        course_views.CourseModulesView.as_view(),
+        name="admin-course-modules",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/modules/order",
+        course_views.ModulesOrderView.as_view(),
+        name="admin-course-modules-order",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/stats",
+        course_views.CourseStatsView.as_view(),
+        name="admin-course-stats",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/enrolments",
+        course_views.CourseEnrolmentsView.as_view(),
+        name="admin-course-enrolments",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/ratings",
+        course_views.CourseRatingsView.as_view(),
+        name="admin-course-ratings",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/grant",
+        course_views.CourseGrantView.as_view(),
+        name="admin-course-grant",
+    ),
+    *[
+        path(
+            f"admin/courses/<uuid:course_id>/{action}",
+            course_views.action_view(action).as_view(),
+            name=f"admin-course-{action}",
+        )
+        for action in COURSE_ACTIONS
+    ],
+    path("admin/modules/<uuid:module_id>", course_views.ModuleView.as_view(), name="admin-module"),
+    path(
+        "admin/modules/<uuid:module_id>/lessons",
+        course_views.ModuleLessonsView.as_view(),
+        name="admin-module-lessons",
+    ),
+    path(
+        "admin/modules/<uuid:module_id>/lessons/order",
+        course_views.LessonsOrderView.as_view(),
+        name="admin-module-lessons-order",
+    ),
+    path(
+        "admin/lessons/<uuid:lesson_id>",
+        course_views.LessonAdminView.as_view(),
+        name="admin-lesson",
+    ),
     path("admin/dashboard", dashboard_views.DashboardView.as_view(), name="admin-dashboard"),
     path(
         "admin/dashboard/metrics",
