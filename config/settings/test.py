@@ -41,3 +41,7 @@ PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )
 FRONTEND_BASE_URL = "https://app.test"
+GOOGLE_CLIENT_ID = "test-client.apps.googleusercontent.com"
+GOOGLE_TOKEN_VERIFIER = (
+    "apps.integrations.identity.fake.FakeGoogleVerifier"  # noqa: S105  # nosec B105
+)

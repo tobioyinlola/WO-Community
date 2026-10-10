@@ -83,6 +83,11 @@ AUTH_PASSWORD_VALIDATORS = [
 PASSWORD_BREACH_CHECKER = env.str(
     "PASSWORD_BREACH_CHECKER", default="apps.integrations.passwords.hibp.HibpBreachChecker"
 )
+# Google sign-in is off until a client id is configured.
+GOOGLE_CLIENT_ID = env.str("GOOGLE_CLIENT_ID", default="")
+GOOGLE_TOKEN_VERIFIER = env.str(
+    "GOOGLE_TOKEN_VERIFIER", default="apps.integrations.identity.google.GoogleTokenVerifier"
+)
 
 LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
@@ -131,6 +136,7 @@ REST_FRAMEWORK = {
         "user": "300/min",
         "auth_register": "5/hour",
         "auth_login": "30/min",
+        "auth_google": "30/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",

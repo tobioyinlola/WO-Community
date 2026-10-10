@@ -22,3 +22,7 @@ FIELD_ENCRYPTION_KEYS = ["87bV-lfLJURYTjAE8FLMf04SC-ZzQs2mb8k2bAqa7E8="]  # nose
 PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "local-client")
+GOOGLE_TOKEN_VERIFIER = os.environ.get(
+    "GOOGLE_TOKEN_VERIFIER", "apps.integrations.identity.fake.FakeGoogleVerifier"
+)
