@@ -2,6 +2,7 @@ from django.urls import path, re_path
 
 from apps.adminconsole import (
     campaign_views,
+    dashboard_views,
     editorial_views,
     event_views,
     featured_views,
@@ -25,6 +26,27 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/dashboard", dashboard_views.DashboardView.as_view(), name="admin-dashboard"),
+    path(
+        "admin/dashboard/metrics",
+        dashboard_views.MetricsView.as_view(),
+        name="admin-dashboard-metrics",
+    ),
+    path(
+        "admin/dashboard/series",
+        dashboard_views.SeriesView.as_view(),
+        name="admin-dashboard-series",
+    ),
+    path(
+        "admin/dashboard/funnel",
+        dashboard_views.FunnelView.as_view(),
+        name="admin-dashboard-funnel",
+    ),
+    path(
+        "admin/dashboard/refresh",
+        dashboard_views.RefreshView.as_view(),
+        name="admin-dashboard-refresh",
+    ),
     path("admin/segments", campaign_views.SegmentsView.as_view(), name="admin-segments"),
     path(
         "admin/segments/preview",

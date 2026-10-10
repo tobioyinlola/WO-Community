@@ -9,6 +9,7 @@ from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 
 from apps.accounts import selectors, services
+from apps.adminconsole import selectors as queues
 from apps.adminconsole.serializers import (
     MemberQuerySerializer,
     MemberSerializer,
@@ -17,9 +18,6 @@ from apps.adminconsole.serializers import (
 )
 from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
-from apps.editorial import selectors as editorial
-from apps.feed import moderation
-from apps.jobs import selectors as jobs
 
 ERRORS = {
     401: OpenApiResponse(description="Not authenticated"),
@@ -180,10 +178,4 @@ class QueuesView(APIView):
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
-        counts = {
-            **selectors.registration_queue_counts(),
-            "open_reports": moderation.open_report_count(),
-            "jobs_awaiting_review": jobs.pending_count(),
-            "wins_awaiting_review": editorial.pending_wins(),
-        }
-        return Response(QueueCountsSerializer(counts).data)
+        return Response(QueueCountsSerializer(queues.queue_counts()).data)
