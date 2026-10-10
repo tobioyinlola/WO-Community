@@ -1,10 +1,20 @@
 from django.urls import path, re_path
 
-from apps.adminconsole import featured_views, invitation_views, reference_views, views
+from apps.adminconsole import featured_views, feed_views, invitation_views, reference_views, views
 
 KINDS = "sectors|stages|skills"
 
+POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remove")
+
 urlpatterns = [
+    *[
+        path(
+            f"admin/posts/<uuid:post_id>/{action}",
+            feed_views.action_view(action).as_view(),
+            name=f"admin-post-{action}",
+        )
+        for action in POST_ACTIONS
+    ],
     re_path(
         rf"^admin/reference/(?P<kind>{KINDS})$",
         reference_views.ReferenceListView.as_view(),
