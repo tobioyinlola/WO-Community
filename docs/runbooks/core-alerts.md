@@ -120,3 +120,11 @@ The daily job keeps the next three months of partitions ready. If rows ever land
 `analytics_event_default`, the job did not run; run `analytics.ensure_partitions` and move the rows.
 The retention job drops partitions older than 13 months. Archive them to object storage first once
 the archive job exists.
+
+## Google sign-in failing
+
+`google_unavailable` (503) means our server could not fetch Google's signing keys; check outbound
+access to `www.googleapis.com` (log line `google_keys_unreachable`). A spike of
+`invalid_google_token` (401) usually means `GOOGLE_CLIENT_ID` does not match the id the frontend is
+using, or a client clock is far off. Setting `GOOGLE_CLIENT_ID` to empty switches the feature off
+without a deploy of code; password sign-in is unaffected.
