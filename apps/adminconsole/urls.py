@@ -1,8 +1,25 @@
-from django.urls import path
+from django.urls import path, re_path
 
-from apps.adminconsole import featured_views, invitation_views, views
+from apps.adminconsole import featured_views, invitation_views, reference_views, views
+
+KINDS = "sectors|stages|skills"
 
 urlpatterns = [
+    re_path(
+        rf"^admin/reference/(?P<kind>{KINDS})$",
+        reference_views.ReferenceListView.as_view(),
+        name="admin-reference",
+    ),
+    re_path(
+        rf"^admin/reference/(?P<kind>{KINDS})/order$",
+        reference_views.ReferenceOrderView.as_view(),
+        name="admin-reference-order",
+    ),
+    re_path(
+        rf"^admin/reference/(?P<kind>{KINDS})/(?P<item_id>[0-9a-f-]{{36}})$",
+        reference_views.ReferenceItemView.as_view(),
+        name="admin-reference-item",
+    ),
     path(
         "admin/startups/<uuid:startup_id>/feature",
         featured_views.FeatureStartupView.as_view(),

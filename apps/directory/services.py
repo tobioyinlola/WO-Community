@@ -156,3 +156,25 @@ def reconcile() -> dict[str, int]:
         "founders": PublicFounder.objects.count(),
         "removed": removed,
     }
+
+
+def refresh_for_reference(kind: str, slug: str) -> None:
+    """A sector, stage or skill changed: rebuild the pages that show its name.
+
+    The cached public list for that kind is purged either way, since a reorder
+    or a retired entry changes it without changing any page.
+    """
+    if slug:
+        if kind == "sectors":
+            affected = PublicStartup.objects.filter(sector_slug=slug)
+        elif kind == "stages":
+            affected = PublicStartup.objects.filter(stage_slug=slug)
+        else:
+            affected = PublicStartup.objects.filter(skill_slugs__contains=[slug])
+        for startup_id in list(affected.values_list("startup_id", flat=True)):
+            refresh_startup(startup_id)
+        if kind == "skills":
+            people = PublicFounder.objects.filter(skill_slugs__contains=[slug])
+            for user_id in list(people.values_list("user_id", flat=True)):
+                refresh_founder(user_id)
+    _purge([f"/api/v1/reference/{kind}"])

@@ -32,6 +32,13 @@ def take_down_member(event_id: str) -> None:
         services.take_down_member(UUID(payload["user_id"]))
 
 
+@shared_task(name="directory.reference_changed")
+def reference_changed(event_id: str) -> None:
+    payload = _payload(event_id)
+    if payload:
+        services.refresh_for_reference(payload["kind"], payload["slug"])
+
+
 @shared_task(name="directory.reconcile")
 def reconcile() -> dict[str, int]:
     return services.reconcile()
