@@ -172,3 +172,10 @@ Scheduled items are published by `editorial.publish_due`, which beat runs every 
 is past its time and still scheduled, check that beat and a worker are running; the item is then
 published with its scheduled time on the next run, nothing is lost. A scheduled time in the past is
 rejected when scheduling, so a stuck item always means the sweep is not running.
+
+## Event reminders not arriving
+
+Reminders come from `events.send_reminders` (beat, every ten minutes) and are claimed per
+registration before sending, so a restart never double-sends. A member who registered inside the
+24 hour (or 1 hour) window is deliberately skipped for that reminder. If nobody gets reminders, check
+that beat is running and that the event is still published; cancelled events send none.

@@ -224,7 +224,7 @@ Design and trade-offs are in ADR 0015.
 
 | Endpoint | What it does |
 |---|---|
-| `POST /events` | Browser events in batches of up to 50; invalid ones are reported one by one, valid ones kept. Works signed in or out. |
+| `POST /analytics/events` | Browser events in batches of up to 50; invalid ones are reported one by one, valid ones kept. Works signed in or out. |
 | `GET/PUT /me/analytics-preferences` | Opt out of analytics entirely, or rejoin. |
 | `POST /auth/register` with `anonymous_id` | Links the visitor id to the new member so the funnel is continuous. |
 
