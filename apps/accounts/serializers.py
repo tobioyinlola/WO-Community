@@ -103,6 +103,44 @@ class RegisterSerializer(StrictSerializer):
         return attrs
 
 
+class GoogleRegistrationSerializer(StrictSerializer):
+    """What a first-time Google user adds: consents and sign-up details, but no password."""
+
+    accepted_terms = serializers.BooleanField()
+    accepted_privacy = serializers.BooleanField()
+    accepted_conduct = serializers.BooleanField()
+    marketing_consent = serializers.BooleanField(required=False, default=False)
+    profile = SignupProfileSerializer()
+    startup = SignupStartupSerializer()
+    anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    invitation_token = serializers.CharField(
+        required=False, allow_blank=True, max_length=200, default=""
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        errors = {
+            name: "You must accept this to register."
+            for name in ("accepted_terms", "accepted_privacy", "accepted_conduct")
+            if not attrs[name]
+        }
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
+
+class GoogleSignInSerializer(StrictSerializer):
+    id_token = serializers.CharField(max_length=4096, trim_whitespace=False)
+    nonce = serializers.CharField(required=False, allow_blank=True, max_length=200, default="")
+    registration = GoogleRegistrationSerializer(required=False)
+
+
+class GoogleRegistrationRequiredSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    detail = serializers.CharField()
+    email = serializers.EmailField()
+    name = serializers.CharField(allow_blank=True)
+
+
 class TokenSerializer(StrictSerializer):
     token = serializers.CharField(max_length=200)
 
