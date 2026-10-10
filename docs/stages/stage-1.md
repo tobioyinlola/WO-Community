@@ -199,10 +199,28 @@ Design and trade-offs are in ADR 0013.
   any of these missing.
 - Setup steps (domain records, webhook, API key) are in the runbook.
 
+## Slice 10: admin editing of the reference lists (done)
+
+Design and trade-offs are in ADR 0014.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /admin/reference/{sectors,stages,skills}` | Every entry, retired ones included, with how many records use it. |
+| `POST /admin/reference/{kind}` | Add an entry (slug made from the name unless given; can never change afterwards). |
+| `PATCH /admin/reference/{kind}/{id}` | Rename, retire or restore, or reposition. |
+| `DELETE /admin/reference/{kind}/{id}` | Delete an entry nobody uses (409 if in use: retire it instead). |
+| `PUT /admin/reference/{kind}/order` | Set the display order (send every id once). |
+
+- Needs the `reference.manage` permission (community admin and above) and an MFA session.
+- Retiring hides an entry from new choices; records that use it keep it and stay editable. This also
+  fixed a bug where changing a startup's stage failed once its current sector had been retired.
+- Names are unique ignoring case (service and database); every change is audited with before and after.
+- A rename rebuilds only the directory pages that show the entry and purges the cached public list.
+- Countries stay in code (fixed by ISO 3166); post and course categories will reuse this service.
+
 ## Still to do in Stage 1
 
-1. Admin management of reference lists (the lists are seeded and read-only for now).
-2. A real CDN purger (provider still undecided).
+1. A real CDN purger (provider still undecided).
 3. Analytics capture and the registration, directory and onboarding events.
 4. Google sign-in (proposed to follow once email and password login is settled).
 5. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.

@@ -562,6 +562,204 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/reference/{kind}:
+    get:
+      operationId: admin_reference_list
+      summary: Every entry of a list, retired ones included, with how many records
+        use it
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+          enum:
+          - sectors
+          - skills
+          - stages
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReferenceItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Unknown list or entry
+        '409':
+          description: Name or slug taken, entry in use, or the list changed
+    post:
+      operationId: admin_reference_create
+      description: The slug defaults to one made from the name and can never be changed.
+      summary: Add an entry
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+          enum:
+          - sectors
+          - skills
+          - stages
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Unknown list or entry
+        '409':
+          description: Name or slug taken, entry in use, or the list changed
+  /api/v1/admin/reference/{kind}/{item_id}:
+    patch:
+      operationId: admin_reference_partial_update
+      description: Retiring hides an entry from new choices; records that already
+        use it keep it. Renaming updates the public pages that show it.
+      summary: Rename, retire, restore or reposition an entry
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+          enum:
+          - sectors
+          - skills
+          - stages
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReferenceUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Unknown list or entry
+        '409':
+          description: Name or slug taken, entry in use, or the list changed
+    delete:
+      operationId: admin_reference_destroy
+      description: An entry in use cannot be deleted (409); retire it instead.
+      summary: Delete an entry nobody uses
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+          enum:
+          - sectors
+          - skills
+          - stages
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Unknown list or entry
+        '409':
+          description: Name or slug taken, entry in use, or the list changed
+  /api/v1/admin/reference/{kind}/order:
+    put:
+      operationId: admin_reference_order_update
+      description: Send every entry's id exactly once, in the order wanted.
+      summary: Set the display order of a list
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+          enum:
+          - sectors
+          - skills
+          - stages
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenceOrderRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReferenceItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Unknown list or entry
+        '409':
+          description: Name or slug taken, entry in use, or the list changed
   /api/v1/admin/startups/{startup_id}/feature:
     post:
       operationId: admin_startups_feature_create
@@ -2666,6 +2864,21 @@ components:
         website_url:
           type: string
           maxLength: 300
+    PatchedReferenceUpdateRequest:
+      type: object
+      description: 'The slug cannot change: it is used in URLs, filters and stored
+        records.'
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 10000
+          minimum: 0
     PatchedStartupUpdateRequest:
       type: object
       description: Validation shared by create and update.
@@ -2829,6 +3042,69 @@ components:
             type: string
       required:
       - recovery_codes
+    ReferenceCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          minLength: 1
+          default: ''
+          maxLength: 80
+        sort_order:
+          type: integer
+          maximum: 10000
+          minimum: 0
+      required:
+      - name
+    ReferenceItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        active:
+          type: boolean
+        sort_order:
+          type: integer
+        usage:
+          type: integer
+          description: Records that use this entry
+      required:
+      - active
+      - id
+      - name
+      - slug
+      - sort_order
+      - usage
+    ReferenceOrderRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 500
+      required:
+      - ids
     RegisterRequest:
       type: object
       description: |-
