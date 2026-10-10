@@ -607,3 +607,21 @@ def active_members() -> Any:
     from apps.accounts import selectors
 
     return selectors.active_members()
+
+
+def registrations_by_day(start: Any, end: Any) -> dict[Any, int]:
+    from apps.accounts import selectors
+
+    return selectors.registrations_by_day(start, end)
+
+
+def member_numbers(now: Any) -> dict[str, int]:
+    from apps.accounts import selectors
+
+    return selectors.member_numbers(now)
+
+
+def retention(now: Any, days: int) -> float | None:
+    from apps.accounts import selectors
+
+    return selectors.retention(now, days)

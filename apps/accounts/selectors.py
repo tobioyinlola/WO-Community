@@ -1,9 +1,10 @@
 """Read side of the accounts module for admin screens."""
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
-from django.db.models import OuterRef, Q, QuerySet, Subquery
+from django.db.models import Count, OuterRef, Q, QuerySet, Subquery
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from apps.accounts.models import (
@@ -130,3 +131,40 @@ def ids_last_active(after: Any = None, before: Any = None) -> QuerySet[Any]:
 
 def active_members() -> QuerySet[User]:
     return User.objects.filter(status=UserStatus.ACTIVE, email_verified_at__isnull=False)
+
+
+def registrations_by_day(start: Any, end: Any) -> dict[Any, int]:
+    """New accounts per day in [start, end)."""
+    rows = (
+        User.objects.filter(created_at__gte=start, created_at__lt=end)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(n=Count("id"))
+    )
+    return {row["day"]: row["n"] for row in rows}
+
+
+def member_numbers(now: Any) -> dict[str, int]:
+    return {
+        "active": User.objects.filter(status=UserStatus.ACTIVE).count(),
+        "pending": User.objects.filter(status=UserStatus.PENDING).count(),
+        "registered_30d": User.objects.filter(created_at__gte=now - timedelta(days=30)).count(),
+        "registered_7d": User.objects.filter(created_at__gte=now - timedelta(days=7)).count(),
+    }
+
+
+def retention(now: Any, days: int) -> float | None:
+    """Of members approved at least ``days`` ago, the share who logged in during the last ``days``.
+
+    None while nobody is old enough to measure.
+    """
+    cohort = User.objects.filter(
+        status=UserStatus.ACTIVE,
+        approved_at__isnull=False,
+        approved_at__lte=now - timedelta(days=days),
+    )
+    total = cohort.count()
+    if not total:
+        return None
+    kept = cohort.filter(last_login__gte=now - timedelta(days=days)).count()
+    return round(kept / total, 4)

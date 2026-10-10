@@ -7,6 +7,8 @@ from typing import Any
 
 import structlog
 from django.db import connection, transaction
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from apps.audit.models import AuditLog
@@ -114,3 +116,28 @@ def verify_day(day: date) -> bool:
             return False
         prev_hash = row.hash
     return True
+
+
+def distinct_actors_by_day(action: str, start: datetime, end: datetime) -> dict[date, int]:
+    """For each day in [start, end), how many different people did ``action``."""
+    rows = (
+        AuditLog.objects.filter(
+            action=action, actor_id__isnull=False, created_at__gte=start, created_at__lt=end
+        )
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(n=Count("actor_id", distinct=True))
+    )
+    return {row["day"]: row["n"] for row in rows}
+
+
+def distinct_actors_between(action: str, start: datetime, end: datetime) -> int:
+    """How many different people did ``action`` in [start, end)."""
+    return int(
+        AuditLog.objects.filter(
+            action=action, actor_id__isnull=False, created_at__gte=start, created_at__lt=end
+        )
+        .values("actor_id")
+        .distinct()
+        .count()
+    )

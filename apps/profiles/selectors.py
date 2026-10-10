@@ -183,3 +183,14 @@ def first_names(user_ids: list[UUID]) -> dict[UUID, str]:
     """The first word of each member's own name, for greeting them in mail."""
     rows = FounderProfile.objects.filter(user_id__in=user_ids).values_list("user_id", "full_name")
     return {uid: name.split()[0] for uid, name in rows if name.strip()}
+
+
+def active_member_counts_by_country() -> dict[str, int]:
+    """How many active members have each country on their profile."""
+    rows = (
+        FounderProfile.objects.filter(user_id__in=accounts.active_user_ids())
+        .exclude(country="")
+        .values("country")
+        .annotate(n=Count("id"))
+    )
+    return {row["country"]: row["n"] for row in rows}

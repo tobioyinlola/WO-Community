@@ -267,3 +267,7 @@ def poster_ids() -> Any:
             "poster_id", flat=True
         )
     )
+
+
+def live_count() -> int:
+    return live_jobs().count()

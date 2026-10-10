@@ -18,6 +18,9 @@ import structlog
 from django.conf import settings
 from django.core.cache import cache
 from django.db import connection, transaction
+from django.db.models import Avg, Count, FloatField
+from django.db.models.fields.json import KeyTextTransform
+from django.db.models.functions import Cast, TruncDate
 from django.utils import timezone
 
 from apps.analytics import registry
@@ -180,3 +183,33 @@ def forward_links(send: Callable[[list[dict[str, str]]], None], limit: int = 200
             forwarded_at=timezone.now()
         )
     return len(links)
+
+
+# --- summaries for dashboards ---
+
+
+def daily_event_counts(start: datetime, end: datetime) -> dict[tuple[Any, str], int]:
+    """How many events of each name were recorded on each day in [start, end)."""
+    rows = (
+        AnalyticsEvent.objects.filter(occurred_at__gte=start, occurred_at__lt=end)
+        .annotate(day=TruncDate("occurred_at"))
+        .values("day", "name")
+        .annotate(n=Count("id"))
+    )
+    return {(row["day"], row["name"]): row["n"] for row in rows}
+
+
+def daily_property_average(
+    names: list[str], prop: str, start: datetime, end: datetime
+) -> dict[Any, float]:
+    """The average of a numeric property across events with these names, per day in [start, end)."""
+    rows = (
+        AnalyticsEvent.objects.filter(name__in=names, occurred_at__gte=start, occurred_at__lt=end)
+        .annotate(
+            day=TruncDate("occurred_at"),
+            value=Cast(KeyTextTransform(prop, "properties"), FloatField()),
+        )
+        .values("day")
+        .annotate(avg=Avg("value"))
+    )
+    return {row["day"]: row["avg"] for row in rows if row["avg"] is not None}

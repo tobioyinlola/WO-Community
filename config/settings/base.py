@@ -249,6 +249,7 @@ CELERY_BEAT_SCHEDULE = {
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
     "campaigns-start-due": {"task": "campaigns.start_due", "schedule": 60.0},
+    "dashboard-refresh": {"task": "adminconsole.refresh_dashboard", "schedule": 3600.0},
     "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
     "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
