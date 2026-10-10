@@ -1,4 +1,3 @@
-
 import pyotp
 import pytest
 from django.conf import settings
