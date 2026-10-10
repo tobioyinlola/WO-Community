@@ -32,3 +32,6 @@ require("FIELD_ENCRYPTION_KEYS")
 STORAGE_ADAPTER = require("STORAGE_ADAPTER")
 MALWARE_SCANNER = require("MALWARE_SCANNER")
 MEDIA_BASE_URL = require("MEDIA_BASE_URL")
+# Google sign-in is optional, but once a client id is set the real verifier must check the tokens.
+if GOOGLE_CLIENT_ID and GOOGLE_TOKEN_VERIFIER.endswith("FakeGoogleVerifier"):  # noqa: F405
+    raise RuntimeError("GOOGLE_TOKEN_VERIFIER must not be the fake verifier in production.")
