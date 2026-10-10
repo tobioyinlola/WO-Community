@@ -9,7 +9,7 @@ from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.core import etag, policies
-from apps.feed import follows, selectors, services
+from apps.feed import follows, moderation, selectors, services
 from apps.feed.serializers import (
     CommentCreateSerializer,
     CommentListSerializer,
@@ -27,6 +27,8 @@ from apps.feed.serializers import (
     PostUpdateSerializer,
     ReactionResultSerializer,
     ReactionSerializer,
+    ReportCreateSerializer,
+    ReportReceivedSerializer,
 )
 
 IF_MATCH = OpenApiParameter("If-Match", str, OpenApiParameter.HEADER, required=True)
@@ -339,3 +341,41 @@ class MyFollowingView(APIView):
         response = Response(FollowingListSerializer(page).data)
         response["Cache-Control"] = "private, no-store"
         return response
+
+
+class ReportView(APIView):
+    """Report a post or a comment to the moderators (the URL decides which)."""
+
+    policy = policies.active_member
+    target_type = "post"
+
+    @extend_schema(
+        summary="Report to the moderators",
+        description="You can report only what you can see, and not your own content. Reporting "
+        "the same thing again answers 200 with the existing report. Limited per member per day.",
+        request=ReportCreateSerializer,
+        responses={
+            201: ReportReceivedSerializer,
+            200: ReportReceivedSerializer,
+            **ERRORS,
+            429: OpenApiResponse(description="Daily limit"),
+        },
+        tags=["feed"],
+    )
+    def post(self, request: Request, target_id: UUID) -> Response:
+        serializer = ReportCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        report, created = moderation.report(
+            viewer=request.user,
+            target_type=self.target_type,
+            target_id=target_id,
+            reason=data["reason"],
+            details=data["details"],
+        )
+        body = {"id": report.pk, "status": report.status, "created": created}
+        return Response(ReportReceivedSerializer(body).data, status=201 if created else 200)
+
+
+class CommentReportView(ReportView):
+    target_type = "comment"

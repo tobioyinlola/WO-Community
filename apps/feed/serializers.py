@@ -3,7 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.serializers import ImageSerializer, StrictSerializer
-from apps.feed.models import CATEGORIES, REACTION_KINDS
+from apps.feed.models import CATEGORIES, REACTION_KINDS, REPORT_REASONS
 
 MAX_BODY_MARKUP = 20_000  # the raw request; the text limit is applied after cleaning
 
@@ -187,3 +187,62 @@ class FollowingItemSerializer(serializers.Serializer):
 class FollowingListSerializer(serializers.Serializer):
     results = FollowingItemSerializer(many=True)
     next_cursor = serializers.CharField(allow_null=True)
+
+
+class ReportCreateSerializer(StrictSerializer):
+    reason = serializers.ChoiceField(choices=REPORT_REASONS)
+    details = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
+
+
+class ReportReceivedSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    status = serializers.CharField()
+    created = serializers.BooleanField(help_text="False if you had already reported this")
+
+
+class ReportQuerySerializer(StrictSerializer):
+    status = serializers.ChoiceField(
+        choices=["open", "reviewed", "actioned"], required=False, default="open"
+    )
+    target_type = serializers.ChoiceField(choices=["post", "comment"], required=False, default="")
+    reason = serializers.ChoiceField(choices=REPORT_REASONS, required=False, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
+    offset = serializers.IntegerField(required=False, min_value=0)
+
+
+class ReportPersonSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+
+
+class ReportTargetSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    id = serializers.UUIDField()
+    post_id = serializers.UUIDField(allow_null=True)
+    state = serializers.ChoiceField(choices=["visible", "hidden", "removed"])
+    excerpt = serializers.CharField(allow_blank=True)
+    created_at = serializers.DateTimeField(allow_null=True)
+    author = ReportPersonSerializer(allow_null=True)
+
+
+class AdminReportSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    status = serializers.CharField()
+    reason = serializers.CharField()
+    details = serializers.CharField(allow_blank=True)
+    created_at = serializers.DateTimeField()
+    reporter = ReportPersonSerializer()
+    handled_by = serializers.UUIDField(allow_null=True)
+    handled_at = serializers.DateTimeField(allow_null=True)
+    note = serializers.CharField(allow_blank=True)
+    open_reports_on_target = serializers.IntegerField()
+    target = ReportTargetSerializer()
+
+
+class ReportReviewSerializer(StrictSerializer):
+    note = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
+
+
+class ReportActionSerializer(StrictSerializer):
+    action = serializers.ChoiceField(choices=["hide", "remove"])
+    note = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")

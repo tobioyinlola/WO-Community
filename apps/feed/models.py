@@ -131,3 +131,46 @@ class Follow(BaseModel):
             models.Index(fields=["follower", "-created_at", "-id"], name="feed_follow_mine_idx"),
             models.Index(fields=["followee_type", "followee_id"], name="feed_follow_target_idx"),
         ]
+
+
+REPORT_REASONS = ("spam", "harassment", "misinformation", "illegal", "inappropriate", "other")
+
+
+class Report(BaseModel):
+    """A member's complaint about a post or comment, handled in the admin moderation queue."""
+
+    class Status(models.TextChoices):
+        OPEN = "open"
+        REVIEWED = "reviewed"  # looked at, nothing needed doing
+        ACTIONED = "actioned"  # the content was hidden or removed
+
+    target_type = models.CharField(max_length=8, choices=Reaction.Target.choices)
+    target_id = models.UUIDField()
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="feed_reports"
+    )
+    reason = models.CharField(max_length=14)
+    details = models.CharField(max_length=500, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    handled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    handled_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reporter", "target_type", "target_id"], name="feed_report_once"
+            ),
+            models.CheckConstraint(
+                condition=Q(reason__in=REPORT_REASONS), name="feed_report_reason"
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=["open", "reviewed", "actioned"]), name="feed_report_status"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["status", "created_at"], name="feed_report_queue_idx"),
+            models.Index(fields=["target_type", "target_id"], name="feed_report_target_idx"),
+        ]
