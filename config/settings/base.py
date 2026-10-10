@@ -230,6 +230,7 @@ CELERY_BEAT_SCHEDULE = {
     "dispatch-outbox": {"task": "core.dispatch_outbox", "schedule": 5.0},
     "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
     "notifications-purge-webhooks": {"task": "notifications.purge_webhooks", "schedule": 86400.0},
+    "notifications-purge": {"task": "notifications.purge_notifications", "schedule": 86400.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
     "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
     "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
