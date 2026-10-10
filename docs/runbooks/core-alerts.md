@@ -151,3 +151,17 @@ topics `feed.*` and for failures of those tasks. `GET /notifications` should ans
 changed; a client that never gets 304 is not sending `If-None-Match`. Email notices stop quietly for
 a member who exceeds ten of one kind in an hour (log line `notification_email_throttled`); their
 in-app notices continue.
+
+## Jobs not expiring or no expiry warnings
+
+Expiry is two beat tasks: `jobs.expire_due` (every 15 minutes) and `jobs.warn_expiring` (hourly).
+If posters report expired jobs still showing, remember the board hides a job the moment it passes
+its expiry whether or not the sweep has run, so a visible expired job means the data is wrong;
+check `expires_at`. If warnings are missing, check that beat is running and look for the
+`jobs.expiring` outbox events. Daily alert digests come from `jobs.send_digests` (hourly check).
+
+## Member jobs piling up for review
+
+The count is `jobs_awaiting_review` on `GET /admin/queues` and the list is
+`GET /admin/jobs?status=pending`. A super admin can switch the board to auto publish with
+`PUT /admin/jobs/settings`; jobs already pending stay pending until an admin decides them.

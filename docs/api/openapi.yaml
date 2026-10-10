@@ -328,6 +328,382 @@ paths:
         '409':
           description: Already registered, already invited, or not in a state that
             allows this
+  /api/v1/admin/jobs:
+    get:
+      operationId: admin_jobs_list
+      description: Oldest first. Filter by `status` (use `pending` for the review
+        queue), `origin` (member or admin) and text.
+      summary: All jobs, for moderation
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: origin
+        schema:
+          enum:
+          - member
+          - admin
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `member` - member
+          * `admin` - admin
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - pending
+          - published
+          - closed
+          - expired
+          - rejected
+          - removed
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `pending` - pending
+          * `published` - published
+          * `closed` - closed
+          * `expired` - expired
+          * `rejected` - rejected
+          * `removed` - removed
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+    post:
+      operationId: admin_jobs_create
+      description: Goes live at once. Needs an external https link to apply, and either
+        a startup or the name of the hiring organisation.
+      summary: Post a job for the community or a partner
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminJobCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+  /api/v1/admin/jobs/{job_id}:
+    get:
+      operationId: admin_jobs_retrieve
+      summary: One job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+    patch:
+      operationId: admin_jobs_partial_update
+      summary: Edit any job
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedJobUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+        '409':
+          description: Closed, expired or rejected
+        '412':
+          description: Changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/admin/jobs/{job_id}/approve:
+    post:
+      operationId: admin_jobs_approve_create
+      description: 'Decisions: approve and reject (pending jobs; rejecting needs a
+        reason, which the poster is told), unpublish (live jobs) and remove (any).
+        Audited.'
+      summary: Review a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/jobs/{job_id}/reject:
+    post:
+      operationId: admin_jobs_reject_create
+      description: 'Decisions: approve and reject (pending jobs; rejecting needs a
+        reason, which the poster is told), unpublish (live jobs) and remove (any).
+        Audited.'
+      summary: Review a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/jobs/{job_id}/remove:
+    post:
+      operationId: admin_jobs_remove_create
+      description: 'Decisions: approve and reject (pending jobs; rejecting needs a
+        reason, which the poster is told), unpublish (live jobs) and remove (any).
+        Audited.'
+      summary: Review a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/jobs/{job_id}/unpublish:
+    post:
+      operationId: admin_jobs_unpublish_create
+      description: 'Decisions: approve and reject (pending jobs; rejecting needs a
+        reason, which the poster is told), unpublish (live jobs) and remove (any).
+        Audited.'
+      summary: Review a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/jobs/settings:
+    get:
+      operationId: admin_jobs_settings_retrieve
+      summary: Job board settings
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSettings'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
+    put:
+      operationId: admin_jobs_settings_update
+      description: '`require_approval`: member jobs wait for an admin (true) or go
+        live at once. `default_duration_days`: how long a job without a deadline stays
+        up.'
+      summary: Change job board settings
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobSettingsRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSettings'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
   /api/v1/admin/members:
     get:
       operationId: admin_members_list
@@ -2007,6 +2383,401 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/job-alerts:
+    get:
+      operationId: job_alerts_list
+      summary: Your job alerts
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alert'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    post:
+      operationId: job_alerts_create
+      description: Get told when a new job matches these filters, at once or in a
+        daily digest. Up to 5 alerts. Notices follow your notification preferences
+        for jobs.
+      summary: Create a job alert
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/job-alerts/{alert_id}:
+    delete:
+      operationId: job_alerts_destroy
+      summary: Delete a job alert
+      parameters:
+      - in: path
+        name: alert_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/jobs:
+    get:
+      operationId: jobs_list
+      description: Live jobs, newest first. Filter by text, type, remote, startup,
+        location and how recently they were posted. Text search tolerates small typos.
+      summary: The jobs board
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: location
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      - in: query
+        name: posted_within_days
+        schema:
+          type: integer
+          maximum: 90
+          minimum: 1
+          nullable: true
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: remote
+        schema:
+          type: boolean
+          nullable: true
+      - in: query
+        name: startup_id
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: type
+        schema:
+          enum:
+          - full_time
+          - part_time
+          - contract
+          - internship
+          - volunteer
+          - other
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `full_time` - full_time
+          * `part_time` - part_time
+          * `contract` - contract
+          * `internship` - internship
+          * `volunteer` - volunteer
+          * `other` - other
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    post:
+      operationId: jobs_create
+      description: Apply by an external https link or an email address; the platform
+        does not handle applications. Depending on the board setting the job goes
+        live at once or waits for an admin (`status` says which). Name your startup
+        or the hiring organisation. Limited per member per day.
+      summary: Post a job or opportunity
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '429':
+          description: Daily limit
+  /api/v1/jobs/{job_id}:
+    get:
+      operationId: jobs_retrieve
+      description: Live jobs, and your own jobs in any state except removed.
+      summary: One job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    patch:
+      operationId: jobs_partial_update
+      description: Send only what changes, with the ETag in If-Match. Pending and
+        published jobs only; renew a closed or expired job first.
+      summary: Edit your job
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedJobUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '409':
+          description: Closed, expired or rejected
+        '412':
+          description: Changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+  /api/v1/jobs/{job_id}/close:
+    post:
+      operationId: jobs_close_create
+      summary: Close your job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '409':
+          description: Cannot close
+  /api/v1/jobs/{job_id}/renew:
+    post:
+      operationId: jobs_renew_create
+      description: Works on published, expired and closed jobs. Send a new `deadline`
+        or none for the default duration.
+      summary: Renew a job for another term
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '409':
+          description: Cannot renew
+  /api/v1/jobs/{job_id}/save:
+    post:
+      operationId: jobs_save_create
+      description: Idempotent. Up to 200 saved jobs.
+      summary: Save a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    delete:
+      operationId: jobs_save_destroy
+      description: Idempotent.
+      summary: Unsave a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -2101,6 +2872,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FollowingList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/me/jobs:
+    get:
+      operationId: me_jobs_retrieve
+      summary: Jobs you posted, in any state
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPage'
           description: ''
         '401':
           description: Not authenticated
@@ -2288,6 +3094,43 @@ paths:
           description: The profile changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/me/saved-jobs:
+    get:
+      operationId: me_saved_jobs_retrieve
+      description: Newest save first. Jobs that have since ended stay listed, with
+        their status.
+      summary: Your saved jobs
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/me/sessions:
     get:
       operationId: me_sessions_list
@@ -3018,6 +3861,111 @@ paths:
           description: ''
         '404':
           description: Not public
+  /api/v1/public/jobs:
+    get:
+      operationId: public_jobs_list
+      description: Live jobs for anyone, cached. Apply emails are never shown.
+      summary: Public job board
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: location
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: remote
+        schema:
+          type: boolean
+          nullable: true
+      - in: query
+        name: type
+        schema:
+          enum:
+          - full_time
+          - part_time
+          - contract
+          - internship
+          - volunteer
+          - other
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `full_time` - full_time
+          * `part_time` - part_time
+          * `contract` - contract
+          * `internship` - internship
+          * `volunteer` - volunteer
+          * `other` - other
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicJobPage'
+          description: ''
+        '400':
+          description: Bad filter
+  /api/v1/public/jobs/{slug}:
+    get:
+      operationId: public_jobs_retrieve
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: One public job, with Open Graph data for sharing
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicJob'
+          description: ''
+        '404':
+          description: Not found
+  /api/v1/public/jobs/sitemap:
+    get:
+      operationId: public_jobs_sitemap_retrieve
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: Every live public job with its last change, for search engines
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSitemapList'
+          description: ''
   /api/v1/public/sitemap:
     get:
       operationId: public_sitemap_retrieve
@@ -3207,7 +4155,7 @@ paths:
       description: 'Results are what you may see of each item: someone who hides their
         basics from members cannot be found. Tolerates small typos. Jobs, courses
         and the rest join as their areas are built.'
-      summary: Search members and startups
+      summary: Search members, startups and jobs
       parameters:
       - in: query
         name: limit
@@ -3224,7 +4172,7 @@ paths:
         name: types
         schema:
           type: string
-        description: 'Comma list: members, startups'
+        description: 'Comma list: members, startups, jobs'
       tags:
       - member area
       security:
@@ -3804,6 +4752,162 @@ components:
       description: |-
         * `hide` - hide
         * `remove` - remove
+    AdminJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        organisation:
+          type: string
+        startup:
+          allOf:
+          - $ref: '#/components/schemas/StartupRef'
+          nullable: true
+        poster:
+          allOf:
+          - $ref: '#/components/schemas/Poster'
+          nullable: true
+        location:
+          type: string
+        remote:
+          type: boolean
+        description:
+          type: string
+          description: Sanitised HTML
+        requirements:
+          type: string
+          description: Sanitised HTML
+        compensation:
+          type: string
+        apply:
+          $ref: '#/components/schemas/Apply'
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+        origin:
+          type: string
+          description: member or admin
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        share_url:
+          type: string
+        mine:
+          type: boolean
+        saved:
+          type: boolean
+        review_note:
+          type: string
+        poster_id:
+          type: string
+          format: uuid
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - apply
+      - compensation
+      - created_at
+      - deadline
+      - description
+      - edited_at
+      - expires_at
+      - id
+      - location
+      - mine
+      - organisation
+      - origin
+      - poster
+      - poster_id
+      - published_at
+      - remote
+      - requirements
+      - review_note
+      - reviewed_at
+      - reviewed_by
+      - saved
+      - share_url
+      - slug
+      - startup
+      - status
+      - title
+      - type
+    AdminJobCreateRequest:
+      type: object
+      description: Same fields; the service insists on an external link for admin
+        jobs.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 140
+        type:
+          $ref: '#/components/schemas/JobTypeEnum'
+        organisation:
+          type: string
+          maxLength: 120
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+        location:
+          type: string
+          maxLength: 120
+        remote:
+          type: boolean
+        description:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        requirements:
+          type: string
+          maxLength: 20000
+        compensation:
+          type: string
+          maxLength: 120
+        apply_method:
+          $ref: '#/components/schemas/ApplyMethodEnum'
+        apply_target:
+          type: string
+          minLength: 1
+          maxLength: 300
+        deadline:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - apply_method
+      - apply_target
+      - description
+      - title
+      - type
     AdminReport:
       type: object
       properties:
@@ -3847,6 +4951,83 @@ components:
       - reporter
       - status
       - target
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filters:
+          type: object
+          additionalProperties: {}
+        frequency:
+          type: string
+        last_sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - filters
+      - frequency
+      - id
+      - last_sent_at
+    AlertCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        filters:
+          $ref: '#/components/schemas/AlertFiltersRequest'
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+      required:
+      - filters
+      - frequency
+    AlertFiltersRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        q:
+          type: string
+          maxLength: 100
+        type:
+          $ref: '#/components/schemas/JobTypeEnum'
+        remote:
+          type: boolean
+        startup_id:
+          type: string
+          format: uuid
+        location:
+          type: string
+          maxLength: 120
+    Apply:
+      type: object
+      properties:
+        method:
+          type: string
+        target:
+          type: string
+      required:
+      - method
+    ApplyMethodEnum:
+      enum:
+      - url
+      - email
+      type: string
+      description: |-
+        * `url` - url
+        * `email` - email
     Author:
       type: object
       properties:
@@ -4170,7 +5351,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         type:
-          $ref: '#/components/schemas/TypeEnum'
+          $ref: '#/components/schemas/FollowTypeEnum'
         id:
           type: string
           format: uuid
@@ -4191,6 +5372,14 @@ components:
       - following
       - id
       - type
+    FollowTypeEnum:
+      enum:
+      - member
+      - startup
+      type: string
+      description: |-
+        * `member` - member
+        * `startup` - startup
     FollowingItem:
       type: object
       properties:
@@ -4358,6 +5547,14 @@ components:
       required:
       - full_name
       - slug
+    FrequencyEnum:
+      enum:
+      - instant
+      - daily
+      type: string
+      description: |-
+        * `instant` - instant
+        * `daily` - daily
     GoogleRegistrationRequest:
       type: object
       description: 'What a first-time Google user adds: consents and sign-up details,
@@ -4552,6 +5749,230 @@ components:
       required:
       - name
       - slug
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        organisation:
+          type: string
+        startup:
+          allOf:
+          - $ref: '#/components/schemas/StartupRef'
+          nullable: true
+        poster:
+          allOf:
+          - $ref: '#/components/schemas/Poster'
+          nullable: true
+        location:
+          type: string
+        remote:
+          type: boolean
+        description:
+          type: string
+          description: Sanitised HTML
+        requirements:
+          type: string
+          description: Sanitised HTML
+        compensation:
+          type: string
+        apply:
+          $ref: '#/components/schemas/Apply'
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+        origin:
+          type: string
+          description: member or admin
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        share_url:
+          type: string
+        mine:
+          type: boolean
+        saved:
+          type: boolean
+        review_note:
+          type: string
+      required:
+      - apply
+      - compensation
+      - created_at
+      - deadline
+      - description
+      - edited_at
+      - expires_at
+      - id
+      - location
+      - mine
+      - organisation
+      - origin
+      - poster
+      - published_at
+      - remote
+      - requirements
+      - review_note
+      - saved
+      - share_url
+      - slug
+      - startup
+      - status
+      - title
+      - type
+    JobCreateRequest:
+      type: object
+      description: Fields shared by creating and editing a job.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 140
+        type:
+          $ref: '#/components/schemas/JobTypeEnum'
+        organisation:
+          type: string
+          maxLength: 120
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+        location:
+          type: string
+          maxLength: 120
+        remote:
+          type: boolean
+        description:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        requirements:
+          type: string
+          maxLength: 20000
+        compensation:
+          type: string
+          maxLength: 120
+        apply_method:
+          $ref: '#/components/schemas/ApplyMethodEnum'
+        apply_target:
+          type: string
+          minLength: 1
+          maxLength: 300
+        deadline:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - apply_method
+      - apply_target
+      - description
+      - title
+      - type
+    JobPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Job'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    JobSettings:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        require_approval:
+          type: boolean
+        default_duration_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+      required:
+      - default_duration_days
+      - require_approval
+    JobSettingsRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        require_approval:
+          type: boolean
+        default_duration_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+      required:
+      - default_duration_days
+      - require_approval
+    JobSitemapEntry:
+      type: object
+      properties:
+        slug:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - slug
+      - updated_at
+    JobSitemapList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobSitemapEntry'
+      required:
+      - results
+    JobTypeEnum:
+      enum:
+      - full_time
+      - part_time
+      - contract
+      - internship
+      - volunteer
+      - other
+      type: string
+      description: |-
+        * `full_time` - full_time
+        * `part_time` - part_time
+        * `contract` - contract
+        * `internship` - internship
+        * `volunteer` - volunteer
+        * `other` - other
     LinkPreview:
       type: object
       properties:
@@ -4883,6 +6304,26 @@ components:
       - complete
       - items
       - profile_completeness
+    OpenGraph:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+        image:
+          type: string
+          nullable: true
+      required:
+      - description
+      - image
+      - title
+      - type
+      - url
     OpenToEnum:
       enum:
       - hiring
@@ -4907,6 +6348,52 @@ components:
           type: string
           minLength: 1
           maxLength: 20000
+    PatchedJobUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 140
+        type:
+          $ref: '#/components/schemas/JobTypeEnum'
+        organisation:
+          type: string
+          maxLength: 120
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+        location:
+          type: string
+          maxLength: 120
+        remote:
+          type: boolean
+        description:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        requirements:
+          type: string
+          maxLength: 20000
+        compensation:
+          type: string
+          maxLength: 120
+        apply_method:
+          $ref: '#/components/schemas/ApplyMethodEnum'
+        apply_target:
+          type: string
+          minLength: 1
+          maxLength: 300
+        deadline:
+          type: string
+          format: date
+          nullable: true
     PatchedPostUpdateRequest:
       type: object
       description: |-
@@ -5203,6 +6690,29 @@ components:
       - logo
       - name
       - slug
+    Poster:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      required:
+      - headline
+      - id
+      - name
+      - photo
+      - slug
     Preference:
       type: object
       description: |-
@@ -5324,6 +6834,116 @@ components:
       required:
       - next_missing_field
       - score
+    PublicJob:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        organisation:
+          type: string
+        startup:
+          allOf:
+          - $ref: '#/components/schemas/StartupRef'
+          nullable: true
+        location:
+          type: string
+        remote:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+          description: Sanitised HTML
+        requirements:
+          type: string
+          description: Sanitised HTML
+        compensation:
+          type: string
+        apply:
+          allOf:
+          - $ref: '#/components/schemas/Apply'
+          description: The target is shown only for links, never for email
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        share_url:
+          type: string
+        open_graph:
+          $ref: '#/components/schemas/OpenGraph'
+      required:
+      - apply
+      - compensation
+      - deadline
+      - description
+      - expires_at
+      - location
+      - open_graph
+      - organisation
+      - published_at
+      - remote
+      - requirements
+      - share_url
+      - slug
+      - startup
+      - title
+      - type
+    PublicJobPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicJobSummary'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    PublicJobSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        organisation:
+          type: string
+        startup:
+          allOf:
+          - $ref: '#/components/schemas/StartupRef'
+          nullable: true
+        location:
+          type: string
+        remote:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - location
+      - organisation
+      - published_at
+      - remote
+      - slug
+      - startup
+      - title
+      - type
     QueueCounts:
       type: object
       properties:
@@ -5333,7 +6953,10 @@ components:
           type: integer
         open_reports:
           type: integer
+        jobs_awaiting_review:
+          type: integer
       required:
+      - jobs_awaiting_review
       - open_reports
       - registrations_awaiting_approval
       - registrations_unverified
@@ -5543,6 +7166,18 @@ components:
       required:
       - index
       - reason
+    RenewRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        deadline:
+          type: string
+          format: date
+          nullable: true
     Reply:
       type: object
       properties:
@@ -5721,6 +7356,29 @@ components:
       description: |-
         * `created` - created
         * `skipped` - skipped
+    ReviewRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
+    SaveResult:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        saved:
+          type: boolean
+      required:
+      - job_id
+      - saved
     SearchHit:
       type: object
       properties:
@@ -5754,6 +7412,10 @@ components:
           items:
             $ref: '#/components/schemas/SearchHit'
         startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        jobs:
           type: array
           items:
             $ref: '#/components/schemas/SearchHit'
@@ -6110,6 +7772,25 @@ components:
       required:
       - next_cursor
       - results
+    StartupRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+      required:
+      - id
+      - logo
+      - name
+      - slug
     StateEnum:
       enum:
       - visible
@@ -6281,14 +7962,6 @@ components:
             $ref: '#/components/schemas/TractionItemRequest'
       required:
       - metrics
-    TypeEnum:
-      enum:
-      - member
-      - startup
-      type: string
-      description: |-
-        * `member` - member
-        * `startup` - startup
     Upload:
       type: object
       properties:

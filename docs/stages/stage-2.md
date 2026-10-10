@@ -67,11 +67,34 @@ Cards are fetched by a worker, never in a request. The fetcher refuses internal 
 addresses at every redirect hop, pins the connection to the address it checked, and caps time and
 size. Pictures are scanned and re-encoded before being served from our media domain.
 
+## Slice 6: jobs and opportunities (done)
+
+Design and trade-offs are in ADR 0023.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /jobs` | The board: `q`, `type`, `remote`, `startup_id`, `location`, `posted_within_days`, `cursor`, `limit`. |
+| `POST /jobs` | Post a job (apply by link or email). Held for review or live at once, per the board setting. 5 a day. |
+| `GET/PATCH /jobs/{id}` | Read; edit your own with an ETag. |
+| `POST /jobs/{id}/renew`, `/close` | Renew for another term, or close. |
+| `GET /me/jobs` | Your jobs in any state. |
+| `POST/DELETE /jobs/{id}/save`, `GET /me/saved-jobs` | Save jobs. |
+| `GET/POST /job-alerts`, `DELETE /job-alerts/{id}` | Alerts on saved filters, instant or daily. |
+| `GET /public/jobs`, `/public/jobs/{slug}`, `/public/jobs/sitemap` | Public, cached pages with Open Graph data. |
+| `GET/POST /admin/jobs`, `GET/PATCH /admin/jobs/{id}` | Moderation list (filter `status=pending` for the queue), post for the community or a partner, edit any job. |
+| `POST /admin/jobs/{id}/{approve,reject,unpublish,remove}` | Review decisions; audited. |
+| `GET/PUT /admin/jobs/settings` | Auto publish or hold for approval; default term (super admin). |
+
+Scheduled: expiry sweep every 15 minutes, three-day warning hourly, daily alert digests hourly.
+Notices: job live or rejected (poster), expiring soon (poster, email and in-app), matching alert or
+digest (member). Jobs are included in member-area search. Queue counts include
+`jobs_awaiting_review`.
+
 ## Still to do in Stage 2
 
-1. Jobs and opportunities with expiry and alerts, news and win submissions, events and demo days,
-   campaigns and segments, admin queues.
-2. Notices for those modules (job expiry, event reminders) using `notify()`.
+1. News and win submissions (editorial), events and demo days, campaigns and segments.
+2. Admin dashboards and queues beyond counts.
 3. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
 4. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
-   monthly partitions for notifications if volume warrants.
+   monthly partitions for notifications if volume warrants; merge the jobs sitemap into the
+   front end's sitemap.
