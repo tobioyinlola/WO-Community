@@ -23,6 +23,9 @@ REST_FRAMEWORK = {
 }
 
 REFRESH_COOKIE_SECURE = False
+ANALYTICS_STRICT = True
+ANALYTICS_FORWARD_DELAY_SECONDS = 0
+ANALYTICS_SINK = "apps.integrations.analytics.sinks.FakeSink"
 CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
 STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
 MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"

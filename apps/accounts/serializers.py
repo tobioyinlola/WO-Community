@@ -86,6 +86,7 @@ class RegisterSerializer(StrictSerializer):
     marketing_consent = serializers.BooleanField(required=False, default=False)
     profile = SignupProfileSerializer()
     startup = SignupStartupSerializer()
+    anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     invitation_token = serializers.CharField(
         required=False, allow_blank=True, max_length=200, default=""
     )

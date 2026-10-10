@@ -21,6 +21,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "django_celery_beat",
     "apps.core",
+    "apps.analytics",
+    "apps.integrations",
     "apps.audit",
     "apps.reference",
     "apps.accounts",
@@ -136,6 +138,7 @@ REST_FRAMEWORK = {
         "admin_bulk": "10/hour",
         "public_search": "60/min",
         "uploads": "30/hour",
+        "analytics": "120/min",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -205,13 +208,21 @@ CELERY_TASK_QUEUES = (
     Queue("exports", Exchange("exports"), routing_key="exports"),
     Queue("analytics", Exchange("analytics"), routing_key="analytics"),
 )
-CELERY_TASK_ROUTES = {"core.dispatch_outbox": {"queue": "critical"}}
+CELERY_TASK_ROUTES = {
+    "core.dispatch_outbox": {"queue": "critical"},
+    "analytics.forward": {"queue": "analytics"},
+    "analytics.ensure_partitions": {"queue": "analytics"},
+    "analytics.drop_expired": {"queue": "analytics"},
+}
 CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "dispatch-outbox": {"task": "core.dispatch_outbox", "schedule": 5.0},
     "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
     "notifications-purge-webhooks": {"task": "notifications.purge_webhooks", "schedule": 86400.0},
+    "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
+    "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
+    "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
@@ -236,6 +247,17 @@ EMAIL_WEBHOOK_RETENTION_DAYS = 30
 CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
 STORAGE_ADAPTER = env.str("STORAGE_ADAPTER", default="apps.integrations.storage.fake.FakeStorage")
 MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.fake.FakeScanner")
+
+# --- Analytics ---------------------------------------------------------------
+# Raise on a bad event (tests, local) instead of dropping it quietly (production).
+ANALYTICS_STRICT = env.bool("ANALYTICS_STRICT", default=False)
+ANALYTICS_RETENTION_MONTHS = 13
+ANALYTICS_FORWARD_BATCH = 500
+# Events are forwarded only once this old, so one numbered early that commits late is not skipped.
+ANALYTICS_FORWARD_DELAY_SECONDS = 60
+ANALYTICS_SINK = env.str("ANALYTICS_SINK", default="apps.integrations.analytics.sinks.LoggingSink")
+# Who is calling /events: a signed-in member if there is a valid token, otherwise anonymous.
+ANALYTICS_AUTHENTICATION = ["apps.accounts.authentication.OptionalJWTAuthentication"]
 
 # --- Uploads and media -------------------------------------------------------
 STORAGE_ENDPOINT_URL = env.str("STORAGE_ENDPOINT_URL", default="")  # set for MinIO

@@ -31,6 +31,7 @@ from apps.accounts.models import (
     UserRole,
     UserStatus,
 )
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core import ratelimit
@@ -111,6 +112,7 @@ def register(
     ip: str = "",
     invitation_token: str = "",
     signup: dict[str, Any] | None = None,
+    anonymous_id: UUID | None = None,
 ) -> bool:
     """Create an account. Returns True when an invitation approved it on the spot.
 
@@ -139,6 +141,8 @@ def register(
             else:
                 user = User.objects.create_user(address, password)
             _record_consents(user, consents, ip)
+            if anonymous_id is not None:
+                analytics.identify(anonymous_id, user.pk)  # joins the funnel to the member
             if signup:
                 domain_events.publish(
                     events.SignupDetailsSubmitted(user_id=str(user.pk), details=signup)
@@ -146,6 +150,16 @@ def register(
             if invitation is not None:
                 invitations.mark_registered(invitation, user)
                 domain_events.publish(events.MemberApproved(user_id=str(user.pk)))
+                analytics.track(
+                    "invitation_registered",
+                    actor_id=user.pk,
+                    properties={"role": invitation.role},
+                )
+                analytics.track(
+                    "member_approved",
+                    actor_id=user.pk,
+                    properties={"approval_source": "invitation", "time_to_decision_hours": 0},
+                )
             else:
                 domain_events.publish(events.UserRegistered(user_id=str(user.pk)))
             audit.record(
@@ -236,6 +250,7 @@ def verify_email(raw_token: str) -> None:
         audit.record(
             actor=user, action="auth.email_verified", target_type="user", target_id=user.pk
         )
+        analytics.track("email_verified", actor_id=user.pk)
 
 
 # --- Password reset ---
