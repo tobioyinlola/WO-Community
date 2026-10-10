@@ -10,8 +10,9 @@ from django.utils import timezone
 from rest_framework import exceptions
 
 from apps.audit import services as audit
+from apps.core import events as domain_events
 from apps.core.text import plain, text_of
-from apps.feed import selectors, services
+from apps.feed import events, selectors, services
 from apps.feed.models import Comment, Post, Report
 from apps.profiles import selectors as profiles
 
@@ -191,6 +192,15 @@ def report_views(viewer: Any, reports: list[Report]) -> list[dict[str, Any]]:
     return views
 
 
+def _tell_reporters(reports: list[Report], outcome: str) -> None:
+    for item in reports:
+        domain_events.publish(
+            events.ReportHandled(
+                reporter_id=str(item.reporter_id), outcome=outcome, target_type=item.target_type
+            )
+        )
+
+
 def get_report(report_id: UUID) -> Report:
     found = Report.objects.filter(pk=report_id).first()
     if found is None:
@@ -211,6 +221,7 @@ def review(*, actor: Any, report_id: UUID, note: str = "", ip: str = "") -> Repo
         found.handled_at = timezone.now()
         found.note = plain(note)
         found.save()
+        _tell_reporters([found], "reviewed")
         audit.record(
             actor=actor,
             action="feed.report_reviewed",
@@ -245,6 +256,12 @@ def act(*, actor: Any, report_id: UUID, action: str, note: str = "", ip: str = "
         except exceptions.NotFound:
             pass  # already removed by someone else; the report is still closed below
         now = timezone.now()
+        closing = list(
+            Report.objects.filter(target_type=found.target_type, target_id=found.target_id).exclude(
+                status=Report.Status.ACTIONED
+            )
+        )
+        _tell_reporters(closing, "actioned")
         Report.objects.filter(target_type=found.target_type, target_id=found.target_id).exclude(
             status=Report.Status.ACTIONED
         ).update(

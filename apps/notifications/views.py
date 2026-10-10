@@ -1,7 +1,7 @@
 from typing import Any, cast
 from uuid import UUID
 
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import exceptions, serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from apps.core import policies
 from apps.core.serializers import StrictSerializer
 from apps.integrations.email import get_email_adapter
-from apps.notifications import preferences, services
+from apps.notifications import centre, preferences, services
 
 
 class InvalidSignature(exceptions.APIException):
@@ -112,3 +112,107 @@ class NotificationPreferencesView(APIView):
         except preferences.InvalidPreferences as invalid:
             raise exceptions.ValidationError(invalid.errors) from None
         return Response({"preferences": matrix, "confirmed": True})
+
+
+class NotificationItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    type = serializers.CharField()
+    title = serializers.CharField()
+    link = serializers.CharField(help_text="Path in the web app")
+    meta = serializers.DictField(help_text="Ids to route on; no personal text")
+    read = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+
+
+class NotificationListSerializer(serializers.Serializer):
+    results = NotificationItemSerializer(many=True)
+    next_cursor = serializers.CharField(allow_null=True)
+    unread_count = serializers.IntegerField()
+
+
+class NotificationQuerySerializer(StrictSerializer):
+    unread = serializers.BooleanField(required=False, default=False)
+    cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=100, default=20)
+
+
+class MarkReadSerializer(StrictSerializer):
+    ids = serializers.ListField(
+        child=serializers.UUIDField(), required=False, max_length=100, allow_empty=False
+    )
+    all = serializers.BooleanField(required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if ("ids" in attrs) == bool(attrs.get("all")):
+            raise serializers.ValidationError("Send either ids or all=true.")
+        return attrs
+
+
+class MarkReadResultSerializer(serializers.Serializer):
+    updated = serializers.IntegerField()
+    unread_count = serializers.IntegerField()
+
+
+class NotificationsView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Your notifications, newest first",
+        description="Meant to be polled about every 30 seconds. Send the last `ETag` in "
+        "`If-None-Match`; if nothing changed the answer is 304 with no body.",
+        parameters=[
+            NotificationQuerySerializer,
+            OpenApiParameter("If-None-Match", str, OpenApiParameter.HEADER),
+        ],
+        responses={
+            200: NotificationListSerializer,
+            304: OpenApiResponse(description="Nothing changed"),
+            401: OpenApiResponse(description="Not logged in"),
+            403: OpenApiResponse(description="Not an active member"),
+        },
+        tags=["notifications"],
+    )
+    def get(self, request: Request) -> Response:
+        params = NotificationQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        data = params.validated_data
+        user_id = cast(UUID, request.user.pk)
+        tag = centre.fingerprint(
+            user_id, unread_only=data["unread"], cursor=data["cursor"], limit=data["limit"]
+        )
+        candidates = [t.strip() for t in request.headers.get("If-None-Match", "").split(",")]
+        if tag in [c.removeprefix("W/") for c in candidates]:
+            not_modified = Response(status=status.HTTP_304_NOT_MODIFIED)
+            not_modified["ETag"] = tag
+            return not_modified
+        page = centre.page(
+            user_id, unread_only=data["unread"], cursor=data["cursor"], limit=data["limit"]
+        )
+        response = Response(NotificationListSerializer(page).data)
+        response["ETag"] = tag
+        response["Cache-Control"] = "private, no-cache"
+        return response
+
+
+class MarkReadView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Mark notifications as read",
+        description="Send `ids` (up to 100) or `all: true`. Ids that are not yours are ignored.",
+        request=MarkReadSerializer,
+        responses={
+            200: MarkReadResultSerializer,
+            400: OpenApiResponse(description="Neither or both of ids and all"),
+            401: OpenApiResponse(description="Not logged in"),
+        },
+        tags=["notifications"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = MarkReadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        user_id = cast(UUID, request.user.pk)
+        updated = centre.mark_read(user_id, ids=data.get("ids"), everything=bool(data.get("all")))
+        body = {"updated": updated, "unread_count": centre.unread_count(user_id)}
+        return Response(MarkReadResultSerializer(body).data)

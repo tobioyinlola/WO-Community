@@ -7,9 +7,9 @@ from django.db.models import Q, QuerySet
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.core.keyset import paginate
 from apps.feed import follows
 from apps.feed.models import Comment, Follow, Post, Reaction
-from apps.feed.pagination import paginate
 from apps.profiles import selectors as profiles
 from apps.startups import selectors as startups
 from apps.uploads import services as uploads

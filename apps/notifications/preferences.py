@@ -16,6 +16,7 @@ DEFAULTS: dict[str, dict[str, bool]] = {
     "mentions": {"email": True, "in_app": True},
     "mentorship": {"email": True, "in_app": True},
     "approvals": {"email": True, "in_app": True},
+    "moderation": {"email": True, "in_app": True},
     "event_reminders": {"email": True, "in_app": True},
     "newsletter": {"email": False, "in_app": False},
 }

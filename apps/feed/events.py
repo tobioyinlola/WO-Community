@@ -24,3 +24,13 @@ class CommentAdded(DomainEvent):
     commenter_id: str
     post_author_id: str
     parent_author_id: str  # empty unless the comment is a reply
+
+
+@dataclass(frozen=True)
+class ReportHandled(DomainEvent):
+    """A moderator dealt with a report; the reporter is told."""
+
+    topic: ClassVar[str] = "feed.report_handled"
+    reporter_id: str
+    outcome: str  # "reviewed" or "actioned"
+    target_type: str
