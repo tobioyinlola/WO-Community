@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.startups",
     "apps.directory",
     "apps.memberarea",
+    "apps.feed",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -139,6 +140,7 @@ REST_FRAMEWORK = {
         "auth_login": "30/min",
         "auth_google": "30/min",
         "search": "60/min",
+        "feed_read": "240/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -322,3 +324,8 @@ FEATURE_PAYMENTS_ENABLED = env.bool("FEATURE_PAYMENTS_ENABLED", default=False)
 # Email uniqueness is enforced case-insensitively by a functional constraint on
 # lower(email) instead of a plain unique column, which these checks cannot see.
 SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
+
+# Feed limits per member, to keep spam and floods in check.
+FEED_POSTS_PER_DAY = env.int("FEED_POSTS_PER_DAY", default=20)
+FEED_COMMENTS_PER_DAY = env.int("FEED_COMMENTS_PER_DAY", default=200)
+FEED_MAX_IMAGES = 10

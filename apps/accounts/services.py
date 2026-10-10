@@ -539,3 +539,11 @@ def active_user_ids() -> Any:
     from apps.accounts import selectors
 
     return selectors.active_user_ids()
+
+
+def filter_active(user_ids: list[UUID]) -> list[UUID]:
+    """The ones among ``user_ids`` that are active members, in the order given."""
+    active = set(
+        User.objects.filter(pk__in=user_ids, status=UserStatus.ACTIVE).values_list("pk", flat=True)
+    )
+    return [uid for uid in user_ids if uid in active]
