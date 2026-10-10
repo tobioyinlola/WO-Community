@@ -123,11 +123,18 @@ def count_by_skill(slugs: list[str]) -> dict[str, int]:
 def cards_for(viewer: Any, user_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
     """Name, headline and photo for each user, as ``viewer`` may see them.
 
-    Someone who hides their basics from the viewer appears as an anonymous community member,
+    Someone who hides their basics from the viewer (``hidden``) appears as an anonymous member,
     so a card never reveals more than the profile page would.
     """
     cards: dict[UUID, dict[str, Any]] = {
-        uid: {"id": uid, "name": "Community member", "headline": "", "photo": None, "slug": None}
+        uid: {
+            "id": uid,
+            "name": "Community member",
+            "headline": "",
+            "photo": None,
+            "slug": None,
+            "hidden": False,
+        }
         for uid in user_ids
     }
     for profile in FounderProfile.objects.filter(user_id__in=user_ids):
@@ -141,7 +148,9 @@ def cards_for(viewer: Any, user_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
         visible = project(
             groups, levels_of(profile), audience_for(viewer, frozenset({profile.user_id}))
         )
-        if "full_name" in visible:
+        if "full_name" not in visible:
+            cards[profile.user_id]["hidden"] = True  # their basics are hidden from this viewer
+        else:
             cards[profile.user_id].update(
                 name=visible["full_name"],
                 headline=visible.get("headline", ""),

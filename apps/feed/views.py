@@ -9,7 +9,7 @@ from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.core import etag, policies
-from apps.feed import selectors, services
+from apps.feed import follows, selectors, services
 from apps.feed.serializers import (
     CommentCreateSerializer,
     CommentListSerializer,
@@ -18,6 +18,10 @@ from apps.feed.serializers import (
     CommentUpdateSerializer,
     FeedQuerySerializer,
     FeedSerializer,
+    FollowingListSerializer,
+    FollowingQuerySerializer,
+    FollowResultSerializer,
+    FollowSerializer,
     PostCreateSerializer,
     PostSerializer,
     PostUpdateSerializer,
@@ -277,3 +281,61 @@ class ReactionDeleteView(APIView):
 
 class CommentReactionDeleteView(ReactionDeleteView):
     target_type = "comment"
+
+
+class FollowsView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Follow a member or a startup",
+        description="Idempotent: following again answers 200. You can only follow someone whose "
+        "profile (or a startup whose basics) you can see. Up to 500 follows.",
+        request=FollowSerializer,
+        responses={201: FollowResultSerializer, 200: FollowResultSerializer, **ERRORS},
+        tags=["feed"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = FollowSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        created = follows.follow(viewer=request.user, kind=data["type"], target_id=data["id"])
+        body = {"type": data["type"], "id": data["id"], "following": True}
+        return Response(FollowResultSerializer(body).data, status=201 if created else 200)
+
+
+class UnfollowView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Stop following",
+        description="Idempotent: unfollowing someone you do not follow still answers 204.",
+        responses={204: None, **ERRORS},
+        tags=["feed"],
+    )
+    def delete(self, request: Request, kind: str, target_id: UUID) -> Response:
+        if kind not in ("member", "startup"):
+            raise exceptions.NotFound()
+        follows.unfollow(user_id=_uid(request), kind=kind, target_id=target_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MyFollowingView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Who you follow",
+        description="Newest follow first. People and startups you can no longer see are left out.",
+        parameters=[FollowingQuerySerializer],
+        responses={200: FollowingListSerializer, **ERRORS},
+        tags=["feed"],
+    )
+    def get(self, request: Request) -> Response:
+        params = FollowingQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        data = params.validated_data
+        page = follows.following(
+            request.user, kind=data["type"], cursor=data["cursor"], limit=data["limit"]
+        )
+        response = Response(FollowingListSerializer(page).data)
+        response["Cache-Control"] = "private, no-store"
+        return response
