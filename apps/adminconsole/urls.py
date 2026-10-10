@@ -2,6 +2,7 @@ from django.urls import path, re_path
 
 from apps.adminconsole import (
     editorial_views,
+    event_views,
     featured_views,
     feed_views,
     invitation_views,
@@ -12,6 +13,7 @@ from apps.adminconsole import (
 
 KINDS = "sectors|stages|skills"
 
+EVENT_ACTIONS = ("publish", "unpublish", "cancel")
 ITEM_ACTIONS = ("publish", "unpublish")
 COMMENT_ACTIONS_ITEM = ("hide", "unhide", "remove")
 WIN_DECISIONS = ("approve", "reject")
@@ -21,6 +23,36 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/events", event_views.AdminEventsView.as_view(), name="admin-events"),
+    path("admin/events/<uuid:event_id>", event_views.AdminEventView.as_view(), name="admin-event"),
+    path(
+        "admin/events/<uuid:event_id>/slots",
+        event_views.EventSlotsView.as_view(),
+        name="admin-event-slots",
+    ),
+    path(
+        "admin/events/<uuid:event_id>/attendees",
+        event_views.AttendeesView.as_view(),
+        name="admin-event-attendees",
+    ),
+    path(
+        "admin/events/<uuid:event_id>/attendees.csv",
+        event_views.AttendeesExportView.as_view(),
+        name="admin-event-attendees-csv",
+    ),
+    path(
+        "admin/events/<uuid:event_id>/attendees/<uuid:user_id>/check-in",
+        event_views.CheckInView.as_view(),
+        name="admin-event-check-in",
+    ),
+    *[
+        path(
+            f"admin/events/<uuid:event_id>/{action}",
+            event_views.state_view(action).as_view(),
+            name=f"admin-event-{action}",
+        )
+        for action in EVENT_ACTIONS
+    ],
     path("admin/editorial", editorial_views.AdminEditorialView.as_view(), name="admin-editorial"),
     path(
         "admin/editorial/<uuid:item_id>",
