@@ -816,6 +816,57 @@ paths:
           description: No such startup
         '409':
           description: Only listed startups can be featured
+  /api/v1/auth/google:
+    post:
+      operationId: auth_google_create
+      description: Send the ID token the browser got from Google. A member who already
+        has this address (or this Google login) is signed in exactly as with a password,
+        including the MFA step. A new person gets 409 `registration_required` until
+        the request also carries `registration` (consents and sign-up details); the
+        account is then created pending admin approval, or approved at once with a
+        valid `invitation_token` for the same address, and the answer is 201.
+      summary: Sign in or sign up with Google
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleSignInRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaChallenge'
+          description: ''
+        '401':
+          description: Invalid Google token or account unusable
+        '403':
+          description: Google address not verified
+        '404':
+          description: Google sign-in is not configured
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleRegistrationRequired'
+          description: ''
+        '503':
+          description: Google could not be reached
   /api/v1/auth/invitations/inspect:
     post:
       operationId: auth_invitations_inspect_create
@@ -2590,6 +2641,75 @@ components:
       required:
       - full_name
       - slug
+    GoogleRegistrationRequest:
+      type: object
+      description: 'What a first-time Google user adds: consents and sign-up details,
+        but no password.'
+      properties:
+        accepted_terms:
+          type: boolean
+        accepted_privacy:
+          type: boolean
+        accepted_conduct:
+          type: boolean
+        marketing_consent:
+          type: boolean
+          default: false
+        profile:
+          $ref: '#/components/schemas/SignupProfileRequest'
+        startup:
+          $ref: '#/components/schemas/SignupStartupRequest'
+        anonymous_id:
+          type: string
+          format: uuid
+          nullable: true
+        invitation_token:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - accepted_conduct
+      - accepted_privacy
+      - accepted_terms
+      - profile
+      - startup
+    GoogleRegistrationRequired:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+      required:
+      - code
+      - detail
+      - email
+      - name
+    GoogleSignInRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        id_token:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        nonce:
+          type: string
+          default: ''
+          maxLength: 200
+        registration:
+          $ref: '#/components/schemas/GoogleRegistrationRequest'
+      required:
+      - id_token
     Image:
       type: object
       description: Public addresses of the two sizes of a processed image.

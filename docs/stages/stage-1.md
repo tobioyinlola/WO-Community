@@ -240,12 +240,26 @@ Design and trade-offs are in ADR 0015.
 - Dashboards, summary tables and marketing tags are not built yet; the requirements put them with
   the admin dashboard and campaigns.
 
+## Slice 12: Google sign-in (done)
+
+Design and trade-offs are in ADR 0016.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /auth/google` | Sign in, or start a sign-up, with a Google ID token. Answers 200 (signed in), 201 (new account), 202 (MFA step needed), 409 `registration_required` (new person, send sign-up details), 401 (bad token or unusable account), 403 (Google address unverified), 404 (not configured), 503 (Google unreachable). |
+
+- Existing members are recognised by address the first time and by Google's stable id afterwards.
+- A link to an account whose address was never confirmed discards its password and ends its sessions.
+- New people go through the same consents, details and admin approval as a password sign-up; a valid
+  invitation approves them at once.
+- MFA still applies; Google is never a second factor.
+- Off until `GOOGLE_CLIENT_ID` is set; production refuses the fake verifier.
+
 ## Still to do in Stage 1
 
 1. A real CDN purger (provider still undecided).
-3. Analytics capture and the registration, directory and onboarding events.
-4. Google sign-in (proposed to follow once email and password login is settled).
-5. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
+2. The onboarding checklist and its `onboarding_completed` analytics event.
+3. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
 
 ## Notes
 
