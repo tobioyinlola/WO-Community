@@ -1,9 +1,28 @@
 from django.conf import settings
 from django.utils.module_loading import import_string
 
-from apps.integrations.email.base import EmailAdapter, EmailEvent, EmailMessage
+from apps.integrations.email.base import (
+    MARKETING,
+    TRANSACTIONAL,
+    EmailAdapter,
+    EmailEvent,
+    EmailMessage,
+    EmailMisconfigured,
+    EmailRejected,
+    EmailTemporarilyUnavailable,
+)
 
-__all__ = ["EmailAdapter", "EmailEvent", "EmailMessage", "get_email_adapter"]
+__all__ = [
+    "MARKETING",
+    "TRANSACTIONAL",
+    "EmailAdapter",
+    "EmailEvent",
+    "EmailMessage",
+    "EmailMisconfigured",
+    "EmailRejected",
+    "EmailTemporarilyUnavailable",
+    "get_email_adapter",
+]
 
 
 def get_email_adapter() -> EmailAdapter:

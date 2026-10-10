@@ -20,6 +20,8 @@ dependencies = [
   "structlog==25.4.0",
   "redis==5.2.1",
   "nh3==0.3.0",
+  "Pillow==12.3.0",
+  "httpx==0.28.1",
   "pyotp==2.9.0",
   "pyjwt[crypto]==2.15.0",
 ]
@@ -68,7 +70,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "/tests/"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "kombu.*", "environ"]
+module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

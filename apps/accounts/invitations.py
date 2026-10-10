@@ -301,7 +301,7 @@ def mark_registered(invitation: Invitation, user: User) -> None:
     )
 
 
-# --- bulk import ---------------------------------------------------------------------
+# --- bulk import ---
 
 
 def _read_rows(text: str) -> list[dict[str, Any]]:

@@ -22,4 +22,13 @@ DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = env.str("DB_SSLMODE"
 # Statement and idle-in-transaction timeouts are applied at database role level.
 
 EMAIL_ADAPTER = require("EMAIL_ADAPTER")
+if EMAIL_ADAPTER.endswith("ResendEmailAdapter"):
+    require("RESEND_API_KEY")
+    require("RESEND_WEBHOOK_SECRET")
+    require("EMAIL_FROM_TRANSACTIONAL")
+    require("EMAIL_FROM_MARKETING")
 require("FIELD_ENCRYPTION_KEYS")
+# Production must not run on the in-memory storage or scanner.
+STORAGE_ADAPTER = require("STORAGE_ADAPTER")
+MALWARE_SCANNER = require("MALWARE_SCANNER")
+MEDIA_BASE_URL = require("MEDIA_BASE_URL")

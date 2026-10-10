@@ -98,13 +98,132 @@ session.
 
 366 tests pass; all gates are clean.
 
+## Slice 6: profiles, startups and visibility (done)
+
+Design and trade-offs are in ADR 0010.
+
+**Registration** now requires the details from the form: `profile` (`full_name`, `country`,
+`city`) and `startup` (`name`, `country`, `city`, `sector`, `stage`, `pitch`). They are validated
+at the door (ISO country, listed sector and stage, markup stripped) and turned into a founder
+profile and a startup by event handlers, for both normal and invited sign-ups.
+
+| Endpoint | What it does |
+|---|---|
+| `GET/PATCH /me/profile` | Your profile with visibility levels, badges, completeness and next missing field. PATCH needs `If-Match`. |
+| `GET/PATCH /me/visibility` | Level (private, members, public) of each profile group. |
+| `GET /members/{user_id}` | Another member's profile, only the groups they share with members. 404 if they hide the basics. |
+| `POST /startups`, `GET /me/startups` | Create a startup (you become its owner and founder); list the ones you are on. |
+| `GET/PATCH /startups/{id}` | Read as the viewer may see it; update (owner or founder; `If-Match`). `directory_opt_in` is owner only. |
+| `PATCH /startups/{id}/visibility` | Level of each startup group (basics, description, website, team). |
+| `PUT /startups/{id}/traction` | Replace the traction list; every entry has its own level. |
+| `POST /startups/{id}/team`, `DELETE .../team/{member_id}` | Add by email (same answer either way) or remove. |
+| `GET /reference/sectors`, `/stages`, `/skills`, `/countries` | Public, cacheable lists. |
+
+- AC-17 is enforced by one rule in `core` and tested exhaustively: every field group at every
+  level for every kind of viewer, over HTTP for members and at the selector for visitors.
+- Completeness scores (profile and startup) name the next field to fill.
+- Profile and startup edits publish events that the directory slice will consume.
+- Plain-text cleaning, https-only links, bands for revenue and funding.
+
+744 tests pass; all gates are clean.
+
+## Slice 7: the public directory (done)
+
+Design and trade-offs are in ADR 0011. Everything under `/public` is anonymous, cookie-free and
+cacheable (`Cache-Control` with five minute life, ETag, `304` on `If-None-Match`).
+
+| Endpoint | What it does |
+|---|---|
+| `GET /public/startups` | Browse and search listed startups. Filters: `q`, `country`, `sector`, `stage`, `skills` (comma list, all must match), `featured`; `sort` newest or alphabetical (featured always first); `limit` up to 50; `cursor`. |
+| `GET /public/startups/{slug}` | Startup page: pitch, public description, website, public traction, founders, JSON-LD. |
+| `GET /public/founders`, `GET /public/founders/{slug}` | Founders who made their basics public: only the groups they made public, their listed startups, JSON-LD. |
+| `GET /public/sitemap` | Every public page with its last change, for `sitemap.xml`. |
+| `POST /admin/startups/{id}/feature`, `/unfeature` | Pin a listed startup to the top (admin, MFA, audited). |
+
+- A read model (`PublicStartup`, `PublicFounder`) is rebuilt from events when a profile, startup,
+  approval, suspension or removal changes; an hourly job and `manage.py rebuild_directory` repair
+  drift. Normal lag is seconds; the requirement is five minutes.
+- Suspended or removed members vanish on the next request (read-time status check), not after the
+  refresh. The CDN purge adapter is called on every change (a no-op logger until a CDN exists).
+- Search: full text plus partial-word and typo matching on names; quotes and `-term` use exact
+  rules. Hostile input is plain text. Private data is not in the index, so it cannot be found.
+- Browsing uses keyset cursors (stable while new startups arrive); a search returns its best
+  matches only.
+- Extensions `pg_trgm` and `unaccent` are created by the first directory migration, so the
+  migration user needs permission to create them.
+
+Tests: 119 for the directory (access, caching, filters, ordering and paging, search, privacy,
+takedown, refresh, sitemap, featuring, rebuild).
+
+## Slice 8: uploads, profile photos and startup logos (done)
+
+Design and trade-offs are in ADR 0012.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /uploads` | Reserve an upload (purpose `profile_photo` or `startup_logo`, type, size). Returns a pre-signed form: the file goes straight to storage. |
+| `POST /uploads/{id}/complete` | Say the file is there; the checks are queued. Safe to repeat. |
+| `GET /uploads/{id}` | Owner-only status; image addresses appear only when `ready`. |
+| `PUT/DELETE /me/profile/photo` | Attach a ready upload as your photo, or remove it (`If-Match`). |
+| `PUT/DELETE /startups/{id}/logo` | The same for a startup (owner or founder, `If-Match`). |
+
+- JPEG, PNG or WebP up to 5 MB. A worker verifies the real type, scans for malware, rejects absurd
+  dimensions and decompression bombs, applies the orientation, and re-encodes to WebP at 1600 and
+  320 pixels. Metadata and anything hidden in the file do not survive.
+- Failure is closed: if the scanner is unreachable the upload waits and retries, and is never
+  published unscanned. Malware detections are audited.
+- Photos and logos are part of the basics group, so they follow its visibility and now appear on
+  directory cards and pages. Replacing or removing an image deletes its files.
+- Completeness gained a photo (15) and a logo (10) component.
+- New settings: `STORAGE_ADAPTER`, `MALWARE_SCANNER`, `MEDIA_BASE_URL`, bucket names, S3 credentials
+  and `CLAMD_HOST/PORT`. Production refuses to start on the in-memory fakes. A ClamAV container is in
+  `docker-compose.yml` under the optional `scanner` profile.
+
+863 tests passed before this slice; the uploads slice added about 160 more. All gates are clean.
+
+## Slice 9: Resend email (done)
+
+Design and trade-offs are in ADR 0013.
+
+- `ResendEmailAdapter` sends through Resend's API with separate transactional and marketing senders,
+  a content-based idempotency key on every message, and failures sorted into drop (never
+  acceptable), retry (rate limit, outage, timeout) and alert (bad key or unverified domain).
+- `POST /webhooks/email/resend` receives delivery reports: Svix signature over the exact bytes,
+  five minute replay window, repeat deliveries ignored, stored raw and processed by a worker.
+- Delivery outcomes are recorded with hashed addresses; permanent bounces and complaints go on the
+  suppression list that marketing sends will check. Raw deliveries are purged after 30 days.
+- Every email now carries a category (verification, password_reset, invitation, approved, ...) for
+  tracking in Resend.
+- Settings: `EMAIL_ADAPTER`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `EMAIL_FROM_TRANSACTIONAL`,
+  `EMAIL_FROM_MARKETING`, `EMAIL_REPLY_TO`. Production refuses to start with Resend selected and
+  any of these missing.
+- Setup steps (domain records, webhook, API key) are in the runbook.
+
+## Slice 10: admin editing of the reference lists (done)
+
+Design and trade-offs are in ADR 0014.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /admin/reference/{sectors,stages,skills}` | Every entry, retired ones included, with how many records use it. |
+| `POST /admin/reference/{kind}` | Add an entry (slug made from the name unless given; can never change afterwards). |
+| `PATCH /admin/reference/{kind}/{id}` | Rename, retire or restore, or reposition. |
+| `DELETE /admin/reference/{kind}/{id}` | Delete an entry nobody uses (409 if in use: retire it instead). |
+| `PUT /admin/reference/{kind}/order` | Set the display order (send every id once). |
+
+- Needs the `reference.manage` permission (community admin and above) and an MFA session.
+- Retiring hides an entry from new choices; records that use it keep it and stay editable. This also
+  fixed a bug where changing a startup's stage failed once its current sector had been retired.
+- Names are unique ignoring case (service and database); every change is audited with before and after.
+- A rename rebuilds only the directory pages that show the entry and purges the cached public list.
+- Countries stay in code (fixed by ISO 3166); post and course categories will reuse this service.
+
 ## Still to do in Stage 1
 
-1. Profiles and startups with per-field visibility; registration capturing name, location and
-   startup details (these need the profile models, so they land with that slice).
-2. Public directory read model, search, filters, featured items, caching, sitemap feed.
-3. Real transactional email adapter (provider still undecided), analytics capture and events.
+1. A real CDN purger (provider still undecided).
+3. Analytics capture and the registration, directory and onboarding events.
 4. Google sign-in (proposed to follow once email and password login is settled).
+5. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
 
 ## Notes
 

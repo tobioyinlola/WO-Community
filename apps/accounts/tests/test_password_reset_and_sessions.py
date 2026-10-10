@@ -122,7 +122,7 @@ def test_suspended_account_gets_no_reset_email(api_client, make_user, run_outbox
     assert sent_emails == []
 
 
-# --- sessions ----------------------------------------------------------------------
+# --- sessions ---
 
 SESSIONS = "/api/v1/me/sessions"
 

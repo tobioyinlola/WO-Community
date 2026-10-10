@@ -7,6 +7,12 @@ urlpatterns = [
     path("health/ready", HealthReadyView.as_view(), name="health-ready"),
     path("api/v1/schema/", SchemaView.as_view(), name="schema"),
     path("api/v1/", include("apps.core.urls")),
+    path("api/v1/", include("apps.reference.urls")),
     path("api/v1/", include("apps.accounts.urls")),
+    path("api/v1/", include("apps.notifications.urls")),
+    path("api/v1/", include("apps.uploads.urls")),
+    path("api/v1/", include("apps.profiles.urls")),
+    path("api/v1/", include("apps.startups.urls")),
+    path("api/v1/", include("apps.directory.urls")),
     path("api/v1/", include("apps.adminconsole.urls")),
 ]

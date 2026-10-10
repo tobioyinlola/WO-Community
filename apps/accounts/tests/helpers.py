@@ -17,6 +17,15 @@ def registration_payload(**overrides):
         "accepted_terms": True,
         "accepted_privacy": True,
         "accepted_conduct": True,
+        "profile": {"full_name": "Ada Founder", "country": "NG", "city": "Lagos"},
+        "startup": {
+            "name": "Ada Pay",
+            "country": "NG",
+            "city": "Lagos",
+            "sector": "fintech",
+            "stage": "seed",
+            "pitch": "Payments for small traders",
+        },
     }
     payload.update(overrides)
     return payload
