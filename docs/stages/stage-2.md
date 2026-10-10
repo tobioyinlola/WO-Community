@@ -132,11 +132,32 @@ Design and trade-offs are in ADR 0025. Note: the analytics ingest endpoint moved
 Scheduled: reminders every ten minutes (24 hours and 1 hour before). Notices: registration
 confirmed, reminder, cancelled, new times.
 
+## Slice 9: campaigns and segments (done)
+
+Design and trade-offs are in ADR 0026.
+
+| Endpoint | What it does |
+|---|---|
+| `GET/POST /admin/segments`, `GET/PATCH/DELETE /admin/segments/{id}` | Save audiences built from fixed attributes. |
+| `POST /admin/segments/preview`, `GET /admin/segments/{id}/preview` | Members matching, and how many are mailable. |
+| `GET/POST /admin/campaign-templates`, `DELETE /admin/campaign-templates/{id}` | Reusable block layouts. |
+| `GET/POST /admin/campaigns`, `GET/PATCH/DELETE /admin/campaigns/{id}` | Write newsletters (blocks, merge field `{{first_name}}`). |
+| `POST /admin/campaigns/{id}/{test,send,schedule,unschedule,pause,resume,cancel}` | Test to yourself; send, schedule and resume need step-up MFA; pause is the kill switch. |
+| `GET /admin/campaigns/{id}/report` | Sent, delivered, opened, clicked, bounced, unsubscribed, complained. |
+| `POST /unsubscribe` | One-click, signed link, no login; immediate. |
+| `GET/PUT /me/marketing-consent` | A member's yes or no to marketing email. |
+
+Scheduled: `campaigns.start_due` every minute (also rescues stalled sends).
+
+## Stage 2 is feature complete except for admin dashboards
+
+What remains is the admin dashboards and queues beyond counts.
+
 ## Still to do in Stage 2
 
-1. Campaigns and segments (newsletters).
-2. Admin dashboards and queues beyond counts.
-3. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
-4. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
+1. Admin dashboards and summary tables (registrations, active members, funnels, engagement).
+2. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
+3. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
    monthly partitions for notifications if volume warrants; merge the jobs, news and events
-   sitemaps into the front end's sitemap.
+   sitemaps into the front end's sitemap; set up the marketing sending domain (SPF, DKIM, DMARC,
+   warm-up).
