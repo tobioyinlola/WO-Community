@@ -109,6 +109,475 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such post
+  /api/v1/admin/editorial:
+    get:
+      operationId: admin_editorial_list
+      description: Newest first. Filter by `status` (draft, scheduled, published),
+        `type`, text.
+      summary: Editorial items, any state
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - scheduled
+          - published
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `draft` - draft
+          * `scheduled` - scheduled
+          * `published` - published
+      - in: query
+        name: type
+        schema:
+          enum:
+          - award
+          - celebration
+          - partnership
+          - funding
+          - news
+          - announcement
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `award` - award
+          * `celebration` - celebration
+          * `partnership` - partnership
+          * `funding` - funding
+          * `news` - news
+          * `announcement` - announcement
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_editorial_create
+      description: Starts as a draft. Publish it now, or schedule it. Only announcements
+        can have a banner window (at most 90 days). `public` lets the public website
+        show it.
+      summary: Write a news item, award, celebration, partnership, funding story or
+        announcement
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/editorial-comments/{comment_id}/hide:
+    post:
+      operationId: admin_editorial_comments_hide_create
+      description: Hide, unhide or remove a comment on an item (the URL names the
+        action).
+      summary: Moderate a comment on an item
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCommentModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemCommentModeration'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/editorial-comments/{comment_id}/remove:
+    post:
+      operationId: admin_editorial_comments_remove_create
+      description: Hide, unhide or remove a comment on an item (the URL names the
+        action).
+      summary: Moderate a comment on an item
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCommentModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemCommentModeration'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/editorial-comments/{comment_id}/unhide:
+    post:
+      operationId: admin_editorial_comments_unhide_create
+      description: Hide, unhide or remove a comment on an item (the URL names the
+        action).
+      summary: Moderate a comment on an item
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCommentModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemCommentModeration'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/editorial/{item_id}:
+    get:
+      operationId: admin_editorial_retrieve
+      summary: One item
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    patch:
+      operationId: admin_editorial_partial_update
+      summary: Edit an item
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedItemUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '412':
+          description: Changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: admin_editorial_destroy
+      summary: Remove an item
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/editorial/{item_id}/cover:
+    put:
+      operationId: admin_editorial_cover_update
+      description: Upload with `POST /uploads` (purpose `editorial_cover`) and wait
+        for `ready`.
+      summary: Use a finished upload as the cover
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoverRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_editorial_cover_destroy
+      summary: Remove the cover
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/editorial/{item_id}/publish:
+    post:
+      operationId: admin_editorial_publish_create
+      description: Publish now, or take down / cancel a schedule (the URL names the
+        action).
+      summary: Publish an item now, or take it down
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/editorial/{item_id}/schedule:
+    post:
+      operationId: admin_editorial_schedule_create
+      description: '`publish_at` must be in the future. A worker publishes it within
+        a minute of that time, stamped with the scheduled time.'
+      summary: Schedule an item to publish itself
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Published
+  /api/v1/admin/editorial/{item_id}/unpublish:
+    post:
+      operationId: admin_editorial_unpublish_create
+      description: Publish now, or take down / cancel a schedule (the URL names the
+        action).
+      summary: Publish an item now, or take it down
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
   /api/v1/admin/invitations:
     get:
       operationId: admin_invitations_list
@@ -1731,6 +2200,131 @@ paths:
           description: No such startup
         '409':
           description: Only listed startups can be featured
+  /api/v1/admin/win-submissions:
+    get:
+      operationId: admin_win_submissions_list
+      summary: Win submissions awaiting review (or any status)
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: status
+        schema:
+          enum:
+          - pending
+          - approved
+          - rejected
+          type: string
+          default: pending
+          minLength: 1
+        description: |-
+          * `pending` - pending
+          * `approved` - approved
+          * `rejected` - rejected
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminWin'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/win-submissions/{win_id}/approve:
+    post:
+      operationId: admin_win_submissions_approve_create
+      description: Approving creates a draft story (linked as `item_id`) for an editor
+        to polish and publish. Rejecting needs a reason. The member is told either
+        way.
+      summary: Approve or reject a win submission
+      parameters:
+      - in: path
+        name: win_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWin'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Already reviewed
+  /api/v1/admin/win-submissions/{win_id}/reject:
+    post:
+      operationId: admin_win_submissions_reject_create
+      description: Approving creates a draft story (linked as `item_id`) for an editor
+        to polish and publish. Rejecting needs a reason. The member is told either
+        way.
+      summary: Approve or reject a win submission
+      parameters:
+      - in: path
+        name: win_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinReviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWin'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Already reviewed
   /api/v1/auth/google:
     post:
       operationId: auth_google_create
@@ -2115,6 +2709,29 @@ paths:
           description: ''
         '400':
           description: Invalid token
+  /api/v1/banners:
+    get:
+      operationId: banners_list
+      summary: Announcements pinned as a banner on the member home right now
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Banner'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
   /api/v1/comments/{comment_id}:
     patch:
       operationId: comments_partial_update
@@ -2290,6 +2907,300 @@ paths:
           description: Not found, or not visible to you
         '429':
           description: Daily limit
+  /api/v1/editorial:
+    get:
+      operationId: editorial_list
+      description: Published items, newest first. Filter by `type`.
+      summary: News, awards, celebrations and more
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: type
+        schema:
+          enum:
+          - award
+          - celebration
+          - partnership
+          - funding
+          - news
+          - announcement
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `award` - award
+          * `celebration` - celebration
+          * `partnership` - partnership
+          * `funding` - funding
+          * `news` - news
+          * `announcement` - announcement
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditorialItemPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/editorial-comments/{comment_id}:
+    patch:
+      operationId: editorial_comments_partial_update
+      summary: Edit your comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemComment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+    delete:
+      operationId: editorial_comments_destroy
+      summary: Delete your comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/editorial/{item_id}:
+    get:
+      operationId: editorial_retrieve
+      summary: One published item
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditorialItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/editorial/{item_id}/comments:
+    get:
+      operationId: editorial_comments_list
+      summary: Comments on an item, oldest first
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemCommentPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+    post:
+      operationId: editorial_comments_create
+      description: Refused with 409 when the item's comments are switched off. Limited
+        per member per day.
+      summary: Comment on an item
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemComment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+        '409':
+          description: Comments are off
+        '429':
+          description: Daily limit
+  /api/v1/editorial/{item_id}/reactions:
+    post:
+      operationId: editorial_reactions_create
+      description: 'Idempotent: the same reaction twice leaves one (200).'
+      summary: React to an item
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemReactionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemReactionResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/editorial/{item_id}/reactions/{kind}:
+    delete:
+      operationId: editorial_reactions_destroy
+      summary: Take a reaction back
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
   /api/v1/events:
     post:
       operationId: events_create
@@ -3966,6 +4877,80 @@ paths:
               schema:
                 $ref: '#/components/schemas/JobSitemapList'
           description: ''
+  /api/v1/public/news:
+    get:
+      operationId: public_news_list
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: Latest public news for the website
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: type
+        schema:
+          enum:
+          - award
+          - celebration
+          - partnership
+          - funding
+          - news
+          - announcement
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `award` - award
+          * `celebration` - celebration
+          * `partnership` - partnership
+          * `funding` - funding
+          * `news` - news
+          * `announcement` - announcement
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPage'
+          description: ''
+        '400':
+          description: Bad filter
+  /api/v1/public/news/{slug}:
+    get:
+      operationId: public_news_retrieve
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: One public news item, with Open Graph data
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicItem'
+          description: ''
+        '404':
+          description: Not found
   /api/v1/public/sitemap:
     get:
       operationId: public_sitemap_retrieve
@@ -4676,6 +5661,71 @@ paths:
           description: Signature missing or wrong
         '404':
           description: Not the configured provider
+  /api/v1/win-submissions:
+    get:
+      operationId: win_submissions_retrieve
+      summary: Your win submissions
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+    post:
+      operationId: win_submissions_create
+      description: An award, funding round or partnership, with a link to evidence.
+        Up to 3 waiting at once and 5 a day. You are told when it is reviewed.
+      summary: Submit a win for the team to review
+      tags:
+      - editorial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Win'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+        '429':
+          description: Daily limit
   /health/live:
     get:
       operationId: health_live_retrieve
@@ -4752,6 +5802,102 @@ components:
       description: |-
         * `hide` - hide
         * `remove` - remove
+    AdminItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        body:
+          type: string
+          description: Sanitised HTML
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemStartup'
+        external_url:
+          type: string
+        comments_enabled:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        comment_count:
+          type: integer
+        reaction_count:
+          type: integer
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        my_reactions:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        public:
+          type: boolean
+        publish_at:
+          type: string
+          format: date-time
+          nullable: true
+        banner_starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        banner_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - banner_ends_at
+      - banner_starts_at
+      - body
+      - comment_count
+      - comments_enabled
+      - cover
+      - created_at
+      - created_by
+      - edited_at
+      - excerpt
+      - external_url
+      - id
+      - my_reactions
+      - public
+      - publish_at
+      - published_at
+      - reaction_count
+      - reactions
+      - slug
+      - startups
+      - status
+      - title
+      - type
     AdminJob:
       type: object
       properties:
@@ -4951,6 +6097,60 @@ components:
       - reporter
       - status
       - target
+    AdminWin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        title:
+          type: string
+        evidence_url:
+          type: string
+        details:
+          type: string
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+        review_note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        submitter_id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - created_at
+      - details
+      - evidence_url
+      - id
+      - item_id
+      - kind
+      - review_note
+      - reviewed_at
+      - reviewed_by
+      - startup_id
+      - status
+      - submitter_id
+      - title
     Alert:
       type: object
       properties:
@@ -5054,6 +6254,30 @@ components:
       - name
       - photo
       - slug
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        external_url:
+          type: string
+        ends_at:
+          type: string
+          format: date-time
+      required:
+      - ends_at
+      - excerpt
+      - external_url
+      - id
+      - slug
+      - title
     BatchResult:
       type: object
       properties:
@@ -5242,6 +6466,20 @@ components:
       required:
       - next_cursor
       - results
+    CommentWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 40000
+      required:
+      - body
     Completeness:
       type: object
       properties:
@@ -5263,6 +6501,19 @@ components:
       required:
       - code
       - name
+    CoverRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+      required:
+      - upload_id
     DirectorySkill:
       type: object
       properties:
@@ -5273,6 +6524,96 @@ components:
       required:
       - name
       - slug
+    EditorialItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        body:
+          type: string
+          description: Sanitised HTML
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemStartup'
+        external_url:
+          type: string
+        comments_enabled:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        comment_count:
+          type: integer
+        reaction_count:
+          type: integer
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        my_reactions:
+          type: array
+          items:
+            type: string
+      required:
+      - body
+      - comment_count
+      - comments_enabled
+      - cover
+      - excerpt
+      - external_url
+      - id
+      - my_reactions
+      - published_at
+      - reaction_count
+      - reactions
+      - slug
+      - startups
+      - title
+      - type
+    EditorialItemPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EditorialItem'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    EditorialTypeEnum:
+      enum:
+      - award
+      - celebration
+      - partnership
+      - funding
+      - news
+      - announcement
+      type: string
+      description: |-
+        * `award` - award
+        * `celebration` - celebration
+        * `partnership` - partnership
+        * `funding` - funding
+        * `news` - news
+        * `announcement` - announcement
     EventBatchRequest:
       type: object
       description: |-
@@ -5747,6 +7088,163 @@ components:
         name:
           type: string
       required:
+      - name
+      - slug
+    ItemComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+        body:
+          type: string
+          description: Sanitised HTML
+        author:
+          $ref: '#/components/schemas/Person'
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        mine:
+          type: boolean
+      required:
+      - author
+      - body
+      - created_at
+      - edited_at
+      - id
+      - item_id
+      - mine
+    ItemCommentModeration:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
+    ItemCommentModerationRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
+    ItemCommentPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemComment'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    ItemCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/EditorialTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        body:
+          type: string
+          minLength: 1
+          maxLength: 40000
+        external_url:
+          type: string
+          maxLength: 300
+        comments_enabled:
+          type: boolean
+        public:
+          type: boolean
+        startup_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 10
+        banner_starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        banner_ends_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - body
+      - title
+      - type
+    ItemReactionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          $ref: '#/components/schemas/ReactionKindEnum'
+      required:
+      - kind
+    ItemReactionResult:
+      type: object
+      properties:
+        created:
+          type: boolean
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        reaction_count:
+          type: integer
+      required:
+      - created
+      - reaction_count
+      - reactions
+    ItemStartup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+      required:
+      - id
+      - logo
       - name
       - slug
     Job:
@@ -6243,6 +7741,26 @@ components:
       required:
       - name
       - slug
+    NewsOpenGraph:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+        image:
+          type: string
+          nullable: true
+      required:
+      - description
+      - image
+      - title
+      - type
+      - url
     NotificationItem:
       type: object
       properties:
@@ -6348,6 +7866,57 @@ components:
           type: string
           minLength: 1
           maxLength: 20000
+    PatchedCommentWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 40000
+    PatchedItemUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/EditorialTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        body:
+          type: string
+          minLength: 1
+          maxLength: 40000
+        external_url:
+          type: string
+          maxLength: 300
+        comments_enabled:
+          type: boolean
+        public:
+          type: boolean
+        startup_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 10
+        banner_starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        banner_ends_at:
+          type: string
+          format: date-time
+          nullable: true
     PatchedJobUpdateRequest:
       type: object
       description: |-
@@ -6524,6 +8093,29 @@ components:
           maxLength: 300
         directory_opt_in:
           type: boolean
+    Person:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      required:
+      - headline
+      - id
+      - name
+      - photo
+      - slug
     PhotoSetRequest:
       type: object
       description: |-
@@ -6834,6 +8426,49 @@ components:
       required:
       - next_missing_field
       - score
+    PublicItem:
+      type: object
+      properties:
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+        body:
+          type: string
+          description: Sanitised HTML
+        startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemStartup'
+        external_url:
+          type: string
+        share_url:
+          type: string
+        open_graph:
+          $ref: '#/components/schemas/NewsOpenGraph'
+      required:
+      - body
+      - cover
+      - excerpt
+      - external_url
+      - open_graph
+      - published_at
+      - share_url
+      - slug
+      - startups
+      - title
+      - type
     PublicJob:
       type: object
       properties:
@@ -6944,6 +8579,44 @@ components:
       - startup
       - title
       - type
+    PublicPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicSummary'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    PublicSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+      required:
+      - cover
+      - excerpt
+      - published_at
+      - slug
+      - title
+      - type
     QueueCounts:
       type: object
       properties:
@@ -6955,11 +8628,14 @@ components:
           type: integer
         jobs_awaiting_review:
           type: integer
+        wins_awaiting_review:
+          type: integer
       required:
       - jobs_awaiting_review
       - open_reports
       - registrations_awaiting_approval
       - registrations_unverified
+      - wins_awaiting_review
     ReactionKindEnum:
       enum:
       - like
@@ -7379,6 +9055,19 @@ components:
       required:
       - job_id
       - saved
+    ScheduleRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        publish_at:
+          type: string
+          format: date-time
+      required:
+      - publish_at
     SearchHit:
       type: object
       properties:
@@ -8042,21 +9731,25 @@ components:
       - profile_photo
       - startup_logo
       - post_image
+      - editorial_cover
       type: string
       description: |-
         * `profile_photo` - Profile Photo
         * `startup_logo` - Startup Logo
         * `post_image` - Post Image
+        * `editorial_cover` - Editorial Cover
     UploadRequestPurposeEnum:
       enum:
       - profile_photo
       - startup_logo
       - post_image
+      - editorial_cover
       type: string
       description: |-
         * `profile_photo` - profile_photo
         * `startup_logo` - startup_logo
         * `post_image` - post_image
+        * `editorial_cover` - editorial_cover
     UploadRequestRequest:
       type: object
       description: |-
@@ -8099,6 +9792,110 @@ components:
           type: string
       required:
       - status
+    Win:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        title:
+          type: string
+        evidence_url:
+          type: string
+        details:
+          type: string
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+        review_note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - details
+      - evidence_url
+      - id
+      - kind
+      - review_note
+      - reviewed_at
+      - startup_id
+      - status
+      - title
+    WinCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          $ref: '#/components/schemas/WinKindEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        evidence_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        details:
+          type: string
+          maxLength: 1000
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - evidence_url
+      - kind
+      - title
+    WinKindEnum:
+      enum:
+      - award
+      - funding
+      - partnership
+      type: string
+      description: |-
+        * `award` - award
+        * `funding` - funding
+        * `partnership` - partnership
+    WinPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Win'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    WinReviewRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
   securitySchemes:
     bearerAuth:
       type: http

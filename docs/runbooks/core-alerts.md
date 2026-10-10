@@ -165,3 +165,10 @@ check `expires_at`. If warnings are missing, check that beat is running and look
 The count is `jobs_awaiting_review` on `GET /admin/queues` and the list is
 `GET /admin/jobs?status=pending`. A super admin can switch the board to auto publish with
 `PUT /admin/jobs/settings`; jobs already pending stay pending until an admin decides them.
+
+## Scheduled news items not appearing
+
+Scheduled items are published by `editorial.publish_due`, which beat runs every minute. If an item
+is past its time and still scheduled, check that beat and a worker are running; the item is then
+published with its scheduled time on the next run, nothing is lost. A scheduled time in the past is
+rejected when scheduling, so a stuck item always means the sweep is not running.
