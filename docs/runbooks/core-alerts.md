@@ -179,3 +179,21 @@ Reminders come from `events.send_reminders` (beat, every ten minutes) and are cl
 registration before sending, so a restart never double-sends. A member who registered inside the
 24 hour (or 1 hour) window is deliberately skipped for that reminder. If nobody gets reminders, check
 that beat is running and that the event is still published; cancelled events send none.
+
+## A newsletter is stuck or must be stopped
+
+To stop one at once, pause it (`POST /admin/campaigns/{id}/pause`); nothing more is sent until it is
+resumed, and cancelling leaves the unsent unsent. A campaign that pauses by itself means the email
+provider rejected our credentials or sending domain (log line
+`campaign_paused_provider_misconfigured`): fix the provider setup, then resume. A campaign that
+stays in `sending` with queued recipients and no progress means its worker was lost; the
+`campaigns.start_due` task re-kicks it every minute, so check that beat and the `email` queue
+workers are running. Unsubscribes and bounces are honoured per message just before sending, so
+there is no need to stop a campaign because someone asked to be removed.
+
+## Unsubscribe links not working
+
+`POST /unsubscribe` needs the signed token from the email. A 400 means the link was altered or
+signed with a different `SECRET_KEY` (for example after rotating it), in which case old emails'
+links stop working; keep the old key in rotation until old mail is no longer actionable. The web
+page in the link is the front end's `/unsubscribe` route, which should call this endpoint.

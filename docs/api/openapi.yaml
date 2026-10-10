@@ -4,6 +4,590 @@ info:
   version: 1.0.0
   description: REST API for the WO Community platform.
 paths:
+  /api/v1/admin/campaign-templates:
+    get:
+      operationId: admin_campaign_templates_list
+      summary: Newsletter templates
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Template'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_campaign_templates_create
+      description: 'Blocks: heading, paragraph, button, image and divider. Merge field:
+        `{{first_name}}`.'
+      summary: Save a template
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/campaign-templates/{template_id}:
+    delete:
+      operationId: admin_campaign_templates_destroy
+      summary: Delete a template
+      parameters:
+      - in: path
+        name: template_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/campaigns:
+    get:
+      operationId: admin_campaigns_list
+      summary: Newsletters
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - scheduled
+          - sending
+          - paused
+          - sent
+          - cancelled
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `draft` - draft
+          * `scheduled` - scheduled
+          * `sending` - sending
+          * `paused` - paused
+          * `sent` - sent
+          * `cancelled` - cancelled
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Campaign'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_campaigns_create
+      description: Starts as a draft. Content is a list of blocks (or `template_id`).
+        The audience is a saved segment (`segment_id`).
+      summary: Write a newsletter
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/campaigns/{campaign_id}:
+    get:
+      operationId: admin_campaigns_retrieve
+      summary: One newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    patch:
+      operationId: admin_campaigns_partial_update
+      summary: Edit a draft or scheduled newsletter
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCampaignUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Already sending or sent
+        '412':
+          description: Changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: admin_campaigns_destroy
+      summary: Delete a draft
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/campaigns/{campaign_id}/cancel:
+    post:
+      operationId: admin_campaigns_cancel_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/campaigns/{campaign_id}/pause:
+    post:
+      operationId: admin_campaigns_pause_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/campaigns/{campaign_id}/report:
+    get:
+      operationId: admin_campaigns_report_retrieve
+      description: 'Counts of people: sent, delivered, opened, clicked, bounced, unsubscribed
+        and complained, with open and click rates of those sent. Updated as the email
+        provider reports.'
+      summary: Delivery and engagement so far
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/campaigns/{campaign_id}/resume:
+    post:
+      operationId: admin_campaigns_resume_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/campaigns/{campaign_id}/schedule:
+    post:
+      operationId: admin_campaigns_schedule_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/campaigns/{campaign_id}/send:
+    post:
+      operationId: admin_campaigns_send_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/campaigns/{campaign_id}/test:
+    post:
+      operationId: admin_campaigns_test_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/campaigns/{campaign_id}/unschedule:
+    post:
+      operationId: admin_campaigns_unschedule_create
+      description: 'Actions: `send` (now), `schedule` (needs `scheduled_at`), `unschedule`,
+        `pause` (the kill switch), `resume`, `cancel` and `test` (sends to you alone,
+        204). Send, schedule and resume need a fresh MFA step-up. Sending freezes
+        the audience, leaves out anyone who has unsubscribed, and rechecks each person
+        just before their message goes.'
+      summary: Run an action on a newsletter
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignScheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+          description: ''
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
   /api/v1/admin/comments/{comment_id}/hide:
     post:
       operationId: admin_comments_hide_create
@@ -2592,6 +3176,199 @@ paths:
           description: No such report
         '409':
           description: Already actioned
+  /api/v1/admin/segments:
+    get:
+      operationId: admin_segments_list
+      summary: Saved segments
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Segment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_segments_create
+      description: 'Choose from: `country`, `sector`, `stage`, `skills`, `roles`,
+        `joined_after`, `joined_before`, `last_active_after`, `last_active_before`,
+        `completeness_min`, `completeness_max` and `tags` (profile_complete, registered_incomplete,
+        directory_listed, founder_active, founder_dormant, job_poster). Everything
+        given must match; several values in one list match any of them. Course enrolment
+        arrives with the learning hub.'
+      summary: Save a segment
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SegmentWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Segment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/segments/{segment_id}:
+    get:
+      operationId: admin_segments_retrieve
+      summary: One segment
+      parameters:
+      - in: path
+        name: segment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Segment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    patch:
+      operationId: admin_segments_partial_update
+      summary: Change a segment
+      parameters:
+      - in: path
+        name: segment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSegmentUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Segment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_segments_destroy
+      summary: Delete a segment
+      parameters:
+      - in: path
+        name: segment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/segments/{segment_id}/preview:
+    get:
+      operationId: admin_segments_preview_retrieve
+      summary: How many people a saved segment would reach now
+      parameters:
+      - in: path
+        name: segment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/segments/preview:
+    post:
+      operationId: admin_segments_preview_create
+      summary: How many people a segment would reach
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SegmentPreviewRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/startups/{startup_id}/feature:
     post:
       operationId: admin_startups_feature_create
@@ -4468,6 +5245,48 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/me/marketing-consent:
+    get:
+      operationId: me_marketing_consent_retrieve
+      summary: Whether you agreed to receive news and marketing email
+      tags:
+      - notifications
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingConsent'
+          description: ''
+        '401':
+          description: Not logged in
+    put:
+      operationId: me_marketing_consent_update
+      description: Separate from account emails, which always continue. Stopping takes
+        effect at once, including for a campaign already sending. Agreeing again lifts
+        an earlier unsubscribe, but never a bounce or complaint block.
+      summary: Agree to, or stop, marketing email
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketingConsentRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketingConsent'
+          description: ''
+        '401':
+          description: Not logged in
   /api/v1/me/notification-preferences:
     get:
       operationId: me_notification_preferences_retrieve
@@ -6261,6 +7080,31 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/unsubscribe:
+    post:
+      operationId: unsubscribe_create
+      description: 'Takes effect immediately: marketing consent is withdrawn and the
+        address is suppressed. Send the token as JSON, or in the query string as mail
+        clients do. Safe to repeat. Transactional email (password resets, approvals)
+        is not affected.'
+      summary: Unsubscribe from marketing email
+      tags:
+      - campaigns
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnsubscribeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnsubscribeResult'
+          description: ''
+        '400':
+          description: Invalid link
   /api/v1/uploads:
     post:
       operationId: uploads_create
@@ -7180,6 +8024,107 @@ components:
       - reason
       - result
       - row
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        subject:
+          type: string
+        preheader:
+          type: string
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        segment_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+        recipient_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - blocks
+      - created_at
+      - finished_at
+      - id
+      - name
+      - preheader
+      - recipient_count
+      - scheduled_at
+      - segment_id
+      - started_at
+      - status
+      - subject
+    CampaignCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 150
+        preheader:
+          type: string
+          maxLength: 150
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          maxItems: 40
+        template_id:
+          type: string
+          format: uuid
+        segment_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - name
+      - subject
+    CampaignScheduleRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        scheduled_at:
+          type: string
+          format: date-time
+      required:
+      - scheduled_at
     CategoryEnum:
       enum:
       - update
@@ -8691,6 +9636,30 @@ components:
       required:
       - unread_count
       - updated
+    MarketingConsent:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        granted:
+          type: boolean
+      required:
+      - granted
+    MarketingConsentRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        granted:
+          type: boolean
+      required:
+      - granted
     Me:
       type: object
       properties:
@@ -8978,6 +9947,35 @@ components:
         * `mentoring` - mentoring
         * `seeking_mentor` - seeking_mentor
         * `partnerships` - partnerships
+    PatchedCampaignUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 150
+        preheader:
+          type: string
+          maxLength: 150
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          maxItems: 40
+        segment_id:
+          type: string
+          format: uuid
+          nullable: true
     PatchedCommentUpdateRequest:
       type: object
       description: |-
@@ -9226,6 +10224,20 @@ components:
           type: integer
           maximum: 10000
           minimum: 0
+    PatchedSegmentUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        definition:
+          $ref: '#/components/schemas/SegmentDefinitionRequest'
     PatchedStartupUpdateRequest:
       type: object
       description: Validation shared by create and update.
@@ -9532,6 +10544,19 @@ components:
               type: boolean
       required:
       - preferences
+    PreviewResult:
+      type: object
+      properties:
+        matching:
+          type: integer
+          description: Active members who fit the segment
+        eligible:
+          type: integer
+          description: Of those, the ones who agreed to marketing mail and are not
+            suppressed
+      required:
+      - eligible
+      - matching
     Profile:
       type: object
       description: Output shape. Every field is optional because hidden groups are
@@ -10194,6 +11219,51 @@ components:
       - post_id
       - reaction_count
       - reactions
+    Report:
+      type: object
+      properties:
+        recipients:
+          type: integer
+        queued:
+          type: integer
+        sent:
+          type: integer
+        skipped:
+          type: integer
+        failed:
+          type: integer
+        delivered:
+          type: integer
+        opened:
+          type: integer
+        clicked:
+          type: integer
+        bounced:
+          type: integer
+        unsubscribed:
+          type: integer
+        complained:
+          type: integer
+        open_rate:
+          type: number
+          format: double
+        click_rate:
+          type: number
+          format: double
+      required:
+      - bounced
+      - click_rate
+      - clicked
+      - complained
+      - delivered
+      - failed
+      - open_rate
+      - opened
+      - queued
+      - recipients
+      - sent
+      - skipped
+      - unsubscribed
     ReportActionRequest:
       type: object
       description: |-
@@ -10335,6 +11405,14 @@ components:
           type: string
           default: ''
           maxLength: 500
+    RolesEnum:
+      enum:
+      - member
+      - mentor
+      type: string
+      description: |-
+        * `member` - member
+        * `mentor` - mentor
     SaveResult:
       type: object
       properties:
@@ -10399,6 +11477,120 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SearchHit'
+    Segment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        definition:
+          type: object
+          additionalProperties: {}
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - definition
+      - id
+      - name
+    SegmentDefinitionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        country:
+          type: array
+          items:
+            type: string
+            minLength: 2
+            maxLength: 2
+          maxItems: 50
+        sector:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          maxItems: 20
+        stage:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          maxItems: 20
+        skills:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+          maxItems: 20
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RolesEnum'
+          maxItems: 2
+        joined_after:
+          type: string
+          format: date
+        joined_before:
+          type: string
+          format: date
+        last_active_after:
+          type: string
+          format: date
+        last_active_before:
+          type: string
+          format: date
+        completeness_min:
+          type: integer
+          maximum: 100
+          minimum: 0
+        completeness_max:
+          type: integer
+          maximum: 100
+          minimum: 0
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagsEnum'
+          maxItems: 6
+    SegmentPreviewRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        definition:
+          $ref: '#/components/schemas/SegmentDefinitionRequest'
+      required:
+      - definition
+    SegmentWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        definition:
+          $ref: '#/components/schemas/SegmentDefinitionRequest'
+      required:
+      - definition
+      - name
     Session:
       type: object
       properties:
@@ -10849,6 +12041,22 @@ components:
         * `rejected` - Rejected
         * `expired` - Expired
         * `discarded` - Discarded
+    TagsEnum:
+      enum:
+      - profile_complete
+      - registered_incomplete
+      - directory_listed
+      - founder_active
+      - founder_dormant
+      - job_poster
+      type: string
+      description: |-
+        * `profile_complete` - profile_complete
+        * `registered_incomplete` - registered_incomplete
+        * `directory_listed` - directory_listed
+        * `founder_active` - founder_active
+        * `founder_dormant` - founder_dormant
+        * `job_poster` - job_poster
     TeamAddRequest:
       type: object
       description: |-
@@ -10890,6 +12098,48 @@ components:
       required:
       - is_founder
       - title
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - blocks
+      - created_at
+      - id
+      - name
+    TemplateWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        blocks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          maxItems: 40
+      required:
+      - blocks
+      - name
     TokenRequest:
       type: object
       description: |-
@@ -10987,6 +12237,27 @@ components:
             $ref: '#/components/schemas/TractionItemRequest'
       required:
       - metrics
+    UnsubscribeRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - token
+    UnsubscribeResult:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     Upload:
       type: object
       properties:
@@ -11068,24 +12339,28 @@ components:
       - startup_logo
       - post_image
       - editorial_cover
+      - campaign_image
       type: string
       description: |-
         * `profile_photo` - Profile Photo
         * `startup_logo` - Startup Logo
         * `post_image` - Post Image
         * `editorial_cover` - Editorial Cover
+        * `campaign_image` - Campaign Image
     UploadRequestPurposeEnum:
       enum:
       - profile_photo
       - startup_logo
       - post_image
       - editorial_cover
+      - campaign_image
       type: string
       description: |-
         * `profile_photo` - profile_photo
         * `startup_logo` - startup_logo
         * `post_image` - post_image
         * `editorial_cover` - editorial_cover
+        * `campaign_image` - campaign_image
     UploadRequestRequest:
       type: object
       description: |-
