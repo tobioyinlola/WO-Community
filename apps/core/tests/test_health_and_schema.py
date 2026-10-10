@@ -36,3 +36,20 @@ def test_openapi_schema_is_served_and_documents_routes(api_client):
     paths = response.json()["paths"]
     assert "/api/v1/me" in paths
     assert "/api/v1/ping" in paths
+
+
+def test_the_schema_route_is_absent_unless_switched_on(settings):
+    import importlib
+
+    import config.urls as urls
+
+    settings.SERVE_API_SCHEMA = False
+    try:
+        importlib.reload(urls)
+        assert "schema" not in {getattr(p, "name", None) for p in urls.urlpatterns}
+        settings.SERVE_API_SCHEMA = True
+        importlib.reload(urls)
+        assert "schema" in {getattr(p, "name", None) for p in urls.urlpatterns}
+    finally:
+        settings.SERVE_API_SCHEMA = True
+        importlib.reload(urls)

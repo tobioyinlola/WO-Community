@@ -46,3 +46,5 @@ GOOGLE_CLIENT_ID = "test-client.apps.googleusercontent.com"
 GOOGLE_TOKEN_VERIFIER = (
     "apps.integrations.identity.fake.FakeGoogleVerifier"  # noqa: S105  # nosec B105
 )
+
+SERVE_API_SCHEMA = True

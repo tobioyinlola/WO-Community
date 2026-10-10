@@ -362,3 +362,6 @@ CAMPAIGN_FOOTER = env.str("CAMPAIGN_FOOTER", default="WO Community")
 CAMPAIGN_BATCH_SIZE = env.int("CAMPAIGN_BATCH_SIZE", default=50)
 CAMPAIGN_BATCH_DELAY_SECONDS = env.int("CAMPAIGN_BATCH_DELAY_SECONDS", default=5)
 API_BASE_URL = env.str("API_BASE_URL", default="http://localhost:8000")
+
+# Serve GET /api/v1/schema/. Off unless an environment turns it on.
+SERVE_API_SCHEMA = env.bool("SERVE_API_SCHEMA", default=False)
