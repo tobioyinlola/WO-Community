@@ -223,6 +223,7 @@ CELERY_TASK_ROUTES = {
     "analytics.forward": {"queue": "analytics"},
     "analytics.ensure_partitions": {"queue": "analytics"},
     "analytics.drop_expired": {"queue": "analytics"},
+    "feed.fetch_link_preview": {"queue": "media"},
 }
 CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
@@ -231,6 +232,7 @@ CELERY_BEAT_SCHEDULE = {
     "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
     "notifications-purge-webhooks": {"task": "notifications.purge_webhooks", "schedule": 86400.0},
     "notifications-purge": {"task": "notifications.purge_notifications", "schedule": 86400.0},
+    "feed-purge-link-previews": {"task": "feed.purge_link_previews", "schedule": 86400.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
     "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
     "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
@@ -330,4 +332,7 @@ SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
 FEED_POSTS_PER_DAY = env.int("FEED_POSTS_PER_DAY", default=20)
 FEED_COMMENTS_PER_DAY = env.int("FEED_COMMENTS_PER_DAY", default=200)
 FEED_MAX_IMAGES = 10
+LINK_PREVIEW_FETCHER = env.str(
+    "LINK_PREVIEW_FETCHER", default="apps.integrations.linkpreview.fetcher.WebFetcher"
+)
 FEED_REPORTS_PER_DAY = env.int("FEED_REPORTS_PER_DAY", default=20)
