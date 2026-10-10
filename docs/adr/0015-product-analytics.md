@@ -20,7 +20,7 @@ Status: accepted (Stage 1)
   refused.
 - **Who may report what.** The browser may report only events it alone can see (page views, clicks);
   anything about an action the server performs (a member approved, an invitation sent) is recorded by
-  the server and a browser cannot claim it. `POST /events` takes batches of up to 50, reports each
+  the server and a browser cannot claim it. `POST /analytics/events` takes batches of up to 50, reports each
   rejected event with a reason and keeps the rest, ignores a bad token (treats the caller as a
   visitor) so tracking can never fail a page, and does not trust the browser's clock (nothing in the
   future, nothing more than a day old).
@@ -45,7 +45,7 @@ Status: accepted (Stage 1)
   links are forwarded the same way.
 - **Where it sits.** `analytics` is a level 0 module that depends on nothing, so any module can call
   it. The forwarder lives in `integrations` (which may import analytics) and the optional-login
-  check for `/events` is injected by setting, because analytics cannot import accounts.
+  check for `/analytics/events` is injected by setting, because analytics cannot import accounts.
 
 ## What the registry contains today
 

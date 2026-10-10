@@ -111,12 +111,32 @@ Design and trade-offs are in ADR 0024.
 Scheduled: `editorial.publish_due` every minute. Notices: win accepted or not (member). Queue counts
 include `wins_awaiting_review`.
 
+## Slice 8: events and demo days (done)
+
+Design and trade-offs are in ADR 0025. Note: the analytics ingest endpoint moved to
+`POST /analytics/events` so `/events` is free for this module.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /events` | Upcoming (soonest first) or `when=past` archive; filter `type`, `registered=true`. |
+| `GET /events/{id}` | Detail with join link, demo day pitch order, and recording and summary once over. |
+| `POST/DELETE /events/{id}/register` | Register (capacity enforced) or cancel. |
+| `GET /events/{id}/calendar.ics` | Add to any calendar. |
+| `GET /public/events`, `/public/events/{slug}` | Public, cached pages with Open Graph data. |
+| `GET/POST /admin/events`, `GET/PATCH/DELETE /admin/events/{id}` | Manage events (ETag on edit). |
+| `POST /admin/events/{id}/{publish,unpublish,cancel}` | Lifecycle; cancelling notifies registrants. |
+| `PUT /admin/events/{id}/slots` | Demo day presenters and pitch order. |
+| `GET /admin/events/{id}/attendees`, `/attendees.csv` | Attendee list and CSV (step-up MFA, audited, formula-safe). |
+| `POST /admin/events/{id}/attendees/{user}/check-in` | Mark present or not. |
+
+Scheduled: reminders every ten minutes (24 hours and 1 hour before). Notices: registration
+confirmed, reminder, cancelled, new times.
+
 ## Still to do in Stage 2
 
-1. Events and demo days (registration, capacity, reminders, attendee export, archive).
-2. Campaigns and segments (newsletters).
-3. Admin dashboards and queues beyond counts.
-4. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
-5. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
-   monthly partitions for notifications if volume warrants; merge the jobs and news sitemaps into the
-   front end's sitemap.
+1. Campaigns and segments (newsletters).
+2. Admin dashboards and queues beyond counts.
+3. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
+4. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
+   monthly partitions for notifications if volume warrants; merge the jobs, news and events
+   sitemaps into the front end's sitemap.

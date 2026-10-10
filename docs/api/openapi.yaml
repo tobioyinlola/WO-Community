@@ -578,6 +578,454 @@ paths:
           description: Not found
         '409':
           description: Not in a state that allows this
+  /api/v1/admin/events:
+    get:
+      operationId: admin_events_list
+      summary: All events, any state
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - published
+          - cancelled
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `draft` - draft
+          * `published` - published
+          * `cancelled` - cancelled
+      - in: query
+        name: type
+        schema:
+          enum:
+          - demo_day
+          - workshop
+          - meetup
+          - announcement
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `demo_day` - demo_day
+          * `workshop` - workshop
+          * `meetup` - meetup
+          * `announcement` - announcement
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_events_create
+      description: Starts as a draft. Times are sent with an offset and stored in
+        UTC; `timezone` is the place's zone name (default UTC). `capacity` blank means
+        unlimited.
+      summary: Create an event
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/events/{event_id}:
+    get:
+      operationId: admin_events_retrieve
+      summary: One event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    patch:
+      operationId: admin_events_partial_update
+      description: Changing the times of a published event tells everyone registered
+        and resets their reminders. Capacity cannot drop below the number registered.
+        After the event, add `recording_url` and `summary` for the archive.
+      summary: Edit an event
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEventUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Cancelled
+        '412':
+          description: Changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: admin_events_destroy
+      summary: Remove an event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/events/{event_id}/attendees:
+    get:
+      operationId: admin_events_attendees_list
+      description: Names and email addresses, so it needs a recent MFA check. Reading
+        is logged.
+      summary: Who registered
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attendee'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/events/{event_id}/attendees.csv:
+    get:
+      operationId: admin_events_attendees.csv_retrieve
+      summary: Export the attendee list as CSV
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: CSV file
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/events/{event_id}/attendees/{user_id}/check-in:
+    post:
+      operationId: admin_events_attendees_check_in_create
+      summary: Mark an attendee as present (or not)
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/events/{event_id}/cancel:
+    post:
+      operationId: admin_events_cancel_create
+      description: Publish needs a start in the future. Unpublish only while nobody
+        has registered. Cancel tells everyone registered and closes registration.
+      summary: Publish, unpublish or cancel an event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventReasonRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/events/{event_id}/publish:
+    post:
+      operationId: admin_events_publish_create
+      description: Publish needs a start in the future. Unpublish only while nobody
+        has registered. Cancel tells everyone registered and closes registration.
+      summary: Publish, unpublish or cancel an event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventReasonRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/events/{event_id}/slots:
+    put:
+      operationId: admin_events_slots_update
+      description: Replaces the whole list; the order sent is the pitch order. Demo
+        days only.
+      summary: Set the demo day's presenting startups and pitch order
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SlotsRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not a demo day
+  /api/v1/admin/events/{event_id}/unpublish:
+    post:
+      operationId: admin_events_unpublish_create
+      description: Publish needs a start in the future. Unpublish only while nobody
+        has registered. Cancel tells everyone registered and closes registration.
+      summary: Publish, unpublish or cancel an event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventReasonRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEvent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
   /api/v1/admin/invitations:
     get:
       operationId: admin_invitations_list
@@ -2325,6 +2773,33 @@ paths:
           description: Not found
         '409':
           description: Already reviewed
+  /api/v1/analytics/events:
+    post:
+      operationId: analytics_events_create
+      description: Up to 50 events per call. Only events marked as browser events
+        in the registry are accepted, with only their listed properties. Invalid events
+        are reported individually and the rest are kept. Send the visitor's `anonymous_id`
+        only if they agreed to analytics; when signed in it is linked to the member.
+      summary: Report browser events
+      tags:
+      - analytics
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+        required: true
+      security:
+      - optionalBearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResult'
+          description: ''
+        '400':
+          description: Malformed batch
   /api/v1/auth/google:
     post:
       operationId: auth_google_create
@@ -3202,32 +3677,200 @@ paths:
         '404':
           description: Not found, or not published
   /api/v1/events:
-    post:
-      operationId: events_create
-      description: Up to 50 events per call. Only events marked as browser events
-        in the registry are accepted, with only their listed properties. Invalid events
-        are reported individually and the rest are kept. Send the visitor's `anonymous_id`
-        only if they agreed to analytics; when signed in it is linked to the member.
-      summary: Report browser events
+    get:
+      operationId: events_list
+      description: '`when=upcoming` (default) soonest first, or `past` for the archive,
+        latest first. `registered=true` shows only those you registered for.'
+      summary: Events, demo days, workshops and meetups
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: registered
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: type
+        schema:
+          enum:
+          - demo_day
+          - workshop
+          - meetup
+          - announcement
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `demo_day` - demo_day
+          * `workshop` - workshop
+          * `meetup` - meetup
+          * `announcement` - announcement
+      - in: query
+        name: when
+        schema:
+          enum:
+          - upcoming
+          - past
+          type: string
+          default: upcoming
+          minLength: 1
+        description: |-
+          * `upcoming` - upcoming
+          * `past` - past
       tags:
-      - analytics
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EventBatchRequest'
-        required: true
+      - events
       security:
-      - optionalBearerAuth: []
+      - bearerAuth: []
       responses:
-        '202':
+        '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BatchResult'
+                $ref: '#/components/schemas/EventPage'
           description: ''
-        '400':
-          description: Malformed batch
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/events/{event_id}:
+    get:
+      operationId: events_retrieve
+      description: Includes the join link, the demo day pitch order and, once it is
+        over, the recording and summary. A cancelled event stays visible with its
+        status.
+      summary: One event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - events
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/events/{event_id}/calendar.ics:
+    get:
+      operationId: events_calendar.ics_retrieve
+      description: An iCalendar (.ics) file.
+      summary: Add the event to your calendar
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - events
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: iCalendar file
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/events/{event_id}/register:
+    post:
+      operationId: events_register_create
+      description: 'Idempotent: registering again answers 200. Refused with 409 when
+        registration is closed, the event is full or it has started. You get a confirmation
+        and reminders 24 hours and 1 hour before.'
+      summary: Register for an event
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - events
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+        '409':
+          description: Closed, full or already started
+    delete:
+      operationId: events_register_destroy
+      description: Idempotent. Not possible once the event has started.
+      summary: Cancel your registration
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - events
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+        '409':
+          description: Already started
   /api/v1/follows:
     post:
       operationId: follows_create
@@ -4686,6 +5329,88 @@ paths:
           description: Not found, or not visible to you
         '429':
           description: Daily limit
+  /api/v1/public/events:
+    get:
+      operationId: public_events_list
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: Public events
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: type
+        schema:
+          enum:
+          - demo_day
+          - workshop
+          - meetup
+          - announcement
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `demo_day` - demo_day
+          * `workshop` - workshop
+          * `meetup` - meetup
+          * `announcement` - announcement
+      - in: query
+        name: when
+        schema:
+          enum:
+          - upcoming
+          - past
+          type: string
+          default: upcoming
+          minLength: 1
+        description: |-
+          * `upcoming` - upcoming
+          * `past` - past
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicEventPage'
+          description: ''
+        '400':
+          description: Bad filter
+  /api/v1/public/events/{slug}:
+    get:
+      operationId: public_events_retrieve
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: One public event, with Open Graph data
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicEvent'
+          description: ''
+        '404':
+          description: Not found
   /api/v1/public/founders:
     get:
       operationId: public_founders_list
@@ -5802,6 +6527,102 @@ components:
       description: |-
         * `hide` - hide
         * `remove` - remove
+    AdminEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        past:
+          type: boolean
+        capacity:
+          type: integer
+          nullable: true
+        registered_count:
+          type: integer
+        spots_left:
+          type: integer
+          nullable: true
+        registration_open:
+          type: boolean
+          description: Whether you could register right now
+        registered:
+          type: boolean
+        description:
+          type: string
+          description: Sanitised HTML
+        link:
+          type: string
+          description: Where to join online
+        recording_url:
+          type: string
+          description: Once the event is over
+        summary:
+          type: string
+          description: Once the event is over
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+        public:
+          type: boolean
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - capacity
+      - created_at
+      - created_by
+      - description
+      - edited_at
+      - ends_at
+      - excerpt
+      - id
+      - link
+      - location
+      - past
+      - public
+      - recording_url
+      - registered
+      - registered_count
+      - registration_open
+      - slots
+      - slug
+      - spots_left
+      - starts_at
+      - status
+      - summary
+      - timezone
+      - title
+      - type
     AdminItem:
       type: object
       properties:
@@ -6228,6 +7049,30 @@ components:
       description: |-
         * `url` - url
         * `email` - email
+    Attendee:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        registered_at:
+          type: string
+          format: date-time
+        checked_in_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - checked_in_at
+      - email
+      - name
+      - registered_at
+      - user_id
     Author:
       type: object
       properties:
@@ -6351,6 +7196,17 @@ components:
         * `resource` - resource
         * `event` - event
         * `opportunity` - opportunity
+    CheckInRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        present:
+          type: boolean
+          default: true
     ChecklistItem:
       type: object
       properties:
@@ -6614,6 +7470,85 @@ components:
         * `funding` - funding
         * `news` - news
         * `announcement` - announcement
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        past:
+          type: boolean
+        capacity:
+          type: integer
+          nullable: true
+        registered_count:
+          type: integer
+        spots_left:
+          type: integer
+          nullable: true
+        registration_open:
+          type: boolean
+          description: Whether you could register right now
+        registered:
+          type: boolean
+        description:
+          type: string
+          description: Sanitised HTML
+        link:
+          type: string
+          description: Where to join online
+        recording_url:
+          type: string
+          description: Once the event is over
+        summary:
+          type: string
+          description: Once the event is over
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+      required:
+      - capacity
+      - description
+      - ends_at
+      - excerpt
+      - id
+      - link
+      - location
+      - past
+      - recording_url
+      - registered
+      - registered_count
+      - registration_open
+      - slots
+      - slug
+      - spots_left
+      - starts_at
+      - status
+      - summary
+      - timezone
+      - title
+      - type
     EventBatchRequest:
       type: object
       description: |-
@@ -6632,6 +7567,61 @@ components:
             $ref: '#/components/schemas/EventItemRequest'
       required:
       - events
+    EventCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/EventTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 40000
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        location:
+          type: string
+          maxLength: 200
+        link:
+          type: string
+          maxLength: 300
+        capacity:
+          type: integer
+          maximum: 100000
+          minimum: 1
+          nullable: true
+        registration_open:
+          type: boolean
+        public:
+          type: boolean
+        recording_url:
+          type: string
+          maxLength: 300
+        summary:
+          type: string
+          maxLength: 40000
+      required:
+      - description
+      - ends_at
+      - starts_at
+      - title
+      - type
     EventItemRequest:
       type: object
       description: |-
@@ -6652,6 +7642,140 @@ components:
           format: date-time
       required:
       - name
+    EventOpenGraph:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        type:
+          type: string
+        image:
+          type: string
+          nullable: true
+      required:
+      - description
+      - image
+      - title
+      - type
+      - url
+    EventPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventSummary'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    EventReasonRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
+    EventStartup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+      required:
+      - id
+      - logo
+      - name
+      - slug
+    EventSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        past:
+          type: boolean
+        capacity:
+          type: integer
+          nullable: true
+        registered_count:
+          type: integer
+        spots_left:
+          type: integer
+          nullable: true
+        registration_open:
+          type: boolean
+          description: Whether you could register right now
+        registered:
+          type: boolean
+      required:
+      - capacity
+      - ends_at
+      - excerpt
+      - id
+      - location
+      - past
+      - registered
+      - registered_count
+      - registration_open
+      - slug
+      - spots_left
+      - starts_at
+      - status
+      - timezone
+      - title
+      - type
+    EventTypeEnum:
+      enum:
+      - demo_day
+      - workshop
+      - meetup
+      - announcement
+      type: string
+      description: |-
+        * `demo_day` - demo_day
+        * `workshop` - workshop
+        * `meetup` - meetup
+        * `announcement` - announcement
     Featured:
       type: object
       properties:
@@ -7878,6 +9002,55 @@ components:
           type: string
           minLength: 1
           maxLength: 40000
+    PatchedEventUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/EventTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 40000
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        location:
+          type: string
+          maxLength: 200
+        link:
+          type: string
+          maxLength: 300
+        capacity:
+          type: integer
+          maximum: 100000
+          minimum: 1
+          nullable: true
+        registration_open:
+          type: boolean
+        public:
+          type: boolean
+        recording_url:
+          type: string
+          maxLength: 300
+        summary:
+          type: string
+          maxLength: 40000
     PatchedItemUpdateRequest:
       type: object
       description: |-
@@ -8426,6 +9599,106 @@ components:
       required:
       - next_missing_field
       - score
+    PublicEvent:
+      type: object
+      properties:
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        location:
+          type: string
+        past:
+          type: boolean
+        description:
+          type: string
+          description: Sanitised HTML
+        recording_url:
+          type: string
+        summary:
+          type: string
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+        share_url:
+          type: string
+        open_graph:
+          $ref: '#/components/schemas/EventOpenGraph'
+      required:
+      - description
+      - ends_at
+      - excerpt
+      - location
+      - open_graph
+      - past
+      - recording_url
+      - share_url
+      - slots
+      - slug
+      - starts_at
+      - summary
+      - timezone
+      - title
+      - type
+    PublicEventPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicEventSummary'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    PublicEventSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+        location:
+          type: string
+        past:
+          type: boolean
+      required:
+      - ends_at
+      - excerpt
+      - location
+      - past
+      - slug
+      - starts_at
+      - timezone
+      - title
+      - type
     PublicItem:
       type: object
       properties:
@@ -8832,6 +10105,24 @@ components:
       required:
       - approved
       - detail
+    RegistrationResult:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        registered:
+          type: boolean
+        registered_count:
+          type: integer
+        spots_left:
+          type: integer
+          nullable: true
+      required:
+      - event_id
+      - registered
+      - registered_count
+      - spots_left
     RejectedEvent:
       type: object
       properties:
@@ -9237,6 +10528,51 @@ components:
       required:
       - name
       - slug
+    Slot:
+      type: object
+      properties:
+        position:
+          type: integer
+        pitch_link:
+          type: string
+        startup:
+          $ref: '#/components/schemas/EventStartup'
+      required:
+      - pitch_link
+      - position
+      - startup
+    SlotInputRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        startup_id:
+          type: string
+          format: uuid
+        pitch_link:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - startup_id
+    SlotsRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlotInputRequest'
+          maxItems: 20
+      required:
+      - slots
     Startup:
       type: object
       description: Output shape. Fields of hidden groups are absent, not blank.
