@@ -223,3 +223,8 @@ def cards_for(viewer: Any, startup_ids: list[UUID]) -> dict[UUID, dict[str, Any]
                 "logo": visible.get("logo"),
             }
     return cards
+
+
+def existing_ids(startup_ids: list[UUID]) -> set[UUID]:
+    """Which of the given ids are startups that exist."""
+    return set(Startup.objects.filter(pk__in=startup_ids).values_list("pk", flat=True))
