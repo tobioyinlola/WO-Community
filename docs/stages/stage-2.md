@@ -18,12 +18,24 @@ Design and trade-offs are in ADR 0018.
 | `POST /posts/{id}/reactions`, `DELETE /posts/{id}/reactions/{kind}` | Like, celebrate or insightful. Same for `/comments/{id}/reactions`. |
 | `POST /admin/posts/{id}/{pin,unpin,feature,unfeature,hide,unhide,remove}` | Moderation; audited. |
 
+## Slice 2: follows and the Following feed (done)
+
+Design and trade-offs are in ADR 0019.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /follows` | Follow a member or a startup (`{type, id}`). Idempotent. Up to 500. |
+| `DELETE /follows/{member\|startup}/{id}` | Unfollow. Idempotent. |
+| `GET /me/following` | Who you follow, newest first, optionally one type. |
+| `GET /posts?scope=following` | Posts by people you follow, and posts made for startups you follow. |
+
+Post and comment authors, and the startup on a post, now carry a `following` flag.
+
 ## Still to do in Stage 2
 
-1. Follows (members and startups) and the Following feed.
-2. Reports, the moderation queue (Open, Reviewed, Actioned) and moderation of comments.
-3. Link preview cards with SSRF protection.
-4. Notification centre and delivery of mention and comment notices.
-5. Jobs and opportunities, news and win submissions, events and demo days, campaigns and segments,
+1. Reports, the moderation queue (Open, Reviewed, Actioned) and moderation of comments.
+2. Link preview cards with SSRF protection.
+3. Notification centre and delivery of mention and comment notices.
+4. Jobs and opportunities, news and win submissions, events and demo days, campaigns and segments,
    admin queues.
-6. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
+5. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
