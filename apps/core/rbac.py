@@ -34,6 +34,7 @@ _COMMUNITY_ADMIN = _EDITOR | {
     "events.manage",
     "campaigns.send",
     "reports.handle",
+    "feed.moderate",
 }
 _SUPER_ADMIN = _COMMUNITY_ADMIN | {"roles.manage", "audit.read", "settings.manage"}
 

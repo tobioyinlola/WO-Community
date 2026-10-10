@@ -154,3 +154,11 @@ def clear_photo(*, user_id: UUID, if_match: str | None) -> FounderProfile:
         uploads.release(previous)
         _announce(profile)
     return profile
+
+
+def country_of(user_id: UUID) -> str:
+    """The country on the member's profile, or blank if they have not set one."""
+    return (
+        FounderProfile.objects.filter(user_id=user_id).values_list("country", flat=True).first()
+        or ""
+    )

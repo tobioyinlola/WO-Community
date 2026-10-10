@@ -207,3 +207,19 @@ def count_by_stage(slugs: list[str]) -> dict[str, int]:
 def has_traction(user_id: UUID) -> bool:
     """Whether any startup the user owns or sits on the team of reports a traction figure."""
     return TractionMetric.objects.filter(startup_id__in=startup_ids_of_member(user_id)).exists()
+
+
+def cards_for(viewer: Any, startup_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+    """Name, logo and slug of each startup, for those whose basics ``viewer`` may see."""
+    cards: dict[UUID, dict[str, Any]] = {}
+    for startup in Startup.objects.filter(pk__in=startup_ids).prefetch_related("members"):
+        groups = {"basics": {"name": startup.name, "logo": uploads.image_urls(startup.logo_key)}}
+        visible = project(groups, levels_of(startup), audience_for(viewer, team_ids(startup)))
+        if "name" in visible:
+            cards[startup.pk] = {
+                "id": startup.pk,
+                "slug": startup.slug,
+                "name": visible["name"],
+                "logo": visible.get("logo"),
+            }
+    return cards

@@ -118,3 +118,34 @@ def count_by_skill(slugs: list[str]) -> dict[str, int]:
         .annotate(n=Count("id"))
     )
     return {row["skills__slug"]: row["n"] for row in rows}
+
+
+def cards_for(viewer: Any, user_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+    """Name, headline and photo for each user, as ``viewer`` may see them.
+
+    Someone who hides their basics from the viewer appears as an anonymous community member,
+    so a card never reveals more than the profile page would.
+    """
+    cards: dict[UUID, dict[str, Any]] = {
+        uid: {"id": uid, "name": "Community member", "headline": "", "photo": None, "slug": None}
+        for uid in user_ids
+    }
+    for profile in FounderProfile.objects.filter(user_id__in=user_ids):
+        groups = {
+            "basics": {
+                "full_name": profile.full_name,
+                "headline": profile.headline,
+                "photo": uploads.image_urls(profile.photo_key),
+            }
+        }
+        visible = project(
+            groups, levels_of(profile), audience_for(viewer, frozenset({profile.user_id}))
+        )
+        if "full_name" in visible:
+            cards[profile.user_id].update(
+                name=visible["full_name"],
+                headline=visible.get("headline", ""),
+                photo=visible.get("photo"),
+                slug=profile.slug,
+            )
+    return cards
