@@ -54,7 +54,7 @@ def test_verifying_an_email_is_recorded(api_client, run_outbox, last_token):
 def test_registering_with_a_visitor_id_joins_the_funnel_to_the_member(api_client):
     anon = uuid.uuid4()
     api_client.post(
-        "/api/v1/events",
+        "/api/v1/analytics/events",
         {
             "anonymous_id": str(anon),
             "events": [{"name": "registration_started", "properties": {"source": "organic"}}],
