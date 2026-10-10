@@ -6,7 +6,31 @@ KINDS = "sectors|stages|skills"
 
 POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remove")
 
+COMMENT_ACTIONS = ("hide", "unhide", "remove")
+
 urlpatterns = [
+    *[
+        path(
+            f"admin/comments/<uuid:comment_id>/{action}",
+            feed_views.comment_action_view(action).as_view(),
+            name=f"admin-comment-{action}",
+        )
+        for action in COMMENT_ACTIONS
+    ],
+    path("admin/reports", feed_views.ReportListView.as_view(), name="admin-reports"),
+    path(
+        "admin/reports/<uuid:report_id>", feed_views.ReportDetailView.as_view(), name="admin-report"
+    ),
+    path(
+        "admin/reports/<uuid:report_id>/review",
+        feed_views.ReportReviewView.as_view(),
+        name="admin-report-review",
+    ),
+    path(
+        "admin/reports/<uuid:report_id>/action",
+        feed_views.ReportActionView.as_view(),
+        name="admin-report-action",
+    ),
     *[
         path(
             f"admin/posts/<uuid:post_id>/{action}",
