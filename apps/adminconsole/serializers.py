@@ -95,3 +95,4 @@ class QueueCountsSerializer(serializers.Serializer):
     registrations_unverified = serializers.IntegerField()
     open_reports = serializers.IntegerField()
     jobs_awaiting_review = serializers.IntegerField()
+    wins_awaiting_review = serializers.IntegerField()
