@@ -181,6 +181,7 @@ def test_queue_counts_split_verified_and_unverified(as_admin, make_user, pending
         "registrations_awaiting_approval": 1,
         "registrations_unverified": 1,
         "open_reports": 0,
+        "jobs_awaiting_review": 0,
     }
 
 

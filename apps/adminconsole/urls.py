@@ -1,14 +1,33 @@
 from django.urls import path, re_path
 
-from apps.adminconsole import featured_views, feed_views, invitation_views, reference_views, views
+from apps.adminconsole import (
+    featured_views,
+    feed_views,
+    invitation_views,
+    job_views,
+    reference_views,
+    views,
+)
 
 KINDS = "sectors|stages|skills"
 
+JOB_DECISIONS = ("approve", "reject", "unpublish", "remove")
 POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remove")
 
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/jobs", job_views.AdminJobsView.as_view(), name="admin-jobs"),
+    path("admin/jobs/settings", job_views.JobSettingsView.as_view(), name="admin-job-settings"),
+    path("admin/jobs/<uuid:job_id>", job_views.AdminJobView.as_view(), name="admin-job"),
+    *[
+        path(
+            f"admin/jobs/<uuid:job_id>/{decision}",
+            job_views.review_view(decision).as_view(),
+            name=f"admin-job-{decision}",
+        )
+        for decision in JOB_DECISIONS
+    ],
     *[
         path(
             f"admin/comments/<uuid:comment_id>/{action}",
