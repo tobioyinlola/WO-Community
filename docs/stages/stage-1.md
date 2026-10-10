@@ -218,6 +218,28 @@ Design and trade-offs are in ADR 0014.
 - A rename rebuilds only the directory pages that show the entry and purges the cached public list.
 - Countries stay in code (fixed by ISO 3166); post and course categories will reuse this service.
 
+## Slice 11: product analytics (done)
+
+Design and trade-offs are in ADR 0015.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /events` | Browser events in batches of up to 50; invalid ones are reported one by one, valid ones kept. Works signed in or out. |
+| `GET/PUT /me/analytics-preferences` | Opt out of analytics entirely, or rejoin. |
+| `POST /auth/register` with `anonymous_id` | Links the visitor id to the new member so the funnel is continuous. |
+
+- Every event is defined in a registry with its allowed properties: numbers, flags, fixed words or
+  short identifiers, never free text. The browser may report only page-level events; everything about
+  actions the server performs is recorded by the server.
+- Server events now recorded: `email_verified`, `member_approved` (with source and hours waited),
+  `member_rejected`, `member_suspended`, `member_removed`, `invitation_sent`,
+  `invitation_registered`, `profile_updated` (with the new completeness).
+- Recording happens inside the action's transaction and can never fail it.
+- Events are stored in a month-partitioned append-only table and forwarded in order, at least once,
+  to a pluggable sink (`ANALYTICS_SINK`; logging only until a tool is chosen).
+- Dashboards, summary tables and marketing tags are not built yet; the requirements put them with
+  the admin dashboard and campaigns.
+
 ## Still to do in Stage 1
 
 1. A real CDN purger (provider still undecided).
