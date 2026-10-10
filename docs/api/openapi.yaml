@@ -4552,6 +4552,27 @@ components:
       required:
       - name
       - slug
+    LinkPreview:
+      type: object
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        site_name:
+          type: string
+        image:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+      required:
+      - description
+      - image
+      - site_name
+      - title
+      - url
     LinkedStartup:
       type: object
       properties:
@@ -5062,6 +5083,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PostImage'
+        previews:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkPreview'
+          description: Cards for links, once fetched
         created_at:
           type: string
           format: date-time
@@ -5105,6 +5131,7 @@ components:
       - mine
       - my_reactions
       - pinned
+      - previews
       - reaction_count
       - reactions
       - startup
