@@ -7,6 +7,9 @@ from apps.core.models import BaseModel
 class UploadPurpose(models.TextChoices):
     PROFILE_PHOTO = "profile_photo"
     STARTUP_LOGO = "startup_logo"
+    POST_IMAGE = "post_image"
+    EDITORIAL_COVER = "editorial_cover"
+    CAMPAIGN_IMAGE = "campaign_image"
 
 
 class UploadStatus(models.TextChoices):

@@ -31,6 +31,7 @@ from apps.accounts.models import (
     UserRole,
     UserStatus,
 )
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core import ratelimit
@@ -82,6 +83,11 @@ def _token_digest(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def hash_address(address: str) -> str:
+    """A short, stable stand-in for an email address in the audit log."""
+    return _token_digest(address)[:32]
+
+
 def normalise_email(email: str) -> str:
     return email.strip().lower()
 
@@ -89,7 +95,7 @@ def normalise_email(email: str) -> str:
 # --- Registration and email verification ---
 
 
-def _record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
+def record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
     versions = settings.CONSENT_DOCUMENT_VERSIONS
     ConsentRecord.objects.bulk_create(
         ConsentRecord(
@@ -111,6 +117,7 @@ def register(
     ip: str = "",
     invitation_token: str = "",
     signup: dict[str, Any] | None = None,
+    anonymous_id: UUID | None = None,
 ) -> bool:
     """Create an account. Returns True when an invitation approved it on the spot.
 
@@ -135,10 +142,12 @@ def register(
                 else None
             )
             if invitation is not None:
-                user = _create_invited_user(address, password, invitation)
+                user = create_invited_user(address, password, invitation)
             else:
                 user = User.objects.create_user(address, password)
-            _record_consents(user, consents, ip)
+            record_consents(user, consents, ip)
+            if anonymous_id is not None:
+                analytics.identify(anonymous_id, user.pk)  # joins the funnel to the member
             if signup:
                 domain_events.publish(
                     events.SignupDetailsSubmitted(user_id=str(user.pk), details=signup)
@@ -146,6 +155,16 @@ def register(
             if invitation is not None:
                 invitations.mark_registered(invitation, user)
                 domain_events.publish(events.MemberApproved(user_id=str(user.pk)))
+                analytics.track(
+                    "invitation_registered",
+                    actor_id=user.pk,
+                    properties={"role": invitation.role},
+                )
+                analytics.track(
+                    "member_approved",
+                    actor_id=user.pk,
+                    properties={"approval_source": "invitation", "time_to_decision_hours": 0},
+                )
             else:
                 domain_events.publish(events.UserRegistered(user_id=str(user.pk)))
             audit.record(
@@ -163,7 +182,9 @@ def register(
         return False
 
 
-def _create_invited_user(address: str, password: str, invitation: invitations.Invitation) -> User:
+def create_invited_user(
+    address: str, password: str | None, invitation: invitations.Invitation
+) -> User:
     """An active, email-verified member. Receiving the link proves control of the mailbox."""
     now = timezone.now()
     user = User.objects.create_user(
@@ -236,6 +257,7 @@ def verify_email(raw_token: str) -> None:
         audit.record(
             actor=user, action="auth.email_verified", target_type="user", target_id=user.pk
         )
+        analytics.track("email_verified", actor_id=user.pk)
 
 
 # --- Password reset ---
@@ -321,6 +343,16 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         raise EmailNotVerified()
 
     ratelimit.reset(account_key)
+    return begin_session(user, ip=ip, user_agent=user_agent)
+
+
+def begin_session(
+    user: User, *, ip: str, user_agent: str, method: str = "password"
+) -> LoginResult | MfaChallenge:
+    """Start a session for someone who has just proved who they are.
+
+    Accounts with a second factor get a challenge to finish instead.
+    """
     if mfa.has_confirmed_device(user):
         return MfaChallenge(user, mfa.issue_challenge(user))
     user.mark_login()
@@ -330,6 +362,7 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         action="auth.login",
         target_type="session",
         target_id=family.pk,
+        after={"method": method} if method != "password" else None,
         ip=ip,
         user_agent=user_agent,
     )
@@ -506,3 +539,89 @@ def active_user_ids() -> Any:
     from apps.accounts import selectors
 
     return selectors.active_user_ids()
+
+
+def filter_active(user_ids: list[UUID]) -> list[UUID]:
+    """The ones among ``user_ids`` that are active members, in the order given."""
+    active = set(
+        User.objects.filter(pk__in=user_ids, status=UserStatus.ACTIVE).values_list("pk", flat=True)
+    )
+    return [uid for uid in user_ids if uid in active]
+
+
+# --- marketing mail: consent and audience ---
+
+
+def marketing_audience() -> Any:
+    """Members who may be sent marketing mail, as a queryset of users."""
+    from apps.accounts import selectors
+
+    return selectors.marketing_audience()
+
+
+def has_marketing_consent(user_id: UUID) -> bool:
+    return bool(marketing_audience().filter(pk=user_id).exists())
+
+
+def set_marketing_consent(user_id: UUID, granted: bool, *, ip: str = "") -> None:
+    """Record a yes or a withdrawal of marketing consent, as a new versioned row."""
+    ConsentRecord.objects.create(
+        user_id=user_id,
+        document=ConsentDocument.MARKETING,
+        version=settings.CONSENT_DOCUMENT_VERSIONS[ConsentDocument.MARKETING],
+        granted=granted,
+        ip_hash=audit.hash_value(ip),
+    )
+    audit.record(
+        actor=None,
+        action="consent.marketing_granted" if granted else "consent.marketing_withdrawn",
+        target_type="user",
+        target_id=user_id,
+        ip=ip,
+    )
+
+
+def ids_joined(after: Any = None, before: Any = None) -> Any:
+    from apps.accounts import selectors
+
+    return selectors.ids_joined(after, before)
+
+
+def ids_with_roles(roles: list[str]) -> Any:
+    from apps.accounts import selectors
+
+    return selectors.ids_with_roles(roles)
+
+
+def ids_last_active(after: Any = None, before: Any = None) -> Any:
+    from apps.accounts import selectors
+
+    return selectors.ids_last_active(after, before)
+
+
+def emails_for(user_ids: list[UUID]) -> dict[UUID, str]:
+    return dict(User.objects.filter(pk__in=user_ids).values_list("pk", "email"))
+
+
+def active_members() -> Any:
+    from apps.accounts import selectors
+
+    return selectors.active_members()
+
+
+def registrations_by_day(start: Any, end: Any) -> dict[Any, int]:
+    from apps.accounts import selectors
+
+    return selectors.registrations_by_day(start, end)
+
+
+def member_numbers(now: Any) -> dict[str, int]:
+    from apps.accounts import selectors
+
+    return selectors.member_numbers(now)
+
+
+def retention(now: Any, days: int) -> float | None:
+    from apps.accounts import selectors
+
+    return selectors.retention(now, days)

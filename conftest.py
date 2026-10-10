@@ -100,11 +100,12 @@ def sent_emails() -> list:
 def truncate_audit(transactional_db: None):
     """Transactional tests commit audit rows, and the table refuses DELETE.
 
-    Django's flush skips unmanaged tables, so empty it explicitly afterwards.
+    Django's flush skips unmanaged tables (the audit log and analytics events), so empty
+    them explicitly afterwards.
     """
     yield
     with connection.cursor() as cursor:
-        cursor.execute("TRUNCATE audit_auditlog")
+        cursor.execute("TRUNCATE audit_auditlog, analytics_event")
 
 
 @pytest.fixture

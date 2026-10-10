@@ -7,7 +7,7 @@ from django.db import transaction
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
 from apps.integrations.email import get_email_adapter
-from apps.notifications import emails, services
+from apps.notifications import centre, emails, notify, services
 
 logger = structlog.get_logger(__name__)
 
@@ -90,3 +90,15 @@ def process_webhook(event_id: str) -> None:
 @shared_task(name="notifications.purge_webhooks")
 def purge_webhooks() -> int:
     return services.purge_old_deliveries()
+
+
+@shared_task(name="notifications.notify_approved")
+def notify_approved(event_id: str) -> None:
+    user_id = _user_id(event_id)
+    if user_id is not None:
+        notify.notify(user_id, "member_approved", {}, dedupe_key=f"{event_id}:approved")
+
+
+@shared_task(name="notifications.purge_notifications")
+def purge_notifications() -> int:
+    return centre.purge_old()

@@ -190,6 +190,35 @@ def process_upload(upload_id: UUID) -> None:
         storage.delete(bucket=QUARANTINE, key=upload.quarantine_key)
 
 
+def store_external_image(data: bytes, folder: str) -> str:
+    """Check, scan, re-encode and publish an image that did not come through an upload.
+
+    Used for pictures we fetched ourselves, such as a link preview's. The bytes get exactly the
+    same treatment as a member's upload: type sniffed from the content, scanned, decoded and
+    written again, and published under a random key. Returns the base key.
+    Raises ``images.ImageRejected`` if the image is not acceptable.
+    """
+    content_type = images.sniff(data)
+    if content_type is None:
+        raise images.ImageRejected("not_an_image")
+    verdict = get_scanner().scan(data)
+    if not verdict.clean:
+        logger.warning("external_image_malware_detected", detail=verdict.detail)
+        raise images.ImageRejected("malware_detected")
+    processed = images.process(data, content_type)
+    storage = get_storage()
+    base = f"media/{folder}/{secrets.token_hex(16)}"
+    for variant, body in (("large", processed.large), ("thumb", processed.thumb)):
+        storage.write(
+            bucket=MEDIA,
+            key=f"{base}/{variant}.webp",
+            data=body,
+            content_type="image/webp",
+            cache_control=IMMUTABLE,
+        )
+    return base
+
+
 # --- using ---
 
 

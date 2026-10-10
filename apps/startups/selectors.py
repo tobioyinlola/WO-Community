@@ -202,3 +202,54 @@ def count_by_stage(slugs: list[str]) -> dict[str, int]:
         Startup.objects.filter(stage__slug__in=slugs).values("stage__slug").annotate(n=Count("id"))
     )
     return {row["stage__slug"]: row["n"] for row in rows}
+
+
+def has_traction(user_id: UUID) -> bool:
+    """Whether any startup the user owns or sits on the team of reports a traction figure."""
+    return TractionMetric.objects.filter(startup_id__in=startup_ids_of_member(user_id)).exists()
+
+
+def cards_for(viewer: Any, startup_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+    """Name, logo and slug of each startup, for those whose basics ``viewer`` may see."""
+    cards: dict[UUID, dict[str, Any]] = {}
+    for startup in Startup.objects.filter(pk__in=startup_ids).prefetch_related("members"):
+        groups = {"basics": {"name": startup.name, "logo": uploads.image_urls(startup.logo_key)}}
+        visible = project(groups, levels_of(startup), audience_for(viewer, team_ids(startup)))
+        if "name" in visible:
+            cards[startup.pk] = {
+                "id": startup.pk,
+                "slug": startup.slug,
+                "name": visible["name"],
+                "logo": visible.get("logo"),
+            }
+    return cards
+
+
+def existing_ids(startup_ids: list[UUID]) -> set[UUID]:
+    """Which of the given ids are startups that exist."""
+    return set(Startup.objects.filter(pk__in=startup_ids).values_list("pk", flat=True))
+
+
+# --- for segments: which members belong to startups with given attributes ---
+
+
+def _member_ids(startups_qs: QuerySet[Startup]) -> set[UUID]:
+    ids = set(startups_qs.values_list("owner_id", flat=True))
+    ids |= set(
+        StartupMember.objects.filter(startup__in=startups_qs, user_id__isnull=False).values_list(
+            "user_id", flat=True
+        )
+    )
+    return ids
+
+
+def member_ids_by_sector(slugs: list[str]) -> set[UUID]:
+    return _member_ids(Startup.objects.filter(sector__slug__in=slugs))
+
+
+def member_ids_by_stage(slugs: list[str]) -> set[UUID]:
+    return _member_ids(Startup.objects.filter(stage__slug__in=slugs))
+
+
+def member_ids_in_directory() -> set[UUID]:
+    return _member_ids(Startup.objects.filter(directory_opt_in=True))

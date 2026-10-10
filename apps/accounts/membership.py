@@ -15,6 +15,7 @@ from rest_framework import exceptions
 
 from apps.accounts import events, sessions, tokens
 from apps.accounts.models import ApprovalSource, MfaDevice, RecoveryCode, User, UserRole, UserStatus
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.errors import ConflictError
@@ -106,6 +107,10 @@ def _cut_off(target: User) -> None:
     tokens.revoke_older_tokens(target)
 
 
+def _hours_since_registration(target: User) -> int:
+    return max(0, int((timezone.now() - target.created_at).total_seconds() // 3600))
+
+
 def approve_member(*, actor: User, user_id: UUID, ip: str = "") -> User:
     with transaction.atomic():
         target = _lock_target(actor, user_id)
@@ -121,6 +126,14 @@ def approve_member(*, actor: User, user_id: UUID, ip: str = "") -> User:
         target.save(update_fields=["approved_at", "approved_by", "approval_source", "updated_at"])
         UserRole.objects.get_or_create(user=target, role=Role.MEMBER)
         target.__dict__.pop("_role_names", None)
+        analytics.track(
+            "member_approved",
+            actor_id=target.pk,
+            properties={
+                "approval_source": "admin",
+                "time_to_decision_hours": _hours_since_registration(target),
+            },
+        )
         return _apply(
             "approve",
             actor,
@@ -146,6 +159,11 @@ def reject_registration(*, actor: User, user_id: UUID, reason: str, ip: str = ""
             ip,
             events.MemberRejected(user_id=str(target.pk), reason=reason),
         )
+        analytics.track(
+            "member_rejected",
+            actor_id=target.pk,
+            properties={"time_to_decision_hours": _hours_since_registration(target)},
+        )
         _cut_off(target)
         return target
 
@@ -164,6 +182,7 @@ def suspend_member(*, actor: User, user_id: UUID, reason: str, ip: str = "") -> 
             ip,
             events.MemberSuspended(user_id=str(target.pk)),
         )
+        analytics.track("member_suspended", actor_id=target.pk)
         _cut_off(target)
         return target
 
@@ -198,6 +217,7 @@ def remove_member(*, actor: User, user_id: UUID, reason: str, ip: str = "") -> U
             ip,
             events.MemberRemoved(user_id=str(target.pk)),
         )
+        analytics.track("member_removed", actor_id=target.pk)
         _cut_off(target)
         return target
 

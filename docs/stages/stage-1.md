@@ -218,12 +218,62 @@ Design and trade-offs are in ADR 0014.
 - A rename rebuilds only the directory pages that show the entry and purges the cached public list.
 - Countries stay in code (fixed by ISO 3166); post and course categories will reuse this service.
 
+## Slice 11: product analytics (done)
+
+Design and trade-offs are in ADR 0015.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /analytics/events` | Browser events in batches of up to 50; invalid ones are reported one by one, valid ones kept. Works signed in or out. |
+| `GET/PUT /me/analytics-preferences` | Opt out of analytics entirely, or rejoin. |
+| `POST /auth/register` with `anonymous_id` | Links the visitor id to the new member so the funnel is continuous. |
+
+- Every event is defined in a registry with its allowed properties: numbers, flags, fixed words or
+  short identifiers, never free text. The browser may report only page-level events; everything about
+  actions the server performs is recorded by the server.
+- Server events now recorded: `email_verified`, `member_approved` (with source and hours waited),
+  `member_rejected`, `member_suspended`, `member_removed`, `invitation_sent`,
+  `invitation_registered`, `profile_updated` (with the new completeness).
+- Recording happens inside the action's transaction and can never fail it.
+- Events are stored in a month-partitioned append-only table and forwarded in order, at least once,
+  to a pluggable sink (`ANALYTICS_SINK`; logging only until a tool is chosen).
+- Dashboards, summary tables and marketing tags are not built yet; the requirements put them with
+  the admin dashboard and campaigns.
+
+## Slice 12: Google sign-in (done)
+
+Design and trade-offs are in ADR 0016.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /auth/google` | Sign in, or start a sign-up, with a Google ID token. Answers 200 (signed in), 201 (new account), 202 (MFA step needed), 409 `registration_required` (new person, send sign-up details), 401 (bad token or unusable account), 403 (Google address unverified), 404 (not configured), 503 (Google unreachable). |
+
+- Existing members are recognised by address the first time and by Google's stable id afterwards.
+- A link to an account whose address was never confirmed discards its password and ends its sessions.
+- New people go through the same consents, details and admin approval as a password sign-up; a valid
+  invitation approves them at once.
+- MFA still applies; Google is never a second factor.
+- Off until `GOOGLE_CLIENT_ID` is set; production refuses the fake verifier.
+
+## Slice 13: onboarding checklist, notification preferences and member search (done)
+
+Design and trade-offs are in ADR 0017.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /me/onboarding` | The four-step checklist (profile, startup, traction, notification preferences) and the profile score. Records `onboarding_completed` once. |
+| `GET/PUT /me/notification-preferences` | Type by channel matrix; send only what changes. |
+| `GET /search?q=&types=&limit=` | Members and startups, as the searcher may see them, tolerant of typos. |
+
+- Search matches only visible fields and drops anyone who hides their basics or is not active.
+- Approval emails cannot be switched off; the newsletter starts off.
+- Jobs, courses, posts, mentors and events join search as their modules are built, as does the
+  personalised member home summary.
+
 ## Still to do in Stage 1
 
-1. A real CDN purger (provider still undecided).
-3. Analytics capture and the registration, directory and onboarding events.
-4. Google sign-in (proposed to follow once email and password login is settled).
-5. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
+1. A real CDN purger. The provider is undecided; the choice was deferred by the team and must be
+   revisited before Stage 2 ends and before any deployment.
 
 ## Notes
 

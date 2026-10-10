@@ -249,3 +249,19 @@ class Invitation(BaseModel):
 
     def __str__(self) -> str:
         return f"invitation {self.pk} ({self.status})"
+
+
+class SocialIdentity(BaseModel):
+    """A login at an outside provider that belongs to one of our accounts."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="social_identities")
+    provider = models.CharField(max_length=16)
+    subject = models.CharField(max_length=255)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["provider", "subject"], name="social_subject_unique"),
+            models.UniqueConstraint(
+                fields=["user", "provider"], name="social_user_provider_unique"
+            ),
+        ]

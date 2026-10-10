@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
@@ -411,9 +413,8 @@ def test_an_order_must_name_every_entry_exactly_once(as_admin):
     ids = [e["id"] for e in as_admin.get(STAGES).json()]
     assert as_admin.put(f"{STAGES}/order", {"ids": ids[:-1]}).status_code == 409
     assert as_admin.put(f"{STAGES}/order", {"ids": [*ids, ids[0]]}).status_code == 400
-    assert (
-        as_admin.put(f"{STAGES}/order", {"ids": [*ids, str(ids[0])[:-1] + "0"]}).status_code == 409
-    )
+    unknown = str(uuid.uuid4())  # a well-formed id that is not in the list
+    assert as_admin.put(f"{STAGES}/order", {"ids": [*ids, unknown]}).status_code == 409
     assert as_admin.put(f"{STAGES}/order", {"ids": []}).status_code == 400
     assert as_admin.put(f"{STAGES}/order", {"ids": ["not-a-uuid"]}).status_code == 400
 

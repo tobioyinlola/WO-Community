@@ -21,6 +21,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "django_celery_beat",
     "apps.core",
+    "apps.analytics",
+    "apps.integrations",
     "apps.audit",
     "apps.reference",
     "apps.accounts",
@@ -28,6 +30,12 @@ INSTALLED_APPS = [
     "apps.profiles",
     "apps.startups",
     "apps.directory",
+    "apps.memberarea",
+    "apps.feed",
+    "apps.jobs",
+    "apps.editorial",
+    "apps.events",
+    "apps.campaigns",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -81,6 +89,11 @@ AUTH_PASSWORD_VALIDATORS = [
 PASSWORD_BREACH_CHECKER = env.str(
     "PASSWORD_BREACH_CHECKER", default="apps.integrations.passwords.hibp.HibpBreachChecker"
 )
+# Google sign-in is off until a client id is configured.
+GOOGLE_CLIENT_ID = env.str("GOOGLE_CLIENT_ID", default="")
+GOOGLE_TOKEN_VERIFIER = env.str(
+    "GOOGLE_TOKEN_VERIFIER", default="apps.integrations.identity.google.GoogleTokenVerifier"
+)
 
 LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
@@ -129,6 +142,9 @@ REST_FRAMEWORK = {
         "user": "300/min",
         "auth_register": "5/hour",
         "auth_login": "30/min",
+        "auth_google": "30/min",
+        "search": "60/min",
+        "feed_read": "240/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -136,6 +152,7 @@ REST_FRAMEWORK = {
         "admin_bulk": "10/hour",
         "public_search": "60/min",
         "uploads": "30/hour",
+        "analytics": "120/min",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -148,6 +165,14 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {
+        "JobTypeEnum": "apps.jobs.models.JOB_TYPES",
+        "ApplyMethodEnum": "apps.jobs.models.APPLY_METHODS",
+        "EditorialTypeEnum": "apps.editorial.models.ITEM_TYPES",
+        "WinKindEnum": "apps.editorial.models.WIN_KINDS",
+        "EventTypeEnum": "apps.events.models.EVENT_TYPES",
+        "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
+    },
 }
 
 # Comma separated Fernet keys; the first encrypts, all decrypt (see apps/core/crypto.py).
@@ -205,13 +230,31 @@ CELERY_TASK_QUEUES = (
     Queue("exports", Exchange("exports"), routing_key="exports"),
     Queue("analytics", Exchange("analytics"), routing_key="analytics"),
 )
-CELERY_TASK_ROUTES = {"core.dispatch_outbox": {"queue": "critical"}}
+CELERY_TASK_ROUTES = {
+    "core.dispatch_outbox": {"queue": "critical"},
+    "analytics.forward": {"queue": "analytics"},
+    "analytics.ensure_partitions": {"queue": "analytics"},
+    "analytics.drop_expired": {"queue": "analytics"},
+    "feed.fetch_link_preview": {"queue": "media"},
+}
 CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "dispatch-outbox": {"task": "core.dispatch_outbox", "schedule": 5.0},
     "purge-outbox": {"task": "core.purge_outbox", "schedule": 86400.0},
     "notifications-purge-webhooks": {"task": "notifications.purge_webhooks", "schedule": 86400.0},
+    "notifications-purge": {"task": "notifications.purge_notifications", "schedule": 86400.0},
+    "feed-purge-link-previews": {"task": "feed.purge_link_previews", "schedule": 86400.0},
+    "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
+    "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
+    "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
+    "campaigns-start-due": {"task": "campaigns.start_due", "schedule": 60.0},
+    "dashboard-refresh": {"task": "adminconsole.refresh_dashboard", "schedule": 3600.0},
+    "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
+    "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
+    "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
+    "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
+    "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
@@ -236,6 +279,17 @@ EMAIL_WEBHOOK_RETENTION_DAYS = 30
 CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
 STORAGE_ADAPTER = env.str("STORAGE_ADAPTER", default="apps.integrations.storage.fake.FakeStorage")
 MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.fake.FakeScanner")
+
+# --- Analytics ---------------------------------------------------------------
+# Raise on a bad event (tests, local) instead of dropping it quietly (production).
+ANALYTICS_STRICT = env.bool("ANALYTICS_STRICT", default=False)
+ANALYTICS_RETENTION_MONTHS = 13
+ANALYTICS_FORWARD_BATCH = 500
+# Events are forwarded only once this old, so one numbered early that commits late is not skipped.
+ANALYTICS_FORWARD_DELAY_SECONDS = 60
+ANALYTICS_SINK = env.str("ANALYTICS_SINK", default="apps.integrations.analytics.sinks.LoggingSink")
+# Who is calling /events: a signed-in member if there is a valid token, otherwise anonymous.
+ANALYTICS_AUTHENTICATION = ["apps.accounts.authentication.OptionalJWTAuthentication"]
 
 # --- Uploads and media -------------------------------------------------------
 STORAGE_ENDPOINT_URL = env.str("STORAGE_ENDPOINT_URL", default="")  # set for MinIO
@@ -292,3 +346,19 @@ FEATURE_PAYMENTS_ENABLED = env.bool("FEATURE_PAYMENTS_ENABLED", default=False)
 # Email uniqueness is enforced case-insensitively by a functional constraint on
 # lower(email) instead of a plain unique column, which these checks cannot see.
 SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
+
+# Feed limits per member, to keep spam and floods in check.
+FEED_POSTS_PER_DAY = env.int("FEED_POSTS_PER_DAY", default=20)
+FEED_COMMENTS_PER_DAY = env.int("FEED_COMMENTS_PER_DAY", default=200)
+FEED_MAX_IMAGES = 10
+LINK_PREVIEW_FETCHER = env.str(
+    "LINK_PREVIEW_FETCHER", default="apps.integrations.linkpreview.fetcher.WebFetcher"
+)
+FEED_REPORTS_PER_DAY = env.int("FEED_REPORTS_PER_DAY", default=20)
+
+# Newsletters: footer line, how fast a campaign sends, and the public API address that goes in
+# one-click unsubscribe headers.
+CAMPAIGN_FOOTER = env.str("CAMPAIGN_FOOTER", default="WO Community")
+CAMPAIGN_BATCH_SIZE = env.int("CAMPAIGN_BATCH_SIZE", default=50)
+CAMPAIGN_BATCH_DELAY_SECONDS = env.int("CAMPAIGN_BATCH_DELAY_SECONDS", default=5)
+API_BASE_URL = env.str("API_BASE_URL", default="http://localhost:8000")

@@ -8,6 +8,7 @@ from django.db import IntegrityError, transaction
 from django.utils.text import slugify
 from rest_framework import exceptions
 
+from apps.analytics import services as analytics
 from apps.core import etag
 from apps.core import events as domain_events
 from apps.core.visibility import LEVELS
@@ -58,6 +59,16 @@ def _refresh_completeness(profile: FounderProfile) -> None:
     profile.completeness_score, _ = domain.completeness(values_of(profile))
 
 
+def _announce(profile: FounderProfile) -> None:
+    """Tell the directory and analytics that a profile changed."""
+    domain_events.publish(events.ProfileUpdated(user_id=str(profile.user_id)))
+    analytics.track(
+        "profile_updated",
+        actor_id=profile.user_id,
+        properties={"completeness": profile.completeness_score},
+    )
+
+
 def create_from_signup(user_id: UUID, details: dict[str, Any]) -> FounderProfile:
     """Fill the profile from the registration form. Safe to run twice."""
     profile = get_or_create_profile(user_id)
@@ -93,7 +104,7 @@ def update_profile(*, user_id: UUID, data: dict[str, Any], if_match: str | None)
             profile.skills.set(chosen)
         _refresh_completeness(profile)
         profile.save()
-        domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+        _announce(profile)
     return profile
 
 
@@ -111,7 +122,7 @@ def update_visibility(*, user_id: UUID, levels: dict[str, str]) -> FounderProfil
         profile = FounderProfile.objects.select_for_update().get(user_id=user_id)
         profile.visibility = {**profile.visibility, **levels}
         profile.save()
-        domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+        _announce(profile)
     return profile
 
 
@@ -127,7 +138,7 @@ def set_photo(*, user_id: UUID, upload_id: UUID, if_match: str | None) -> Founde
         _refresh_completeness(profile)
         profile.save()
         uploads.release(previous)
-        domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+        _announce(profile)
     return profile
 
 
@@ -141,5 +152,13 @@ def clear_photo(*, user_id: UUID, if_match: str | None) -> FounderProfile:
         _refresh_completeness(profile)
         profile.save()
         uploads.release(previous)
-        domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+        _announce(profile)
     return profile
+
+
+def country_of(user_id: UUID) -> str:
+    """The country on the member's profile, or blank if they have not set one."""
+    return (
+        FounderProfile.objects.filter(user_id=user_id).values_list("country", flat=True).first()
+        or ""
+    )

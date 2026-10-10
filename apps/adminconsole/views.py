@@ -9,6 +9,7 @@ from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 
 from apps.accounts import selectors, services
+from apps.adminconsole import selectors as queues
 from apps.adminconsole.serializers import (
     MemberQuerySerializer,
     MemberSerializer,
@@ -177,4 +178,4 @@ class QueuesView(APIView):
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
-        return Response(QueueCountsSerializer(selectors.registration_queue_counts()).data)
+        return Response(QueueCountsSerializer(queues.queue_counts()).data)
