@@ -255,11 +255,25 @@ Design and trade-offs are in ADR 0016.
 - MFA still applies; Google is never a second factor.
 - Off until `GOOGLE_CLIENT_ID` is set; production refuses the fake verifier.
 
+## Slice 13: onboarding checklist, notification preferences and member search (done)
+
+Design and trade-offs are in ADR 0017.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /me/onboarding` | The four-step checklist (profile, startup, traction, notification preferences) and the profile score. Records `onboarding_completed` once. |
+| `GET/PUT /me/notification-preferences` | Type by channel matrix; send only what changes. |
+| `GET /search?q=&types=&limit=` | Members and startups, as the searcher may see them, tolerant of typos. |
+
+- Search matches only visible fields and drops anyone who hides their basics or is not active.
+- Approval emails cannot be switched off; the newsletter starts off.
+- Jobs, courses, posts, mentors and events join search as their modules are built, as does the
+  personalised member home summary.
+
 ## Still to do in Stage 1
 
-1. A real CDN purger (provider still undecided).
-2. The onboarding checklist and its `onboarding_completed` analytics event.
-3. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.
+1. A real CDN purger. The provider is undecided; the choice was deferred by the team and must be
+   revisited before Stage 2 ends and before any deployment.
 
 ## Notes
 
