@@ -67,3 +67,45 @@ class Suppression(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.reason} {self.email_hash[:8]}"
+
+
+class NotificationPreference(BaseModel):
+    """A member's per type, per channel choices. Only departures from the defaults are stored."""
+
+    user = models.OneToOneField(
+        "accounts.User", on_delete=models.CASCADE, related_name="notification_preference"
+    )
+    choices = models.JSONField(default=dict, blank=True)
+    # Set the first time the member saves their choices, even unchanged.
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+
+class Notification(BaseModel):
+    """One item in a member's in-app notification centre.
+
+    The payload holds ids and short facts only; the wording is produced when it is read, so a
+    name that has since been hidden is never shown and text can be improved without a data fix.
+    """
+
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="notifications"
+    )
+    type = models.CharField(max_length=30)
+    payload = models.JSONField(default=dict, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    channels_sent = models.JSONField(default=list, blank=True)
+    # Makes delivery idempotent: a retried event cannot notify the same person twice.
+    dedupe_key = models.CharField(max_length=80, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "dedupe_key"],
+                condition=~models.Q(dedupe_key=""),
+                name="notification_dedupe_unique",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user", "read_at", "-created_at"], name="notification_unread_idx"),
+            models.Index(fields=["user", "-created_at", "-id"], name="notification_list_idx"),
+        ]

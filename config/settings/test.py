@@ -23,6 +23,9 @@ REST_FRAMEWORK = {
 }
 
 REFRESH_COOKIE_SECURE = False
+ANALYTICS_STRICT = True
+ANALYTICS_FORWARD_DELAY_SECONDS = 0
+ANALYTICS_SINK = "apps.integrations.analytics.sinks.FakeSink"
 CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
 STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
 MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"
@@ -38,3 +41,8 @@ PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )
 FRONTEND_BASE_URL = "https://app.test"
+LINK_PREVIEW_FETCHER = "apps.integrations.linkpreview.fake.FakeFetcher"
+GOOGLE_CLIENT_ID = "test-client.apps.googleusercontent.com"
+GOOGLE_TOKEN_VERIFIER = (
+    "apps.integrations.identity.fake.FakeGoogleVerifier"  # noqa: S105  # nosec B105
+)

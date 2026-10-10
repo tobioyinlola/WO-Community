@@ -118,3 +118,79 @@ def count_by_skill(slugs: list[str]) -> dict[str, int]:
         .annotate(n=Count("id"))
     )
     return {row["skills__slug"]: row["n"] for row in rows}
+
+
+def cards_for(viewer: Any, user_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+    """Name, headline and photo for each user, as ``viewer`` may see them.
+
+    Someone who hides their basics from the viewer (``hidden``) appears as an anonymous member,
+    so a card never reveals more than the profile page would.
+    """
+    cards: dict[UUID, dict[str, Any]] = {
+        uid: {
+            "id": uid,
+            "name": "Community member",
+            "headline": "",
+            "photo": None,
+            "slug": None,
+            "hidden": False,
+        }
+        for uid in user_ids
+    }
+    for profile in FounderProfile.objects.filter(user_id__in=user_ids):
+        groups = {
+            "basics": {
+                "full_name": profile.full_name,
+                "headline": profile.headline,
+                "photo": uploads.image_urls(profile.photo_key),
+            }
+        }
+        visible = project(
+            groups, levels_of(profile), audience_for(viewer, frozenset({profile.user_id}))
+        )
+        if "full_name" not in visible:
+            cards[profile.user_id]["hidden"] = True  # their basics are hidden from this viewer
+        else:
+            cards[profile.user_id].update(
+                name=visible["full_name"],
+                headline=visible.get("headline", ""),
+                photo=visible.get("photo"),
+                slug=profile.slug,
+            )
+    return cards
+
+
+# --- for segments: who has which profile attributes ---
+
+
+def ids_by_country(codes: list[str]) -> Any:
+    return FounderProfile.objects.filter(country__in=[c.upper() for c in codes]).values_list(
+        "user_id", flat=True
+    )
+
+
+def ids_with_skills(slugs: list[str]) -> Any:
+    return FounderProfile.objects.filter(skills__slug__in=slugs).values_list("user_id", flat=True)
+
+
+def ids_by_completeness(low: int = 0, high: int = 100) -> Any:
+    return FounderProfile.objects.filter(
+        completeness_score__gte=low, completeness_score__lte=high
+    ).values_list("user_id", flat=True)
+
+
+def first_names(user_ids: list[UUID]) -> dict[UUID, str]:
+    """The first word of each member's own name, for greeting them in mail."""
+    rows = FounderProfile.objects.filter(user_id__in=user_ids).values_list("user_id", "full_name")
+    return {uid: name.split()[0] for uid, name in rows if name.strip()}
+
+
+def active_member_counts_by_country() -> dict[str, int]:
+    """How many active members have each country on their profile."""
+    rows = (
+        FounderProfile.objects.filter(user_id__in=accounts.active_user_ids())
+        .exclude(country="")
+        .values("country")
+        .annotate(n=Count("id"))
+    )
+    return {row["country"]: row["n"] for row in rows}

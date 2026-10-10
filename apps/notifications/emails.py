@@ -119,3 +119,12 @@ def send_password_reset(to: str, token: str) -> None:
         "The link expires in 1 hour. If you did not ask for this, you can ignore this message.",
         category="password_reset",
     )
+
+
+def send_notice(to: str, subject: str, body: str, *, category: str) -> None:
+    """A notification delivered by email, with a pointer to the preferences that control it."""
+    footer = (
+        "\n\nYou can change which emails you get at "
+        f"{settings.FRONTEND_BASE_URL}/settings/notifications"
+    )
+    _send(to, subject, body + footer, category=category)

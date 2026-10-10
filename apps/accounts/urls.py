@@ -19,6 +19,7 @@ urlpatterns = [
     ),
     path("auth/verify-email", auth_views.VerifyEmailView.as_view(), name="auth-verify-email"),
     path("auth/login", auth_views.LoginView.as_view(), name="auth-login"),
+    path("auth/google", auth_views.GoogleSignInView.as_view(), name="auth-google"),
     path("auth/refresh", auth_views.RefreshView.as_view(), name="auth-refresh"),
     path("auth/logout", auth_views.LogoutView.as_view(), name="auth-logout"),
     path("auth/mfa/verify", mfa_views.MfaVerifyView.as_view(), name="auth-mfa-verify"),

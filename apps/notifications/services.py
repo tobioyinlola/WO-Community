@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 from uuid import UUID
@@ -75,6 +76,24 @@ def accept_webhook(adapter: EmailAdapter, body: bytes, headers: dict[str, str]) 
 # --- processing (runs in a worker) ---
 
 
+# Code in modules above this one (such as campaign reporting) can ask to hear about each new
+# delivery event, without this module having to know about them.
+DeliveryListener = Callable[[str, str], None]
+_delivery_listeners: list[DeliveryListener] = []
+
+
+def add_delivery_listener(listener: DeliveryListener) -> None:
+    if listener not in _delivery_listeners:
+        _delivery_listeners.append(listener)
+
+
+def unsuppress_unsubscribed(email: str) -> None:
+    """Let an address that unsubscribed be mailed again. Bounces and complaints stay blocked."""
+    Suppression.objects.filter(
+        email_hash=hash_email(email), reason=SuppressionReason.UNSUBSCRIBED
+    ).delete()
+
+
 def process_delivery(delivery_id: UUID, adapter: EmailAdapter) -> int:
     """Turn a stored delivery into events and suppressions. Safe to run twice."""
     with transaction.atomic():
@@ -91,6 +110,9 @@ def process_delivery(delivery_id: UUID, adapter: EmailAdapter) -> int:
                 defaults={"occurred_at": event.occurred_at[:40]},
             )
             recorded += int(created)
+            if created:
+                for listener in _delivery_listeners:
+                    listener(event.kind, event.provider_message_id)
             reason = SUPPRESSING.get(event.kind)
             if reason is not None:
                 suppress(event.email, reason)
@@ -109,3 +131,24 @@ def purge_old_deliveries(now: Any = None) -> int:
         processed_at__isnull=False, created_at__lt=cutoff
     ).delete()
     return int(deleted)
+
+
+def suppressed_among(emails: list[str]) -> set[str]:
+    """Which of these addresses (lower-cased) are on the suppression list."""
+    by_hash = {hash_email(e): e.strip().lower() for e in emails}
+    found = Suppression.objects.filter(email_hash__in=list(by_hash)).values_list(
+        "email_hash", flat=True
+    )
+    return {by_hash[h] for h in found}
+
+
+def change_marketing_consent(user_id: UUID, email: str, granted: bool, *, ip: str = "") -> None:
+    """Record the member's choice about marketing email and keep the suppression list in step."""
+    from apps.accounts import services as accounts
+
+    with transaction.atomic():
+        accounts.set_marketing_consent(user_id, granted, ip=ip)
+        if granted:
+            unsuppress_unsubscribed(email)
+        else:
+            suppress(email, SuppressionReason.UNSUBSCRIBED)

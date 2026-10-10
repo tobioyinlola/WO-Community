@@ -1,12 +1,20 @@
 """Read side of the accounts module for admin screens."""
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, OuterRef, Q, QuerySet, Subquery
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
-from apps.accounts.models import Invitation, User, UserStatus
+from apps.accounts.models import (
+    ConsentDocument,
+    ConsentRecord,
+    Invitation,
+    User,
+    UserRole,
+    UserStatus,
+)
 
 STATUSES = tuple(UserStatus.values)
 
@@ -85,3 +93,78 @@ def active_user_ids() -> QuerySet[Any]:
     disappears at once, without waiting for any background refresh.
     """
     return User.objects.filter(status=UserStatus.ACTIVE).values("id")
+
+
+def marketing_audience() -> QuerySet[User]:
+    """Active members with a verified address whose latest marketing consent is a yes."""
+    latest = (
+        ConsentRecord.objects.filter(user=OuterRef("pk"), document=ConsentDocument.MARKETING)
+        .order_by("-created_at", "-id")
+        .values("granted")[:1]
+    )
+    return User.objects.annotate(marketing_granted=Subquery(latest)).filter(
+        marketing_granted=True, status=UserStatus.ACTIVE, email_verified_at__isnull=False
+    )
+
+
+def ids_joined(after: Any = None, before: Any = None) -> QuerySet[Any]:
+    queryset = User.objects.all()
+    if after is not None:
+        queryset = queryset.filter(created_at__date__gte=after)
+    if before is not None:
+        queryset = queryset.filter(created_at__date__lte=before)
+    return queryset.values_list("pk", flat=True)
+
+
+def ids_with_roles(roles: list[str]) -> QuerySet[Any]:
+    return UserRole.objects.filter(role__in=roles).values_list("user_id", flat=True)
+
+
+def ids_last_active(after: Any = None, before: Any = None) -> QuerySet[Any]:
+    queryset = User.objects.filter(last_login__isnull=False)
+    if after is not None:
+        queryset = queryset.filter(last_login__date__gte=after)
+    if before is not None:
+        queryset = queryset.filter(last_login__date__lte=before)
+    return queryset.values_list("pk", flat=True)
+
+
+def active_members() -> QuerySet[User]:
+    return User.objects.filter(status=UserStatus.ACTIVE, email_verified_at__isnull=False)
+
+
+def registrations_by_day(start: Any, end: Any) -> dict[Any, int]:
+    """New accounts per day in [start, end)."""
+    rows = (
+        User.objects.filter(created_at__gte=start, created_at__lt=end)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(n=Count("id"))
+    )
+    return {row["day"]: row["n"] for row in rows}
+
+
+def member_numbers(now: Any) -> dict[str, int]:
+    return {
+        "active": User.objects.filter(status=UserStatus.ACTIVE).count(),
+        "pending": User.objects.filter(status=UserStatus.PENDING).count(),
+        "registered_30d": User.objects.filter(created_at__gte=now - timedelta(days=30)).count(),
+        "registered_7d": User.objects.filter(created_at__gte=now - timedelta(days=7)).count(),
+    }
+
+
+def retention(now: Any, days: int) -> float | None:
+    """Of members approved at least ``days`` ago, the share who logged in during the last ``days``.
+
+    None while nobody is old enough to measure.
+    """
+    cohort = User.objects.filter(
+        status=UserStatus.ACTIVE,
+        approved_at__isnull=False,
+        approved_at__lte=now - timedelta(days=days),
+    )
+    total = cohort.count()
+    if not total:
+        return None
+    kept = cohort.filter(last_login__gte=now - timedelta(days=days)).count()
+    return round(kept / total, 4)

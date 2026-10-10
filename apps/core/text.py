@@ -40,3 +40,37 @@ def clean_url(value: str, *, hosts: tuple[str, ...] = ()) -> str:
     if hosts and not any(host == h or host.endswith("." + h) for h in hosts):
         raise serializers.ValidationError(f"Link must be on {', '.join(hosts)}.")
     return value
+
+
+# Rich text: what a post or comment may contain. Everything else is removed, not escaped.
+_POST_TAGS = {"p", "br", "strong", "em", "ul", "ol", "li", "h2", "h3", "blockquote", "a"}
+_COMMENT_TAGS = {"p", "br", "strong", "em", "a"}
+_SCHEMES = {"http", "https"}
+
+
+def _rich(value: str, tags: set[str]) -> str:
+    cleaned = nh3.clean(
+        value,
+        tags=tags,
+        attributes={"a": {"href"}},
+        url_schemes=_SCHEMES,
+        link_rel="noopener nofollow ugc",
+        strip_comments=True,
+    )
+    return _CONTROL.sub("", cleaned).strip()
+
+
+def rich_post(value: str) -> str:
+    """HTML for a post: paragraphs, bold, italic, lists, headings, quotes and http(s) links."""
+    return _rich(value, _POST_TAGS)
+
+
+def rich_comment(value: str) -> str:
+    """HTML for a comment: paragraphs, bold, italic and http(s) links."""
+    return _rich(value, _COMMENT_TAGS)
+
+
+def text_of(html_value: str) -> str:
+    """The words of a piece of rich text with all markup removed, whitespace collapsed."""
+    spaced = re.sub(r"<[^>]+>", " ", html_value)
+    return re.sub(r"\s+", " ", plain(spaced))

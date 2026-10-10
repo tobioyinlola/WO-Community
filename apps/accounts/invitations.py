@@ -23,6 +23,7 @@ from rest_framework import exceptions
 from apps.accounts import events
 from apps.accounts.exceptions import InvalidToken
 from apps.accounts.models import INVITABLE_ROLES, Invitation, InvitationStatus, User
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.errors import ConflictError
@@ -107,7 +108,13 @@ def _revoke(invitation: Invitation, reason: str) -> None:
 
 
 def create_invitation(
-    *, actor: User, email: str, role: str = "member", message: str = "", ip: str = ""
+    *,
+    actor: User,
+    email: str,
+    role: str = "member",
+    message: str = "",
+    ip: str = "",
+    bulk: bool = False,
 ) -> Invitation:
     address = _validate_email(email)
     role = _validate_role(role)
@@ -150,6 +157,9 @@ def create_invitation(
                 target_id=invitation.pk,
                 after={"role": role},
                 ip=ip,
+            )
+            analytics.track(
+                "invitation_sent", actor_id=actor.pk, properties={"role": role, "bulk": bulk}
             )
             return invitation
     except IntegrityError as exc:  # a concurrent request created the live invitation first
@@ -356,6 +366,7 @@ def bulk_create(*, actor: User, csv_text: str, ip: str = "") -> BulkReport:
                 role=(row.get("role") or "member").strip().lower(),
                 message=row.get("message") or "",
                 ip=ip,
+                bulk=True,
             )
         except (exceptions.ValidationError, ConflictError) as exc:
             report.skipped += 1

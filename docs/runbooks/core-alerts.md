@@ -98,3 +98,111 @@ five minutes off. A 404 means `EMAIL_ADAPTER` is not set to Resend on that envir
 `email_suppressed` log lines and `Suppression` rows show who was blocked. A sudden rise after a send
 points at a bad list or content. Complaints above 0.1% or bounces above 5% on a campaign should pause
 that campaign (the campaigns module will do this automatically).
+
+## Analytics events not reaching the analytics tool
+
+The `analytics.forward` job (every minute, queue `analytics`) moves a cursor through the event table
+and sends batches to the sink. If the tool is down the batch is simply offered again next minute; no
+events are lost, they queue in our own table. Check the worker log for the sink's error, and compare
+`ForwardCursor.last_seq` with the highest `seq` in `analytics_event`. A lag of a few minutes is normal
+(events are held 60 seconds on purpose). Delivery is at least once, so the tool must ignore repeated
+event ids.
+
+## `analytics_event_dropped` in the logs
+
+In production a malformed event is dropped instead of failing the request. A steady stream of these
+means a code path is emitting an event that does not match the registry; the log line names the event
+and the reason. Fix the caller or the registry.
+
+## Analytics partitions
+
+The daily job keeps the next three months of partitions ready. If rows ever land in
+`analytics_event_default`, the job did not run; run `analytics.ensure_partitions` and move the rows.
+The retention job drops partitions older than 13 months. Archive them to object storage first once
+the archive job exists.
+
+## Google sign-in failing
+
+`google_unavailable` (503) means our server could not fetch Google's signing keys; check outbound
+access to `www.googleapis.com` (log line `google_keys_unreachable`). A spike of
+`invalid_google_token` (401) usually means `GOOGLE_CLIENT_ID` does not match the id the frontend is
+using, or a client clock is far off. Setting `GOOGLE_CLIENT_ID` to empty switches the feature off
+without a deploy of code; password sign-in is unaffected.
+
+## Link previews not appearing
+
+Cards are filled in by the `feed.fetch_link_preview` task on the `media` queue. Check that the queue
+has a worker and is not backed up. For one address, read `LinkPreview.fail_code`: `blocked_address`,
+`internal_host`, `bad_scheme`, `bad_port` and `credentials_in_url` are deliberate refusals;
+`timeout`, `network_error`, `dns_failure` and `status_NNN` are the site or the network, and are
+retried an hour after someone next links the address; `nothing_to_show` and
+`unsupported_content_type` mean the page offers no usable preview. A burst of `blocked_address` for
+names that look ordinary can mean the resolver is returning private answers; do not loosen the checks,
+fix the resolver.
+
+The media workers should run with outbound access limited to the public internet (no route to the
+VPC, metadata service or internal DNS). The application checks are the second line of defence.
+
+## Notifications not arriving
+
+In-app notices are created by tasks reacting to outbox events (`feed.notify_*`,
+`notifications.notify_approved`). If members report none, look for stuck `OutboxEvent` rows with
+topics `feed.*` and for failures of those tasks. `GET /notifications` should answer 304 when nothing
+changed; a client that never gets 304 is not sending `If-None-Match`. Email notices stop quietly for
+a member who exceeds ten of one kind in an hour (log line `notification_email_throttled`); their
+in-app notices continue.
+
+## Jobs not expiring or no expiry warnings
+
+Expiry is two beat tasks: `jobs.expire_due` (every 15 minutes) and `jobs.warn_expiring` (hourly).
+If posters report expired jobs still showing, remember the board hides a job the moment it passes
+its expiry whether or not the sweep has run, so a visible expired job means the data is wrong;
+check `expires_at`. If warnings are missing, check that beat is running and look for the
+`jobs.expiring` outbox events. Daily alert digests come from `jobs.send_digests` (hourly check).
+
+## Member jobs piling up for review
+
+The count is `jobs_awaiting_review` on `GET /admin/queues` and the list is
+`GET /admin/jobs?status=pending`. A super admin can switch the board to auto publish with
+`PUT /admin/jobs/settings`; jobs already pending stay pending until an admin decides them.
+
+## Scheduled news items not appearing
+
+Scheduled items are published by `editorial.publish_due`, which beat runs every minute. If an item
+is past its time and still scheduled, check that beat and a worker are running; the item is then
+published with its scheduled time on the next run, nothing is lost. A scheduled time in the past is
+rejected when scheduling, so a stuck item always means the sweep is not running.
+
+## Event reminders not arriving
+
+Reminders come from `events.send_reminders` (beat, every ten minutes) and are claimed per
+registration before sending, so a restart never double-sends. A member who registered inside the
+24 hour (or 1 hour) window is deliberately skipped for that reminder. If nobody gets reminders, check
+that beat is running and that the event is still published; cancelled events send none.
+
+## A newsletter is stuck or must be stopped
+
+To stop one at once, pause it (`POST /admin/campaigns/{id}/pause`); nothing more is sent until it is
+resumed, and cancelling leaves the unsent unsent. A campaign that pauses by itself means the email
+provider rejected our credentials or sending domain (log line
+`campaign_paused_provider_misconfigured`): fix the provider setup, then resume. A campaign that
+stays in `sending` with queued recipients and no progress means its worker was lost; the
+`campaigns.start_due` task re-kicks it every minute, so check that beat and the `email` queue
+workers are running. Unsubscribes and bounces are honoured per message just before sending, so
+there is no need to stop a campaign because someone asked to be removed.
+
+## Unsubscribe links not working
+
+`POST /unsubscribe` needs the signed token from the email. A 400 means the link was altered or
+signed with a different `SECRET_KEY` (for example after rotating it), in which case old emails'
+links stop working; keep the old key in rotation until old mail is no longer actionable. The web
+page in the link is the front end's `/unsubscribe` route, which should call this endpoint.
+
+## Dashboard numbers look stale or wrong
+
+The home page shows `refreshed_at`. If it is more than a couple of hours old, check that beat and a
+worker are running the hourly `adminconsole.refresh_dashboard`; a super admin can also
+`POST /admin/dashboard/refresh`. Each refresh rewrites the last two days from source, so a wrong
+number fixes itself on the next run; to repair older days run
+`adminconsole.dashboard.backfill(days)` from a shell. Early funnel steps (directory views, registration
+started) only count visitors who agreed to analytics, so they will always sit below real traffic.
