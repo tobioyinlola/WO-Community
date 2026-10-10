@@ -102,3 +102,32 @@ class Reaction(BaseModel):
             ),
         ]
         indexes = [models.Index(fields=["user", "target_type", "target_id"], name="feed_mine_idx")]
+
+
+class Follow(BaseModel):
+    """A member following another member or a startup, to build their Following feed."""
+
+    class Kind(models.TextChoices):
+        MEMBER = "member"
+        STARTUP = "startup"
+
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="feed_follows"
+    )
+    followee_type = models.CharField(max_length=8, choices=Kind.choices)
+    followee_id = models.UUIDField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["follower", "followee_type", "followee_id"], name="feed_follow_unique"
+            ),
+            models.CheckConstraint(
+                condition=Q(followee_type__in=["member", "startup"]),
+                name="feed_follow_type_valid",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["follower", "-created_at", "-id"], name="feed_follow_mine_idx"),
+            models.Index(fields=["followee_type", "followee_id"], name="feed_follow_target_idx"),
+        ]

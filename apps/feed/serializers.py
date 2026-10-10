@@ -58,7 +58,9 @@ class ReactionSerializer(StrictSerializer):
 
 class FeedQuerySerializer(StrictSerializer):
     sort = serializers.ChoiceField(choices=["newest", "engaged"], required=False, default="newest")
-    scope = serializers.ChoiceField(choices=["all", "mine"], required=False, default="all")
+    scope = serializers.ChoiceField(
+        choices=["all", "following", "mine"], required=False, default="all"
+    )
     category = serializers.ChoiceField(choices=CATEGORIES, required=False, default="")
     country = serializers.RegexField(r"^[A-Za-z]{2}$", required=False, default="")
     cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
@@ -79,6 +81,7 @@ class AuthorSerializer(serializers.Serializer):
     headline = serializers.CharField(allow_blank=True)
     photo = ImageSerializer(allow_null=True)
     slug = serializers.CharField(allow_null=True)
+    following = serializers.BooleanField(default=False)
 
 
 class PostStartupSerializer(serializers.Serializer):
@@ -86,6 +89,7 @@ class PostStartupSerializer(serializers.Serializer):
     slug = serializers.CharField()
     name = serializers.CharField()
     logo = ImageSerializer(allow_null=True)
+    following = serializers.BooleanField(default=False)
 
 
 class PostImageSerializer(serializers.Serializer):
@@ -151,3 +155,35 @@ class ReactionResultSerializer(serializers.Serializer):
 
 class ModerationSerializer(StrictSerializer):
     reason = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
+
+
+class FollowSerializer(StrictSerializer):
+    type = serializers.ChoiceField(choices=["member", "startup"])
+    id = serializers.UUIDField()
+
+
+class FollowResultSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    id = serializers.UUIDField()
+    following = serializers.BooleanField()
+
+
+class FollowingQuerySerializer(StrictSerializer):
+    type = serializers.ChoiceField(choices=["member", "startup"], required=False, default="")
+    cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=100, default=50)
+
+
+class FollowingItemSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    id = serializers.UUIDField()
+    slug = serializers.CharField(allow_null=True)
+    name = serializers.CharField()
+    headline = serializers.CharField(allow_blank=True)
+    image = ImageSerializer(allow_null=True)
+    followed_at = serializers.DateTimeField()
+
+
+class FollowingListSerializer(serializers.Serializer):
+    results = FollowingItemSerializer(many=True)
+    next_cursor = serializers.CharField(allow_null=True)

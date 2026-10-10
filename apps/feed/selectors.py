@@ -7,7 +7,8 @@ from django.db.models import Q, QuerySet
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
-from apps.feed.models import Comment, Post, Reaction
+from apps.feed import follows
+from apps.feed.models import Comment, Follow, Post, Reaction
 from apps.feed.pagination import paginate
 from apps.profiles import selectors as profiles
 from apps.startups import selectors as startups
@@ -41,6 +42,12 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
     cards = profiles.cards_for(viewer, list({p.author_id for p in posts}))
     startup_cards = startups.cards_for(viewer, [p.startup_id for p in posts if p.startup_id])
     mine = _my_reactions(viewer, "post", [p.pk for p in posts])
+    followed_members = follows.is_following(viewer.pk, Follow.Kind.MEMBER, list(cards))
+    followed_startups = follows.is_following(viewer.pk, Follow.Kind.STARTUP, list(startup_cards))
+    for uid, card in cards.items():
+        card["following"] = uid in followed_members
+    for sid, startup_card in startup_cards.items():
+        startup_card["following"] = sid in followed_startups
     views = []
     for post in posts:
         is_mine = post.author_id == viewer.pk
@@ -87,6 +94,11 @@ def feed(
         queryset = queryset.filter(author_id=viewer.pk)
     else:
         queryset = queryset.filter(hidden_at__isnull=True)
+    if scope == "following":
+        queryset = queryset.filter(
+            Q(author_id__in=follows.followed_ids(viewer.pk, Follow.Kind.MEMBER))
+            | Q(startup_id__in=follows.followed_ids(viewer.pk, Follow.Kind.STARTUP))
+        )
     if category:
         queryset = queryset.filter(category=category)
     if country:
@@ -124,6 +136,9 @@ def _live_comments(post: Post) -> QuerySet[Comment]:
 
 def _comment_views(viewer: Any, comments: list[Comment]) -> dict[UUID, dict[str, Any]]:
     cards = profiles.cards_for(viewer, list({c.author_id for c in comments}))
+    followed = follows.is_following(viewer.pk, Follow.Kind.MEMBER, list(cards))
+    for uid, card in cards.items():
+        card["following"] = uid in followed
     mine = _my_reactions(viewer, "comment", [c.pk for c in comments])
     return {
         c.pk: {
