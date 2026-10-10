@@ -197,3 +197,12 @@ there is no need to stop a campaign because someone asked to be removed.
 signed with a different `SECRET_KEY` (for example after rotating it), in which case old emails'
 links stop working; keep the old key in rotation until old mail is no longer actionable. The web
 page in the link is the front end's `/unsubscribe` route, which should call this endpoint.
+
+## Dashboard numbers look stale or wrong
+
+The home page shows `refreshed_at`. If it is more than a couple of hours old, check that beat and a
+worker are running the hourly `adminconsole.refresh_dashboard`; a super admin can also
+`POST /admin/dashboard/refresh`. Each refresh rewrites the last two days from source, so a wrong
+number fixes itself on the next run; to repair older days run
+`adminconsole.dashboard.backfill(days)` from a shell. Early funnel steps (directory views, registration
+started) only count visitors who agreed to analytics, so they will always sit below real traffic.
