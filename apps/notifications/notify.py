@@ -113,6 +113,31 @@ TYPES: dict[str, Spec] = {
         lambda p: "/news",
         email=True,
     ),
+    "event_registered": Spec(
+        "event_reminders",
+        lambda who, p: f"You are registered for {p.get('title', 'the event')}",
+        lambda p: f"/events/{p['event_id']}",
+        email=True,
+    ),
+    "event_reminder": Spec(
+        "event_reminders",
+        lambda who, p: f"{p.get('title', 'Your event')} starts in "
+        f"{'1 hour' if p.get('when') == '1h' else '24 hours'}",
+        lambda p: f"/events/{p['event_id']}",
+        email=True,
+    ),
+    "event_cancelled": Spec(
+        "event_reminders",
+        lambda who, p: f"{p.get('title', 'An event')} you registered for was cancelled",
+        lambda p: f"/events/{p['event_id']}",
+        email=True,
+    ),
+    "event_rescheduled": Spec(
+        "event_reminders",
+        lambda who, p: f"{p.get('title', 'An event')} you registered for has new times",
+        lambda p: f"/events/{p['event_id']}",
+        email=True,
+    ),
     "member_approved": Spec(
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),

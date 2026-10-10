@@ -10,7 +10,7 @@ from apps.analytics.models import AnalyticsEvent, IdentityLink
 
 pytestmark = pytest.mark.django_db
 
-EVENTS = "/api/v1/events"
+EVENTS = "/api/v1/analytics/events"
 PREFERENCES = "/api/v1/me/analytics-preferences"
 
 
