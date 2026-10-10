@@ -174,3 +174,36 @@ class Report(BaseModel):
             models.Index(fields=["status", "created_at"], name="feed_report_queue_idx"),
             models.Index(fields=["target_type", "target_id"], name="feed_report_target_idx"),
         ]
+
+
+class LinkPreview(BaseModel):
+    """The card for a web address, fetched once and shared by every post that links to it."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending"
+        READY = "ready"
+        FAILED = "failed"
+
+    url_hash = models.CharField(max_length=64, unique=True)
+    url = models.CharField(max_length=2000)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
+    title = models.CharField(max_length=200, blank=True)
+    description = models.CharField(max_length=300, blank=True)
+    site_name = models.CharField(max_length=100, blank=True)
+    image_key = models.CharField(max_length=200, blank=True)
+    fail_code = models.CharField(max_length=30, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    fetched_at = models.DateTimeField(null=True, blank=True)
+
+
+class PostLink(BaseModel):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="links")
+    preview = models.ForeignKey(LinkPreview, on_delete=models.PROTECT, related_name="posts")
+    position = models.PositiveSmallIntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["post", "position"], name="feed_link_position"),
+            models.UniqueConstraint(fields=["post", "preview"], name="feed_link_once"),
+        ]
+        ordering = ["position"]

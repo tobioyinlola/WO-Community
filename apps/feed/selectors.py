@@ -26,7 +26,7 @@ def visible_posts(viewer: Any) -> QuerySet[Post]:
         Post.objects.filter(deleted_at__isnull=True, author_id__in=accounts.active_user_ids())
         .filter(Q(hidden_at__isnull=True) | Q(author_id=viewer.pk))
         .select_related()
-        .prefetch_related("images")
+        .prefetch_related("images", "links__preview")
     )
 
 
@@ -62,6 +62,17 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
                 "images": [
                     {"id": i.pk, "urls": uploads.image_urls(i.base_key), "alt": i.alt_text}
                     for i in post.images.all()
+                ],
+                "previews": [
+                    {
+                        "url": link.preview.url,
+                        "title": link.preview.title,
+                        "description": link.preview.description,
+                        "site_name": link.preview.site_name,
+                        "image": uploads.image_urls(link.preview.image_key),
+                    }
+                    for link in post.links.all()
+                    if link.preview.status == "ready"
                 ],
                 "created_at": post.created_at,
                 "edited_at": post.edited_at,

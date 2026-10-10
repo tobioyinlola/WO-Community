@@ -20,7 +20,7 @@ from apps.audit import services as audit
 from apps.core import etag, ratelimit
 from apps.core import events as domain_events
 from apps.core.text import rich_comment, rich_post, text_of
-from apps.feed import events
+from apps.feed import events, links
 from apps.feed.models import (
     CATEGORIES,
     REACTION_KINDS,
@@ -199,6 +199,7 @@ def create_post(
             country=profiles.country_of(user_id),
         )
         _attach_images(post, images, user_id)
+        links.sync(post, html)
         _mention(
             by=user_id,
             mentioned=mention_ids,
@@ -231,6 +232,7 @@ def update_post(
             post.category = changes["category"]
         if "body" in changes:
             post.body, post.body_text = _clean_post(changes["body"])
+            links.sync(post, post.body)
         released: list[str] = []
         if "images" in changes:
             released = _attach_images(post, changes["images"], user_id)

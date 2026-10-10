@@ -34,3 +34,9 @@ class ReportHandled(DomainEvent):
     reporter_id: str
     outcome: str  # "reviewed" or "actioned"
     target_type: str
+
+
+@dataclass(frozen=True)
+class LinkPreviewRequested(DomainEvent):
+    topic: ClassVar[str] = "feed.link_preview_requested"
+    preview_id: str
