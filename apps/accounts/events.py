@@ -1,7 +1,7 @@
 """Domain events published by the accounts module."""
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from apps.core.events import DomainEvent
 
@@ -66,3 +66,16 @@ class InvitationRequested(DomainEvent):
     topic: ClassVar[str] = "accounts.invitation_requested"
     invitation_id: str
     nonce: str
+
+
+@dataclass(frozen=True)
+class SignupDetailsSubmitted(DomainEvent):
+    """The profile and startup details typed into the registration form.
+
+    Carried as an event so the profiles and startups modules can create their
+    records without accounts depending on them.
+    """
+
+    topic: ClassVar[str] = "accounts.signup_details_submitted"
+    user_id: str
+    details: dict[str, Any]

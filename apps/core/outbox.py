@@ -38,6 +38,15 @@ def enqueue(topic: str, payload: dict[str, Any]) -> OutboxEvent:
     return OutboxEvent.objects.create(topic=topic, payload=payload)
 
 
+def purge_published(older_than_days: int = 14) -> int:
+    """Delete published events once nobody needs them. Failed ones are kept for review."""
+    cutoff = timezone.now() - timedelta(days=older_than_days)
+    deleted, _ = OutboxEvent.objects.filter(
+        status=OutboxEvent.Status.PUBLISHED, published_at__lt=cutoff
+    ).delete()
+    return int(deleted)
+
+
 def _backoff(attempts: int) -> timedelta:
     return timedelta(seconds=min(2**attempts * 5, 3600))
 

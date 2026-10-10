@@ -24,6 +24,8 @@ _EDITOR = frozenset(
 )
 _COMMUNITY_ADMIN = _EDITOR | {
     "members.view",
+    "directory.feature",
+    "reference.manage",
     "members.approve",
     "members.suspend",
     "members.remove",

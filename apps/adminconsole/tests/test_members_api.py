@@ -39,7 +39,7 @@ def as_admin(admin, client_for):
     return client_for(admin, mfa_age=5)
 
 
-# --- access control, shared by every endpoint ---------------------------------------
+# --- access control, shared by every endpoint ---
 
 ENDPOINTS = [
     ("get", MEMBERS, None),
@@ -112,7 +112,7 @@ def test_a_suspended_admin_loses_access(client_for, admin):
     assert client_for(admin, mfa_age=5).get(MEMBERS).status_code == 401
 
 
-# --- listing and filtering ------------------------------------------------------------
+# --- listing and filtering ---
 
 
 def test_list_returns_members_with_roles_and_paging(as_admin, active, pending):
@@ -183,7 +183,7 @@ def test_queue_counts_split_verified_and_unverified(as_admin, make_user, pending
     }
 
 
-# --- approve ----------------------------------------------------------------------------
+# --- approve ---
 
 
 def test_approving_activates_the_member_and_grants_the_member_role(
@@ -255,7 +255,7 @@ def test_community_admin_cannot_change_another_admin_but_super_admin_can(
     assert response.status_code == 200
 
 
-# --- reject -------------------------------------------------------------------------------
+# --- reject ---
 
 
 def test_rejection_records_the_reason_and_emails_it(
@@ -302,7 +302,7 @@ def test_rejected_person_gets_no_password_reset_email(
     assert sent_emails == []
 
 
-# --- suspend and reinstate ---------------------------------------------------------------
+# --- suspend and reinstate ---
 
 
 def test_suspending_ends_sessions_and_access_tokens_immediately(as_admin, api_client, make_user):
@@ -349,7 +349,7 @@ def test_suspension_is_audited_with_its_reason(as_admin, active):
     assert entry.after == {"status": "suspended"}
 
 
-# --- remove -------------------------------------------------------------------------------
+# --- remove ---
 
 
 def test_removal_ends_access_and_announces_the_takedown(as_admin, active, api_client):
@@ -378,10 +378,10 @@ def test_removal_requires_a_reason_and_cannot_repeat(as_admin, active):
     assert as_admin.post(url(active, "remove"), {"reason": "again"}).status_code == 409
 
 
-# --- concurrency ----------------------------------------------------------------------------
+# --- concurrency ---
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 @pytest.mark.usefixtures("truncate_audit")
 def test_simultaneous_approvals_succeed_exactly_once(make_user, client_for):
     import threading

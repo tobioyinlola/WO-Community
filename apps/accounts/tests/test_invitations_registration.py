@@ -158,7 +158,7 @@ def test_the_invitation_token_field_is_optional_and_strictly_typed(api_client):
     assert api_client.post(REGISTER_URL, bad).status_code == 400
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 @pytest.mark.usefixtures("truncate_audit")
 def test_two_simultaneous_registrations_with_one_link_create_one_account(
     api_client, invite, inviter

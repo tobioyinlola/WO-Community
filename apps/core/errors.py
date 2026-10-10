@@ -21,12 +21,6 @@ class ConflictError(exceptions.APIException):
     default_code = "conflict"
 
 
-class PreconditionFailedError(exceptions.APIException):
-    status_code = status.HTTP_412_PRECONDITION_FAILED
-    default_detail = "The resource changed since it was last read."
-    default_code = "precondition_failed"
-
-
 class MfaRequired(exceptions.PermissionDenied):
     default_detail = "Multi-factor authentication is required for this action."
     default_code = "mfa_required"

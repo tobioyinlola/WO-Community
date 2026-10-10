@@ -14,12 +14,19 @@ from apps.accounts.models import User
 from apps.accounts.tests.factories import UserFactory, UserRoleFactory
 from apps.core import outbox
 from apps.integrations.email.fake import FakeEmailAdapter
+from apps.integrations.malware.fake import FakeScanner
+from apps.integrations.storage.fake import FakeStorage
+from apps.uploads import services as upload_services
+from apps.uploads.models import Upload, UploadStatus
+from apps.uploads.tests.helpers import content_type_of, image_bytes
 
 
 @pytest.fixture(autouse=True)
 def _clean_state() -> None:
     cache.clear()
     FakeEmailAdapter.reset()
+    FakeStorage.reset()
+    FakeScanner.reset()
 
 
 @pytest.fixture
@@ -110,3 +117,23 @@ def last_invitation_token() -> Callable[[], str]:
         return match.group(1)
 
     return find
+
+
+@pytest.fixture
+def ready_upload(run_outbox: Callable[[], int]) -> Callable[..., Upload]:
+    """Push a real image through the whole upload pipeline and return the ready upload."""
+
+    def make(user: User, purpose: str = "profile_photo", *, fmt: str = "PNG", size=(400, 300)):
+        data = image_bytes(fmt, size)
+        content_type = content_type_of(fmt)
+        upload, post = upload_services.request_upload(
+            owner_id=user.pk, purpose=purpose, content_type=content_type, size=len(data)
+        )
+        FakeStorage.client_upload(post, data, content_type)
+        upload_services.complete_upload(owner_id=user.pk, upload_id=upload.pk)
+        run_outbox()
+        upload.refresh_from_db()
+        assert upload.status == UploadStatus.READY, upload.reject_reason
+        return upload
+
+    return make

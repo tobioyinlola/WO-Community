@@ -47,7 +47,7 @@ class NotEnrolling(exceptions.ValidationError):
         super().__init__({"code": ["Start MFA enrolment first."]}, code="mfa_not_started")
 
 
-# --- state ---------------------------------------------------------------------------
+# --- state ---
 
 
 def has_confirmed_device(user: User) -> bool:
@@ -63,7 +63,7 @@ def enrolment_required(user: User) -> bool:
     return is_admin(user) and not has_confirmed_device(user)
 
 
-# --- code checking -------------------------------------------------------------------
+# --- code checking ---
 
 
 def _failure_key(user: User) -> str:
@@ -142,7 +142,7 @@ def verify_code(user: User, code: str, *, ip: str = "", allow_recovery: bool = T
     return method
 
 
-# --- enrolment -----------------------------------------------------------------------
+# --- enrolment ---
 
 
 def begin_enrolment(user: User, *, ip: str = "") -> tuple[str, str]:
@@ -223,7 +223,7 @@ def regenerate_recovery_codes(user: User, code: str, *, ip: str = "") -> list[st
     return codes
 
 
-# --- login challenge -----------------------------------------------------------------
+# --- login challenge ---
 
 
 def issue_challenge(user: User) -> str:

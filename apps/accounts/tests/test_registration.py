@@ -45,7 +45,7 @@ def test_verification_email_is_sent_with_a_working_link(
     api_client, run_outbox, last_token, sent_emails
 ):
     api_client.post(REGISTER_URL, registration_payload())
-    assert run_outbox() == 1
+    assert run_outbox() == 2  # the verification email and the signup details
     message = sent_emails[-1]
     assert message.to == "new.member@example.com"
     assert "https://app.test/verify-email?token=" in message.text_body
@@ -168,3 +168,81 @@ def test_breached_password_is_rejected_at_registration(api_client):
     assert response.status_code == 400
     assert User.objects.count() == 0
     assert "breach" in str(response.json()["errors"]).lower()
+
+
+# --- the profile and startup details on the form ---
+
+
+def with_profile(**changes):
+    profile = registration_payload()["profile"]
+    profile.update(changes)
+    return registration_payload(profile=profile)
+
+
+def with_startup(**changes):
+    startup = registration_payload()["startup"]
+    startup.update(changes)
+    return registration_payload(startup=startup)
+
+
+@pytest.mark.parametrize("section", ["profile", "startup"])
+def test_the_profile_and_startup_sections_are_required(api_client, section):
+    payload = registration_payload()
+    del payload[section]
+    response = api_client.post(REGISTER_URL, payload)
+    assert response.status_code == 400
+    assert section in response.json()["errors"]
+    assert User.objects.count() == 0
+
+
+@pytest.mark.parametrize(
+    ("builder", "field", "value"),
+    [
+        (with_profile, "full_name", "A"),
+        (with_profile, "full_name", "<b></b>"),
+        (with_profile, "country", "XX"),
+        (with_profile, "country", "Nigeria"),
+        (with_profile, "city", ""),
+        (with_startup, "name", ""),
+        (with_startup, "name", "x" * 121),
+        (with_startup, "country", "ZZ"),
+        (with_startup, "sector", "no-such-sector"),
+        (with_startup, "stage", "no-such-stage"),
+        (with_startup, "pitch", ""),
+        (with_startup, "pitch", "x" * 161),
+    ],
+)
+def test_invalid_details_are_rejected_and_no_account_is_made(api_client, builder, field, value):
+    response = api_client.post(REGISTER_URL, builder(**{field: value}))
+    assert response.status_code == 400
+    section = "profile" if builder is with_profile else "startup"
+    assert field in response.json()["errors"][section]
+    assert User.objects.count() == 0
+
+
+def test_unknown_detail_fields_are_rejected(api_client):
+    payload = with_profile(role="super_admin")
+    assert api_client.post(REGISTER_URL, payload).status_code == 400
+
+
+def test_country_codes_are_accepted_in_lower_case(api_client):
+    response = api_client.post(REGISTER_URL, with_profile(country="ng"))
+    assert response.status_code == 202
+
+
+def test_markup_in_names_is_stripped_before_it_is_stored(api_client):
+    from apps.core.models import OutboxEvent
+
+    api_client.post(REGISTER_URL, with_profile(full_name="<b>Ada</b> <script>x</script>Obi"))
+    event = OutboxEvent.objects.get(topic="accounts.signup_details_submitted")
+    assert event.payload["details"]["profile"]["full_name"] == "Ada Obi"
+
+
+def test_bad_details_look_the_same_for_new_and_existing_addresses(api_client, make_user):
+    make_user(email="taken@example.com")
+    fresh = api_client.post(REGISTER_URL, with_profile(country="XX"))
+    taken = api_client.post(
+        REGISTER_URL, {**with_profile(country="XX"), "email": "taken@example.com"}
+    )
+    assert fresh.status_code == taken.status_code == 400
+    assert fresh.json()["errors"] == taken.json()["errors"]

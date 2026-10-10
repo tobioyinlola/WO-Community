@@ -88,7 +88,7 @@ def test_partition_creation_is_repeatable():
     assert partitions.ensure_month_partitions(today) == partitions.ensure_month_partitions(today)
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 @pytest.mark.usefixtures("truncate_audit")
 def test_concurrent_writers_still_produce_a_valid_chain(make_user):
     actor = make_user()

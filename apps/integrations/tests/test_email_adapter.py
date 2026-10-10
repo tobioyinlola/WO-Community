@@ -16,7 +16,7 @@ def test_fake_adapter_records_messages_without_sending():
 
 def test_fake_adapter_webhook_and_event_parsing():
     adapter = get_email_adapter()
-    assert adapter.verify_webhook(b"{}", {"X-Fake-Signature": "valid"})
+    assert adapter.verify_webhook(b"{}", {"x-fake-signature": "valid"})
     assert not adapter.verify_webhook(b"{}", {})
     events = adapter.parse_event(
         {"events": [{"kind": "bounced", "message_id": "m1", "email": "a@example.com"}]}

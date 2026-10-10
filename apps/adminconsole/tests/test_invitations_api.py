@@ -173,7 +173,7 @@ def test_an_expired_invitation_is_replaced_by_a_new_one(as_admin):
     assert Invitation.objects.filter(status="sent").count() == 1
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 @pytest.mark.usefixtures("truncate_audit")
 def test_simultaneous_invitations_for_one_address_create_only_one(make_user, client_for):
     import threading

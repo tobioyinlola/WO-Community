@@ -6,6 +6,8 @@ from rest_framework import serializers
 
 from apps.accounts.models import RefreshTokenFamily, User
 from apps.core.serializers import StrictSerializer
+from apps.core.text import plain
+from apps.reference import selectors as reference
 
 
 def validate_new_password(password: str, email: str = "") -> str:
@@ -16,6 +18,65 @@ def validate_new_password(password: str, email: str = "") -> str:
     return password
 
 
+class SignupProfileSerializer(StrictSerializer):
+    full_name = serializers.CharField(min_length=2, max_length=120)
+    country = serializers.CharField(min_length=2, max_length=2)
+    city = serializers.CharField(min_length=1, max_length=100)
+
+    def validate_full_name(self, value: str) -> str:
+        return _plain_required(value)
+
+    def validate_city(self, value: str) -> str:
+        return _plain_required(value)
+
+    def validate_country(self, value: str) -> str:
+        code = value.upper()
+        if not reference.is_country(code):
+            raise serializers.ValidationError("Choose a country from the list.")
+        return code
+
+
+class SignupStartupSerializer(StrictSerializer):
+    name = serializers.CharField(min_length=1, max_length=120)
+    country = serializers.CharField(min_length=2, max_length=2)
+    city = serializers.CharField(min_length=1, max_length=100)
+    sector = serializers.CharField(max_length=80)
+    stage = serializers.CharField(max_length=80)
+    pitch = serializers.CharField(min_length=1, max_length=160)
+
+    def validate_name(self, value: str) -> str:
+        return _plain_required(value)
+
+    def validate_city(self, value: str) -> str:
+        return _plain_required(value)
+
+    def validate_pitch(self, value: str) -> str:
+        return _plain_required(value)
+
+    def validate_country(self, value: str) -> str:
+        code = value.upper()
+        if not reference.is_country(code):
+            raise serializers.ValidationError("Choose a country from the list.")
+        return code
+
+    def validate_sector(self, value: str) -> str:
+        if reference.get_sector(value) is None:
+            raise serializers.ValidationError("Choose a sector from the list.")
+        return value
+
+    def validate_stage(self, value: str) -> str:
+        if reference.get_stage(value) is None:
+            raise serializers.ValidationError("Choose a stage from the list.")
+        return value
+
+
+def _plain_required(value: str) -> str:
+    cleaned = plain(value)
+    if not cleaned:
+        raise serializers.ValidationError("This field may not be blank.")
+    return cleaned
+
+
 class RegisterSerializer(StrictSerializer):
     email = serializers.EmailField(max_length=254)
     password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
@@ -23,6 +84,8 @@ class RegisterSerializer(StrictSerializer):
     accepted_privacy = serializers.BooleanField()
     accepted_conduct = serializers.BooleanField()
     marketing_consent = serializers.BooleanField(required=False, default=False)
+    profile = SignupProfileSerializer()
+    startup = SignupStartupSerializer()
     invitation_token = serializers.CharField(
         required=False, allow_blank=True, max_length=200, default=""
     )

@@ -76,3 +76,12 @@ def list_invitations(*, q: str = "", status: str = "") -> QuerySet[Invitation]:
 
 def get_invitation(invitation_id: Any) -> Invitation | None:
     return Invitation.objects.select_related("invited_by").filter(pk=invitation_id).first()
+
+
+def active_user_ids() -> QuerySet[Any]:
+    """Ids of active members, as a subquery other modules can filter on.
+
+    Public pages check this at read time so a suspended or removed member
+    disappears at once, without waiting for any background refresh.
+    """
+    return User.objects.filter(status=UserStatus.ACTIVE).values("id")

@@ -59,7 +59,7 @@ def full_login(client, secret, offset=0):
     return finish(client, token, totp_code(secret, offset))
 
 
-# --- the two step login ---------------------------------------------------------------
+# --- the two step login ---
 
 
 def test_password_step_returns_a_challenge_and_no_session(api_client, enrolled):
@@ -181,7 +181,7 @@ def test_wrong_password_never_reaches_the_challenge(api_client, enrolled):
     assert "mfa_token" not in response.json()
 
 
-# --- recovery codes -------------------------------------------------------------------
+# --- recovery codes ---
 
 
 def test_a_recovery_code_logs_in_once(api_client, enrolled):
@@ -205,7 +205,7 @@ def test_unknown_recovery_codes_fail(api_client, enrolled):
     assert finish(api_client, token, "abcdef-123456").status_code == 400
 
 
-# --- admins without MFA ---------------------------------------------------------------
+# --- admins without MFA ---
 
 
 def test_admin_without_a_device_can_log_in_but_is_told_to_enrol(api_client, make_user):
@@ -231,7 +231,7 @@ def test_ordinary_members_are_never_asked_to_enrol(api_client, make_user):
     )
 
 
-# --- the session keeps its MFA state ---------------------------------------------------
+# --- the session keeps its MFA state ---
 
 
 def test_refresh_keeps_the_mfa_claim(api_client, enrolled):
@@ -325,7 +325,7 @@ def test_step_up_cannot_touch_a_revoked_session(api_client, enrolled):
     assert response.status_code == 403
 
 
-# --- regenerating recovery codes ---------------------------------------------------------
+# --- regenerating recovery codes ---
 
 
 def test_regenerating_replaces_every_recovery_code(api_client, enrolled):

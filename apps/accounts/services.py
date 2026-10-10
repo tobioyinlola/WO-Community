@@ -86,7 +86,7 @@ def normalise_email(email: str) -> str:
     return email.strip().lower()
 
 
-# --- Registration and email verification ----------------------------------------
+# --- Registration and email verification ---
 
 
 def _record_consents(user: User, consents: dict[str, bool], ip: str) -> None:
@@ -110,6 +110,7 @@ def register(
     consents: dict[str, bool],
     ip: str = "",
     invitation_token: str = "",
+    signup: dict[str, Any] | None = None,
 ) -> bool:
     """Create an account. Returns True when an invitation approved it on the spot.
 
@@ -138,6 +139,10 @@ def register(
             else:
                 user = User.objects.create_user(address, password)
             _record_consents(user, consents, ip)
+            if signup:
+                domain_events.publish(
+                    events.SignupDetailsSubmitted(user_id=str(user.pk), details=signup)
+                )
             if invitation is not None:
                 invitations.mark_registered(invitation, user)
                 domain_events.publish(events.MemberApproved(user_id=str(user.pk)))
@@ -233,7 +238,7 @@ def verify_email(raw_token: str) -> None:
         )
 
 
-# --- Password reset --------------------------------------------------------------
+# --- Password reset ---
 
 
 def request_password_reset(*, email: str) -> None:
@@ -266,7 +271,7 @@ def reset_password(*, raw_token: str, new_password: str, ip: str = "") -> None:
     tokens.revoke_older_tokens(user)
 
 
-# --- Login, refresh, logout ------------------------------------------------------
+# --- Login, refresh, logout ---
 
 _dummy_hash: str | None = None
 
@@ -360,7 +365,7 @@ def refresh(*, raw_refresh_token: str, ip: str) -> LoginResult:
     return LoginResult(user, access, new_refresh)
 
 
-# --- MFA enrolment and step-up ---------------------------------------------------------
+# --- MFA enrolment and step-up ---
 
 
 def mfa_enrolment_required(user: User) -> bool:
@@ -404,7 +409,7 @@ def logout(*, raw_refresh_token: str) -> None:
         sessions.revoke(family, "logout")
 
 
-# --- Sessions --------------------------------------------------------------------
+# --- Sessions ---
 
 
 def list_sessions(user: User) -> Any:
@@ -468,3 +473,36 @@ def issue_invitation_token(invitation_id: UUID, nonce: str) -> InvitationEmail |
 
 def inspect_invitation(raw_token: str) -> invitations.Invitation:
     return invitations.inspect(raw_token)
+
+
+def badges_for(user_ids: list[UUID]) -> dict[UUID, list[str]]:
+    """Public badges for each user: verified member (approved) and mentor."""
+    badges: dict[UUID, list[str]] = {}
+    users = User.objects.filter(pk__in=user_ids).prefetch_related("user_roles")
+    for user in users:
+        earned: list[str] = []
+        if user.status == UserStatus.ACTIVE and user.approved_at is not None:
+            earned.append("verified_member")
+        if Role.MENTOR.value in user.role_names():
+            earned.append("mentor")
+        badges[user.pk] = earned
+    return badges
+
+
+def find_active_member_id(email: str) -> UUID | None:
+    """The id of the active member with this address, if any."""
+    user = User.objects.filter(
+        email__iexact=normalise_email(email), status=UserStatus.ACTIVE
+    ).first()
+    return user.pk if user else None
+
+
+def is_active(user_id: UUID) -> bool:
+    return User.objects.filter(pk=user_id, status=UserStatus.ACTIVE).exists()
+
+
+def active_user_ids() -> Any:
+    """Subquery of active member ids, for filtering in other modules' queries."""
+    from apps.accounts import selectors
+
+    return selectors.active_user_ids()

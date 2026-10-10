@@ -7,6 +7,7 @@ from apps.integrations.email.base import EmailAdapter, EmailEvent, EmailMessage
 class FakeEmailAdapter(EmailAdapter):
     """In memory adapter for local development and tests. Nothing leaves the process."""
 
+    provider_name = "fake"
     sent: ClassVar[list[EmailMessage]] = []
 
     @classmethod
@@ -21,7 +22,10 @@ class FakeEmailAdapter(EmailAdapter):
         return [self.send(message) for message in messages]
 
     def verify_webhook(self, body: bytes, headers: dict[str, str]) -> bool:
-        return headers.get("X-Fake-Signature") == "valid"
+        return headers.get("x-fake-signature") == "valid"
+
+    def webhook_event_id(self, headers: dict[str, str]) -> str:
+        return headers.get("x-fake-event-id", "")
 
     def parse_event(self, payload: dict[str, Any]) -> list[EmailEvent]:
         return [

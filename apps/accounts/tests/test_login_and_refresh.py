@@ -121,7 +121,7 @@ def test_login_attempts_are_audited_without_raw_addresses(api_client, member):
     assert "member@example.com" not in stored
 
 
-# --- refresh -----------------------------------------------------------------------
+# --- refresh ---
 
 
 def test_refresh_rotates_the_token_and_returns_a_new_access_token(api_client, member):
