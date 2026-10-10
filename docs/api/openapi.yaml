@@ -539,6 +539,258 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/posts/{post_id}/feature:
+    post:
+      operationId: admin_posts_feature_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/posts/{post_id}/hide:
+    post:
+      operationId: admin_posts_hide_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/posts/{post_id}/pin:
+    post:
+      operationId: admin_posts_pin_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/posts/{post_id}/remove:
+    post:
+      operationId: admin_posts_remove_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/posts/{post_id}/unfeature:
+    post:
+      operationId: admin_posts_unfeature_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/posts/{post_id}/unhide:
+    post:
+      operationId: admin_posts_unhide_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/posts/{post_id}/unpin:
+    post:
+      operationId: admin_posts_unpin_create
+      description: 'Actions: pin, unpin, feature, unfeature, hide, unhide, remove.
+        Hidden posts disappear from the feed but the author still sees them; removed
+        posts are gone. Every action is written to the audit log.'
+      summary: Moderate a post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModerationResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
   /api/v1/admin/queues:
     get:
       operationId: admin_queues_retrieve
@@ -1200,6 +1452,136 @@ paths:
           description: ''
         '400':
           description: Invalid token
+  /api/v1/comments/{comment_id}:
+    patch:
+      operationId: comments_partial_update
+      summary: Edit your comment
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    delete:
+      operationId: comments_destroy
+      summary: Delete your comment (and the replies under it)
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/comments/{target_id}/reactions:
+    post:
+      operationId: comments_reactions_create
+      description: 'Idempotent: reacting the same way twice leaves one reaction (200).'
+      summary: React
+      parameters:
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/comments/{target_id}/reactions/{kind}:
+    delete:
+      operationId: comments_reactions_destroy
+      summary: Take a reaction back
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/events:
     post:
       operationId: events_create
@@ -1618,6 +2000,372 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ping'
           description: ''
+  /api/v1/posts:
+    get:
+      operationId: feed_list
+      description: Newest or most engaged first, filtered by category and country.
+        `scope=mine` lists your own posts, including any a moderator hid. Pinned posts
+        come separately on the first page of the shared feed.
+      summary: The community feed
+      parameters:
+      - in: query
+        name: category
+        schema:
+          enum:
+          - update
+          - question
+          - win
+          - resource
+          - event
+          - opportunity
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `update` - update
+          * `question` - question
+          * `win` - win
+          * `resource` - resource
+          * `event` - event
+          * `opportunity` - opportunity
+      - in: query
+        name: country
+        schema:
+          type: string
+          minLength: 1
+          default: ''
+          pattern: ^[A-Za-z]{2}$
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: scope
+        schema:
+          enum:
+          - all
+          - mine
+          type: string
+          default: all
+          minLength: 1
+        description: |-
+          * `all` - all
+          * `mine` - mine
+      - in: query
+        name: sort
+        schema:
+          enum:
+          - newest
+          - engaged
+          type: string
+          default: newest
+          minLength: 1
+        description: |-
+          * `newest` - newest
+          * `engaged` - engaged
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feed'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    post:
+      operationId: posts_create
+      description: Rich text is cleaned on the server. Images are finished uploads
+        with purpose `post_image` (up to 10). `startup_id` posts for a startup you
+        belong to. Mentioned members are told. Limited per member per day.
+      summary: Write a post
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '429':
+          description: Daily limit
+  /api/v1/posts/{post_id}:
+    get:
+      operationId: posts_retrieve
+      summary: One post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    patch:
+      operationId: posts_partial_update
+      description: 'Send only what changes. `images` replaces the whole list: keep
+        an image by its `image_id`, add one with `upload_id`. Send the ETag in If-Match.'
+      summary: Edit your post
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPostUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '412':
+          description: The post changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: posts_destroy
+      summary: Delete your post
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/posts/{post_id}/comments:
+    get:
+      operationId: posts_comments_retrieve
+      summary: Comments on a post, oldest first, with their replies
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+    post:
+      operationId: posts_comments_create
+      description: 'Replies go one level deep: `parent_id` must be a top-level comment
+        on this post. Limited per member per day.'
+      summary: Comment on a post, or reply to a comment
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+        '429':
+          description: Daily limit
+  /api/v1/posts/{target_id}/reactions:
+    post:
+      operationId: posts_reactions_create
+      description: 'Idempotent: reacting the same way twice leaves one reaction (200).'
+      summary: React
+      parameters:
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/posts/{target_id}/reactions/{kind}:
+    delete:
+      operationId: posts_reactions_destroy
+      summary: Take a reaction back
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: target_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/public/founders:
     get:
       operationId: public_founders_list
@@ -2482,6 +3230,29 @@ components:
       - email
       - id
       - status
+    Author:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      required:
+      - headline
+      - id
+      - name
+      - photo
+      - slug
     BatchResult:
       type: object
       properties:
@@ -2539,6 +3310,22 @@ components:
       - reason
       - result
       - row
+    CategoryEnum:
+      enum:
+      - update
+      - question
+      - win
+      - resource
+      - event
+      - opportunity
+      type: string
+      description: |-
+        * `update` - update
+        * `question` - question
+        * `win` - win
+        * `resource` - resource
+        * `event` - event
+        * `opportunity` - opportunity
     ChecklistItem:
       type: object
       properties:
@@ -2563,6 +3350,97 @@ components:
           maxLength: 32
       required:
       - code
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        post_id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        body:
+          type: string
+          description: Sanitised HTML
+        author:
+          $ref: '#/components/schemas/Author'
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        reaction_count:
+          type: integer
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        my_reactions:
+          type: array
+          items:
+            type: string
+        mine:
+          type: boolean
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reply'
+      required:
+      - author
+      - body
+      - created_at
+      - edited_at
+      - id
+      - mine
+      - my_reactions
+      - parent_id
+      - post_id
+      - reaction_count
+      - reactions
+      - replies
+    CommentCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        mentions:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+      required:
+      - body
+    CommentList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
     Completeness:
       type: object
       properties:
@@ -2646,6 +3524,23 @@ components:
       - featured
       - id
       - slug
+    Feed:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        pinned:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
     ForgotPasswordRequest:
       type: object
       description: |-
@@ -2850,6 +3745,21 @@ components:
       required:
       - large
       - thumb
+    ImageInputRequest:
+      type: object
+      description: Keep an existing image (``image_id``) or add a finished upload
+        (``upload_id``).
+      properties:
+        image_id:
+          type: string
+          format: uuid
+        upload_id:
+          type: string
+          format: uuid
+        alt:
+          type: string
+          default: ''
+          maxLength: 300
     Invitation:
       type: object
       properties:
@@ -2949,22 +3859,6 @@ components:
       required:
       - name
       - slug
-    KindEnum:
-      enum:
-      - users
-      - revenue_range
-      - funding_range
-      - milestone
-      - award
-      - partner
-      type: string
-      description: |-
-        * `users` - users
-        * `revenue_range` - revenue_range
-        * `funding_range` - funding_range
-        * `milestone` - milestone
-        * `award` - award
-        * `partner` - partner
     LinkedStartup:
       type: object
       properties:
@@ -3145,6 +4039,29 @@ components:
       required:
       - code
       - mfa_token
+    ModerationRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
+    ModerationResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+      required:
+      - action
+      - id
     Named:
       type: object
       properties:
@@ -3192,6 +4109,43 @@ components:
         * `mentoring` - mentoring
         * `seeking_mentor` - seeking_mentor
         * `partnerships` - partnerships
+    PatchedCommentUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+    PatchedPostUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInputRequest'
+          maxItems: 10
+        mentions:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
     PatchedProfileUpdateRequest:
       type: object
       description: Partial update. Fields not listed here (slug, visibility, score)
@@ -3320,6 +4274,140 @@ components:
       required:
       - release
       - status
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        body:
+          type: string
+          description: Sanitised HTML
+        country:
+          type: string
+        author:
+          $ref: '#/components/schemas/Author'
+        startup:
+          allOf:
+          - $ref: '#/components/schemas/PostStartup'
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostImage'
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        pinned:
+          type: boolean
+        featured:
+          type: boolean
+        hidden:
+          type: boolean
+          description: Only ever true for the author's own view
+        comment_count:
+          type: integer
+        reaction_count:
+          type: integer
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        my_reactions:
+          type: array
+          items:
+            type: string
+        mine:
+          type: boolean
+      required:
+      - author
+      - body
+      - category
+      - comment_count
+      - country
+      - created_at
+      - edited_at
+      - featured
+      - hidden
+      - id
+      - images
+      - mine
+      - my_reactions
+      - pinned
+      - reaction_count
+      - reactions
+      - startup
+    PostCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInputRequest'
+          maxItems: 10
+        startup_id:
+          type: string
+          format: uuid
+          nullable: true
+        mentions:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+      required:
+      - body
+      - category
+    PostImage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        urls:
+          $ref: '#/components/schemas/Image'
+        alt:
+          type: string
+      required:
+      - alt
+      - id
+      - urls
+    PostStartup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+      required:
+      - id
+      - logo
+      - name
+      - slug
     Preference:
       type: object
       description: |-
@@ -3451,6 +4539,43 @@ components:
       required:
       - registrations_awaiting_approval
       - registrations_unverified
+    ReactionKindEnum:
+      enum:
+      - like
+      - celebrate
+      - insightful
+      type: string
+      description: |-
+        * `like` - like
+        * `celebrate` - celebrate
+        * `insightful` - insightful
+    ReactionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          $ref: '#/components/schemas/ReactionKindEnum'
+      required:
+      - kind
+    ReactionResult:
+      type: object
+      properties:
+        created:
+          type: boolean
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        reaction_count:
+          type: integer
+      required:
+      - created
+      - reaction_count
+      - reactions
     ReasonRequest:
       type: object
       description: |-
@@ -3604,6 +4729,55 @@ components:
       required:
       - index
       - reason
+    Reply:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        post_id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        body:
+          type: string
+          description: Sanitised HTML
+        author:
+          $ref: '#/components/schemas/Author'
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        reaction_count:
+          type: integer
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        my_reactions:
+          type: array
+          items:
+            type: string
+        mine:
+          type: boolean
+      required:
+      - author
+      - body
+      - created_at
+      - edited_at
+      - id
+      - mine
+      - my_reactions
+      - parent_id
+      - post_id
+      - reaction_count
+      - reactions
     ResetPasswordRequest:
       type: object
       description: |-
@@ -4098,6 +5272,22 @@ components:
           maxLength: 200
       required:
       - token
+    TractionItemKindEnum:
+      enum:
+      - users
+      - revenue_range
+      - funding_range
+      - milestone
+      - award
+      - partner
+      type: string
+      description: |-
+        * `users` - users
+        * `revenue_range` - revenue_range
+        * `funding_range` - funding_range
+        * `milestone` - milestone
+        * `award` - award
+        * `partner` - partner
     TractionItemRequest:
       type: object
       description: |-
@@ -4107,7 +5297,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         kind:
-          $ref: '#/components/schemas/KindEnum'
+          $ref: '#/components/schemas/TractionItemKindEnum'
         value: {}
         as_of_date:
           type: string
@@ -4244,18 +5434,22 @@ components:
       enum:
       - profile_photo
       - startup_logo
+      - post_image
       type: string
       description: |-
         * `profile_photo` - Profile Photo
         * `startup_logo` - Startup Logo
+        * `post_image` - Post Image
     UploadRequestPurposeEnum:
       enum:
       - profile_photo
       - startup_logo
+      - post_image
       type: string
       description: |-
         * `profile_photo` - profile_photo
         * `startup_logo` - startup_logo
+        * `post_image` - post_image
     UploadRequestRequest:
       type: object
       description: |-
