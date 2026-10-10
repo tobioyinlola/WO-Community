@@ -90,11 +90,33 @@ Notices: job live or rejected (poster), expiring soon (poster, email and in-app)
 digest (member). Jobs are included in member-area search. Queue counts include
 `jobs_awaiting_review`.
 
+## Slice 7: news, awards and win submissions (done)
+
+Design and trade-offs are in ADR 0024.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /editorial`, `GET /editorial/{id}` | Published items for members; filter by `type`. |
+| `GET/POST /editorial/{id}/comments`, `PATCH/DELETE /editorial-comments/{id}` | Comment on an item; edit or delete your own. |
+| `POST /editorial/{id}/reactions`, `DELETE /editorial/{id}/reactions/{kind}` | Like, celebrate, insightful. |
+| `GET /banners` | Announcements pinned as a banner on the member home right now. |
+| `POST /win-submissions`, `GET /win-submissions` | Submit a win with evidence; see your submissions. |
+| `GET /public/news`, `GET /public/news/{slug}` | Public, cached pages with Open Graph data. |
+| `GET/POST /admin/editorial`, `GET/PATCH/DELETE /admin/editorial/{id}` | Write, list, edit and remove items. |
+| `POST /admin/editorial/{id}/{publish,unpublish,schedule}` | Publish now, take down or cancel, or schedule. |
+| `PUT/DELETE /admin/editorial/{id}/cover` | Cover image from a finished upload (purpose `editorial_cover`). |
+| `POST /admin/editorial-comments/{id}/{hide,unhide,remove}` | Moderate comments. |
+| `GET /admin/win-submissions`, `POST /admin/win-submissions/{id}/{approve,reject}` | Review wins; approving drafts a story. |
+
+Scheduled: `editorial.publish_due` every minute. Notices: win accepted or not (member). Queue counts
+include `wins_awaiting_review`.
+
 ## Still to do in Stage 2
 
-1. News and win submissions (editorial), events and demo days, campaigns and segments.
-2. Admin dashboards and queues beyond counts.
-3. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
-4. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
-   monthly partitions for notifications if volume warrants; merge the jobs sitemap into the
+1. Events and demo days (registration, capacity, reminders, attendee export, archive).
+2. Campaigns and segments (newsletters).
+3. Admin dashboards and queues beyond counts.
+4. The CDN purger (provider decision still pending; revisit before Stage 2 ends).
+5. Hardening follow-ups from this stage: run the `media` queue with an egress allow list; consider
+   monthly partitions for notifications if volume warrants; merge the jobs and news sitemaps into the
    front end's sitemap.
