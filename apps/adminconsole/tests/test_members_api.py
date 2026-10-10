@@ -180,6 +180,7 @@ def test_queue_counts_split_verified_and_unverified(as_admin, make_user, pending
     assert as_admin.get(QUEUES).json() == {
         "registrations_awaiting_approval": 1,
         "registrations_unverified": 1,
+        "open_reports": 0,
     }
 
 

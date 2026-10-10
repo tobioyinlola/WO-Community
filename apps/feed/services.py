@@ -10,7 +10,7 @@ from uuid import UUID
 import structlog
 from django.conf import settings
 from django.db import transaction
-from django.db.models import F, QuerySet
+from django.db.models import F, Q, QuerySet
 from django.utils import timezone
 from rest_framework import exceptions
 
@@ -53,7 +53,7 @@ class Forbidden(exceptions.PermissionDenied):
 # --- shared helpers ---
 
 
-def _spend(kind: str, user_id: UUID, limit: int) -> None:
+def spend(kind: str, user_id: UUID, limit: int) -> None:
     """Count an attempt against the member's daily allowance, or refuse it."""
     if ratelimit.hit(f"feed:{kind}:{user_id}", DAY) > limit:
         raise exceptions.Throttled(wait=DAY, detail=f"Daily limit for {kind}s reached.")
@@ -188,7 +188,7 @@ def create_post(
     html, text = _clean_post(body)
     mention_ids = _check_mentions(mentions or [])
     _check_startup(user_id, startup_id)
-    _spend("post", user_id, settings.FEED_POSTS_PER_DAY)
+    spend("post", user_id, settings.FEED_POSTS_PER_DAY)
     with transaction.atomic():
         post = Post.objects.create(
             author_id=user_id,
@@ -277,7 +277,7 @@ def add_comment(
 ) -> Comment:
     html = _clean_comment(body)
     mention_ids = _check_mentions(mentions or [])
-    _spend("comment", user_id, settings.FEED_COMMENTS_PER_DAY)
+    spend("comment", user_id, settings.FEED_COMMENTS_PER_DAY)
     with transaction.atomic():
         post = _lock_post(post_id)
         parent = None
@@ -341,20 +341,34 @@ def update_comment(*, user_id: UUID, comment_id: UUID, body: str) -> Comment:
 def delete_comment(*, user_id: UUID, comment_id: UUID) -> None:
     with transaction.atomic():
         comment = _own_comment(user_id, comment_id)
-        _remove_comment(comment)
+        remove_comment(comment)
+        recount(comment.post_id)
 
 
-def _remove_comment(comment: Comment) -> None:
-    """Remove a comment and the replies under it, and take them off the post's counts."""
+def remove_comment(comment: Comment) -> None:
+    """Soft delete a comment and the replies under it. The caller then calls ``recount``."""
     ids = [
         comment.pk,
         *comment.replies.filter(deleted_at__isnull=True).values_list("pk", flat=True),
     ]
-    now = timezone.now()
-    removed = Comment.objects.filter(pk__in=ids, deleted_at__isnull=True).update(deleted_at=now)
-    Post.objects.filter(pk=comment.post_id).update(
-        comment_count=F("comment_count") - removed,
-        engagement=F("engagement") - ENGAGEMENT_PER_COMMENT * removed,
+    Comment.objects.filter(pk__in=ids, deleted_at__isnull=True).update(deleted_at=timezone.now())
+
+
+def recount(post_id: UUID) -> None:
+    """Set the post's comment count to the comments readers can actually see.
+
+    A reply under a hidden or removed comment is not visible, so it is not counted.
+    """
+    visible = (
+        Comment.objects.filter(post_id=post_id, deleted_at__isnull=True, hidden_at__isnull=True)
+        .filter(
+            Q(parent__isnull=True)
+            | Q(parent__deleted_at__isnull=True, parent__hidden_at__isnull=True)
+        )
+        .count()
+    )
+    Post.objects.filter(pk=post_id).update(
+        comment_count=visible, engagement=F("reaction_count") + ENGAGEMENT_PER_COMMENT * visible
     )
 
 
@@ -365,7 +379,7 @@ def _lock_target(target_type: str, target_id: UUID) -> Post | Comment:
     if target_type == Reaction.Target.POST:
         return _lock_post(target_id)
     comment = (
-        Comment.objects.select_for_update()
+        Comment.objects.select_for_update(of=("self",))
         .select_related("post")
         .filter(
             pk=target_id,
@@ -375,6 +389,10 @@ def _lock_target(target_type: str, target_id: UUID) -> Post | Comment:
             post__hidden_at__isnull=True,
             post__author_id__in=accounts.active_user_ids(),
             author_id__in=accounts.active_user_ids(),
+        )
+        .filter(
+            Q(parent__isnull=True)
+            | Q(parent__deleted_at__isnull=True, parent__hidden_at__isnull=True)
         )
         .first()
     )

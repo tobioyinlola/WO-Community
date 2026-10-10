@@ -187,6 +187,10 @@ def get_comment(viewer: Any, comment_id: UUID) -> dict[str, Any]:
             hidden_at__isnull=True,
             author_id__in=accounts.active_user_ids(),
         )
+        .filter(
+            Q(parent__isnull=True)
+            | Q(parent__deleted_at__isnull=True, parent__hidden_at__isnull=True)
+        )
         .select_related("post")
         .first()
     )

@@ -3,6 +3,12 @@ from django.urls import path
 from apps.feed import views
 
 urlpatterns = [
+    path("posts/<uuid:target_id>/reports", views.ReportView.as_view(), name="feed-report-post"),
+    path(
+        "comments/<uuid:target_id>/reports",
+        views.CommentReportView.as_view(),
+        name="feed-report-comment",
+    ),
     path("follows", views.FollowsView.as_view(), name="feed-follow"),
     path(
         "follows/<slug:kind>/<uuid:target_id>", views.UnfollowView.as_view(), name="feed-unfollow"
