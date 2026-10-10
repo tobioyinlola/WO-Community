@@ -181,10 +181,28 @@ Design and trade-offs are in ADR 0012.
 
 863 tests passed before this slice; the uploads slice added about 160 more. All gates are clean.
 
+## Slice 9: Resend email (done)
+
+Design and trade-offs are in ADR 0013.
+
+- `ResendEmailAdapter` sends through Resend's API with separate transactional and marketing senders,
+  a content-based idempotency key on every message, and failures sorted into drop (never
+  acceptable), retry (rate limit, outage, timeout) and alert (bad key or unverified domain).
+- `POST /webhooks/email/resend` receives delivery reports: Svix signature over the exact bytes,
+  five minute replay window, repeat deliveries ignored, stored raw and processed by a worker.
+- Delivery outcomes are recorded with hashed addresses; permanent bounces and complaints go on the
+  suppression list that marketing sends will check. Raw deliveries are purged after 30 days.
+- Every email now carries a category (verification, password_reset, invitation, approved, ...) for
+  tracking in Resend.
+- Settings: `EMAIL_ADAPTER`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `EMAIL_FROM_TRANSACTIONAL`,
+  `EMAIL_FROM_MARKETING`, `EMAIL_REPLY_TO`. Production refuses to start with Resend selected and
+  any of these missing.
+- Setup steps (domain records, webhook, API key) are in the runbook.
+
 ## Still to do in Stage 1
 
 1. Admin management of reference lists (the lists are seeded and read-only for now).
-2. A real CDN purger and a real transactional email adapter (providers still undecided).
+2. A real CDN purger (provider still undecided).
 3. Analytics capture and the registration, directory and onboarding events.
 4. Google sign-in (proposed to follow once email and password login is settled).
 5. The member-area search across members, jobs and courses (PRD 6.15) arrives with those modules.

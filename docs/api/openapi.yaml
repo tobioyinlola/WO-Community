@@ -1969,6 +1969,30 @@ paths:
           description: The file has not arrived, or the upload window closed
         '429':
           description: Too many uploads
+  /api/v1/webhooks/email/{provider}:
+    post:
+      operationId: webhooks_email_create
+      description: Called by the email provider. The signature headers are required.
+      summary: Receive an email delivery report
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      tags:
+      - webhooks
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAck'
+          description: ''
+        '401':
+          description: Signature missing or wrong
+        '404':
+          description: Not the configured provider
   /health/live:
     get:
       operationId: health_live_retrieve
@@ -3509,6 +3533,13 @@ components:
         * `private` - private
         * `members` - members
         * `public` - public
+    WebhookAck:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
   securitySchemes:
     bearerAuth:
       type: http
