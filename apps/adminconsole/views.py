@@ -17,6 +17,7 @@ from apps.adminconsole.serializers import (
 )
 from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
+from apps.editorial import selectors as editorial
 from apps.feed import moderation
 from apps.jobs import selectors as jobs
 
@@ -183,5 +184,6 @@ class QueuesView(APIView):
             **selectors.registration_queue_counts(),
             "open_reports": moderation.open_report_count(),
             "jobs_awaiting_review": jobs.pending_count(),
+            "wins_awaiting_review": editorial.pending_wins(),
         }
         return Response(QueueCountsSerializer(counts).data)

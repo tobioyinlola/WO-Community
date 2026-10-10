@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
 from apps.adminconsole import (
+    editorial_views,
     featured_views,
     feed_views,
     invitation_views,
@@ -11,12 +12,56 @@ from apps.adminconsole import (
 
 KINDS = "sectors|stages|skills"
 
+ITEM_ACTIONS = ("publish", "unpublish")
+COMMENT_ACTIONS_ITEM = ("hide", "unhide", "remove")
+WIN_DECISIONS = ("approve", "reject")
 JOB_DECISIONS = ("approve", "reject", "unpublish", "remove")
 POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remove")
 
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/editorial", editorial_views.AdminEditorialView.as_view(), name="admin-editorial"),
+    path(
+        "admin/editorial/<uuid:item_id>",
+        editorial_views.AdminEditorialItemView.as_view(),
+        name="admin-editorial-item",
+    ),
+    path(
+        "admin/editorial/<uuid:item_id>/schedule",
+        editorial_views.ScheduleItemView.as_view(),
+        name="admin-editorial-schedule",
+    ),
+    path(
+        "admin/editorial/<uuid:item_id>/cover",
+        editorial_views.ItemCoverView.as_view(),
+        name="admin-editorial-cover",
+    ),
+    *[
+        path(
+            f"admin/editorial/<uuid:item_id>/{action}",
+            editorial_views.publish_view(action).as_view(),
+            name=f"admin-editorial-{action}",
+        )
+        for action in ITEM_ACTIONS
+    ],
+    *[
+        path(
+            f"admin/editorial-comments/<uuid:comment_id>/{action}",
+            editorial_views.comment_view(action).as_view(),
+            name=f"admin-editorial-comment-{action}",
+        )
+        for action in COMMENT_ACTIONS_ITEM
+    ],
+    path("admin/win-submissions", editorial_views.AdminWinsView.as_view(), name="admin-wins"),
+    *[
+        path(
+            f"admin/win-submissions/<uuid:win_id>/{decision}",
+            editorial_views.win_view(decision).as_view(),
+            name=f"admin-win-{decision}",
+        )
+        for decision in WIN_DECISIONS
+    ],
     path("admin/jobs", job_views.AdminJobsView.as_view(), name="admin-jobs"),
     path("admin/jobs/settings", job_views.JobSettingsView.as_view(), name="admin-job-settings"),
     path("admin/jobs/<uuid:job_id>", job_views.AdminJobView.as_view(), name="admin-job"),
