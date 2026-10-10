@@ -547,3 +547,63 @@ def filter_active(user_ids: list[UUID]) -> list[UUID]:
         User.objects.filter(pk__in=user_ids, status=UserStatus.ACTIVE).values_list("pk", flat=True)
     )
     return [uid for uid in user_ids if uid in active]
+
+
+# --- marketing mail: consent and audience ---
+
+
+def marketing_audience() -> Any:
+    """Members who may be sent marketing mail, as a queryset of users."""
+    from apps.accounts import selectors
+
+    return selectors.marketing_audience()
+
+
+def has_marketing_consent(user_id: UUID) -> bool:
+    return bool(marketing_audience().filter(pk=user_id).exists())
+
+
+def set_marketing_consent(user_id: UUID, granted: bool, *, ip: str = "") -> None:
+    """Record a yes or a withdrawal of marketing consent, as a new versioned row."""
+    ConsentRecord.objects.create(
+        user_id=user_id,
+        document=ConsentDocument.MARKETING,
+        version=settings.CONSENT_DOCUMENT_VERSIONS[ConsentDocument.MARKETING],
+        granted=granted,
+        ip_hash=audit.hash_value(ip),
+    )
+    audit.record(
+        actor=None,
+        action="consent.marketing_granted" if granted else "consent.marketing_withdrawn",
+        target_type="user",
+        target_id=user_id,
+        ip=ip,
+    )
+
+
+def ids_joined(after: Any = None, before: Any = None) -> Any:
+    from apps.accounts import selectors
+
+    return selectors.ids_joined(after, before)
+
+
+def ids_with_roles(roles: list[str]) -> Any:
+    from apps.accounts import selectors
+
+    return selectors.ids_with_roles(roles)
+
+
+def ids_last_active(after: Any = None, before: Any = None) -> Any:
+    from apps.accounts import selectors
+
+    return selectors.ids_last_active(after, before)
+
+
+def emails_for(user_ids: list[UUID]) -> dict[UUID, str]:
+    return dict(User.objects.filter(pk__in=user_ids).values_list("pk", "email"))
+
+
+def active_members() -> Any:
+    from apps.accounts import selectors
+
+    return selectors.active_members()

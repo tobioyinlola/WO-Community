@@ -208,3 +208,18 @@ def get_comment(viewer: Any, comment_id: UUID) -> dict[str, Any]:
     if comment is None or not visible_posts(viewer).filter(pk=comment.post_id).exists():
         raise exceptions.NotFound()
     return _comment_views(viewer, [comment])[comment.pk]
+
+
+def active_author_ids(since: Any) -> Any:
+    """Members who posted or commented since the given moment."""
+    posters = set(
+        Post.objects.filter(created_at__gte=since, deleted_at__isnull=True).values_list(
+            "author_id", flat=True
+        )
+    )
+    commenters = set(
+        Comment.objects.filter(created_at__gte=since, deleted_at__isnull=True).values_list(
+            "author_id", flat=True
+        )
+    )
+    return posters | commenters

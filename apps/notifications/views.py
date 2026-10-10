@@ -5,8 +5,10 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_sche
 from rest_framework import exceptions, serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 
+from apps.accounts import services as accounts
 from apps.core import policies
 from apps.core.serializers import StrictSerializer
 from apps.integrations.email import get_email_adapter
@@ -216,3 +218,46 @@ class MarkReadView(APIView):
         updated = centre.mark_read(user_id, ids=data.get("ids"), everything=bool(data.get("all")))
         body = {"updated": updated, "unread_count": centre.unread_count(user_id)}
         return Response(MarkReadResultSerializer(body).data)
+
+
+class MarketingConsentSerializer(StrictSerializer):
+    granted = serializers.BooleanField()
+
+
+class MarketingConsentView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Whether you agreed to receive news and marketing email",
+        responses={
+            200: MarketingConsentSerializer,
+            401: OpenApiResponse(description="Not logged in"),
+        },
+        tags=["notifications"],
+    )
+    def get(self, request: Request) -> Response:
+        granted = accounts.has_marketing_consent(cast(UUID, request.user.pk))
+        return Response({"granted": granted})
+
+    @extend_schema(
+        summary="Agree to, or stop, marketing email",
+        description="Separate from account emails, which always continue. Stopping takes effect "
+        "at once, including for a campaign already sending. Agreeing again lifts an earlier "
+        "unsubscribe, but never a bounce or complaint block.",
+        request=MarketingConsentSerializer,
+        responses={
+            200: MarketingConsentSerializer,
+            401: OpenApiResponse(description="Not logged in"),
+        },
+        tags=["notifications"],
+    )
+    def put(self, request: Request) -> Response:
+        serializer = MarketingConsentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        granted = serializer.validated_data["granted"]
+        user_id = cast(UUID, request.user.pk)
+        ip = BaseThrottle().get_ident(request) or ""
+        services.change_marketing_consent(
+            user_id, cast(Any, request.user).email, granted, ip=str(ip)
+        )
+        return Response({"granted": granted})

@@ -258,3 +258,12 @@ def admin_views(actor: Any, jobs: list[Job]) -> list[dict[str, Any]]:
             review_note=job.review_note,
         )
     return views
+
+
+def poster_ids() -> Any:
+    """Members who have posted a job that was published at some point."""
+    return set(
+        Job.objects.filter(published_at__isnull=False, source=Job.Source.MEMBER).values_list(
+            "poster_id", flat=True
+        )
+    )

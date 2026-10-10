@@ -228,3 +228,28 @@ def cards_for(viewer: Any, startup_ids: list[UUID]) -> dict[UUID, dict[str, Any]
 def existing_ids(startup_ids: list[UUID]) -> set[UUID]:
     """Which of the given ids are startups that exist."""
     return set(Startup.objects.filter(pk__in=startup_ids).values_list("pk", flat=True))
+
+
+# --- for segments: which members belong to startups with given attributes ---
+
+
+def _member_ids(startups_qs: QuerySet[Startup]) -> set[UUID]:
+    ids = set(startups_qs.values_list("owner_id", flat=True))
+    ids |= set(
+        StartupMember.objects.filter(startup__in=startups_qs, user_id__isnull=False).values_list(
+            "user_id", flat=True
+        )
+    )
+    return ids
+
+
+def member_ids_by_sector(slugs: list[str]) -> set[UUID]:
+    return _member_ids(Startup.objects.filter(sector__slug__in=slugs))
+
+
+def member_ids_by_stage(slugs: list[str]) -> set[UUID]:
+    return _member_ids(Startup.objects.filter(stage__slug__in=slugs))
+
+
+def member_ids_in_directory() -> set[UUID]:
+    return _member_ids(Startup.objects.filter(directory_opt_in=True))

@@ -158,3 +158,28 @@ def cards_for(viewer: Any, user_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
                 slug=profile.slug,
             )
     return cards
+
+
+# --- for segments: who has which profile attributes ---
+
+
+def ids_by_country(codes: list[str]) -> Any:
+    return FounderProfile.objects.filter(country__in=[c.upper() for c in codes]).values_list(
+        "user_id", flat=True
+    )
+
+
+def ids_with_skills(slugs: list[str]) -> Any:
+    return FounderProfile.objects.filter(skills__slug__in=slugs).values_list("user_id", flat=True)
+
+
+def ids_by_completeness(low: int = 0, high: int = 100) -> Any:
+    return FounderProfile.objects.filter(
+        completeness_score__gte=low, completeness_score__lte=high
+    ).values_list("user_id", flat=True)
+
+
+def first_names(user_ids: list[UUID]) -> dict[UUID, str]:
+    """The first word of each member's own name, for greeting them in mail."""
+    rows = FounderProfile.objects.filter(user_id__in=user_ids).values_list("user_id", "full_name")
+    return {uid: name.split()[0] for uid, name in rows if name.strip()}

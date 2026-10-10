@@ -9,6 +9,7 @@ class UploadPurpose(models.TextChoices):
     STARTUP_LOGO = "startup_logo"
     POST_IMAGE = "post_image"
     EDITORIAL_COVER = "editorial_cover"
+    CAMPAIGN_IMAGE = "campaign_image"
 
 
 class UploadStatus(models.TextChoices):

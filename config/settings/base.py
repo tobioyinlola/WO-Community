@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.jobs",
     "apps.editorial",
     "apps.events",
+    "apps.campaigns",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -247,6 +248,7 @@ CELERY_BEAT_SCHEDULE = {
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
+    "campaigns-start-due": {"task": "campaigns.start_due", "schedule": 60.0},
     "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
     "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
@@ -352,3 +354,10 @@ LINK_PREVIEW_FETCHER = env.str(
     "LINK_PREVIEW_FETCHER", default="apps.integrations.linkpreview.fetcher.WebFetcher"
 )
 FEED_REPORTS_PER_DAY = env.int("FEED_REPORTS_PER_DAY", default=20)
+
+# Newsletters: footer line, how fast a campaign sends, and the public API address that goes in
+# one-click unsubscribe headers.
+CAMPAIGN_FOOTER = env.str("CAMPAIGN_FOOTER", default="WO Community")
+CAMPAIGN_BATCH_SIZE = env.int("CAMPAIGN_BATCH_SIZE", default=50)
+CAMPAIGN_BATCH_DELAY_SECONDS = env.int("CAMPAIGN_BATCH_DELAY_SECONDS", default=5)
+API_BASE_URL = env.str("API_BASE_URL", default="http://localhost:8000")
