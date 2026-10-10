@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Lower
 
 from apps.core.models import BaseModel
 
@@ -14,6 +15,9 @@ class ReferenceItem(BaseModel):
     class Meta:
         abstract = True
         ordering = ["sort_order", "name"]
+        constraints = [
+            models.UniqueConstraint(Lower("name"), name="%(app_label)s_%(class)s_name_ci_unique")
+        ]
 
     def __str__(self) -> str:
         return self.name

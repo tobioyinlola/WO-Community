@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Q, QuerySet
 
 from apps.accounts import services as accounts
 from apps.core.visibility import Audience, audience_for, can_see, effective_levels, project
@@ -186,3 +186,19 @@ def startup_ids_of_member(user_id: UUID) -> list[UUID]:
 def listed_startup_ids() -> list[UUID]:
     """Startups that asked to appear in the public directory."""
     return list(Startup.objects.filter(directory_opt_in=True).values_list("pk", flat=True))
+
+
+def count_by_sector(slugs: list[str]) -> dict[str, int]:
+    rows = (
+        Startup.objects.filter(sector__slug__in=slugs)
+        .values("sector__slug")
+        .annotate(n=Count("id"))
+    )
+    return {row["sector__slug"]: row["n"] for row in rows}
+
+
+def count_by_stage(slugs: list[str]) -> dict[str, int]:
+    rows = (
+        Startup.objects.filter(stage__slug__in=slugs).values("stage__slug").annotate(n=Count("id"))
+    )
+    return {row["stage__slug"]: row["n"] for row in rows}

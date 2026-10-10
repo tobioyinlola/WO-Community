@@ -53,13 +53,14 @@ def _publish(startup: Startup) -> None:
     domain_events.publish(events.StartupUpdated(startup_id=str(startup.pk)))
 
 
-def _resolve(sector_slug: str, stage_slug: str) -> tuple[Any, Any]:
-    sector = reference.get_sector(sector_slug)
-    stage = reference.get_stage(stage_slug)
+def _resolve(sector_slug: str | None = None, stage_slug: str | None = None) -> tuple[Any, Any]:
+    """The active sector and stage for the given slugs; None means "not being changed"."""
+    sector = reference.get_sector(sector_slug) if sector_slug is not None else None
+    stage = reference.get_stage(stage_slug) if stage_slug is not None else None
     errors: dict[str, list[str]] = {}
-    if sector is None:
+    if sector_slug is not None and sector is None:
         errors["sector"] = ["Choose a sector from the list."]
-    if stage is None:
+    if stage_slug is not None and stage is None:
         errors["stage"] = ["Choose a stage from the list."]
     if errors:
         raise exceptions.ValidationError(errors)
@@ -146,11 +147,12 @@ def update_startup(
         for field in (*BASIC_FIELDS, *TEXT_FIELDS):
             if field in data:
                 setattr(startup, field, data[field])
-        if "sector" in data or "stage" in data:
-            sector, stage = _resolve(
-                data.get("sector", startup.sector.slug), data.get("stage", startup.stage.slug)
-            )
-            startup.sector, startup.stage = sector, stage
+        # Only what was sent is checked. A startup may keep a sector or stage that has since
+        # been retired; it just cannot move to one.
+        if "sector" in data:
+            startup.sector = _resolve(sector_slug=data["sector"])[0]
+        if "stage" in data:
+            startup.stage = _resolve(stage_slug=data["stage"])[1]
         refresh_completeness(startup)
         startup.save()
         _publish(startup)

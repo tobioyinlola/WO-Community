@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from django.db.models import Count
+
 from apps.accounts import services as accounts
 from apps.core.visibility import Audience, audience_for, effective_levels, project
 from apps.profiles import domain
@@ -107,3 +109,12 @@ def public_source(user_id: UUID) -> PublicProfileSource | None:
 def profile_user_ids() -> list[UUID]:
     """Every member who has a profile; the directory decides who qualifies."""
     return list(FounderProfile.objects.values_list("user_id", flat=True))
+
+
+def count_by_skill(slugs: list[str]) -> dict[str, int]:
+    rows = (
+        FounderProfile.objects.filter(skills__slug__in=slugs)
+        .values("skills__slug")
+        .annotate(n=Count("id"))
+    )
+    return {row["skills__slug"]: row["n"] for row in rows}
