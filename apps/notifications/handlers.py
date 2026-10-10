@@ -2,9 +2,13 @@
 
 from apps.accounts import events as account_events
 from apps.core import outbox
+from apps.notifications import events as notification_events
 
 
 def register() -> None:
+    outbox.register_handler(
+        notification_events.WebhookReceived.topic, "notifications.process_webhook", "default"
+    )
     outbox.register_handler(
         account_events.UserRegistered.topic, "notifications.send_verification_email", "critical"
     )

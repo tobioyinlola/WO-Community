@@ -1,14 +1,53 @@
-"""Plain text transactional emails sent by the accounts module."""
+"""Plain text transactional emails for account events."""
 
+import hashlib
 from datetime import datetime
 
+import structlog
 from django.conf import settings
 
-from apps.integrations.email import EmailMessage, get_email_adapter
+from apps.integrations.email import (
+    MARKETING,
+    TRANSACTIONAL,
+    EmailMessage,
+    EmailRejected,
+    get_email_adapter,
+)
+from apps.notifications import services
+
+logger = structlog.get_logger(__name__)
 
 
-def _send(to: str, subject: str, body: str) -> None:
-    get_email_adapter().send(EmailMessage(to=to, subject=subject, text_body=body))
+def _send(to: str, subject: str, body: str, *, category: str, stream: str = TRANSACTIONAL) -> None:
+    """Send one email.
+
+    Marketing mail skips suppressed addresses. The idempotency key comes from
+    the content, so a retry after a timeout cannot deliver the same message
+    twice, and an identical message repeated within a day (for example a
+    "you already have an account" notice someone keeps triggering) is sent once.
+    A message the provider will never accept is dropped, since retrying cannot help.
+    """
+    if stream == MARKETING and services.is_suppressed(to):
+        logger.info("email_skipped_suppressed", category=category)
+        return
+    key = hashlib.sha256(f"{to}\n{subject}\n{body}".encode()).hexdigest()
+    message = EmailMessage(
+        to=to,
+        subject=subject,
+        text_body=body,
+        stream=stream,
+        idempotency_key=key,
+        tags={"category": category},
+    )
+    try:
+        get_email_adapter().send(message)
+    except EmailRejected as exc:
+        logger.warning(
+            "email_rejected",
+            category=category,
+            code=exc.code,
+            email_hash=services.hash_email(to)[:12],
+        )
 
 
 def send_verification(to: str, token: str) -> None:
@@ -19,6 +58,7 @@ def send_verification(to: str, token: str) -> None:
         "Welcome to WO Community.\n\n"
         f"Confirm your email address to continue:\n{link}\n\n"
         "The link expires in 24 hours. If you did not register, you can ignore this message.",
+        category="verification",
     )
 
 
@@ -31,6 +71,7 @@ def send_already_registered(to: str) -> None:
         "Someone tried to register with this address, but an account already exists.\n\n"
         f"Log in: {link}\nForgot your password: {reset}\n\n"
         "If this was not you, no action is needed.",
+        category="already_registered",
     )
 
 
@@ -45,7 +86,7 @@ def send_invitation(to: str, token: str, message: str, expires_at: datetime) -> 
         "",
         f"This invitation is for this email address only and expires on {expires_at:%d %B %Y}.",
     ]
-    _send(to, "You are invited to join WO Community", "\n".join(lines))
+    _send(to, "You are invited to join WO Community", "\n".join(lines), category="invitation")
 
 
 def send_approved(to: str) -> None:
@@ -54,6 +95,7 @@ def send_approved(to: str) -> None:
         to,
         "Your WO Community account is approved",
         f"Welcome aboard. Your account has been approved and you can now log in:\n{link}",
+        category="approved",
     )
 
 
@@ -64,6 +106,7 @@ def send_rejected(to: str, reason: str) -> None:
         "We could not approve your registration at this time.\n\n"
         f"Reason: {reason}\n\n"
         "If you think this is a mistake, reply to this email and our team will look again.",
+        category="rejected",
     )
 
 
@@ -74,4 +117,5 @@ def send_password_reset(to: str, token: str) -> None:
         "Reset your password",
         f"Use this link to choose a new password:\n{link}\n\n"
         "The link expires in 1 hour. If you did not ask for this, you can ignore this message.",
+        category="password_reset",
     )

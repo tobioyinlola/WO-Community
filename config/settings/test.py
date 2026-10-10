@@ -27,6 +27,13 @@ CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
 STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
 MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"
 MEDIA_BASE_URL = "https://media.test"
+RESEND_API_KEY = "re_test_key"  # noqa: S105  # nosec B105
+# "whsec_" followed by base64 of a throwaway key, the format Resend/Svix issue.
+RESEND_WEBHOOK_SECRET = (
+    "whsec_dGVzdC13ZWJob29rLXNlY3JldC0xMjM0NTY3ODkwMTI="  # noqa: S105  # nosec B105
+)
+EMAIL_FROM_TRANSACTIONAL = "WO Community <no-reply@mail.test>"
+EMAIL_FROM_MARKETING = "WO Community <community@news.test>"
 PASSWORD_BREACH_CHECKER = (
     "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 )

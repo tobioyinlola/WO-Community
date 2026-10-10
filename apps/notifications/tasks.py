@@ -6,7 +6,8 @@ from django.db import transaction
 
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
-from apps.notifications import emails
+from apps.integrations.email import get_email_adapter
+from apps.notifications import emails, services
 
 logger = structlog.get_logger(__name__)
 
@@ -77,3 +78,15 @@ def send_password_reset_email(event_id: str) -> None:
     issued = accounts.issue_email_token(user_id, accounts.PASSWORD_RESET)
     if issued is not None:
         emails.send_password_reset(*issued)
+
+
+@shared_task(name="notifications.process_webhook")
+def process_webhook(event_id: str) -> None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is not None:
+        services.process_delivery(UUID(event.payload["delivery_id"]), get_email_adapter())
+
+
+@shared_task(name="notifications.purge_webhooks")
+def purge_webhooks() -> int:
+    return services.purge_old_deliveries()
