@@ -3282,6 +3282,230 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/mentor-applications:
+    get:
+      operationId: admin_mentor_applications_list
+      description: Oldest first, so the queue is worked in order. Filter by `status`
+        (`pending` is the queue, `info_requested` are waiting for the applicant) and
+        applicant name.
+      summary: Mentor applications
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 80
+      - in: query
+        name: status
+        schema:
+          type: string
+          maxLength: 14
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminMentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentor-applications/{application_id}:
+    get:
+      operationId: admin_mentor_applications_retrieve
+      summary: One mentor application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentor-applications/{application_id}/decision:
+    post:
+      operationId: admin_mentor_applications_decision_create
+      description: '`decline` and `request_info` need a `reason`, which the applicant
+        is shown. Approving gives the member the mentor role, badge and mentor section.'
+      summary: Approve, decline or ask for more information
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Already decided
+  /api/v1/admin/mentors:
+    get:
+      operationId: admin_mentors_list
+      description: Filter by `status` (`active` or `revoked`) and name.
+      summary: Mentors
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 80
+      - in: query
+        name: status
+        schema:
+          type: string
+          maxLength: 14
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminMentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentors/{user_id}/restore:
+    post:
+      operationId: admin_mentors_restore_create
+      summary: Restore a revoked mentor
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentors/{user_id}/revoke:
+    post:
+      operationId: admin_mentors_revoke_create
+      description: Removes the role, badge and listing. Needs a reason and a recent
+        MFA check.
+      summary: Revoke mentor status
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorReasonRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/modules/{module_id}:
     patch:
       operationId: admin_modules_partial_update
@@ -6562,6 +6786,78 @@ paths:
           description: ''
         '401':
           description: Not logged in
+  /api/v1/me/mentor-application:
+    get:
+      operationId: me_mentor_application_retrieve
+      description: Includes the decision and its reason, or what the admin asked you
+        to add.
+      summary: Your latest mentor application
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/me/mentor-profile:
+    get:
+      operationId: me_mentor_profile_retrieve
+      summary: Your mentor section
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+    put:
+      operationId: me_mentor_profile_update
+      description: '`paused` hides you from the directory and recommendations without
+        ending anything already agreed. A mentor who joined by invitation creates
+        the section with their first save, which then needs every descriptive field.'
+      summary: Change your mentor section, or pause mentoring
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorProfileUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
   /api/v1/me/notification-preferences:
     get:
       operationId: me_notification_preferences_retrieve
@@ -6925,6 +7221,232 @@ paths:
           description: Not an approved member
         '404':
           description: No such profile, or not visible to you
+  /api/v1/mentor-applications:
+    post:
+      operationId: mentor_applications_create
+      description: 'Needs acceptance of the mentor conduct policy (`accept_conduct`).
+        One application can be open at a time; after a decline you can apply again
+        30 days later. Applying does not grant mentor status: an admin approves, declines
+        with a reason, or asks for more information.'
+      summary: Apply to become a mentor
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+        '409':
+          description: Already a mentor, already applied, or declined recently
+  /api/v1/mentor-applications/{application_id}:
+    patch:
+      operationId: mentor_applications_partial_update
+      description: Changing an application that is waiting for information sends it
+        back to review.
+      summary: Answer questions or change an open application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+    delete:
+      operationId: mentor_applications_destroy
+      summary: Withdraw an open application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors:
+    get:
+      operationId: mentors_list
+      description: Approved mentors who are not paused. Filter by text (name, role,
+        company or an expertise tag), expertise, industry, stage, country and language.
+        Contact details are never shown.
+      summary: The mentor directory
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+          maxLength: 2
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: expertise
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: industry
+        schema:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      - in: query
+        name: language
+        schema:
+          enum:
+          - af
+          - am
+          - ar
+          - de
+          - en
+          - es
+          - fr
+          - ha
+          - hi
+          - ig
+          - pt
+          - sw
+          - yo
+          - zh
+          - zu
+          type: string
+          minLength: 1
+        description: |-
+          * `af` - af
+          * `am` - am
+          * `ar` - ar
+          * `de` - de
+          * `en` - en
+          * `es` - es
+          * `fr` - fr
+          * `ha` - ha
+          * `hi` - hi
+          * `ig` - ig
+          * `pt` - pt
+          * `sw` - sw
+          * `yo` - yo
+          * `zh` - zh
+          * `zu` - zu
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 80
+      - in: query
+        name: stage
+        schema:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors/{user_id}:
+    get:
+      operationId: mentors_retrieve
+      description: The mentor section of a member profile. 404 if the member is not
+        a listed mentor.
+      summary: One mentor
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
   /api/v1/notifications:
     get:
       operationId: notifications_retrieve
@@ -9262,6 +9784,165 @@ components:
       - type
       - video_id
       - video_url
+    AdminMentor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The member id of the mentor.
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        about:
+          type: string
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        capacity_per_week:
+          type: integer
+        paused:
+          type: boolean
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
+        status:
+          type: string
+        revoke_reason:
+          type: string
+        approved_at:
+          type: string
+          format: date-time
+      required:
+      - about
+      - approved_at
+      - capacity_per_week
+      - company
+      - current_role
+      - expertise
+      - headline
+      - id
+      - industries
+      - languages
+      - name
+      - paused
+      - photo
+      - rating_average
+      - rating_count
+      - revoke_reason
+      - slug
+      - stages
+      - status
+      - timezone
+      - years_experience
+    AdminMentorApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MentorApplicationStatusEnum'
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        linkedin_url:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        weekly_hours:
+          type: integer
+        availability_note:
+          type: string
+        motivation:
+          type: string
+        decision_reason:
+          type: string
+          description: The decline reason, or what is asked for.
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        applicant:
+          $ref: '#/components/schemas/Applicant'
+        decided_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - applicant
+      - availability_note
+      - company
+      - created_at
+      - current_role
+      - decided_at
+      - decided_by
+      - decision_reason
+      - expertise
+      - id
+      - industries
+      - languages
+      - linkedin_url
+      - motivation
+      - stages
+      - status
+      - timezone
+      - weekly_hours
+      - years_experience
     AdminModule:
       type: object
       properties:
@@ -9456,6 +10137,102 @@ components:
         location:
           type: string
           maxLength: 120
+    Applicant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+      required:
+      - email
+      - id
+      - name
+    ApplicationCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        years_experience:
+          type: integer
+          maximum: 60
+          minimum: 1
+        current_role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        company:
+          type: string
+          minLength: 1
+          maxLength: 120
+        linkedin_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        weekly_hours:
+          type: integer
+          maximum: 40
+          minimum: 1
+        availability_note:
+          type: string
+          maxLength: 500
+        motivation:
+          type: string
+          minLength: 1
+          maxLength: 1500
+        accept_conduct:
+          type: boolean
+      required:
+      - accept_conduct
+      - company
+      - current_role
+      - expertise
+      - industries
+      - languages
+      - linkedin_url
+      - motivation
+      - stages
+      - timezone
+      - weekly_hours
+      - years_experience
     Apply:
       type: object
       properties:
@@ -10303,7 +11080,7 @@ components:
         learning:
           $ref: '#/components/schemas/LearningSnapshot'
         mentorship:
-          $ref: '#/components/schemas/Availability'
+          $ref: '#/components/schemas/MentorshipSnapshot'
         revenue:
           $ref: '#/components/schemas/Availability'
       required:
@@ -10315,6 +11092,31 @@ components:
       - pending
       - refreshed_at
       - revenue
+    DecisionEnum:
+      enum:
+      - approve
+      - decline
+      - request_info
+      type: string
+      description: |-
+        * `approve` - approve
+        * `decline` - decline
+        * `request_info` - request_info
+    DecisionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        reason:
+          type: string
+          maxLength: 1000
+      required:
+      - decision
     DirectorySkill:
       type: object
       properties:
@@ -11632,6 +12434,40 @@ components:
         * `internship` - internship
         * `volunteer` - volunteer
         * `other` - other
+    LanguagesEnum:
+      enum:
+      - af
+      - am
+      - ar
+      - de
+      - en
+      - es
+      - fr
+      - ha
+      - hi
+      - ig
+      - pt
+      - sw
+      - yo
+      - zh
+      - zu
+      type: string
+      description: |-
+        * `af` - af
+        * `am` - am
+        * `ar` - ar
+        * `de` - de
+        * `en` - en
+        * `es` - es
+        * `fr` - fr
+        * `ha` - ha
+        * `hi` - hi
+        * `ig` - ig
+        * `pt` - pt
+        * `sw` - sw
+        * `yo` - yo
+        * `zh` - zh
+        * `zu` - zu
     LearningSnapshot:
       type: object
       properties:
@@ -12019,6 +12855,285 @@ components:
       - status
       - status_changed_at
       - status_reason
+    Mentor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The member id of the mentor.
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        about:
+          type: string
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        capacity_per_week:
+          type: integer
+        paused:
+          type: boolean
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
+      required:
+      - about
+      - capacity_per_week
+      - company
+      - current_role
+      - expertise
+      - headline
+      - id
+      - industries
+      - languages
+      - name
+      - paused
+      - photo
+      - rating_average
+      - rating_count
+      - slug
+      - stages
+      - timezone
+      - years_experience
+    MentorApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MentorApplicationStatusEnum'
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        linkedin_url:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        weekly_hours:
+          type: integer
+        availability_note:
+          type: string
+        motivation:
+          type: string
+        decision_reason:
+          type: string
+          description: The decline reason, or what is asked for.
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - availability_note
+      - company
+      - created_at
+      - current_role
+      - decided_at
+      - decision_reason
+      - expertise
+      - id
+      - industries
+      - languages
+      - linkedin_url
+      - motivation
+      - stages
+      - status
+      - timezone
+      - weekly_hours
+      - years_experience
+    MentorApplicationStatusEnum:
+      enum:
+      - pending
+      - info_requested
+      - approved
+      - declined
+      - withdrawn
+      type: string
+      description: |-
+        * `pending` - pending
+        * `info_requested` - info_requested
+        * `approved` - approved
+        * `declined` - declined
+        * `withdrawn` - withdrawn
+    MentorLanguage:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
+    MentorPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mentor'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    MentorProfileUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        about:
+          type: string
+          maxLength: 1000
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        years_experience:
+          type: integer
+          maximum: 60
+          minimum: 1
+        current_role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        company:
+          type: string
+          minLength: 1
+          maxLength: 120
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        capacity_per_week:
+          type: integer
+          maximum: 20
+          minimum: 1
+        paused:
+          type: boolean
+    MentorReasonRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+    MentorTag:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    MentorshipSnapshot:
+      type: object
+      properties:
+        available:
+          type: boolean
+        pending_applications:
+          type: integer
+        active_mentors:
+          type: integer
+        listed_mentors:
+          type: integer
+      required:
+      - active_mentors
+      - available
+      - listed_mentors
+      - pending_applications
     Message:
       type: object
       properties:
@@ -12336,6 +13451,73 @@ components:
       - lessons
       - position
       - title
+    PatchedApplicationUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        years_experience:
+          type: integer
+          maximum: 60
+          minimum: 1
+        current_role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        company:
+          type: string
+          minLength: 1
+          maxLength: 120
+        linkedin_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        weekly_hours:
+          type: integer
+          maximum: 40
+          minimum: 1
+        availability_note:
+          type: string
+          maxLength: 500
+        motivation:
+          type: string
+          minLength: 1
+          maxLength: 1500
     PatchedCampaignUpdateRequest:
       type: object
       description: |-
@@ -14264,7 +15446,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TagsEnum'
-          maxItems: 9
+          maxItems: 11
     SegmentPreviewRequest:
       type: object
       description: |-
@@ -14749,22 +15931,6 @@ components:
           type: string
       required:
       - status
-    StatusEnum:
-      enum:
-      - pending
-      - processing
-      - ready
-      - rejected
-      - expired
-      - discarded
-      type: string
-      description: |-
-        * `pending` - Pending
-        * `processing` - Processing
-        * `ready` - Ready
-        * `rejected` - Rejected
-        * `expired` - Expired
-        * `discarded` - Discarded
     TagsEnum:
       enum:
       - profile_complete
@@ -14776,6 +15942,8 @@ components:
       - learner_free
       - learner_paid
       - course_completed
+      - mentor_applicant
+      - mentor_approved
       type: string
       description: |-
         * `profile_complete` - profile_complete
@@ -14787,6 +15955,8 @@ components:
         * `learner_free` - learner_free
         * `learner_paid` - learner_paid
         * `course_completed` - course_completed
+        * `mentor_applicant` - mentor_applicant
+        * `mentor_approved` - mentor_approved
     TeamAddRequest:
       type: object
       description: |-
@@ -15001,7 +16171,7 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/UploadStatusEnum'
           readOnly: true
         reason:
           type: string
@@ -15120,6 +16290,22 @@ components:
       - content_type
       - purpose
       - size
+    UploadStatusEnum:
+      enum:
+      - pending
+      - processing
+      - ready
+      - rejected
+      - expired
+      - discarded
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `ready` - Ready
+        * `rejected` - Rejected
+        * `expired` - Expired
+        * `discarded` - Discarded
     VerifiedCertificate:
       type: object
       properties:

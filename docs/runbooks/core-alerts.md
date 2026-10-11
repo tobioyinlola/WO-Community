@@ -215,3 +215,12 @@ completed course should produce a certificate within moments: certificates are m
 `learning.issue_certificate` task from the `learning.course_completed` outbox event, so a member who
 finished but has none points to a stuck outbox or no worker. Re-running is safe; issuing is
 idempotent. Certificates for courses with `certificate_enabled` off are never made.
+
+## A mentor application is stuck or a mentor lost the badge
+
+Applications waiting in `pending` appear in the admin queue (`GET /admin/mentor-applications`);
+`info_requested` ones are waiting for the applicant, not for an admin. Approval and revocation run
+in one transaction that changes the profile and the `mentor` role together, so a mentor without a
+badge means the profile is `revoked` (see `revoke_reason` and the audit log), not a partial write.
+Outcome and new-application notices come from the outbox events `mentorship.*`; if they are missing,
+check the outbox backlog first.
