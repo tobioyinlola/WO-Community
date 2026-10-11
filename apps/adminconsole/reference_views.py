@@ -35,7 +35,7 @@ class ReferenceItemSerializer(serializers.Serializer):
 
 class ReferenceCreateSerializer(StrictSerializer):
     name = serializers.CharField(max_length=200)
-    slug = serializers.CharField(max_length=80, required=False, default="")
+    slug = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
     sort_order = serializers.IntegerField(min_value=0, max_value=10_000, required=False)
 
 

@@ -726,7 +726,8 @@ a.app-list__item:hover {
 .app-react:hover {
   background: var(--action-secondary-hover);
 }
-.app-react[aria-pressed="true"] {
+.app-react[aria-pressed="true"],
+.app-react[aria-selected="true"] {
   background: var(--action-primary);
   color: var(--action-primary-text);
   border-color: var(--action-primary);

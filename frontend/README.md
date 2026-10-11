@@ -31,32 +31,12 @@ Open `/design` to see every component in the light and dark themes side by side.
   business plan, forecast, pitch decks, prototypes, venture partner and sharing. A shared link opens
   at `/share/:token` for people who are signed out.
 - **Admin console** (`/admin`, in `src/admin`): overview, members, invitations, mentor applications,
-  reports, jobs and wins review, and security. It opens only for admin roles, and only after the
-  account has passed two step sign in (the screen walks a new admin through setting it up).
-  Sensitive actions ask for a fresh code when the server wants one. News, events, courses, email and
-  reference lists are not built yet.
-
-## How it is organised
-
-```
-src/api        typed client (openapi-fetch), generated schema, errors, session, data hooks
-src/auth       provider and route guards
-src/components the design system components
-src/layouts    public, auth and app shells
-src/pages      one folder per area; pages/launch holds the toolkit
-src/admin      the admin console: shell, two step setup, step up dialog, one file per area
-src/ui         shared blocks: loading, empty and error states, forms, toasts, fields
-src/lib        formatting (dates, money, time zone) and small helpers
-e2e            Playwright tests against the live API
-```
-
-Data comes through React Query. Failed saves show the server's own message, and field errors sit
-beside the field they belong to. Long running toolkit work is a job: the screen starts it, shows
-its progress and can stop it. Edits to shared records send the version they were loaded from, so a
-conflict is shown as "this changed somewhere else" with a reload button.
-
-## Tests
-
+  reports, jobs and wins review, news, events (with attendees and check in), courses (modules and
+  lessons), email (newsletters, audiences, templates), the lists members choose from (sectors,
+  stages, skills), and security. It opens only for admin roles, and only after the account has passed
+  two step sign in (the screen walks a new admin through setting it up). Sensitive actions ask for a
+  fresh code when the server wants one. Paid courses, demo day pitch slots and newsletter images
+  are not in the console yet.
 - `npm test`: unit tests for components and form helpers.
 - `npm run e2e`: signs in through the real form and walks the public site, every member area,
   mentoring, the whole toolkit and the admin console (it works out the demo admin's authenticator

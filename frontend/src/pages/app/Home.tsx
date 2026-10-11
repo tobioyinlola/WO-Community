@@ -22,12 +22,14 @@ function Quiet({ children }: { children: string }) {
 export default function Home() {
   const profile = useQuery({ queryKey: ["me", "profile"], queryFn: () => unwrap(api.GET("/api/v1/me/profile")) });
   const onboarding = useQuery({ queryKey: ["me", "onboarding"], queryFn: () => unwrap(api.GET("/api/v1/me/onboarding")) });
-  const events = useQuery({ queryKey: ["home", "events"], queryFn: () => unwrap(api.GET("/api/v1/events", { params: { query: { when: "upcoming", limit: 3 } } })) });
+  const events = useQuery({ queryKey: ["home", "events"], queryFn: () => unwrap(api.GET("/api/v1/events", { params: { query: { when: "upcoming", limit: 8 } } })) });
   const sessions = useQuery({ queryKey: ["home", "sessions"], queryFn: () => unwrap(api.GET("/api/v1/sessions", { params: { query: { state: "upcoming", limit: 2 } } })) });
   const posts = useQuery({ queryKey: ["home", "posts"], queryFn: () => unwrap(api.GET("/api/v1/posts", { params: { query: { limit: 3 } } })) });
   const { me } = useAuth();
   const ventures = useQuery({ queryKey: ["toolkit", "ventures"], enabled: permissionsFor(me?.roles ?? []).has("toolkit.use"), queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
 
+  // A cancelled event is not coming up. Ask for a few extra so three remain after leaving those out.
+  const comingUp = (events.data?.results ?? []).filter((e) => e.status !== "cancelled").slice(0, 3);
   const first = (profile.data?.full_name ?? "").split(" ")[0];
   const todo = onboarding.data?.items.filter((i) => !i.done) ?? [];
   const score = onboarding.data?.profile_completeness.score ?? 0;
@@ -71,7 +73,7 @@ export default function Home() {
 
       <div className="app-grid" style={{ marginTop: "var(--space-8)" }}>
         <StatTile variant="brand" label="Profile strength" value={`${score}%`} delta={todo.length ? `${todo.length} steps left` : "All set"} />
-        <StatTile label="Upcoming events" value={String(events.data?.results.length ?? 0)} delta="in the next weeks" />
+        <StatTile label="Upcoming events" value={String(comingUp.length)} delta="in the next weeks" />
         <StatTile label="Sessions booked" value={String(sessions.data?.results.length ?? 0)} delta="coming up" />
       </div>
 
@@ -99,9 +101,9 @@ export default function Home() {
         </div>
         <aside className="app-stack app-stack--lg">
           <Section title="Coming up" action={<Link className="app-linklike" to="/app/events">All events</Link>}>
-            {events.data && events.data.results.length > 0 ? (
+            {comingUp.length > 0 ? (
               <ul className="app-list">
-                {events.data.results.map((e) => (
+                {comingUp.map((e) => (
                   <li key={e.id}>
                     <Link className="app-list__item" to={`/app/events/${e.id}`}>
                       <div className="app-list__main">

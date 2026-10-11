@@ -41,7 +41,7 @@ export function ReasonDialog({
     >
       <div className="app-stack">
         {intro ? <p className="body" style={{ margin: 0 }}>{intro}</p> : null}
-        <FormError error={submit.error} />
+        <FormError error={submit.error} listFields />
         <Textarea label={required ? "Reason" : "Note (optional)"} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} hint="This is kept in the audit log." />
       </div>
     </Modal>
@@ -82,7 +82,7 @@ export function ConfirmDialog({
       }
     >
       <div className="app-stack">
-        <FormError error={submit.error} />
+        <FormError error={submit.error} listFields />
         <p className="body" style={{ margin: 0 }}>{body}</p>
       </div>
     </Modal>

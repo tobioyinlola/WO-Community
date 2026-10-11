@@ -12,9 +12,17 @@ export function errorsFrom(error: unknown): { fields: Record<string, string>; ge
 }
 
 /** Shows the general part of a failure, if there is one. Field messages sit beside their fields. */
-export function FormError({ error }: { error: unknown }) {
+export function FormError({ error, listFields = false }: { error: unknown; listFields?: boolean }) {
   const { fields, general } = errorsFrom(error);
   if (!error) return null;
+  // Where there are no fields to mark (a dialog), say what the server said instead of pointing at nothing.
+  if (listFields && !general && Object.keys(fields).length > 0) {
+    return (
+      <Alert tone="danger" title="That did not work">
+        {Object.values(fields).join(" ")}
+      </Alert>
+    );
+  }
   if (general) {
     return (
       <Alert tone="danger" title="That did not work">

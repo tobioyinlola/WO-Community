@@ -21400,7 +21400,6 @@ components:
           maxLength: 200
         slug:
           type: string
-          minLength: 1
           default: ''
           maxLength: 80
         sort_order:
