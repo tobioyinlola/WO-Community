@@ -123,6 +123,12 @@ def weekly_hours(value: int) -> int:
     return value
 
 
+def session_minutes(value: int) -> int:
+    if value not in (30, 45, 60):
+        raise invalid("session_minutes", "Choose 30, 45 or 60 minutes.")
+    return value
+
+
 def capacity(value: int) -> int:
     if not 1 <= value <= 20:
         raise invalid("capacity_per_week", "Between 1 and 20 sessions a week.")

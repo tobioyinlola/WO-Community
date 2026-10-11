@@ -32,6 +32,8 @@ def _fields(data: dict[str, Any]) -> dict[str, Any]:
         out["about"] = domain.text("about", data["about"], limit=domain.MAX_ABOUT, minimum=0)
     if "capacity_per_week" in data:
         out["capacity_per_week"] = domain.capacity(data["capacity_per_week"])
+    if "session_minutes" in data:
+        out["session_minutes"] = domain.session_minutes(data["session_minutes"])
     if "paused" in data:
         out["paused"] = bool(data["paused"])
     return out
