@@ -49,9 +49,10 @@ def _batches(partition: str) -> Any:
     """Rows of one partition in order, through a server side cursor so memory stays flat."""
     with connection.cursor() as cursor:
         # The name comes from the catalogue (expired_partitions), never from a request.
+        table = connection.ops.quote_name(partition)
         cursor.execute(
-            "SELECT id, seq, name, actor_id, anonymous_id, properties, source, occurred_at, "  # noqa: S608
-            f"received_at FROM {partition} ORDER BY seq"
+            "SELECT id, seq, name, actor_id, anonymous_id, properties, source, occurred_at, "  # noqa: S608  # nosec B608
+            f"received_at FROM {table} ORDER BY seq"
         )
         while True:
             rows = cursor.fetchmany(BATCH)

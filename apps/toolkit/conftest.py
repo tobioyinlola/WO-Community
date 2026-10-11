@@ -51,7 +51,8 @@ def pending_client(make_user, client_for):
 @pytest.fixture
 def venture(client):
     response = client.post(f"{BASE}/ventures", {"name": "Mamapesa"}, format="json")
-    assert response.status_code == 201, response.content
+    if response.status_code != 201:
+        pytest.fail(str(response.content))
     return response.json()
 
 
@@ -60,7 +61,8 @@ def full_venture(client, venture):
     response = client.patch(
         f"{BASE}/ventures/{venture['id']}/profile", {"fields": FULL_PROFILE}, format="json"
     )
-    assert response.status_code == 200, response.content
+    if response.status_code != 200:
+        pytest.fail(str(response.content))
     return venture
 
 
