@@ -30,7 +30,8 @@ follow *Setting up Resend* in `docs/runbooks/core-alerts.md`.
 
 Uploads use an in-memory storage and scanner by default. To try real ones, set
 `STORAGE_ADAPTER=apps.integrations.storage.s3.S3Storage` with the MinIO container's endpoint, create the
-`wo-quarantine` and `wo-media` buckets, and start ClamAV with `docker compose --profile scanner up -d`.
+`wo-quarantine`, `wo-media` and `wo-private` buckets (the private one holds course documents
+and must not be public), and start ClamAV with `docker compose --profile scanner up -d`.
 
 ## Quality gates
 

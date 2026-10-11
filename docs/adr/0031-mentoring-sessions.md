@@ -61,9 +61,10 @@ can guard the calendar directly:
 - **A mentor who is withdrawn.** The `MentorRevoked` event cancels every open session of that
   mentor with the reason "no longer available" and tells both people. Admins can cancel any
   session with a reason (`sessions.manage`, audited), which also tells both people.
-- **Not built.** A paused mentor keeps sessions already agreed (pausing only hides them from new
-  requests). Suspending or removing a *founder* does not cancel their sessions; an admin does that
-  by hand.
+- **A member who is suspended or removed** has their open future sessions cancelled the same
+  way (as mentor or as founder), and the other person is told. Reinstating does not bring them
+  back; a new request is needed. A paused mentor keeps sessions already agreed (pausing only
+  hides them from new requests).
 
 ## Feedback and ratings
 

@@ -89,6 +89,5 @@ Carried forward:
 
 - A mentor's own calendar busy time (`scheduling.external_busy`) needs a per mentor sign-in and
   is not built; sessions are offered against the weekly schedule and booked sessions only.
-- Suspending or removing a founder does not cancel their sessions; an admin does that by hand.
 - Stage 4 adds purchasing, which creates enrolments with source `purchase`; paid courses can be
   watched and downloaded only through enrolment until then.

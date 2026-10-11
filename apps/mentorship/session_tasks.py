@@ -198,6 +198,17 @@ def cancel_revoked_sessions(event_id: str) -> None:
     )
 
 
+@shared_task(name="mentorship.cancel_sessions_of_member")
+def cancel_sessions_of_member(event_id: str) -> None:
+    """A member was suspended or removed: their open sessions cannot go ahead."""
+    data = _payload(event_id)
+    if data is None:
+        return
+    booking.cancel_open_sessions(
+        UUID(data["user_id"]), "A participant is no longer available on the platform."
+    )
+
+
 # --- meetings ---
 
 
