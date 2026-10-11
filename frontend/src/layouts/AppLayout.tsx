@@ -24,6 +24,7 @@ import { api, unwrap } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Avatar, Logo } from "../components";
 import { PendingNotice } from "../pages/app/Pending";
+import { ErrorBoundary } from "../ui/ErrorBoundary";
 
 interface NavItem {
   to: string;
@@ -231,7 +232,9 @@ export function AppLayout() {
         </div>
       </header>
       <main className="app-main" id="main">
-        <div className="app-main__inner">{isPending ? <PendingNotice /> : <Outlet />}</div>
+        <div className="app-main__inner">
+          <ErrorBoundary resetKey={location.pathname}>{isPending ? <PendingNotice /> : <Outlet />}</ErrorBoundary>
+        </div>
       </main>
     </div>
   );

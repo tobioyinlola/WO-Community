@@ -15,7 +15,8 @@ export function formatTime(value: string | Date | null | undefined): string {
   if (!value) return "";
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat(locale, {
+  // The Nigerian English locale names West African time "WAT" rather than "GMT+1".
+  const parts = new Intl.DateTimeFormat("en-NG", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
