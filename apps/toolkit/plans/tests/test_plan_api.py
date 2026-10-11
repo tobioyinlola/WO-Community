@@ -337,3 +337,64 @@ def test_exporting_needs_a_plan_and_a_known_format(client, full_venture, run_job
     generate(client, full_venture, run_jobs)
     bad = client.post(url(full_venture, "/export"), {"format": "exe"}, format="json")
     assert bad.status_code == 400
+
+
+def test_financial_sections_use_the_forecast_and_go_stale_when_it_changes(
+    client, full_venture, run_jobs
+):
+    research()
+    seen = {}
+
+    def answer(variables, messages):
+        if variables["forecast"]:
+            seen["forecast"] = variables["forecast"]
+            revenue = variables["forecast"]["figures"]["revenue_year1"]
+            # Quoting the forecast's own figure is allowed; an invented one is not.
+            return {
+                "blocks": [
+                    {
+                        "type": "paragraph",
+                        "text": f"Revenue in the first year is {revenue} minor units. "
+                        "We expect 987654 users.",
+                        "cites": [],
+                    }
+                ],
+                "missing": [],
+            }
+        return {
+            "blocks": [{"type": "paragraph", "text": "Plain text.", "cites": []}],
+            "missing": [],
+        }
+
+    FakeLLMProvider.canned["plan.section"] = answer
+    FakeLLMProvider.canned["plan.executive_summary"] = {"paragraphs": ["Summary."]}
+    created = client.post(f"{BASE}/ventures/{full_venture['id']}/forecast", {}, format="json")
+    assert created.status_code == 201
+    body = created.json()
+    drivers = {**body["assumptions"]["drivers"], "avg_value_minor": 500000}
+    saved = client.put(
+        f"{BASE}/ventures/{full_venture['id']}/forecast",
+        {"assumptions": {**body["assumptions"], "drivers": drivers}, "base_version": 1},
+        format="json",
+    )
+    assert saved.status_code == 200
+    generate(client, full_venture, run_jobs)
+    year1 = seen["forecast"]["figures"]["revenue_year1"]
+    section = client.get(url(full_venture, "/sections/38")).json()
+    text = str(section["content"])
+    assert str(year1) in text and "987654" not in text
+    assert client.get(url(full_venture)).json()["sections"][37]["stale"] is False
+
+    saved = client.put(
+        f"{BASE}/ventures/{full_venture['id']}/forecast",
+        {
+            "assumptions": {**body["assumptions"], "drivers": {**drivers, "fee_pct": 3}},
+            "base_version": 2,
+        },
+        format="json",
+    )
+    assert saved.status_code == 200
+    plan = client.get(url(full_venture)).json()
+    by_number = {s["number"]: s for s in plan["sections"]}
+    assert by_number[38]["stale"] is True and "forecast" in by_number[38]["stale_fields"]
+    assert by_number[5]["stale"] is False

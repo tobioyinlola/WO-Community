@@ -10279,6 +10279,29 @@ paths:
           description: Not an approved member
         '404':
           description: No such job, or not yours
+  /api/v1/toolkit/forecast-templates:
+    get:
+      operationId: toolkit_forecast_templates_list
+      summary: The revenue templates and what each asks for
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkForecastTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/jobs/{job_id}:
     get:
       operationId: toolkit_jobs_retrieve
@@ -10637,6 +10660,341 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/forecast:
+    get:
+      operationId: toolkit_ventures_forecast_retrieve
+      summary: The forecast assumptions
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecast'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_forecast_create
+      description: Starts from the venture profile (template, currency, price, planned
+        funding) unless you send assumptions. 409 if one exists already.
+      summary: Start the forecast
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkForecastCreateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecast'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    put:
+      operationId: toolkit_ventures_forecast_update
+      description: '`base_version` must be the version you loaded (409 otherwise).
+        Every value is checked and named in the 400 when it is out of range.'
+      summary: Save the assumptions
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkForecastSaveRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecast'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/export:
+    post:
+      operationId: toolkit_ventures_forecast_export_create
+      description: 'Starts a job and answers 202. The spreadsheet keeps its working:
+        derived lines are formulas. When the job succeeds `result.id` is an export
+        for `GET /exports/{id}`.'
+      summary: Export the forecast as a spreadsheet or a PDF
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkForecastExportRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/result:
+    get:
+      operationId: toolkit_ventures_forecast_result_retrieve
+      description: Calculated from the saved assumptions. Money is whole minor units.
+      summary: The 24 month forecast
+      parameters:
+      - in: query
+        name: scenario
+        schema:
+          type: string
+          enum:
+          - base
+          - conservative
+          - optimistic
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecastResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/scenarios:
+    get:
+      operationId: toolkit_ventures_forecast_scenarios_retrieve
+      summary: The three scenarios side by side
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecastScenarios'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/sensitivity:
+    get:
+      operationId: toolkit_ventures_forecast_sensitivity_list
+      description: Each main assumption is moved 20 percent down and up; the effect
+        on year two revenue and the lowest cash is listed, largest first.
+      summary: Which assumptions move the result most
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkForecastSensitivity'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/suggest:
+    post:
+      operationId: toolkit_ventures_forecast_suggest_create
+      description: 'Proposals only, each with the source it rests on. Nothing is saved:
+        copy the ones you accept into the assumptions and save. Prices and volumes
+        are never proposed.'
+      summary: Proposed assumptions from sourced benchmarks
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecastSuggestion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/versions:
+    get:
+      operationId: toolkit_ventures_forecast_versions_list
+      summary: Saved versions of the assumptions
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkForecastVersion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/forecast/versions/{version}/restore:
+    post:
+      operationId: toolkit_ventures_forecast_versions_restore_create
+      description: Saved as a new version, so it can be undone.
+      summary: Go back to a saved version
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkForecast'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/ventures/{venture_id}/package:
     get:
       operationId: toolkit_ventures_package_retrieve
@@ -14604,14 +14962,6 @@ components:
           maxLength: 254
       required:
       - email
-    FormatEnum:
-      enum:
-      - docx
-      - pdf
-      type: string
-      description: |-
-        * `docx` - docx
-        * `pdf` - pdf
     FounderCard:
       type: object
       properties:
@@ -19007,6 +19357,16 @@ components:
       required:
       - job_id
       - saved
+    ScenarioEnum:
+      enum:
+      - conservative
+      - base
+      - optimistic
+      type: string
+      description: |-
+        * `conservative` - conservative
+        * `base` - base
+        * `optimistic` - optimistic
     ScheduleRequest:
       type: object
       description: |-
@@ -19464,6 +19824,14 @@ components:
       - message
       - starts_at
       - topic
+    SeverityEnum:
+      enum:
+      - warning
+      - error
+      type: string
+      description: |-
+        * `warning` - warning
+        * `error` - error
     SignupProfileRequest:
       type: object
       description: |-
@@ -20259,6 +20627,340 @@ components:
       - label
       - score
       - text
+    TkForecast:
+      type: object
+      properties:
+        version:
+          type: integer
+        template:
+          type: string
+        currency:
+          type: string
+        assumptions:
+          type: object
+          additionalProperties: {}
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - assumptions
+      - currency
+      - template
+      - updated_at
+      - version
+    TkForecastAssumptionsRequest:
+      type: object
+      properties:
+        template:
+          type: string
+          minLength: 1
+        currency:
+          type: string
+          minLength: 1
+        opening_cash_minor:
+          type: integer
+          minimum: 0
+        drivers:
+          type: object
+          additionalProperties: {}
+        costs:
+          type: object
+          additionalProperties: {}
+        funding:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        tax_rate_pct:
+          type: number
+          format: double
+        market_customers:
+          type: integer
+          nullable: true
+      required:
+      - costs
+      - currency
+      - drivers
+      - template
+    TkForecastCreateRequest:
+      type: object
+      properties:
+        assumptions:
+          allOf:
+          - $ref: '#/components/schemas/TkForecastAssumptionsRequest'
+          description: Leave out to start from the venture profile.
+    TkForecastDriverInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        help:
+          type: string
+        kind:
+          $ref: '#/components/schemas/TkForecastDriverInfoKindEnum'
+        default:
+          type: number
+          format: double
+        max:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - default
+      - help
+      - kind
+      - label
+      - max
+      - name
+    TkForecastDriverInfoKindEnum:
+      enum:
+      - count
+      - pct
+      - money
+      type: string
+      description: |-
+        * `count` - count
+        * `pct` - pct
+        * `money` - money
+    TkForecastExportFormatEnum:
+      enum:
+      - xlsx
+      - pdf
+      type: string
+      description: |-
+        * `xlsx` - xlsx
+        * `pdf` - pdf
+    TkForecastExportRequest:
+      type: object
+      properties:
+        format:
+          allOf:
+          - $ref: '#/components/schemas/TkForecastExportFormatEnum'
+          default: xlsx
+    TkForecastMonth:
+      type: object
+      properties:
+        month:
+          type: integer
+        revenue:
+          type: integer
+        cogs:
+          type: integer
+        gross_profit:
+          type: integer
+        marketing:
+          type: integer
+        salaries:
+          type: integer
+        fixed:
+          type: integer
+        opex:
+          type: integer
+        ebitda:
+          type: integer
+        tax:
+          type: integer
+        net_income:
+          type: integer
+        funding:
+          type: integer
+        cash_end:
+          type: integer
+        kpis:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - cash_end
+      - cogs
+      - ebitda
+      - fixed
+      - funding
+      - gross_profit
+      - kpis
+      - marketing
+      - month
+      - net_income
+      - opex
+      - revenue
+      - salaries
+      - tax
+    TkForecastProposal:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: number
+          format: double
+        current:
+          type: number
+          format: double
+          nullable: true
+        rationale:
+          type: string
+        source_name:
+          type: string
+        url:
+          type: string
+        statement:
+          type: string
+      required:
+      - current
+      - name
+      - rationale
+      - source_name
+      - statement
+      - url
+      - value
+    TkForecastResult:
+      type: object
+      properties:
+        scenario:
+          $ref: '#/components/schemas/ScenarioEnum'
+        currency:
+          type: string
+        version:
+          type: integer
+        months:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkForecastMonth'
+        summary:
+          type: object
+          additionalProperties: {}
+        unit_economics:
+          type: object
+          additionalProperties: {}
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkForecastWarning'
+      required:
+      - currency
+      - months
+      - scenario
+      - summary
+      - unit_economics
+      - version
+      - warnings
+    TkForecastSaveRequest:
+      type: object
+      properties:
+        assumptions:
+          $ref: '#/components/schemas/TkForecastAssumptionsRequest'
+        base_version:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+          maxLength: 120
+      required:
+      - assumptions
+      - base_version
+    TkForecastScenarios:
+      type: object
+      properties:
+        currency:
+          type: string
+        version:
+          type: integer
+        conservative:
+          type: object
+          additionalProperties: {}
+        base:
+          type: object
+          additionalProperties: {}
+        optimistic:
+          type: object
+          additionalProperties: {}
+      required:
+      - base
+      - conservative
+      - currency
+      - optimistic
+      - version
+    TkForecastSensitivity:
+      type: object
+      properties:
+        assumption:
+          type: string
+        value:
+          type: number
+          format: double
+        impact:
+          type: integer
+        down:
+          type: object
+          additionalProperties: {}
+        up:
+          type: object
+          additionalProperties: {}
+      required:
+      - assumption
+      - down
+      - impact
+      - up
+      - value
+    TkForecastSuggestion:
+      type: object
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkForecastProposal'
+        message:
+          type: string
+      required:
+      - message
+      - proposals
+    TkForecastTemplate:
+      type: object
+      properties:
+        template:
+          type: string
+        label:
+          type: string
+        help:
+          type: string
+        drivers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkForecastDriverInfo'
+      required:
+      - drivers
+      - help
+      - label
+      - template
+    TkForecastVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+        note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - note
+      - version
+    TkForecastWarning:
+      type: object
+      properties:
+        code:
+          type: string
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        message:
+          type: string
+      required:
+      - code
+      - message
+      - severity
     TkImportStartupRequest:
       type: object
       description: |-
@@ -20503,12 +21205,20 @@ components:
           maxLength: 60
       required:
       - action
+    TkPlanExportFormatEnum:
+      enum:
+      - docx
+      - pdf
+      type: string
+      description: |-
+        * `docx` - docx
+        * `pdf` - pdf
     TkPlanExportRequest:
       type: object
       properties:
         format:
           allOf:
-          - $ref: '#/components/schemas/FormatEnum'
+          - $ref: '#/components/schemas/TkPlanExportFormatEnum'
           default: docx
     TkPlanGenerateRequest:
       type: object
