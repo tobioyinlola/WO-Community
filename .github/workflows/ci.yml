@@ -107,7 +107,7 @@ jobs:
       - name: Configuration loads inside the image
         run: docker run --rm wo-community-backend:${{ github.sha }} python scripts/deploy_check.py
       - name: Scan for vulnerabilities
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: wo-community-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
