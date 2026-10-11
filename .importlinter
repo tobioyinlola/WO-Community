@@ -2,6 +2,7 @@
 root_packages =
     apps
     config
+include_external_packages = True
 
 [importlinter:contract:layers]
 name = Module dependency levels
@@ -9,6 +10,7 @@ type = layers
 layers =
     apps.adminconsole
     apps.memberarea | apps.campaigns
+    apps.toolkit
     apps.directory | apps.feed | apps.jobs | apps.editorial | apps.events | apps.learning | apps.mentorship
     apps.notifications
     apps.profiles | apps.startups
@@ -16,3 +18,36 @@ layers =
     apps.accounts | apps.integrations
     apps.audit | apps.analytics | apps.reference
     apps.core
+
+[importlinter:contract:toolkit_layers]
+name = Toolkit module dependency levels
+type = layers
+containers =
+    apps.toolkit
+layers =
+    admin_api
+    partner
+    sharing
+    decks | prototypes | plans | scoring
+    forecasts
+    ai
+    jobs
+    ventures
+
+[importlinter:contract:forecast_engine_is_pure]
+name = The forecast engine imports no framework and no other module
+type = forbidden
+source_modules =
+    apps.toolkit.forecasts.engine
+forbidden_modules =
+    django
+    rest_framework
+    celery
+    apps.core
+    apps.accounts
+    apps.toolkit.ventures
+    apps.toolkit.jobs
+    apps.toolkit.ai
+    apps.toolkit.forecasts.models
+    apps.toolkit.forecasts.services
+    apps.toolkit.forecasts.selectors

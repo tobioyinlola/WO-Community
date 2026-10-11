@@ -18,7 +18,7 @@ run:
 	$(PY) manage.py runserver
 
 worker:
-	celery -A config worker -l info -Q critical,default,email,media,exports,analytics
+	celery -A config worker -l info -Q critical,default,email,media,exports,analytics,ai
 
 beat:
 	celery -A config beat -l info

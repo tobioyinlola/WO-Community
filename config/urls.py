@@ -25,6 +25,7 @@ urlpatterns = [
     path("api/v1/", include("apps.learning.urls")),
     path("api/v1/", include("apps.mentorship.urls")),
     path("api/v1/", include("apps.adminconsole.urls")),
+    path("api/v1/toolkit/", include("apps.toolkit.urls")),
 ]
 
 # The API description lists every route, including admin ones, so it is not published by default.

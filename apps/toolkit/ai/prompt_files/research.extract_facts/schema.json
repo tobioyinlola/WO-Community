@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "facts": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "properties": {
+          "statement": {"type": "string", "minLength": 5, "maxLength": 600},
+          "quote": {"type": "string", "minLength": 5, "maxLength": 600},
+          "value": {"type": ["number", "null"]},
+          "unit": {"type": "string", "maxLength": 30},
+          "region": {"type": "string", "maxLength": 40},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        },
+        "required": ["statement", "quote", "value", "unit", "region", "confidence"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["facts"],
+  "additionalProperties": false
+}
