@@ -29,8 +29,8 @@ if not settings.DEBUG:
 
 from apps.accounts.models import User, UserRole, UserStatus  # noqa: E402
 from apps.core.etag import etag_for  # noqa: E402
-from apps.editorial import services as editorial  # noqa: E402
 from apps.directory import services as directory  # noqa: E402
+from apps.editorial import services as editorial  # noqa: E402
 from apps.events import services as events  # noqa: E402
 from apps.feed import services as feed  # noqa: E402
 from apps.jobs import services as jobs  # noqa: E402
@@ -42,48 +42,145 @@ from apps.profiles import services as profiles  # noqa: E402
 from apps.reference import selectors as reference  # noqa: E402
 from apps.startups import services as startups  # noqa: E402
 
-PASSWORD = "Demo-Passw0rd-2026"  # nosec B105  # local demo data only
+PASSWORD = "Demo-Passw0rd-2026"  # nosec B105  # noqa: S105  # local demo data only
 
 MEMBERS = [
     # name, email, country, city, headline, startup (name, sector, stage, pitch), skills
-    ("Amaka Obi", "amaka@demo.test", "NG", "Lagos", "Founder and CEO at Kuda Foods",
-     ("Kuda Foods", "agritech", "seed", "Fresh produce from smallholder farms to city kitchens in a day."),
-     ["product-management", "fundraising"]),
-    ("Tunde Kolade", "tunde@demo.test", "KE", "Nairobi", "Partner at Delta Capital",
-     ("Delta Capital", "fintech", "series-a", "Early stage capital for African fintech founders."),
-     ["fundraising", "finance"]),
-    ("Ngozi Eze", "ngozi@demo.test", "GH", "Accra", "Co-founder at Paylane",
-     ("Paylane", "fintech", "pre-seed", "Payroll and instant wages for informal workers."),
-     ["engineering", "product-management"]),
-    ("Jide Okafor", "jide@demo.test", "NG", "Abuja", "Operator, growth and partnerships",
-     ("Shelf Africa", "ecommerce", "seed", "Inventory and ordering for neighbourhood shops."),
-     ["marketing", "sales"]),
-    ("Zanele Mokoena", "zanele@demo.test", "ZA", "Cape Town", "Founder at SolarGrid",
-     ("SolarGrid", "cleantech", "seed", "Pay-as-you-go solar for townships."),
-     ["engineering", "operations"]),
-    ("Chidi Bello", "chidi@demo.test", "NG", "Lagos", "CTO at Medlink",
-     ("Medlink", "healthtech", "pre-seed", "Book and pay for clinic visits from any phone."),
-     ["engineering", "data"]),
-    ("Funmi Adeyemi", "funmi@demo.test", "NG", "Ibadan", "Founder at LearnLoop",
-     ("LearnLoop", "edtech", "idea", "Exam practice that works offline on cheap phones."),
-     ["design", "product-management"]),
-    ("Kwame Mensah", "kwame@demo.test", "GH", "Kumasi", "Founder at TroTro Track",
-     ("TroTro Track", "logistics", "seed", "Live minibus times for commuters."),
-     ["engineering", "operations"]),
-    ("Aisha Diallo", "aisha@demo.test", "SN", "Dakar", "Founder at Tisseo",
-     ("Tisseo", "ecommerce", "seed", "A marketplace for West African textile makers."),
-     ["marketing", "design"]),
-    ("Samuel Tesfaye", "samuel@demo.test", "ET", "Addis Ababa", "Operator at Habesha Pay",
-     ("Habesha Pay", "fintech", "seed", "Cross-border remittances without the fees."),
-     ["finance", "operations"]),
+    (
+        "Amaka Obi",
+        "amaka@demo.test",
+        "NG",
+        "Lagos",
+        "Founder and CEO at Kuda Foods",
+        (
+            "Kuda Foods",
+            "agritech",
+            "seed",
+            "Fresh produce from smallholder farms to city kitchens in a day.",
+        ),
+        ["product-management", "fundraising"],
+    ),
+    (
+        "Tunde Kolade",
+        "tunde@demo.test",
+        "KE",
+        "Nairobi",
+        "Partner at Delta Capital",
+        (
+            "Delta Capital",
+            "fintech",
+            "series-a",
+            "Early stage capital for African fintech founders.",
+        ),
+        ["fundraising", "finance"],
+    ),
+    (
+        "Ngozi Eze",
+        "ngozi@demo.test",
+        "GH",
+        "Accra",
+        "Co-founder at Paylane",
+        ("Paylane", "fintech", "pre-seed", "Payroll and instant wages for informal workers."),
+        ["engineering", "product-management"],
+    ),
+    (
+        "Jide Okafor",
+        "jide@demo.test",
+        "NG",
+        "Abuja",
+        "Operator, growth and partnerships",
+        ("Shelf Africa", "ecommerce", "seed", "Inventory and ordering for neighbourhood shops."),
+        ["marketing", "sales"],
+    ),
+    (
+        "Zanele Mokoena",
+        "zanele@demo.test",
+        "ZA",
+        "Cape Town",
+        "Founder at SolarGrid",
+        ("SolarGrid", "cleantech", "seed", "Pay-as-you-go solar for townships."),
+        ["engineering", "operations"],
+    ),
+    (
+        "Chidi Bello",
+        "chidi@demo.test",
+        "NG",
+        "Lagos",
+        "CTO at Medlink",
+        ("Medlink", "healthtech", "pre-seed", "Book and pay for clinic visits from any phone."),
+        ["engineering", "data"],
+    ),
+    (
+        "Funmi Adeyemi",
+        "funmi@demo.test",
+        "NG",
+        "Ibadan",
+        "Founder at LearnLoop",
+        ("LearnLoop", "edtech", "idea", "Exam practice that works offline on cheap phones."),
+        ["design", "product-management"],
+    ),
+    (
+        "Kwame Mensah",
+        "kwame@demo.test",
+        "GH",
+        "Kumasi",
+        "Founder at TroTro Track",
+        ("TroTro Track", "logistics", "seed", "Live minibus times for commuters."),
+        ["engineering", "operations"],
+    ),
+    (
+        "Aisha Diallo",
+        "aisha@demo.test",
+        "SN",
+        "Dakar",
+        "Founder at Tisseo",
+        ("Tisseo", "ecommerce", "seed", "A marketplace for West African textile makers."),
+        ["marketing", "design"],
+    ),
+    (
+        "Samuel Tesfaye",
+        "samuel@demo.test",
+        "ET",
+        "Addis Ababa",
+        "Operator at Habesha Pay",
+        ("Habesha Pay", "fintech", "seed", "Cross-border remittances without the fees."),
+        ["finance", "operations"],
+    ),
 ]
 MENTORS = [
-    ("Ada Nwosu", "ada@demo.test", "NG", "Lagos", "Former CFO, now advising founders",
-     ["fundraising", "pricing", "finance"], 12, "Chief Financial Officer", "Interswitch"),
-    ("David Kamau", "david@demo.test", "KE", "Nairobi", "Product leader, two exits",
-     ["product", "hiring", "growth"], 15, "VP Product", "Twiga Foods"),
-    ("Thandi Nkosi", "thandi@demo.test", "ZA", "Johannesburg", "Operator who scaled to 10 countries",
-     ["operations", "sales", "partnerships"], 10, "COO", "Jumo"),
+    (
+        "Ada Nwosu",
+        "ada@demo.test",
+        "NG",
+        "Lagos",
+        "Former CFO, now advising founders",
+        ["fundraising", "pricing", "finance"],
+        12,
+        "Chief Financial Officer",
+        "Interswitch",
+    ),
+    (
+        "David Kamau",
+        "david@demo.test",
+        "KE",
+        "Nairobi",
+        "Product leader, two exits",
+        ["product", "hiring", "growth"],
+        15,
+        "VP Product",
+        "Twiga Foods",
+    ),
+    (
+        "Thandi Nkosi",
+        "thandi@demo.test",
+        "ZA",
+        "Johannesburg",
+        "Operator who scaled to 10 countries",
+        ["operations", "sales", "partnerships"],
+        10,
+        "COO",
+        "Jumo",
+    ),
 ]
 ADMIN = ("Community Admin", "admin@demo.test")
 
@@ -170,9 +267,7 @@ def main() -> None:
             user_id=user.pk,
             data={
                 "timezone": "Africa/Lagos",
-                "weekly": [
-                    {"weekday": d, "start": "10:00", "end": "13:00"} for d in (1, 2, 3, 4)
-                ],
+                "weekly": [{"weekday": d, "start": "10:00", "end": "13:00"} for d in (1, 2, 3, 4)],
             },
         )
 
@@ -188,7 +283,10 @@ def main() -> None:
     for i, (category, body) in enumerate(posts):
         made.append(
             feed.create_post(
-                user_id=people[i % len(people)].pk, category=category, body=f"<p>{body}</p>", images=[]
+                user_id=people[i % len(people)].pk,
+                category=category,
+                body=f"<p>{body}</p>",
+                images=[],
             )
         )
 
@@ -212,7 +310,9 @@ def main() -> None:
                 "location": where,
                 "remote": remote,
                 "organisation": MEMBERS[i][5][0],
-                "description": f"<p>Join {MEMBERS[i][5][0]} and help us grow. You will own your work.</p>",
+                "description": (
+                    f"<p>Join {MEMBERS[i][5][0]} and help us grow. You will own your work.</p>"
+                ),
                 "apply_method": "email",
                 "apply_target": f"jobs@{MEMBERS[i][5][0].lower().replace(' ', '')}.test",
             },
@@ -220,7 +320,7 @@ def main() -> None:
         )
 
     # Events.
-    for i, (kind, title, days) in enumerate(
+    for _i, (kind, title, days) in enumerate(
         [
             ("demo_day", "Demo Day, Lagos", 14),
             ("workshop", "Fundraising basics", 6),
@@ -232,7 +332,9 @@ def main() -> None:
             data={
                 "type": kind,
                 "title": title,
-                "description": f"<p>{title}. Come, meet the community and learn from each other.</p>",
+                "description": (
+                    f"<p>{title}. Come, meet the community and learn from each other.</p>"
+                ),
                 "timezone": "Africa/Lagos",
                 "starts_at": now + timedelta(days=days, hours=2),
                 "ends_at": now + timedelta(days=days, hours=5),
@@ -280,7 +382,9 @@ def main() -> None:
             },
         )
         module = learning.add_module(actor=admin, course_id=course.pk, title="Getting started")
-        for n, lesson_title in enumerate(("Why this matters", "The first steps", "Common mistakes"), 1):
+        for n, lesson_title in enumerate(
+            ("Why this matters", "The first steps", "Common mistakes"), 1
+        ):
             learning.add_lesson(
                 actor=admin,
                 module_id=module.pk,
