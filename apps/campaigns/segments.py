@@ -37,6 +37,7 @@ TAGS = (
     "course_completed",
     "mentor_applicant",
     "mentor_approved",
+    "mentee",
 )
 ROLES = ("member", "mentor")
 PROFILE_COMPLETE_SCORE = 80
@@ -173,6 +174,8 @@ def compile_filters(definition: dict[str, Any]) -> Filters:
             f.include.append(mentorship.applicant_ids())
         elif tag == "mentor_approved":
             f.include.append(mentorship.mentor_ids())
+        elif tag == "mentee":
+            f.include.append(mentorship.mentee_ids())
     return f
 
 

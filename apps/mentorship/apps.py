@@ -9,7 +9,7 @@ class MentorshipConfig(AppConfig):
         from django.db import transaction
         from django.db.models.signals import post_delete, post_save
 
-        from apps.mentorship import cache, handlers, tasks  # noqa: F401
+        from apps.mentorship import cache, handlers, session_tasks, tasks  # noqa: F401
         from apps.mentorship.models import MentorProfile
 
         def changed(**_: object) -> None:

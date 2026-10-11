@@ -260,8 +260,8 @@ class MentorAvailabilityView(APIView):
     @extend_schema(
         summary="Times a mentor can be booked",
         description="Start times (UTC) for the next `days` (default 14, at most 30), soonest "
-        "first, with already booked time and the minimum notice removed. Empty for a paused "
-        "mentor or one with no sessions left this week.",
+        "first, with already booked time, the minimum notice and weeks with no sessions left "
+        "removed. Empty for a paused mentor.",
         parameters=[BookableQuerySerializer],
         responses={200: BookableTimesSerializer, **ERRORS},
         tags=["mentorship"],
@@ -273,9 +273,9 @@ class MentorAvailabilityView(APIView):
         profile = MentorProfile.objects.get(user_id=user_id)
         left = scheduling.capacity_left(profile)
         times = (
-            scheduling.bookable_starts(profile, days=query.validated_data["days"])
-            if left and not profile.paused
-            else []
+            []
+            if profile.paused
+            else scheduling.bookable_starts(profile, days=query.validated_data["days"])
         )
         body = {
             "timezone": profile.timezone,

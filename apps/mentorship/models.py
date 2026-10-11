@@ -89,6 +89,8 @@ class MentorProfile(BaseModel):
     timezone = models.CharField(max_length=64)
     capacity_per_week = models.PositiveSmallIntegerField(default=3)
     session_minutes = models.PositiveSmallIntegerField(default=45)
+    # Which video provider the mentor prefers; blank means the platform default.
+    meeting_provider = models.CharField(max_length=12, blank=True)
     paused = models.BooleanField(default=False)
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.ACTIVE)
     approved_at = models.DateTimeField()
@@ -190,3 +192,149 @@ class SeekerNeeds(BaseModel):
     )
     needs = models.JSONField(default=list)
     languages = models.JSONField(default=list)
+
+
+SESSION_STATUSES = (
+    "requested",
+    "confirmed",
+    "declined",
+    "cancelled",
+    "expired",
+    "completed",
+    "no_show",
+)
+# A request holds its time while it waits, so the same slot cannot be asked for twice.
+ACTIVE_SESSION_STATUSES = ("requested", "confirmed")
+
+
+class MentorSession(BaseModel):
+    """One mentoring session, from the founder's request to the held (or missed) meeting.
+
+    A single row carries the whole life of the booking, so the database can refuse overlapping
+    sessions for a mentor, and for a founder, while it is requested or confirmed.
+    """
+
+    class Status(models.TextChoices):
+        REQUESTED = "requested"
+        CONFIRMED = "confirmed"
+        DECLINED = "declined"
+        CANCELLED = "cancelled"
+        EXPIRED = "expired"
+        COMPLETED = "completed"
+        NO_SHOW = "no_show"  # the founder did not come
+
+    class MeetingState(models.TextChoices):
+        NONE = ""  # no meeting wanted yet (a request, or a closed session)
+        PENDING = "pending"
+        READY = "ready"
+        FAILED = "failed"
+
+    mentor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mentor_sessions"
+    )
+    mentee = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mentee_sessions"
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    time_span = DateTimeRangeField()
+    topic = models.CharField(max_length=120)
+    message = models.CharField(max_length=1000)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.REQUESTED)
+
+    responded_at = models.DateTimeField(null=True, blank=True)  # accepted or declined
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    closed_reason = models.CharField(max_length=1000, blank=True)  # decline or cancel reason
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    late_cancel = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    meeting_provider = models.CharField(max_length=12, blank=True)
+    meeting_state = models.CharField(max_length=8, choices=MeetingState.choices, blank=True)
+    meeting_external_id = models.CharField(max_length=120, blank=True)
+    meeting_url = models.CharField(max_length=500, blank=True)
+
+    # A proposed new time waits for the other person; the session keeps its time until then.
+    proposed_starts_at = models.DateTimeField(null=True, blank=True)
+    proposed_ends_at = models.DateTimeField(null=True, blank=True)
+    proposed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    proposed_note = models.CharField(max_length=500, blank=True)
+    reschedule_count = models.PositiveSmallIntegerField(default=0)
+
+    reminded_24h_at = models.DateTimeField(null=True, blank=True)
+    reminded_1h_at = models.DateTimeField(null=True, blank=True)
+    feedback_requested_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=SESSION_STATUSES), name="mentorsession_status_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(ends_at__gt=models.F("starts_at")), name="mentorsession_span_valid"
+            ),
+            models.CheckConstraint(
+                condition=~Q(mentor=models.F("mentee")), name="mentorsession_not_self"
+            ),
+            # The database settles two people asking for the same time at once.
+            ExclusionConstraint(
+                name="mentorsession_mentor_no_overlap",
+                expressions=[
+                    ("mentor", RangeOperators.EQUAL),
+                    ("time_span", RangeOperators.OVERLAPS),
+                ],
+                condition=Q(status__in=ACTIVE_SESSION_STATUSES),
+            ),
+            ExclusionConstraint(
+                name="mentorsession_mentee_no_overlap",
+                expressions=[
+                    ("mentee", RangeOperators.EQUAL),
+                    ("time_span", RangeOperators.OVERLAPS),
+                ],
+                condition=Q(status__in=ACTIVE_SESSION_STATUSES),
+            ),
+            # One waiting request from a founder to a mentor at a time.
+            models.UniqueConstraint(
+                fields=["mentee", "mentor"],
+                condition=Q(status="requested"),
+                name="mentorsession_one_request_per_pair",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["mentor", "status", "starts_at"], name="mentorsession_mentor_idx"),
+            models.Index(fields=["mentee", "status", "starts_at"], name="mentorsession_mentee_idx"),
+            models.Index(fields=["status", "starts_at"], name="mentorsession_status_idx"),
+        ]
+
+
+class SessionFeedback(BaseModel):
+    """What each side says after a session: stars and comments from the founder, the outcome
+    from the mentor. Founder comments are for the mentor and admins, never public."""
+
+    class Role(models.TextChoices):
+        MENTEE = "mentee"
+        MENTOR = "mentor"
+
+    session = models.ForeignKey(MentorSession, on_delete=models.CASCADE, related_name="feedback")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="session_feedback"
+    )
+    role = models.CharField(max_length=6, choices=Role.choices)
+    stars = models.PositiveSmallIntegerField(null=True, blank=True)  # founders only
+    comment = models.CharField(max_length=1000, blank=True)
+    # Mentor: "held" or "mentee_no_show". Founder: "held" or "mentor_no_show".
+    outcome = models.CharField(max_length=16, default="held")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["session", "author"], name="sessionfeedback_unique"),
+            models.CheckConstraint(
+                condition=Q(stars__isnull=True) | Q(stars__gte=1, stars__lte=5),
+                name="sessionfeedback_stars_range",
+            ),
+        ]

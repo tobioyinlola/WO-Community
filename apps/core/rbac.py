@@ -31,6 +31,7 @@ _COMMUNITY_ADMIN = _EDITOR | {
     "members.remove",
     "invitations.manage",
     "mentors.decide",
+    "sessions.manage",
     "events.manage",
     "campaigns.send",
     "reports.handle",

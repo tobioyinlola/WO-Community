@@ -77,3 +77,62 @@ def mentor(applicant, applicant_client, as_admin):
     )
     assert done.status_code == 200, done.content
     return applicant
+
+
+# --- sessions ---
+
+EVERY_DAY = [{"weekday": d, "start": "09:00", "end": "12:00"} for d in range(7)]
+
+
+def become_mentor(user, client, admin_client, **overrides):
+    """Apply as a mentor and have an admin approve it."""
+    created = client.post(
+        "/api/v1/mentor-applications", application_body(**overrides), format="json"
+    )
+    assert created.status_code == 201, created.content
+    done = admin_client.post(
+        f"/api/v1/admin/mentor-applications/{created.json()['id']}/decision",
+        {"decision": "approve"},
+        format="json",
+    )
+    assert done.status_code == 200, done.content
+    return user
+
+
+def open_schedule(client, weekly=EVERY_DAY):
+    """Free 09:00 to 12:00 every day, Lagos time (UTC+1, no clock changes)."""
+    response = client.put("/api/v1/me/availability", {"weekly": weekly}, format="json")
+    assert response.status_code == 200, response.content
+
+
+@pytest.fixture
+def booking_mentor(mentor, applicant_client):
+    open_schedule(applicant_client)
+    return mentor
+
+
+@pytest.fixture
+def mentee(make_user):
+    return active(make_user, "mentee@example.com")
+
+
+@pytest.fixture
+def mentee_client(mentee, client_for):
+    return client_for(mentee)
+
+
+def times_of(client, mentor, days=14):
+    response = client.get(f"/api/v1/mentors/{mentor.pk}/availability", {"days": days})
+    assert response.status_code == 200, response.content
+    return response.json()["times"]
+
+
+def ask(client, mentor, starts_at, **overrides):
+    body = {
+        "mentor_id": str(mentor.pk),
+        "starts_at": starts_at,
+        "topic": "Fundraising for a pre-seed round",
+        "message": "I am raising our first round and would love your view on the deck.",
+    }
+    body.update(overrides)
+    return client.post("/api/v1/sessions", body, format="json")

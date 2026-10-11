@@ -8,24 +8,66 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from apps.mentorship.models import AvailabilitySlot, MentorProfile
+from apps.mentorship.models import (
+    ACTIVE_SESSION_STATUSES,
+    AvailabilitySlot,
+    MentorProfile,
+    MentorSession,
+)
 
 Interval = tuple[datetime, datetime]
+# Sessions that use up a place in the week: waiting, agreed, held, or missed by the founder.
+COUNTED_STATUSES = (*ACTIVE_SESSION_STATUSES, "completed", "no_show")
 
 
 def booked_intervals(mentor_id: UUID, start: datetime, end: datetime) -> list[Interval]:
-    """Time already taken by booked sessions. Sessions arrive with booking."""
-    return []
+    """Time already taken by requested and confirmed sessions."""
+    rows = MentorSession.objects.filter(
+        mentor_id=mentor_id,
+        status__in=ACTIVE_SESSION_STATUSES,
+        starts_at__lt=end,
+        ends_at__gt=start,
+    ).values_list("starts_at", "ends_at")
+    return [(a, b) for a, b in rows]
 
 
 def external_busy(mentor_id: UUID, start: datetime, end: datetime) -> list[Interval]:
-    """Busy time from the mentor connected calendar. Calendars arrive with the integrations."""
+    """Busy time from a mentor connected calendar.
+
+    Reading a mentor own calendar needs a per mentor sign-in that is not built; the meeting
+    providers only create meetings on the platform account. Returns nothing until it is.
+    """
     return []
 
 
-def sessions_in_week(mentor_id: UUID, at: datetime) -> int:
-    """Sessions booked in the Monday to Sunday week (mentor local time) containing ``at``."""
-    return 0
+def week_bounds(zone_name: str, at: datetime) -> Interval:
+    """The Monday 00:00 to next Monday 00:00 week, in the given time zone, as UTC instants."""
+    zone = ZoneInfo(zone_name)
+    local = at.astimezone(zone)
+    monday = local.date() - timedelta(days=local.weekday())
+    start = datetime.combine(monday, time(0, 0), tzinfo=zone)
+    end = datetime.combine(monday + timedelta(days=7), time(0, 0), tzinfo=zone)
+    return start.astimezone(UTC), end.astimezone(UTC)
+
+
+def sessions_in_week(mentor_id: UUID, at: datetime, exclude: UUID | None = None) -> int:
+    """Sessions using a place in the Monday to Sunday week (mentor local time) of ``at``.
+
+    ``exclude`` leaves one session out, so a session being moved does not count against itself.
+    """
+    zone = (
+        MentorProfile.objects.filter(user_id=mentor_id).values_list("timezone", flat=True).first()
+    )
+    begin, finish = week_bounds(zone or "UTC", at)
+    rows = MentorSession.objects.filter(
+        mentor_id=mentor_id,
+        status__in=COUNTED_STATUSES,
+        starts_at__gte=begin,
+        starts_at__lt=finish,
+    )
+    if exclude is not None:
+        rows = rows.exclude(pk=exclude)
+    return rows.count()
 
 
 def _merge(intervals: list[Interval]) -> list[Interval]:
@@ -108,6 +150,23 @@ def _starts(
     return starts
 
 
+def _within_capacity(
+    profile: MentorProfile, starts: list[datetime], exclude: UUID | None
+) -> list[datetime]:
+    """Drop start times that fall in a week with no places left."""
+    full: dict[datetime, bool] = {}
+    kept: list[datetime] = []
+    for start in starts:
+        week = week_bounds(profile.timezone, start)[0]
+        if week not in full:
+            full[week] = (
+                sessions_in_week(profile.user_id, start, exclude) >= profile.capacity_per_week
+            )
+        if not full[week]:
+            kept.append(start)
+    return kept
+
+
 def bookable_starts(
     profile: MentorProfile, *, days: int, now: datetime | None = None
 ) -> list[datetime]:
@@ -120,17 +179,28 @@ def bookable_starts(
     now = now or timezone.now()
     earliest = now + timedelta(hours=settings.MENTORSHIP_MIN_NOTICE_HOURS)
     latest = now + timedelta(days=min(days, settings.MENTORSHIP_HORIZON_DAYS))
-    return _starts(profile, earliest - timedelta(days=1), latest, earliest)
+    starts = _starts(profile, earliest - timedelta(days=1), latest, earliest)
+    return _within_capacity(profile, starts, None)
 
 
-def is_bookable(profile: MentorProfile, start: datetime, *, now: datetime | None = None) -> bool:
-    """Whether ``start`` is one of the times that would be offered."""
+def is_bookable(
+    profile: MentorProfile,
+    start: datetime,
+    *,
+    now: datetime | None = None,
+    exclude: UUID | None = None,
+) -> bool:
+    """Whether ``start`` is one of the times that would be offered.
+
+    ``exclude`` is a session being moved: its own place in the week is not held against it.
+    """
     now = now or timezone.now()
     earliest = now + timedelta(hours=settings.MENTORSHIP_MIN_NOTICE_HOURS)
     if start < earliest or start > now + timedelta(days=settings.MENTORSHIP_HORIZON_DAYS):
         return False
     margin = timedelta(days=1)
-    return start in _starts(profile, start - margin, start + margin, earliest)
+    offered = _starts(profile, start - margin, start + margin, earliest)
+    return start in offered and bool(_within_capacity(profile, [start], exclude))
 
 
 def capacity_left(profile: MentorProfile, at: datetime | None = None) -> int:
