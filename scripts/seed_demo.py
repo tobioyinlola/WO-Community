@@ -195,6 +195,17 @@ def make_user(email: str, role: str = "member") -> User:
     return user
 
 
+def make_waiting(email: str, *, email_confirmed: bool) -> User:
+    """An account that has asked to join: waiting for approval, email confirmed or not."""
+    user = User.objects.create_user(email, PASSWORD)
+    user.status = UserStatus.PENDING
+    user.email_verified_at = timezone.now() if email_confirmed else None
+    user.save()
+    if email_confirmed:
+        UserRole.objects.get_or_create(user=user, role="member")
+    return user
+
+
 def make_profile(user: User, name: str, country: str, city: str, headline: str, skills: list[str]):
     profile = profiles.create_from_signup(
         user.pk, {"full_name": name, "country": country, "city": city}
@@ -218,6 +229,8 @@ def main() -> None:
         return
 
     admin = make_user(ADMIN[1], "super_admin")
+    make_waiting("pending@demo.test", email_confirmed=True)
+    make_waiting("unverified@demo.test", email_confirmed=False)
     people = []
     for name, email, country, city, headline, startup, skills in MEMBERS:
         user = make_user(email)
