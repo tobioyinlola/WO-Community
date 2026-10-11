@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="mentorprofile",
             name="meeting_provider",
-            field=models.CharField(blank=True, max_length=12),
+            field=models.CharField(blank=True, db_default="", max_length=12),
         ),
         migrations.CreateModel(
             name="MentorSession",

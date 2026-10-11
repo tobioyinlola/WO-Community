@@ -8895,6 +8895,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/Sitemap'
           description: ''
+  /api/v1/public/sitemaps:
+    get:
+      operationId: public_sitemaps_retrieve
+      description: Startups, founders, jobs, news and wins, events and courses open
+        to visitors in one response, so the front end builds a single sitemap from
+        it. Each list is capped at 5,000 entries (50,000 for startups and founders),
+        newest first.
+      summary: Every public page of every kind, with its last change
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FullSitemap'
+          description: ''
   /api/v1/public/startups:
     get:
       operationId: public_startups_list
@@ -13017,6 +13034,40 @@ components:
       description: |-
         * `instant` - instant
         * `daily` - daily
+    FullSitemap:
+      type: object
+      properties:
+        startups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapPage'
+        founders:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapPage'
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapPage'
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapPage'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapPage'
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitemapPage'
+      required:
+      - courses
+      - events
+      - founders
+      - jobs
+      - news
+      - startups
     Funnel:
       type: object
       properties:
@@ -17585,6 +17636,19 @@ components:
       - lastmod
       - path
       - slug
+    SitemapPage:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Front end path, for example /jobs/senior-engineer.
+        lastmod:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - lastmod
+      - path
     Skill:
       type: object
       properties:

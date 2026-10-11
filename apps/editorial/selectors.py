@@ -218,6 +218,12 @@ def public_feed(*, type: str, cursor: str, limit: int) -> dict[str, Any]:  # noq
     return {"results": [_public_summary(v) for v in _views(None, rows)], "next_cursor": next_cursor}
 
 
+def public_sitemap() -> list[dict[str, Any]]:
+    """Slug and last change of every public news item and win, for search engines."""
+    rows = _public_queryset().order_by("-published_at", "-id").values("slug", "updated_at")[:5000]
+    return [dict(row) for row in rows]
+
+
 def public_detail(slug: str) -> dict[str, Any]:
     item = _public_queryset().prefetch_related("startup_links").filter(slug=slug).first()
     if item is None:

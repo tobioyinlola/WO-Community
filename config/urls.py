@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.urls import include, path
 
-from apps.core.views import HealthLiveView, HealthReadyView, SchemaView
+from apps.core.views import HealthLiveView, HealthReadyView, MetricsView, SchemaView
 
 urlpatterns = [
     path("health/live", HealthLiveView.as_view(), name="health-live"),
     path("health/ready", HealthReadyView.as_view(), name="health-ready"),
+    path("metrics", MetricsView.as_view(), name="metrics"),
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/", include("apps.analytics.urls")),
     path("api/v1/", include("apps.reference.urls")),

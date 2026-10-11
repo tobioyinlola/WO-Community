@@ -4,6 +4,7 @@ Credentials come from the environment or the instance role, never from code.
 The quarantine bucket must be private; the media bucket is read through the CDN.
 """
 
+from datetime import UTC, datetime, timedelta
 from functools import cached_property
 from typing import Any
 from urllib.parse import quote
@@ -14,6 +15,7 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 
 from apps.integrations.storage.base import (
+    ANCHOR,
     MEDIA,
     PRIVATE,
     QUARANTINE,
@@ -48,6 +50,7 @@ class S3Storage(ObjectStorage):
             QUARANTINE: settings.STORAGE_QUARANTINE_BUCKET,
             MEDIA: settings.STORAGE_MEDIA_BUCKET,
             PRIVATE: settings.STORAGE_PRIVATE_BUCKET,
+            ANCHOR: settings.STORAGE_ANCHOR_BUCKET,
         }
         return names[bucket]
 
@@ -97,6 +100,22 @@ class S3Storage(ObjectStorage):
 
     def delete(self, *, bucket: str, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket_name(bucket), Key=key)
+
+    def write_once(
+        self, *, bucket: str, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> bool:
+        """Needs a bucket created with S3 Object Lock; COMPLIANCE mode lets nobody shorten it."""
+        if self.head(bucket=bucket, key=key) is not None:
+            return False
+        self.client.put_object(
+            Bucket=self.bucket_name(bucket),
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+            ObjectLockMode="COMPLIANCE",
+            ObjectLockRetainUntilDate=datetime.now(UTC) + timedelta(days=retain_days),
+        )
+        return True
 
     def presign_get(
         self, *, bucket: str, key: str, expires_in: int, filename: str, content_type: str

@@ -6,9 +6,11 @@ in one transaction. Callers have already been authorised by a policy; the
 checks here are business rules that hold whoever is asking.
 """
 
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import exceptions
@@ -242,3 +244,35 @@ def reset_member_mfa(*, actor: User, user_id: UUID, ip: str = "") -> User:
             ip=ip,
         )
         return target
+
+
+def purge_rejected_registrations(now: datetime | None = None) -> int:
+    """Erase registrations that were rejected longer ago than the retention period.
+
+    A rejected applicant never became a member, so nothing else of theirs is kept: the account
+    and everything hanging off it (profile, startup, consents, sessions) is deleted. The audit
+    trail keeps only the user id, which holds no personal data.
+    """
+    now = now or timezone.now()
+    cutoff = now - timedelta(days=settings.REJECTED_REGISTRATION_RETENTION_DAYS)
+    purged = 0
+    ids = list(
+        User.objects.filter(status=UserStatus.REJECTED, status_changed_at__lte=cutoff).values_list(
+            "pk", flat=True
+        )
+    )
+    for user_id in ids:
+        with transaction.atomic():
+            user = User.objects.select_for_update().filter(pk=user_id).first()
+            if user is None or user.status != UserStatus.REJECTED:
+                continue
+            audit.record(
+                actor=None,
+                action="members.purged",
+                target_type="user",
+                target_id=user.pk,
+                reason="Rejected registration past retention",
+            )
+            user.delete()
+            purged += 1
+    return purged

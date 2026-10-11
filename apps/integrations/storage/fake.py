@@ -15,11 +15,13 @@ class FakeStorage(ObjectStorage):
 
     objects: ClassVar[dict[tuple[str, str], tuple[bytes, str]]] = {}
     forms: ClassVar[dict[tuple[str, str], dict[str, object]]] = {}
+    locked: ClassVar[set[tuple[str, str]]] = set()
 
     @classmethod
     def reset(cls) -> None:
         cls.objects.clear()
         cls.forms.clear()
+        cls.locked.clear()
 
     # --- what the client would do with the presigned form -----------------------------------
 
@@ -60,10 +62,23 @@ class FakeStorage(ObjectStorage):
     def write(
         self, *, bucket: str, key: str, data: bytes, content_type: str, cache_control: str = ""
     ) -> None:
+        if (bucket, key) in self.locked:
+            raise PermissionError(f"{key} is locked")
         self.objects[(bucket, key)] = (data, content_type)
 
     def delete(self, *, bucket: str, key: str) -> None:
+        if (bucket, key) in self.locked:
+            raise PermissionError(f"{key} is locked")
         self.objects.pop((bucket, key), None)
+
+    def write_once(
+        self, *, bucket: str, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> bool:
+        if (bucket, key) in self.objects:
+            return False
+        self.objects[(bucket, key)] = (data, content_type)
+        self.locked.add((bucket, key))
+        return True
 
     def presign_get(
         self, *, bucket: str, key: str, expires_in: int, filename: str, content_type: str

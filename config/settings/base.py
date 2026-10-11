@@ -266,13 +266,24 @@ CELERY_BEAT_SCHEDULE = {
     "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
     "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
+    "analytics-archive": {"task": "analytics.archive_expired", "schedule": 86400.0},
     "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
+    "audit-anchor": {"task": "audit.anchor_previous_day", "schedule": 86400.0},
+    "accounts-purge-rejected": {"task": "accounts.purge_rejected", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
 }
 OUTBOX_MAX_ATTEMPTS = 8
+
+# --- Observability -------------------------------------------------------------
+ENVIRONMENT = env.str("ENVIRONMENT", default="local")
+# Tracing is off until a collector address is given. Spans never carry query strings.
+OTEL_EXPORTER_OTLP_ENDPOINT = env.str("OTEL_EXPORTER_OTLP_ENDPOINT", default="")
+OTEL_TRACE_SAMPLE_RATIO = env.float("OTEL_TRACE_SAMPLE_RATIO", default=0.1)
+# GET /metrics answers only to this bearer token, and 404 when it is not set.
+METRICS_TOKEN = env.str("METRICS_TOKEN", default="")
 
 # --- Adapters ----------------------------------------------------------------
 EMAIL_ADAPTER = env.str("EMAIL_ADAPTER", default="apps.integrations.email.fake.FakeEmailAdapter")
@@ -296,6 +307,10 @@ MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.
 # Raise on a bad event (tests, local) instead of dropping it quietly (production).
 ANALYTICS_STRICT = env.bool("ANALYTICS_STRICT", default=False)
 ANALYTICS_RETENTION_MONTHS = 13
+# When true, a monthly partition is dropped only after it was archived to Parquet.
+ANALYTICS_REQUIRE_ARCHIVE = env.bool("ANALYTICS_REQUIRE_ARCHIVE", default=False)
+# Registrations that were rejected are erased after this many days.
+REJECTED_REGISTRATION_RETENTION_DAYS = 90
 ANALYTICS_FORWARD_BATCH = 500
 # Events are forwarded only once this old, so one numbered early that commits late is not skipped.
 ANALYTICS_FORWARD_DELAY_SECONDS = 60
@@ -312,6 +327,10 @@ STORAGE_QUARANTINE_BUCKET = env.str("STORAGE_QUARANTINE_BUCKET", default="wo-qua
 STORAGE_MEDIA_BUCKET = env.str("STORAGE_MEDIA_BUCKET", default="wo-media")
 # Checked documents (course files). Never public: members are given short lived signed links.
 STORAGE_PRIVATE_BUCKET = env.str("STORAGE_PRIVATE_BUCKET", default="wo-private")
+# Write-once bucket (S3 Object Lock) for the daily audit head hash; never public.
+STORAGE_ANCHOR_BUCKET = env.str("STORAGE_ANCHOR_BUCKET", default="wo-anchor")
+AUDIT_ANCHOR_RETENTION_DAYS = env.int("AUDIT_ANCHOR_RETENTION_DAYS", default=7 * 365)
+AUDIT_ANCHOR_VERIFY_DAYS = 7
 # Public address of the media bucket: a separate, cookieless domain behind the CDN.
 MEDIA_BASE_URL = env.str("MEDIA_BASE_URL", default="http://localhost:9000/wo-media")
 CLAMD_HOST = env.str("CLAMD_HOST", default="localhost")

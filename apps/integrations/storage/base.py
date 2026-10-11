@@ -4,6 +4,7 @@ from dataclasses import dataclass
 QUARANTINE = "quarantine"
 MEDIA = "media"
 PRIVATE = "private"
+ANCHOR = "anchor"
 
 
 class ObjectTooLarge(Exception):
@@ -56,6 +57,15 @@ class ObjectStorage(ABC):
     @abstractmethod
     def delete(self, *, bucket: str, key: str) -> None:
         """Remove an object. Missing objects are not an error."""
+
+    @abstractmethod
+    def write_once(
+        self, *, bucket: str, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> bool:
+        """Store an object that cannot be replaced or deleted for ``retain_days``.
+
+        Returns False, and changes nothing, when the key already exists.
+        """
 
     @abstractmethod
     def presign_get(

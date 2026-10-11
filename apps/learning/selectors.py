@@ -326,6 +326,17 @@ def public_courses(*, cursor: str, limit: int) -> dict[str, Any]:
     }
 
 
+def public_sitemap() -> list[dict[str, Any]]:
+    """Slug and last change of every course open to visitors, for search engines."""
+    rows = (
+        published()
+        .filter(access="free", open_to_visitors=True)
+        .order_by("-published_at", "-id")
+        .values("slug", "updated_at")[:5000]
+    )
+    return [dict(row) for row in rows]
+
+
 def public_course(slug: str) -> dict[str, Any]:
     course = published().filter(access="free", open_to_visitors=True, slug=slug).first()
     if course is None:

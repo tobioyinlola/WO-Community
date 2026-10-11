@@ -13,12 +13,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="lesson",
             name="file_content_type",
-            field=models.CharField(blank=True, max_length=100),
+            field=models.CharField(blank=True, db_default="", max_length=100),
         ),
         migrations.AddField(
             model_name="lesson",
             name="file_key",
-            field=models.CharField(blank=True, max_length=200),
+            field=models.CharField(blank=True, db_default="", max_length=200),
         ),
         migrations.AddField(
             model_name="lesson",
