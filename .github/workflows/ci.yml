@@ -65,6 +65,29 @@ jobs:
       - name: Deployment settings
         run: python scripts/deploy_check.py
 
+  web:
+    name: Web front end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # Switch to `npm ci` and add the cache once package-lock.json is committed.
+      - name: Install
+        run: npm install
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
   image:
     name: Container image
     runs-on: ubuntu-latest
