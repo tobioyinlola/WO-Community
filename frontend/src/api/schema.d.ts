@@ -8764,6 +8764,246 @@ export interface components {
             position: number;
             lessons: components["schemas"]["OutlineLesson"][];
         };
+        PaginatedAdminCourseList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminCourse"][];
+        };
+        PaginatedAdminEnrolmentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminEnrolment"][];
+        };
+        PaginatedAdminEventList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminEvent"][];
+        };
+        PaginatedAdminItemList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminItem"][];
+        };
+        PaginatedAdminJobList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminJob"][];
+        };
+        PaginatedAdminMentorApplicationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminMentorApplication"][];
+        };
+        PaginatedAdminMentorList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminMentor"][];
+        };
+        PaginatedAdminMentoringSessionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminMentoringSession"][];
+        };
+        PaginatedAdminPreviewList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminPreview"][];
+        };
+        PaginatedAdminReportList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminReport"][];
+        };
+        PaginatedAdminWinList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminWin"][];
+        };
+        PaginatedAttendeeList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Attendee"][];
+        };
+        PaginatedCampaignList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Campaign"][];
+        };
+        PaginatedInvitationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Invitation"][];
+        };
+        PaginatedMemberList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Member"][];
+        };
+        PaginatedSegmentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Segment"][];
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -11950,7 +12190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Campaign"][];
+                    "application/json": components["schemas"]["PaginatedCampaignList"];
                 };
             };
             /** @description Not authenticated */
@@ -12800,7 +13040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCourse"][];
+                    "application/json": components["schemas"]["PaginatedAdminCourseList"];
                 };
             };
             /** @description Not authenticated */
@@ -13162,7 +13402,12 @@ export interface operations {
     };
     admin_courses_enrolments_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description The initial index from which to return the results. */
+                offset?: number;
+            };
             header?: never;
             path: {
                 course_id: string;
@@ -13176,7 +13421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminEnrolment"][];
+                    "application/json": components["schemas"]["PaginatedAdminEnrolmentList"];
                 };
             };
             /** @description Not authenticated */
@@ -13771,7 +14016,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminItem"][];
+                    "application/json": components["schemas"]["PaginatedAdminItemList"];
                 };
             };
             /** @description Not authenticated */
@@ -14394,7 +14639,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminEvent"][];
+                    "application/json": components["schemas"]["PaginatedAdminEventList"];
                 };
             };
             /** @description Not authenticated */
@@ -14635,7 +14880,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Attendee"][];
+                    "application/json": components["schemas"]["PaginatedAttendeeList"];
                 };
             };
             /** @description Not authenticated */
@@ -15028,7 +15273,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Invitation"][];
+                    "application/json": components["schemas"]["PaginatedInvitationList"];
                 };
             };
             /** @description Not authenticated */
@@ -15342,7 +15587,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminJob"][];
+                    "application/json": components["schemas"]["PaginatedAdminJobList"];
                 };
             };
             /** @description Not authenticated */
@@ -15930,7 +16175,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminPreview"][];
+                    "application/json": components["schemas"]["PaginatedAdminPreviewList"];
                 };
             };
             /** @description Not authenticated */
@@ -16028,7 +16273,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Member"][];
+                    "application/json": components["schemas"]["PaginatedMemberList"];
                 };
             };
             /** @description Not authenticated */
@@ -16435,7 +16680,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminMentorApplication"][];
+                    "application/json": components["schemas"]["PaginatedAdminMentorApplicationList"];
                 };
             };
             /** @description Not authenticated */
@@ -16575,7 +16820,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminMentor"][];
+                    "application/json": components["schemas"]["PaginatedAdminMentorList"];
                 };
             };
             /** @description Not authenticated */
@@ -17542,7 +17787,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminReport"][];
+                    "application/json": components["schemas"]["PaginatedAdminReportList"];
                 };
             };
             /** @description Not authenticated */
@@ -17711,7 +17956,12 @@ export interface operations {
     };
     admin_segments_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description The initial index from which to return the results. */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -17723,7 +17973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Segment"][];
+                    "application/json": components["schemas"]["PaginatedSegmentList"];
                 };
             };
             /** @description Not authenticated */
@@ -18037,7 +18287,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminMentoringSession"][];
+                    "application/json": components["schemas"]["PaginatedAdminMentoringSessionList"];
                 };
             };
             /** @description Not authenticated */
@@ -18265,7 +18515,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminWin"][];
+                    "application/json": components["schemas"]["PaginatedAdminWinList"];
                 };
             };
             /** @description Not authenticated */

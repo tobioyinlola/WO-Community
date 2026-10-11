@@ -12,6 +12,7 @@ import {
   Rocket,
   Search,
   Settings,
+  ShieldCheck,
   UserCircle,
   UserCheck,
   Users,
@@ -21,6 +22,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, unwrap } from "../api/client";
+import { isAdmin, permissionsFor } from "../admin/permissions";
 import { useAuth } from "../auth/AuthProvider";
 import { Avatar, Logo } from "../components";
 import { PendingNotice } from "../pages/app/Pending";
@@ -63,7 +65,7 @@ function NavList({ items, unread }: { items: NavItem[]; unread: number }) {
   );
 }
 
-function UserMenu() {
+export function UserMenu() {
   const { me, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -113,6 +115,12 @@ function UserMenu() {
               {me?.email}
             </p>
           </div>
+          {isAdmin(me?.roles ?? []) ? (
+            <Link className="app-menu__item" role="menuitem" to="/admin" onClick={() => setOpen(false)}>
+              <ShieldCheck size={20} strokeWidth={1.5} aria-hidden="true" />
+              Admin console
+            </Link>
+          ) : null}
           <Link className="app-menu__item" role="menuitem" to="/app/me" onClick={() => setOpen(false)}>
             <UserCircle size={20} strokeWidth={1.5} aria-hidden="true" />
             Your profile
@@ -132,8 +140,8 @@ function UserMenu() {
             role="menuitem"
             onClick={async () => {
               setOpen(false);
-              // Leave first: once the session ends the route guard would send the member to the sign in page.
-              navigate("/", { replace: true });
+              // Go to the sign in page first, so ending the session cannot race the route guard.
+              navigate("/login", { replace: true });
               await logout();
             }}
           >
@@ -148,7 +156,7 @@ function UserMenu() {
 
 /** The signed-in frame: sidebar, header with search and notifications, and the page. */
 export function AppLayout() {
-  const { isPending } = useAuth();
+  const { isPending, me } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [drawer, setDrawer] = useState(false);
@@ -179,8 +187,12 @@ export function AppLayout() {
         {isPending ? null : (
           <nav aria-label="Main">
             <NavList items={MAIN} unread={unread} />
-            <p className="app-nav__group">Build</p>
-            <NavList items={BUILD} unread={unread} />
+            {permissionsFor(me?.roles ?? []).has("toolkit.use") ? (
+              <>
+                <p className="app-nav__group">Build</p>
+                <NavList items={BUILD} unread={unread} />
+              </>
+            ) : null}
           </nav>
         )}
       </aside>

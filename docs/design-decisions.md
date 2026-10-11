@@ -50,5 +50,19 @@ Notes where the brief left a choice. Everything else is built exactly as the des
   paragraphs without invalid markup.
 - **Money** is typed in whole units and stored in minor units; dates read "10 Oct 2026", times use
   the 24 hour clock with a zone ("15:00 WAT"), and the currency symbol comes before the amount.
-- **Not yet built:** the admin console, and the toolkit's prototype editor beyond wording changes
+- **Not yet built:** admin sections for news, events, courses, email and reference lists, and the toolkit's prototype editor beyond wording changes
   (structure editing is left to templates and drafts).
+
+## Admin console
+
+- **Same shell, own frame.** It reuses the app shell and tokens, with its own sidebar. Menu items
+  show only for permissions the role holds (a copy of the matrix in `apps/core/rbac.py`; the API
+  still enforces everything).
+- **Two step sign in comes first.** Until a session has passed it, the console shows only the
+  set up screen (QR code, setup key, recovery codes shown once) and keeps the codes on screen until
+  the admin says they are saved.
+- **Reasons are required** for rejecting, suspending, removing, hiding and declining, and the
+  dialog says who is told. Reversible actions (approve, reinstate) ask for a plain confirmation.
+- **Lists load a page at a time** with "Load more", because the console's endpoints page by offset.
+- **Wide tables scroll inside their own labelled box** (`TableScroll`) so the page never scrolls
+  sideways and keyboard users can still reach the overflow.
