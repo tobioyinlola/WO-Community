@@ -63,7 +63,8 @@ if any(TOOLKIT_FEATURES.values()):  # noqa: F405
         require("AI_API_KEY")
     if RESEARCH_PROVIDER.endswith("FakeResearchProvider"):  # noqa: F405
         raise RuntimeError("RESEARCH_PROVIDER must not be the fake provider in production.")
-    if RESEARCH_PROVIDER.endswith("WebResearchProvider") and not RESEARCH_ALLOWED_DOMAINS:  # noqa: F405
+    _reads_web = RESEARCH_PROVIDER.endswith("WebResearchProvider")  # noqa: F405
+    if _reads_web and not RESEARCH_ALLOWED_DOMAINS:  # noqa: F405
         raise RuntimeError("RESEARCH_ALLOWED_DOMAINS must list the sites research may read.")
 
 # Public pages are cached by the CDN; a change must be able to purge them.
