@@ -1,0 +1,7 @@
+# Findings in commits that are already published history. Each one is a made up value in a test
+# (a fake calendar feed token, a sample UUID, a wrong recovery code), not a credential. The current
+# source no longer contains them; these lines only stop the history scan from reporting them again.
+5a7b0ad76ce672e664e738850a0c63b26f10079b:apps/mentorship/tests/test_calendar.py:generic-api-key:16
+7bb80cbab25478bfbe9fb55f09c95bda1e59c071:apps/mentorship/tests/test_calendar.py:generic-api-key:16
+603f8f5a78e344fde9dee245fa175e75e88f89b1:apps/directory/tests/test_directory_browse.py:generic-api-key:283
+0500aeff9db5d6ff89d1ed43ee9dd030f36d7466:apps/accounts/tests/test_mfa_login.py:generic-api-key:205
