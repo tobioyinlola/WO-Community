@@ -15,6 +15,9 @@ export default defineConfig({
   // On CI the failures are also written as annotations, which can be read without the raw log.
   reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
   use: {
+    // Times show in the viewer's own zone, so the browser is pinned to Lagos to make "18:00 WAT" certain.
+    timezoneId: "Africa/Lagos",
+    locale: "en-GB",
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:5173",
     channel: process.env.E2E_BROWSER ?? "msedge",
     screenshot: "only-on-failure",
