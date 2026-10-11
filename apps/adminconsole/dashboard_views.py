@@ -89,6 +89,23 @@ class AvailabilitySerializer(serializers.Serializer):
     available = serializers.BooleanField(help_text="False until that part of the platform exists")
 
 
+class CourseFigureSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    access = serializers.CharField()
+    enrolments = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    completion_rate = serializers.FloatField(allow_null=True)
+    rating_average = serializers.FloatField(allow_null=True)
+    rating_count = serializers.IntegerField()
+
+
+class TopicSerializer(serializers.Serializer):
+    topic = serializers.CharField()
+    mentors = serializers.IntegerField(required=False)
+    founders = serializers.IntegerField(required=False)
+
+
 class LearningSnapshotSerializer(serializers.Serializer):
     available = serializers.BooleanField()
     published_courses = serializers.IntegerField()
@@ -98,6 +115,7 @@ class LearningSnapshotSerializer(serializers.Serializer):
     certificates = serializers.IntegerField()
     enrolments_last_30_days = serializers.IntegerField()
     lessons_completed_last_30_days = serializers.IntegerField()
+    courses = CourseFigureSerializer(many=True, help_text="The ten most enrolled courses.")
 
 
 class MentorshipSnapshotSerializer(serializers.Serializer):
@@ -105,6 +123,21 @@ class MentorshipSnapshotSerializer(serializers.Serializer):
     pending_applications = serializers.IntegerField()
     active_mentors = serializers.IntegerField()
     listed_mentors = serializers.IntegerField()
+    requests_waiting = serializers.IntegerField(help_text="Session requests waiting for a mentor.")
+    sessions_upcoming = serializers.IntegerField(help_text="Confirmed sessions still ahead.")
+    sessions_held_30d = serializers.IntegerField(help_text="Sessions held in the last 30 days.")
+    weekly_capacity = serializers.IntegerField(help_text="Sessions a week listed mentors offer.")
+    mentors_with_times = serializers.IntegerField(
+        help_text="Listed mentors who have published availability."
+    )
+    top_expertise = TopicSerializer(many=True)
+    top_needs = TopicSerializer(many=True, help_text="What founders have saved as needs.")
+    requests_30d = serializers.IntegerField()
+    unanswered_over_48h = serializers.IntegerField()
+    acceptance_rate_30d = serializers.FloatField(allow_null=True)
+    median_response_hours_30d = serializers.FloatField(allow_null=True)
+    no_show_rate_30d = serializers.FloatField(allow_null=True)
+    average_rating = serializers.FloatField(allow_null=True)
 
 
 class DashboardSerializer(serializers.Serializer):

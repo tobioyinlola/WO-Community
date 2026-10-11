@@ -4,24 +4,29 @@ Matching uses only fields in each item's ``basics`` group, and every hit goes th
 projection as the profile and startup pages, so someone who hides their basics from members
 cannot be found and nothing is matched on a field the searcher may not see. Typos are tolerated
 through trigram word similarity. Jobs, courses, posts, mentors and events join the registry as
-their modules arrive.
+their modules arrive; events, news and courses are matched on title and text.
 """
 
 from collections.abc import Callable
 from typing import Any
 
 from django.contrib.postgres.search import TrigramWordSimilarity
-from django.db.models import Q
+from django.db.models import Case, Q, When
 from django.db.models.functions import Greatest
+from django.utils import timezone
 
 from apps.accounts import services as accounts
 from apps.core.visibility import audience_for
+from apps.editorial import selectors as editorial
+from apps.events.models import Event
 from apps.jobs import selectors as jobs
+from apps.learning import selectors as learning
 from apps.mentorship import selectors as mentorship
 from apps.profiles import selectors as profiles
 from apps.profiles.models import FounderProfile
 from apps.startups import selectors as startups
 from apps.startups.models import Startup
+from apps.uploads import services as uploads
 
 MIN_SIMILARITY = 0.45
 OVERFETCH = 3  # hits hidden from the searcher are dropped after the query
@@ -147,11 +152,83 @@ def _mentors(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
     return hits
 
 
+def _events(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
+    """Published events (not cancelled ones), soonest upcoming first and then the most recent."""
+    now = timezone.now()
+    rows = (
+        Event.objects.filter(status=Event.Status.PUBLISHED)
+        .filter(Q(title__icontains=query) | Q(description_text__icontains=query))
+        .annotate(upcoming=Case(When(ends_at__gt=now, then=0), default=1))
+        .order_by("upcoming", "starts_at", "id")[:limit]
+    )
+    return [
+        {
+            "type": "event",
+            "id": event.pk,
+            "slug": event.slug,
+            "title": event.title,
+            "subtitle": ", ".join(
+                part for part in (event.starts_at.strftime("%d %b %Y"), event.location) if part
+            ),
+            "image": None,
+        }
+        for event in rows
+    ]
+
+
+def _news(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
+    """Published news, awards and announcements by title or text, newest first."""
+    rows = (
+        editorial.published()
+        .filter(Q(title__icontains=query) | Q(body_text__icontains=query))
+        .order_by("-published_at", "-id")[:limit]
+    )
+    return [
+        {
+            "type": "news",
+            "id": item.pk,
+            "slug": item.slug,
+            "title": item.title,
+            "subtitle": item.type,
+            "image": uploads.image_urls(item.cover_key),
+        }
+        for item in rows
+    ]
+
+
+def _courses(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
+    """Published courses by title, instructor, category or description, newest first."""
+    rows = (
+        learning.published()
+        .filter(
+            Q(title__icontains=query)
+            | Q(instructor__icontains=query)
+            | Q(category__icontains=query)
+            | Q(description_text__icontains=query)
+        )
+        .order_by("-published_at", "-id")[:limit]
+    )
+    return [
+        {
+            "type": "course",
+            "id": course.pk,
+            "slug": course.slug,
+            "title": course.title,
+            "subtitle": course.instructor,
+            "image": uploads.image_urls(course.cover_key),
+        }
+        for course in rows
+    ]
+
+
 SEARCHERS: dict[str, Callable[[Any, str, int], list[dict[str, Any]]]] = {
     "members": _members,
     "startups": _startups,
     "jobs": _jobs,
     "mentors": _mentors,
+    "events": _events,
+    "news": _news,
+    "courses": _courses,
 }
 
 

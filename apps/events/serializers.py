@@ -21,6 +21,12 @@ class EventFieldsMixin(serializers.Serializer):
     registration_open = serializers.BooleanField(required=False)
     public = serializers.BooleanField(required=False)
     recording_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    organiser_email = serializers.EmailField(
+        max_length=254,
+        required=False,
+        allow_blank=True,
+        help_text="Who the attendee list can be emailed to. Not shown to members.",
+    )
     summary = serializers.CharField(
         max_length=MAX_MARKUP, required=False, allow_blank=True, trim_whitespace=False
     )
@@ -47,6 +53,7 @@ class EventUpdateSerializer(StrictSerializer):
     registration_open = serializers.BooleanField(required=False)
     public = serializers.BooleanField(required=False)
     recording_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    organiser_email = serializers.EmailField(max_length=254, required=False, allow_blank=True)
     summary = serializers.CharField(
         max_length=MAX_MARKUP, required=False, allow_blank=True, trim_whitespace=False
     )
@@ -149,6 +156,7 @@ class EventPageSerializer(serializers.Serializer):
 
 class AdminEventSerializer(EventSerializer):
     public = serializers.BooleanField()
+    organiser_email = serializers.CharField(allow_blank=True)
     created_by = serializers.UUIDField(allow_null=True)
     created_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField(allow_null=True)

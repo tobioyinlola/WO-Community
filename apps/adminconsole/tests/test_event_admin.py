@@ -408,3 +408,54 @@ def test_content_editors_cannot_manage_events(make_user, client_for, method, url
 @pytest.mark.parametrize("method, url", ENDPOINTS)
 def test_admins_without_a_recent_mfa_check_are_refused(admin, client_for, method, url):
     assert getattr(client_for(admin), method)(url).status_code == 403
+
+
+# --- sending the list to the organiser ---
+
+
+def test_the_attendee_list_is_emailed_to_the_organiser(
+    as_admin, member_client, member, sent_emails
+):
+    event = published(as_admin)
+    member_client.post(f"{MEMBER_EVENTS}/{event['id']}/register")
+    saved = as_admin.patch(
+        f"{ADMIN}/{event['id']}",
+        {"organiser_email": "Organiser@Example.org"},
+        format="json",
+        HTTP_IF_MATCH=as_admin.get(f"{ADMIN}/{event['id']}")["ETag"],
+    )
+    assert saved.status_code == 200 and saved.json()["organiser_email"] == "organiser@example.org"
+    response = as_admin.post(f"{ADMIN}/{event['id']}/attendees/send")
+    assert response.status_code == 202 and response.json() == {"sent_to_organiser": True}
+    mail = [m for m in sent_emails if m.to == "organiser@example.org"]
+    assert len(mail) == 1 and mail[0].subject == "Attendees: Founders meetup"
+    assert "member@example.com" in mail[0].text_body
+    assert AuditLog.objects.filter(action="events.attendees_sent").count() == 1
+
+
+def test_without_an_organiser_the_list_goes_to_the_admin_who_asked(
+    as_admin, member_client, sent_emails
+):
+    event = published(as_admin)
+    member_client.post(f"{MEMBER_EVENTS}/{event['id']}/register")
+    response = as_admin.post(f"{ADMIN}/{event['id']}/attendees/send")
+    assert response.status_code == 202 and response.json() == {"sent_to_organiser": False}
+    assert [m.to for m in sent_emails] == ["admin@example.com"]
+
+
+def test_the_organiser_email_is_private_and_sending_needs_a_fresh_mfa_check(
+    as_admin, as_admin_stale, member_client
+):
+    event = published(as_admin)
+    as_admin.patch(
+        f"{ADMIN}/{event['id']}",
+        {"organiser_email": "org@example.org"},
+        format="json",
+        HTTP_IF_MATCH=as_admin.get(f"{ADMIN}/{event['id']}")["ETag"],
+    )
+    assert (
+        "org@example.org"
+        not in member_client.get(f"{MEMBER_EVENTS}/{event['id']}").content.decode()
+    )
+    assert as_admin_stale.post(f"{ADMIN}/{event['id']}/attendees/send").status_code == 403
+    assert as_admin.post(f"{ADMIN}/{uuid.uuid4()}/attendees/send").status_code == 404

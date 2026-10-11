@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "proposed": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string", "maxLength": 80},
+        "one_liner": {"type": "string", "maxLength": 160},
+        "startup_idea": {"type": "string", "maxLength": 2000},
+        "business_concept": {"type": "string", "maxLength": 2000},
+        "target_customer": {"type": "string", "maxLength": 1000},
+        "customer_type": {"enum": ["consumers", "businesses", "government", "mixed"]},
+        "problem": {"type": "string", "maxLength": 2000},
+        "problem_today": {"type": "string", "maxLength": 2000},
+        "solution": {"type": "string", "maxLength": 2000},
+        "differentiator": {"type": "string", "maxLength": 1000},
+        "how_it_works": {"type": "array", "items": {"type": "string", "maxLength": 300}, "maxItems": 10},
+        "key_features": {"type": "array", "items": {"type": "string", "maxLength": 200}, "maxItems": 6},
+        "target_regions": {
+          "type": "array",
+          "items": {"enum": ["north_america", "europe", "latin_america", "middle_east", "africa"]}
+        },
+        "revenue_models": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "subscription", "transaction_fee", "marketplace_commission", "product_sales",
+              "services", "licensing", "advertising", "other"
+            ]
+          }
+        },
+        "stage": {"enum": ["idea", "prototype", "launched", "revenue"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["proposed"],
+  "additionalProperties": false
+}

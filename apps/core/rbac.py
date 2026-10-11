@@ -17,7 +17,7 @@ class Role(StrEnum):
 
 ADMIN_ROLES = frozenset({Role.CONTENT_EDITOR, Role.COMMUNITY_ADMIN, Role.SUPER_ADMIN})
 
-_MEMBER = frozenset({"profile.edit", "feed.post", "jobs.post", "learning.enrol"})
+_MEMBER = frozenset({"profile.edit", "feed.post", "jobs.post", "learning.enrol", "toolkit.use"})
 _MENTOR = _MEMBER | {"mentorship.respond"}
 _EDITOR = frozenset(
     {"admin.access", "editorial.manage", "courses.manage", "jobs.moderate"},
@@ -31,13 +31,20 @@ _COMMUNITY_ADMIN = _EDITOR | {
     "members.remove",
     "invitations.manage",
     "mentors.decide",
+    "sessions.manage",
+    "toolkit.manage",
     "events.manage",
     "campaigns.send",
     "reports.handle",
     "feed.moderate",
     "dashboard.view",
 }
-_SUPER_ADMIN = _COMMUNITY_ADMIN | {"roles.manage", "audit.read", "settings.manage"}
+_SUPER_ADMIN = _COMMUNITY_ADMIN | {
+    "roles.manage",
+    "audit.read",
+    "settings.manage",
+    "toolkit.settings",
+}
 
 PERMISSIONS_BY_ROLE: dict[Role, frozenset[str]] = {
     Role.MEMBER: _MEMBER,

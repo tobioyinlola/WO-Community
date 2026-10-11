@@ -24,8 +24,9 @@ Status: accepted (Stage 3, third slice)
   the question is asked and `is_bookable` accepts exactly the offered times. Booked sessions and
   the mentor external calendar busy time are subtracted; both are hooks in `scheduling.py`
   (`booked_intervals`, `external_busy`, `sessions_in_week`) that return nothing until bookings and
-  calendar integrations exist. A paused mentor, or one with no sessions left this week, offers
-  nothing.
+  calendar integrations exist (booked time and weekly places are real since ADR 0031, and calendar
+  busy time since ADR 0035). A paused mentor offers nothing, and a week with no places left offers no
+  start times while other weeks still do.
 - **Capacity** is sessions per week (1 to 20, default 3). The brief also mentions a monthly
   limit; only the weekly one is built.
 - The directory can filter `available=true`: mentors who have published any weekly window or a

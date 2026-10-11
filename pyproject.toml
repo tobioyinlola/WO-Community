@@ -22,8 +22,27 @@ dependencies = [
   "nh3==0.3.0",
   "Pillow==12.3.0",
   "httpx==0.28.1",
+  # Not imported directly: pinned because botocore, sentry-sdk and requests pull it in and
+  # versions before 2.8.0 have CVE-2026-97689 (unbounded chunk-size line in streaming reads).
+  "urllib3==2.8.0",
   "pyotp==2.9.0",
   "pyjwt[crypto]==2.15.0",
+  "python-dateutil==2.9.0.post0",
+  "pyarrow==26.0.0",
+  "prometheus-client==0.26.0",
+  "opentelemetry-api==1.45.1",
+  "opentelemetry-sdk==1.45.1",
+  "opentelemetry-exporter-otlp-proto-http==1.45.1",
+  "opentelemetry-instrumentation-django==0.66b1",
+  "opentelemetry-instrumentation-psycopg==0.66b1",
+  "opentelemetry-instrumentation-celery==0.66b1",
+  "opentelemetry-instrumentation-httpx==0.66b1",
+  "pydantic==2.14.0",
+  "jsonschema==4.26.0",
+  "python-docx==1.2.0",
+  "python-pptx==1.0.2",
+  "openpyxl==3.1.5",
+  "reportlab==5.0.1",
 ]
 
 [project.optional-dependencies]
@@ -34,12 +53,14 @@ dev = [
   "ruff==0.13.3",
   "black==26.3.1",
   "mypy==1.18.2",
+  "hypothesis==6.169.0",
   "django-stubs[compatible-mypy]==5.2.5",
   "djangorestframework-stubs==3.16.4",
   "bandit==1.8.6",
   "pip-audit==2.9.0",
   "import-linter==2.5.2",
   "pre-commit==4.3.0",
+  "django-migration-linter==6.0.0",
 ]
 
 [tool.setuptools]
@@ -70,7 +91,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "/tests/"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*"]
+module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*", "reportlab.*", "openpyxl.*", "pptx.*", "docx.*", "jsonschema.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

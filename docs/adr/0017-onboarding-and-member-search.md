@@ -32,5 +32,5 @@ Status: accepted (Stage 1)
 
 Search is a database query per type, fine at this size. When the member base grows or more types
 join, a dedicated index (a search table or a search service) can replace the registry entries
-without changing the endpoint. The personalised member home summary needs jobs, events, mentors and
-courses and arrives with them.
+without changing the endpoint. Jobs, mentors, events, news and courses have since joined the
+registry (ADR 0023, 0029 and 0037). The personalised member home summary is not built.

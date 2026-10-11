@@ -25,6 +25,11 @@ urlpatterns = [
         views.ItemCommentView.as_view(),
         name="editorial-comment",
     ),
+    path(
+        "editorial-comments/<uuid:comment_id>/reports",
+        views.ItemCommentReportView.as_view(),
+        name="editorial-comment-report",
+    ),
     path("banners", views.BannersView.as_view(), name="banners"),
     path("win-submissions", views.WinSubmissionsView.as_view(), name="win-submissions"),
     path("public/news", views.PublicNewsView.as_view(), name="public-news"),

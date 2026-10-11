@@ -8,4 +8,5 @@ def register() -> None:
     outbox.register_handler(events.MemberMentioned.topic, "feed.notify_mention", "default")
     outbox.register_handler(events.CommentAdded.topic, "feed.notify_comment", "default")
     outbox.register_handler(events.ReportHandled.topic, "feed.notify_report_outcome", "default")
+    outbox.register_handler(events.FollowStarted.topic, "feed.notify_follow", "default")
     outbox.register_handler(events.LinkPreviewRequested.topic, "feed.fetch_link_preview", "media")

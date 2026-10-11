@@ -46,14 +46,14 @@ the OpenAPI schema validates without warnings; `check --deploy` passes.
 
 ## Deferred
 
-- **Tracing and metrics:** structured logs, request ids and Sentry are in place. OpenTelemetry
-  traces and a metrics endpoint are not yet wired; schedule them with the infrastructure work.
-- **Infrastructure as code** for staging (separate repository) and the staging deployment.
-- **Audit head hash anchoring** in write-once object storage (needs the storage adapter).
-- **Only the email adapter** exists. Calendar, meeting, storage, malware scan, analytics and payment
-  adapters arrive in the stages that use them.
+- **Tracing and metrics:** done in the hardening pass (ADR 0036): `/metrics` and OpenTelemetry.
+- **Infrastructure as code** for staging (separate repository) and the staging deployment. Still
+  open: it depends on the cloud provider. `docs/deployment.md` is its specification.
+- **Audit head hash anchoring** in write-once object storage: done (ADR 0036).
+- **Adapters:** email, storage, malware scan, analytics, link preview, calendar feeds and meetings
+  exist. The payment and CDN adapters are waiting on provider decisions.
 - **Idempotency-Key storage** is built with the first endpoint that needs it (Stage 1 or later).
-- **Migration safety lint** (`django-migration-linter` or similar) is not yet in CI.
-- **Container image build and scan** in CI; the Dockerfile has not been built in this environment.
+- **Migration safety lint** is in CI (`make lint-migrations`, ADR 0036).
+- **Container image build and scan** are in CI (`.github/workflows/ci.yml`).
 - **Gunicorn** was not run locally (it does not run on Windows); the image and compose file are
   ready for it.

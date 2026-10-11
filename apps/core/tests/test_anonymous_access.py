@@ -37,7 +37,9 @@ def _fill(route: str) -> str:
 
 
 def _sample(token: str) -> str:
-    return SAMPLE_ID if token.startswith("<uuid") else "x"
+    if token.startswith("<uuid"):
+        return SAMPLE_ID
+    return "1" if token.startswith("<int") else "x"
 
 
 def _non_public_routes():

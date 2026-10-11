@@ -62,11 +62,26 @@ services:
 
   worker:
     <<: *app
-    command: celery -A config worker -l info -Q critical,default,email,media,exports,analytics
+    command: celery -A config worker -l info -Q critical,default,email,exports,analytics
+
+  # Model calls can be slow and are billed, so they get their own workers and limits.
+  worker-ai:
+    <<: *app
+    command: celery -A config worker -l info -Q ai -n ai@%h --concurrency 4
+
+  # Fetches web pages for link previews on a member's behalf, so it is the one process that
+  # should have its own network with an outbound allow list (docs/deployment.md, "Egress").
+  worker-media:
+    <<: *app
+    command: celery -A config worker -l info -Q media -n media@%h
+    networks: [default, media_egress]
 
   beat:
     <<: *app
     command: celery -A config beat -l info
+
+networks:
+  media_egress:
 
 volumes:
   pgdata:

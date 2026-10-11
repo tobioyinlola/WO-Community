@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.core.serializers import ImageSerializer, StrictSerializer
-from apps.editorial.models import ITEM_TYPES, REACTION_KINDS, WIN_KINDS
+from apps.editorial.models import ITEM_TYPES, REACTION_KINDS, REPORT_REASONS, WIN_KINDS
 
 MAX_MARKUP = 40_000
 
@@ -168,6 +168,17 @@ class ItemCommentSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField(allow_null=True)
     mine = serializers.BooleanField()
+
+
+class NewsCommentReportSerializer(StrictSerializer):
+    reason = serializers.ChoiceField(choices=REPORT_REASONS)
+    details = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
+
+
+class NewsCommentReportReceivedSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    status = serializers.CharField()
+    created = serializers.BooleanField(help_text="False if you had already reported this")
 
 
 class ItemCommentPageSerializer(serializers.Serializer):

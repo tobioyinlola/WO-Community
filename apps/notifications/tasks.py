@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -68,6 +69,35 @@ def send_rejected_email(event_id: str) -> None:
     contact = accounts.get_contact(UUID(event.payload["user_id"]))
     if contact is not None:
         emails.send_rejected(contact.email, event.payload["reason"])
+
+
+def _payload_contact(event_id: str) -> tuple[Any, dict[str, Any]] | None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is None:
+        return None
+    contact = accounts.get_contact(UUID(event.payload["user_id"]))
+    return (contact, dict(event.payload)) if contact is not None else None
+
+
+@shared_task(name="notifications.send_suspended_email")
+def send_suspended_email(event_id: str) -> None:
+    found = _payload_contact(event_id)
+    if found is not None:
+        emails.send_suspended(found[0].email, found[1].get("reason", ""))
+
+
+@shared_task(name="notifications.send_removed_email")
+def send_removed_email(event_id: str) -> None:
+    found = _payload_contact(event_id)
+    if found is not None:
+        emails.send_removed(found[0].email, found[1].get("reason", ""))
+
+
+@shared_task(name="notifications.send_reinstated_email")
+def send_reinstated_email(event_id: str) -> None:
+    found = _payload_contact(event_id)
+    if found is not None:
+        emails.send_reinstated(found[0].email)
 
 
 @shared_task(name="notifications.send_password_reset_email")

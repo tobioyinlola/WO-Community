@@ -17,7 +17,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.core import events as domain_events
-from apps.feed import events
+from apps.feed import events, previews_admin
 from apps.feed.models import LinkPreview, Post, PostLink
 from apps.integrations.linkpreview import FetchFailed, FetchRejected, get_fetcher
 from apps.integrations.linkpreview.safe_http import parse_url
@@ -63,6 +63,13 @@ def _preview_for(url: str) -> LinkPreview:
     preview, created = LinkPreview.objects.get_or_create(
         url_hash=hashlib.sha256(url.encode()).hexdigest(), defaults={"url": url}
     )
+    if previews_admin.is_blocked(url):
+        # A blocked site is never fetched. The row keeps the post's link in place.
+        if preview.status != LinkPreview.Status.FAILED or preview.fail_code != "blocked_domain":
+            preview.status = LinkPreview.Status.FAILED
+            preview.fail_code = "blocked_domain"
+            preview.save(update_fields=["status", "fail_code", "updated_at"])
+        return preview
     if created or _stale(preview):
         domain_events.publish(events.LinkPreviewRequested(preview_id=str(preview.pk)))
         if preview.status == LinkPreview.Status.FAILED:
@@ -92,6 +99,9 @@ def fetch(preview_id: str) -> None:
     """Fill in a preview. Runs in a worker; safe to run twice."""
     preview = LinkPreview.objects.filter(pk=preview_id).first()
     if preview is None:
+        return
+    if previews_admin.is_blocked(preview.url):
+        _fail(preview, "blocked_domain")
         return
     try:
         result = get_fetcher().fetch(preview.url)

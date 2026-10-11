@@ -25,10 +25,10 @@ Status: accepted (Stage 2)
   a comment hides its replies as well, because replies are only shown under their parent. The post's
   comment count is recalculated from the comments readers can actually see, rather than adjusted by
   arithmetic, so hide, unhide and remove always leave it exact.
-- **Reporters are not told the outcome yet.** That arrives with the notification centre. Reporter
+- **Reporters are told the outcome** through the notification centre (ADR 0021). Reporter
   identity is visible to moderators only.
 
 ## Consequences
 
-Repeat offenders, automatic hiding after several reports, and appeals are not built. The queue is
-by report; grouping by item is possible later from the target columns without a data change.
+Comments on news join the same queue (ADR 0037). Repeat offenders, automatic hiding after several
+reports, and appeals are not built. The queue is by report; grouping by item is possible later from the target columns without a data change.

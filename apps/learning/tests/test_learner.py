@@ -183,8 +183,11 @@ def test_each_lesson_type_gives_what_it_should(course, learner_client):
     assert video["body"] == "" and video["resource"] is None and video["duration_seconds"] == 300
     assert "<strong>terms</strong>" in reading["body"] and reading["video"] is None
     assert resource["resource"] == {
+        "kind": "link",
         "url": "https://files.example.com/term-sheet.pdf",
         "name": "Term sheet template",
+        "size": None,
+        "content_type": "",
     }
     assert (video["previous_lesson_id"], video["next_lesson_id"]) == (None, reading["id"])
     assert (resource["previous_lesson_id"], resource["next_lesson_id"]) == (reading["id"], None)

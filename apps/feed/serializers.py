@@ -177,6 +177,20 @@ class FollowResultSerializer(serializers.Serializer):
     following = serializers.BooleanField()
 
 
+class SuggestionQuerySerializer(StrictSerializer):
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=30, default=10)
+
+
+class SuggestionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    headline = serializers.CharField(allow_blank=True)
+    image = ImageSerializer(allow_null=True)
+    score = serializers.IntegerField()
+    reasons = serializers.ListField(child=serializers.CharField())
+
+
 class FollowingQuerySerializer(StrictSerializer):
     type = serializers.ChoiceField(choices=["member", "startup"], required=False, default="")
     cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
@@ -213,7 +227,12 @@ class ReportQuerySerializer(StrictSerializer):
     status = serializers.ChoiceField(
         choices=["open", "reviewed", "actioned"], required=False, default="open"
     )
-    target_type = serializers.ChoiceField(choices=["post", "comment"], required=False, default="")
+    target_type = serializers.ChoiceField(
+        choices=["post", "comment", "news_comment"],
+        required=False,
+        default="",
+        help_text="`news_comment` is a comment on news or a win.",
+    )
     reason = serializers.ChoiceField(choices=REPORT_REASONS, required=False, default="")
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
     offset = serializers.IntegerField(required=False, min_value=0)
@@ -255,3 +274,38 @@ class ReportReviewSerializer(StrictSerializer):
 class ReportActionSerializer(StrictSerializer):
     action = serializers.ChoiceField(choices=["hide", "remove"])
     note = serializers.CharField(required=False, allow_blank=True, max_length=500, default="")
+
+
+class AdminPreviewQuerySerializer(StrictSerializer):
+    q = serializers.CharField(required=False, allow_blank=True, max_length=200, default="")
+    status = serializers.ChoiceField(
+        choices=["pending", "ready", "failed"], required=False, default=""
+    )
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
+    offset = serializers.IntegerField(required=False, min_value=0)
+
+
+class AdminPreviewSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    url = serializers.CharField()
+    domain = serializers.CharField()
+    status = serializers.CharField()
+    title = serializers.CharField(allow_blank=True)
+    site_name = serializers.CharField(allow_blank=True)
+    fail_code = serializers.CharField(allow_blank=True)
+    attempts = serializers.IntegerField()
+    fetched_at = serializers.DateTimeField(allow_null=True)
+    posts = serializers.IntegerField(help_text="How many posts show this card.")
+    blocked = serializers.BooleanField()
+
+
+class BlockDomainSerializer(StrictSerializer):
+    domain = serializers.CharField(max_length=253, help_text="example.com, or a pasted address.")
+    reason = serializers.CharField(required=False, allow_blank=True, max_length=300, default="")
+
+
+class BlockedDomainSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    domain = serializers.CharField()
+    reason = serializers.CharField(allow_blank=True)
+    created_at = serializers.DateTimeField()

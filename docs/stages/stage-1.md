@@ -281,6 +281,7 @@ Design and trade-offs are in ADR 0017.
 - `FIELD_ENCRYPTION_KEYS` must be set in every real environment (production refuses to start
   without it). Generate with
   `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
-- Rejected registrations should be purged after 90 days; the retention job arrives with hardening.
-- Suspension and removal do not email the member yet (only approval and rejection do).
-- Idempotency-Key storage is still not needed; it arrives with the first booking or enrolment flow.
+- Rejected registrations are purged after 90 days (ADR 0036).
+- Suspension, reinstatement and removal email the member (ADR 0037).
+- Idempotency-Key storage is still not needed: bookings and enrolments are protected by database
+  constraints, so a replayed request is a clean 409 or a no-op. It will be needed for payments.

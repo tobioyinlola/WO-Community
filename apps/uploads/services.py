@@ -23,9 +23,16 @@ from apps.core import ratelimit
 from apps.core.errors import ConflictError
 from apps.core.text import plain
 from apps.integrations.malware import get_scanner
-from apps.integrations.storage import MEDIA, QUARANTINE, ObjectTooLarge, PresignedPost, get_storage
-from apps.uploads import events, images
-from apps.uploads.models import Upload, UploadPurpose, UploadStatus
+from apps.integrations.storage import (
+    MEDIA,
+    PRIVATE,
+    QUARANTINE,
+    ObjectTooLarge,
+    PresignedPost,
+    get_storage,
+)
+from apps.uploads import documents, events, images
+from apps.uploads.models import DOCUMENT_PURPOSES, Upload, UploadPurpose, UploadStatus
 
 logger = structlog.get_logger(__name__)
 
@@ -37,16 +44,37 @@ VARIANTS = ("large", "thumb")
 
 
 def request_upload(
-    *, owner_id: UUID, purpose: str, content_type: str, size: int, filename: str = ""
+    *,
+    owner_id: UUID,
+    purpose: str,
+    content_type: str,
+    size: int,
+    filename: str = "",
+    can_upload_documents: bool = False,
 ) -> tuple[Upload, PresignedPost]:
-    """Reserve an upload and return the form the client posts the file to."""
+    """Reserve an upload and return the form the client posts the file to.
+
+    Documents are larger and are kept for people who are given them later, so only staff who
+    manage courses (``can_upload_documents``) may upload them.
+    """
     if purpose not in UploadPurpose.values:
         raise exceptions.ValidationError({"purpose": ["Unknown purpose."]})
-    if content_type not in settings.UPLOAD_ALLOWED_TYPES:
-        allowed = ", ".join(settings.UPLOAD_ALLOWED_TYPES)
-        raise exceptions.ValidationError({"content_type": [f"Allowed types: {allowed}."]})
-    if not 1 <= size <= settings.UPLOAD_MAX_BYTES:
-        limit = settings.UPLOAD_MAX_BYTES // (1024 * 1024)
+    is_document = purpose in DOCUMENT_PURPOSES
+    if is_document and not can_upload_documents:
+        raise exceptions.PermissionDenied("You cannot upload documents.")
+    allowed_types = tuple(
+        settings.UPLOAD_DOCUMENT_TYPES if is_document else settings.UPLOAD_ALLOWED_TYPES
+    )
+    max_bytes = settings.UPLOAD_DOCUMENT_MAX_BYTES if is_document else settings.UPLOAD_MAX_BYTES
+    if content_type not in allowed_types:
+        kinds = (
+            ", ".join(sorted(set(settings.UPLOAD_DOCUMENT_TYPES.values())))
+            if is_document
+            else ", ".join(allowed_types)
+        )
+        raise exceptions.ValidationError({"content_type": [f"Allowed types: {kinds}."]})
+    if not 1 <= size <= max_bytes:
+        limit = max_bytes // (1024 * 1024)
         raise exceptions.ValidationError(
             {"size": [f"Files must be between 1 byte and {limit} MB."]}
         )
@@ -166,6 +194,9 @@ def process_upload(upload_id: UUID) -> None:
             )
             _finish(upload, UploadStatus.REJECTED, "malware_detected")
             return
+        if upload.purpose in DOCUMENT_PURPOSES:
+            _publish_document(upload, data, storage)
+            return
         try:
             processed = images.process(data, upload.declared_content_type)
         except images.ImageRejected as exc:
@@ -188,6 +219,30 @@ def process_upload(upload_id: UUID) -> None:
         upload.ready_at = timezone.now()
         upload.save()
         storage.delete(bucket=QUARANTINE, key=upload.quarantine_key)
+
+
+def _publish_document(upload: Upload, data: bytes, storage: Any) -> None:
+    """Check a scanned document and move it to the private bucket, unchanged."""
+    try:
+        checked = documents.inspect(data, upload.declared_content_type)
+    except documents.DocumentRejected as exc:
+        _finish(upload, UploadStatus.REJECTED, exc.code)
+        return
+    key = f"private/{upload.purpose}/{secrets.token_hex(20)}"
+    storage.write(
+        bucket=PRIVATE,
+        key=key,
+        data=data,
+        content_type=checked.content_type,
+        cache_control="private, no-store",
+    )
+    upload.base_key = key
+    upload.size = checked.size
+    upload.checksum = hashlib.sha256(data).hexdigest()
+    upload.status = UploadStatus.READY
+    upload.ready_at = timezone.now()
+    upload.save()
+    storage.delete(bucket=QUARANTINE, key=upload.quarantine_key)
 
 
 def store_external_image(data: bytes, folder: str) -> str:
@@ -249,6 +304,27 @@ def claim(*, upload_id: UUID, owner_id: UUID, purpose: str) -> Upload:
     return upload
 
 
+def document_link(*, key: str, filename: str, content_type: str) -> tuple[str, int]:
+    """A short lived address that downloads a stored document, and how long it lasts."""
+    ttl = settings.DOCUMENT_LINK_TTL_SECONDS
+    url = get_storage().presign_get(
+        bucket=PRIVATE, key=key, expires_in=ttl, filename=filename, content_type=content_type
+    )
+    return url, ttl
+
+
+def release_document(key: str) -> None:
+    """Delete a document that is no longer used, once the change has committed."""
+    if not key:
+        return
+
+    def delete_file() -> None:
+        get_storage().delete(bucket=PRIVATE, key=key)
+        Upload.objects.filter(base_key=key).update(status=UploadStatus.DISCARDED)
+
+    transaction.on_commit(delete_file)
+
+
 def release(base_key: str) -> None:
     """Delete the files of an image that is no longer used, once the change has committed."""
     if not base_key:
@@ -289,8 +365,11 @@ def cleanup() -> dict[str, int]:
         ready_at__lte=now - settings.UPLOAD_UNCLAIMED_TTL,
     )
     for upload in unclaimed:
-        for name in VARIANTS:
-            storage.delete(bucket=MEDIA, key=f"{upload.base_key}/{name}.webp")
+        if upload.purpose in DOCUMENT_PURPOSES:
+            storage.delete(bucket=PRIVATE, key=upload.base_key)
+        else:
+            for name in VARIANTS:
+                storage.delete(bucket=MEDIA, key=f"{upload.base_key}/{name}.webp")
         upload.status = UploadStatus.DISCARDED
         upload.save(update_fields=["status", "updated_at"])
         counts["discarded"] += 1

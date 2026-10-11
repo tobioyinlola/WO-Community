@@ -173,6 +173,16 @@ def public_listing(
     }
 
 
+def public_sitemap() -> list[dict[str, Any]]:
+    """Slug and last change of every public published event, for search engines."""
+    rows = (
+        Event.objects.filter(status=Event.Status.PUBLISHED, public=True)
+        .order_by("-starts_at", "-id")
+        .values("slug", "updated_at")[:5000]
+    )
+    return [dict(row) for row in rows]
+
+
 def public_detail(slug: str) -> dict[str, Any]:
     event = (
         Event.objects.filter(status=Event.Status.PUBLISHED, public=True, slug=slug)
@@ -239,6 +249,7 @@ def admin_views(actor: Any, events: list[Event], *, detail: bool = False) -> lis
             description=event.description,
             link=event.link,
             recording_url=event.recording_url,
+            organiser_email=event.organiser_email,
             summary=event.summary,
         )
     return views

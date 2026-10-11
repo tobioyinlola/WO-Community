@@ -23,6 +23,7 @@ from apps.learning.serializers import (
     CoursePageSerializer,
     EnrolmentResultSerializer,
     LessonDetailSerializer,
+    LessonFileSerializer,
     LessonProgressResultSerializer,
     PageQuerySerializer,
     ProgressSerializer,
@@ -173,6 +174,27 @@ class LessonView(APIView):
         viewer_id = cast(UUID, user.pk) if user is not None and user.status == "active" else None
         return _private(
             Response(LessonDetailSerializer(selectors.lesson_detail(viewer_id, lesson_id)).data)
+        )
+
+
+class LessonFileView(APIView):
+    policy = policies.public
+    authentication_classes = [OptionalJWTAuthentication]
+    throttle_classes = [UserRateThrottle, AnonymousLessonThrottle]
+
+    @extend_schema(
+        summary="Download link for a lesson document",
+        description="For a resource lesson whose file we store. Returns a signed address that "
+        "lasts a few minutes and saves the file as an attachment; ask again when it lapses. "
+        "Same access rules as opening the lesson.",
+        responses={200: LessonFileSerializer, **ERRORS},
+        tags=["learning"],
+    )
+    def get(self, request: Request, lesson_id: UUID) -> Response:
+        user = request.user if request.user and request.user.is_authenticated else None
+        viewer_id = cast(UUID, user.pk) if user is not None and user.status == "active" else None
+        return _private(
+            Response(LessonFileSerializer(selectors.lesson_file(viewer_id, lesson_id)).data)
         )
 
 

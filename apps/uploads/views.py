@@ -8,7 +8,9 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.accounts.models import User
 from apps.core import policies
+from apps.core.rbac import permissions_for
 from apps.uploads import services
 from apps.uploads.serializers import (
     UploadCreatedSerializer,
@@ -39,7 +41,9 @@ class UploadCreateView(APIView):
         summary="Reserve an upload and get the form to send the file with",
         description="Post the form's `form_data`, then the file as the last field named `file`, "
         "to the form's `url`. The file goes straight to storage, never through this API. "
-        "Then call `POST /uploads/{id}/complete`. Allowed: JPEG, PNG or WebP up to 5 MB.",
+        "Then call `POST /uploads/{id}/complete`. Images (JPEG, PNG or WebP, up to 5 MB) are "
+        "open to every member. The `course_file` purpose takes a PDF, DOCX, XLSX or PPTX up to "
+        "25 MB and is only for people who manage courses.",
         request=UploadRequestSerializer,
         responses={201: UploadCreatedSerializer, **ERRORS},
         tags=["uploads"],
@@ -47,7 +51,12 @@ class UploadCreateView(APIView):
     def post(self, request: Request) -> Response:
         serializer = UploadRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        upload, post = services.request_upload(owner_id=_uid(request), **serializer.validated_data)
+        user = cast(User, request.user)
+        upload, post = services.request_upload(
+            owner_id=_uid(request),
+            can_upload_documents="courses.manage" in permissions_for(user.role_names()),
+            **serializer.validated_data,
+        )
         response = Response(
             UploadCreatedSerializer(created_body(upload, post)).data,
             status=status.HTTP_201_CREATED,

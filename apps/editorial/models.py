@@ -8,6 +8,7 @@ ITEM_TYPES = ("award", "celebration", "partnership", "funding", "news", "announc
 ITEM_STATUSES = ("draft", "scheduled", "published", "removed")
 WIN_KINDS = ("award", "funding", "partnership")
 REACTION_KINDS = ("like", "celebrate", "insightful")
+REPORT_REASONS = ("spam", "harassment", "misinformation", "illegal", "inappropriate", "other")
 
 
 class EditorialItem(BaseModel):
@@ -148,3 +149,38 @@ class WinSubmission(BaseModel):
             models.Index(fields=["status", "created_at"], name="win_queue_idx"),
             models.Index(fields=["submitter", "-created_at"], name="win_mine_idx"),
         ]
+
+
+class CommentReport(BaseModel):
+    """A member's complaint about a comment on news or a win, handled in the moderation queue."""
+
+    class Status(models.TextChoices):
+        OPEN = "open"
+        REVIEWED = "reviewed"  # looked at, nothing needed doing
+        ACTIONED = "actioned"  # the comment was hidden or removed
+
+    comment = models.ForeignKey(ItemComment, on_delete=models.CASCADE, related_name="reports")
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="editorial_reports"
+    )
+    reason = models.CharField(max_length=14)
+    details = models.CharField(max_length=500, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    handled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    handled_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["reporter", "comment"], name="editorial_report_once"),
+            models.CheckConstraint(
+                condition=Q(reason__in=REPORT_REASONS), name="editorial_report_reason"
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=["open", "reviewed", "actioned"]),
+                name="editorial_report_status",
+            ),
+        ]
+        indexes = [models.Index(fields=["status", "created_at"], name="editorial_report_queue_idx")]

@@ -19,3 +19,19 @@ def forward() -> dict[str, int]:
             break
     links = services.forward_links(sink.send_identities)
     return {"events": events, "links": links}
+
+
+@shared_task(name="audit.anchor_previous_day")
+def anchor_previous_day() -> dict[str, object]:
+    """Anchor yesterday's audit head hash in write-once storage and re-check recent anchors."""
+    from apps.integrations import anchoring
+
+    return anchoring.anchor_previous_day()
+
+
+@shared_task(name="analytics.archive_expired")
+def archive_expired() -> list[str]:
+    """Copy partitions that are past retention to Parquet before they are dropped."""
+    from apps.integrations import archival
+
+    return archival.archive_expired()

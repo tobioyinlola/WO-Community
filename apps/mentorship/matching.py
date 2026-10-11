@@ -27,6 +27,9 @@ PRIOR_RATING = 4.0  # what a mentor with no ratings is assumed to be
 PRIOR_WEIGHT = 5  # how many ratings that assumption is worth
 AVAILABILITY_TARGET = 10  # bookable start times in two weeks that count as fully available
 AVAILABILITY_DAYS = 14
+FAST_RESPONSE_HOURS = 4  # median reply time that scores full marks
+SLOW_RESPONSE_HOURS = 168  # and the one that scores nothing
+RESPONSE_SHARE = 0.25  # how much of the quality signal reply speed is worth
 MAX_NEEDS = 5
 CACHED_RESULTS = 50
 
@@ -104,18 +107,26 @@ def language_signal(languages: list[str], profile: MentorProfile) -> Signal:
     return Signal("language", 1.0, "Speaks " + ", ".join(LANGUAGES.get(c, c) for c in shared))
 
 
-def quality_signal(profile: MentorProfile) -> Signal:
+def quality_signal(profile: MentorProfile, response_hours: float | None = None) -> Signal:
+    """Ratings (smoothed towards a prior) and, once the mentor has answered requests, how fast."""
     average = (profile.rating_total + PRIOR_RATING * PRIOR_WEIGHT) / (
         profile.rating_count + PRIOR_WEIGHT
     )
     score = max(0.0, min(1.0, (average - 1) / 4))
+    parts = []
     if profile.rating_count:
-        return Signal("quality", score, f"Rated {average:.1f} by {profile.rating_count} founders")
-    return Signal("quality", score, "")
+        parts.append(f"Rated {average:.1f} by {profile.rating_count} founders")
+    if response_hours is not None:
+        # Answering within FAST_RESPONSE_HOURS is full marks, a week or more is none.
+        span = SLOW_RESPONSE_HOURS - FAST_RESPONSE_HOURS
+        speed = 1.0 - (response_hours - FAST_RESPONSE_HOURS) / span
+        score = (1 - RESPONSE_SHARE) * score + RESPONSE_SHARE * max(0.0, min(1.0, speed))
+        if response_hours <= 24:
+            parts.append("Usually replies within a day")
+    return Signal("quality", score, ", ".join(parts))
 
 
-def availability_signal(profile: MentorProfile, now: Any) -> Signal:
-    starts = scheduling.bookable_starts(profile, days=AVAILABILITY_DAYS, now=now)
+def availability_signal(starts: list[Any]) -> Signal:
     score = min(1.0, len(starts) / AVAILABILITY_TARGET)
     text = f"{len(starts)} times free in the next two weeks" if starts else ""
     return Signal("availability", score, text)
@@ -133,16 +144,18 @@ def score_mentor(
     languages: list[str],
     pairs: list[tuple[str, str]],
     now: Any,
+    response_hours: float | None = None,
 ) -> dict[str, Any] | None:
-    if scheduling.capacity_left(profile, now) == 0:
-        return None
+    starts = scheduling.bookable_starts(profile, days=AVAILABILITY_DAYS, now=now)
+    if scheduling.capacity_left(profile, now) == 0 and not starts:
+        return None  # nothing to book now or in the coming weeks
     signals = [
         expertise_signal(needs, profile),
         fit_signal(pairs, profile),
-        availability_signal(profile, now),
+        availability_signal(starts),
         language_signal(languages, profile),
         capacity_signal(profile, now),
-        quality_signal(profile),
+        quality_signal(profile, response_hours),
     ]
     weights = settings.MENTORSHIP_MATCH_WEIGHTS
     used = [s for s in signals if s.score is not None]
@@ -202,8 +215,17 @@ def recommend(
     if ranked is None:
         now = now or timezone.now()
         scored = []
-        for profile in selectors.listed().exclude(user_id=viewer.pk):
-            result = score_mentor(profile, needs=wanted, languages=languages, pairs=pairs, now=now)
+        candidates = list(selectors.listed().exclude(user_id=viewer.pk))
+        speeds = selectors.median_response_hours([p.user_id for p in candidates])
+        for profile in candidates:
+            result = score_mentor(
+                profile,
+                needs=wanted,
+                languages=languages,
+                pairs=pairs,
+                now=now,
+                response_hours=speeds.get(profile.user_id),
+            )
             if result is not None:
                 scored.append((str(profile.user_id), result))
         scored.sort(key=lambda item: (-item[1]["score"], item[0]))

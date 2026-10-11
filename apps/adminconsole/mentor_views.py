@@ -9,14 +9,18 @@ from rest_framework.views import APIView
 from apps.adminconsole.views import _actor, _ip
 from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
-from apps.mentorship import applications, mentors, selectors
-from apps.mentorship.models import MentorApplication, MentorProfile
+from apps.mentorship import applications, booking, mentors, selectors, session_selectors
+from apps.mentorship.models import MentorApplication, MentorProfile, MentorSession
 from apps.mentorship.serializers import (
     AdminMentorApplicationSerializer,
     AdminMentorSerializer,
     AdminQuerySerializer,
     DecisionSerializer,
     MentorReasonSerializer,
+)
+from apps.mentorship.session_serializers import (
+    AdminMentoringSessionSerializer,
+    AdminSessionQuerySerializer,
 )
 
 DECIDE = policies.admin_permission("mentors.decide")
@@ -158,3 +162,75 @@ class AdminMentorRestoreView(APIView):
 def _mentor(request: Request, profile: MentorProfile) -> Response:
     view = selectors.admin_mentor_views(_actor(request), [profile])[0]
     return Response(AdminMentorSerializer(view).data)
+
+
+MANAGE_SESSIONS = policies.admin_permission("sessions.manage")
+
+
+class AdminSessionsView(APIView):
+    policy = MANAGE_SESSIONS
+
+    @extend_schema(
+        summary="Mentoring sessions",
+        description="Newest first. Filter by `status`, `mentor_id` and `mentee_id`. Shows both "
+        "sides' feedback and each person's email, so it is for support and moderation.",
+        parameters=[AdminSessionQuerySerializer],
+        responses={200: AdminMentoringSessionSerializer(many=True), **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> Response:
+        params = AdminSessionQuerySerializer(data=request.query_params.dict())
+        params.is_valid(raise_exception=True)
+        keep = ("status", "mentor_id", "mentee_id")
+        filters = {k: v for k, v in params.validated_data.items() if k in keep}
+        paginator = AdminLimitOffsetPagination()
+        page = paginator.paginate_queryset(
+            session_selectors.admin_sessions(**filters), request, view=self
+        )
+        views = session_selectors.admin_views(_actor(request), page or [])
+        return paginator.get_paginated_response(
+            AdminMentoringSessionSerializer(views, many=True).data
+        )
+
+
+class AdminSessionView(APIView):
+    policy = MANAGE_SESSIONS
+
+    @extend_schema(
+        summary="One mentoring session",
+        responses={200: AdminMentoringSessionSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request, session_id: UUID) -> Response:
+        session = MentorSession.objects.filter(pk=session_id).first()
+        if session is None:
+            raise exceptions.NotFound()
+        view = session_selectors.admin_views(_actor(request), [session])[0]
+        return Response(AdminMentoringSessionSerializer(view).data)
+
+
+class AdminSessionCancelView(APIView):
+    policy = MANAGE_SESSIONS
+
+    @extend_schema(
+        summary="Cancel a session",
+        description="For support cases. Both people are told, with the reason. Audited.",
+        request=MentorReasonSerializer,
+        responses={
+            200: AdminMentoringSessionSerializer,
+            **ERRORS,
+            409: OpenApiResponse(description="Already closed"),
+        },
+        tags=["admin"],
+    )
+    def post(self, request: Request, session_id: UUID) -> Response:
+        serializer = MentorReasonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        session = booking.cancel_by_admin(
+            actor=_actor(request),
+            session_id=session_id,
+            reason=serializer.validated_data["reason"],
+            ip=_ip(request),
+        )
+        view = session_selectors.admin_views(_actor(request), [session])[0]
+        return Response(AdminMentoringSessionSerializer(view).data)

@@ -51,6 +51,6 @@ analytics ADR and stage notes are updated.
 
 ## Consequences
 
-Hosts, speakers and sponsors, ticketing and payments, recurring events, waiting lists, and sending
-the attendee list directly to the organiser are not built. Events are not in member search or in the
-directory sitemap (same layering reason as jobs and news).
+Hosts, speakers and sponsors, ticketing and payments, recurring events and waiting lists are not
+built. Events are in member search and the combined sitemap, and an admin can email the attendee
+list to the event's organiser address (ADR 0037).

@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import structlog
+from celery.schedules import crontab
 from kombu import Exchange, Queue
 
 from apps.core.logging import shared_processors
@@ -38,6 +39,17 @@ INSTALLED_APPS = [
     "apps.campaigns",
     "apps.learning",
     "apps.mentorship",
+    "apps.toolkit.ventures",
+    "apps.toolkit.jobs",
+    "apps.toolkit.ai",
+    "apps.toolkit.scoring",
+    "apps.toolkit.plans",
+    "apps.toolkit.forecasts",
+    "apps.toolkit.decks",
+    "apps.toolkit.prototypes",
+    "apps.toolkit.partner",
+    "apps.toolkit.sharing",
+    "apps.toolkit.admin_api",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -149,6 +161,7 @@ REST_FRAMEWORK = {
         "feed_read": "240/min",
         "lesson_progress": "60/min",
         "lesson_visitor": "30/min",
+        "toolkit_share": "60/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -170,6 +183,12 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "ChangeSetStatusEnum": "apps.toolkit.partner.models.CHANGE_STATUSES",
+        "PrototypeKindEnum": "apps.toolkit.prototypes.spec.KINDS",
+        "ShareSubjectTypeEnum": "apps.toolkit.sharing.models.SUBJECT_TYPES",
+        "DeckStatusEnum": "apps.toolkit.decks.models.DECK_STATUSES",
+        "PlanStatusEnum": "apps.toolkit.plans.models.PLAN_STATUSES",
+        "PlanSectionStatusEnum": "apps.toolkit.plans.models.SECTION_STATUSES",
         "JobTypeEnum": "apps.jobs.models.JOB_TYPES",
         "ApplyMethodEnum": "apps.jobs.models.APPLY_METHODS",
         "EditorialTypeEnum": "apps.editorial.models.ITEM_TYPES",
@@ -177,6 +196,7 @@ SPECTACULAR_SETTINGS = {
         "EventTypeEnum": "apps.events.models.EVENT_TYPES",
         "LessonTypeEnum": "apps.learning.models.LESSON_TYPES",
         "MentorApplicationStatusEnum": "apps.mentorship.models.APPLICATION_STATUSES",
+        "MentoringSessionStatusEnum": "apps.mentorship.models.SESSION_STATUSES",
         "CourseLevelEnum": "apps.learning.models.LEVELS",
         "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
     },
@@ -236,6 +256,7 @@ CELERY_TASK_QUEUES = (
     Queue("media", Exchange("media"), routing_key="media"),
     Queue("exports", Exchange("exports"), routing_key="exports"),
     Queue("analytics", Exchange("analytics"), routing_key="analytics"),
+    Queue("ai", Exchange("ai"), routing_key="ai"),
 )
 CELERY_TASK_ROUTES = {
     "core.dispatch_outbox": {"queue": "critical"},
@@ -243,6 +264,8 @@ CELERY_TASK_ROUTES = {
     "analytics.ensure_partitions": {"queue": "analytics"},
     "analytics.drop_expired": {"queue": "analytics"},
     "feed.fetch_link_preview": {"queue": "media"},
+    "toolkit.run_ai_job": {"queue": "ai"},
+    "toolkit.run_export_job": {"queue": "exports"},
 }
 CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
@@ -255,19 +278,45 @@ CELERY_BEAT_SCHEDULE = {
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
+    "news-digest": {
+        "task": "memberarea.send_news_digest",
+        "schedule": crontab(day_of_week="mon", hour=8, minute=0),
+    },
+    "mentorship-reminders": {"task": "mentorship.send_reminders", "schedule": 300.0},
+    "mentorship-expire-requests": {"task": "mentorship.expire_requests", "schedule": 600.0},
+    "mentorship-complete-due": {"task": "mentorship.complete_due", "schedule": 300.0},
+    "mentorship-sync-calendars": {"task": "mentorship.sync_calendars", "schedule": 900.0},
     "campaigns-start-due": {"task": "campaigns.start_due", "schedule": 60.0},
     "dashboard-refresh": {"task": "adminconsole.refresh_dashboard", "schedule": 3600.0},
     "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
     "jobs-digests": {"task": "jobs.send_digests", "schedule": 3600.0},
     "analytics-forward": {"task": "analytics.forward", "schedule": 60.0},
     "analytics-partitions": {"task": "analytics.ensure_partitions", "schedule": 86400.0},
+    "analytics-archive": {"task": "analytics.archive_expired", "schedule": 86400.0},
     "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
+    "audit-anchor": {"task": "audit.anchor_previous_day", "schedule": 86400.0},
+    "toolkit-reap-jobs": {"task": "toolkit.reap_stuck_jobs", "schedule": 600.0},
+    "toolkit-erase-ventures": {"task": "toolkit.erase_deleted_ventures", "schedule": 86400.0},
+    "toolkit-purge-exports": {"task": "toolkit.purge_exports", "schedule": 3600.0},
+    "toolkit-weekly-nudges": {
+        "task": "toolkit.weekly_nudges",
+        "schedule": crontab(day_of_week="mon", hour=7, minute=30),
+    },
+    "accounts-purge-rejected": {"task": "accounts.purge_rejected", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
 }
 OUTBOX_MAX_ATTEMPTS = 8
+
+# --- Observability -------------------------------------------------------------
+ENVIRONMENT = env.str("ENVIRONMENT", default="local")
+# Tracing is off until a collector address is given. Spans never carry query strings.
+OTEL_EXPORTER_OTLP_ENDPOINT = env.str("OTEL_EXPORTER_OTLP_ENDPOINT", default="")
+OTEL_TRACE_SAMPLE_RATIO = env.float("OTEL_TRACE_SAMPLE_RATIO", default=0.1)
+# GET /metrics answers only to this bearer token, and 404 when it is not set.
+METRICS_TOKEN = env.str("METRICS_TOKEN", default="")
 
 # --- Adapters ----------------------------------------------------------------
 EMAIL_ADAPTER = env.str("EMAIL_ADAPTER", default="apps.integrations.email.fake.FakeEmailAdapter")
@@ -284,6 +333,10 @@ EMAIL_REPLY_TO = env.str("EMAIL_REPLY_TO", default="")
 EMAIL_WEBHOOK_RETENTION_DAYS = 30
 
 CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
+# Cloudflare: a token scoped to Cache Purge on one zone, and the public host behind it.
+CLOUDFLARE_API_TOKEN = env.str("CLOUDFLARE_API_TOKEN", default="")
+CLOUDFLARE_ZONE_ID = env.str("CLOUDFLARE_ZONE_ID", default="")
+CDN_ORIGIN_URL = env.str("CDN_ORIGIN_URL", default="")
 STORAGE_ADAPTER = env.str("STORAGE_ADAPTER", default="apps.integrations.storage.fake.FakeStorage")
 MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.fake.FakeScanner")
 
@@ -291,6 +344,10 @@ MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.
 # Raise on a bad event (tests, local) instead of dropping it quietly (production).
 ANALYTICS_STRICT = env.bool("ANALYTICS_STRICT", default=False)
 ANALYTICS_RETENTION_MONTHS = 13
+# When true, a monthly partition is dropped only after it was archived to Parquet.
+ANALYTICS_REQUIRE_ARCHIVE = env.bool("ANALYTICS_REQUIRE_ARCHIVE", default=False)
+# Registrations that were rejected are erased after this many days.
+REJECTED_REGISTRATION_RETENTION_DAYS = 90
 ANALYTICS_FORWARD_BATCH = 500
 # Events are forwarded only once this old, so one numbered early that commits late is not skipped.
 ANALYTICS_FORWARD_DELAY_SECONDS = 60
@@ -305,6 +362,12 @@ STORAGE_ACCESS_KEY_ID = env.str("STORAGE_ACCESS_KEY_ID", default="")
 STORAGE_SECRET_ACCESS_KEY = env.str("STORAGE_SECRET_ACCESS_KEY", default="")
 STORAGE_QUARANTINE_BUCKET = env.str("STORAGE_QUARANTINE_BUCKET", default="wo-quarantine")
 STORAGE_MEDIA_BUCKET = env.str("STORAGE_MEDIA_BUCKET", default="wo-media")
+# Checked documents (course files). Never public: members are given short lived signed links.
+STORAGE_PRIVATE_BUCKET = env.str("STORAGE_PRIVATE_BUCKET", default="wo-private")
+# Write-once bucket (S3 Object Lock) for the daily audit head hash; never public.
+STORAGE_ANCHOR_BUCKET = env.str("STORAGE_ANCHOR_BUCKET", default="wo-anchor")
+AUDIT_ANCHOR_RETENTION_DAYS = env.int("AUDIT_ANCHOR_RETENTION_DAYS", default=7 * 365)
+AUDIT_ANCHOR_VERIFY_DAYS = 7
 # Public address of the media bucket: a separate, cookieless domain behind the CDN.
 MEDIA_BASE_URL = env.str("MEDIA_BASE_URL", default="http://localhost:9000/wo-media")
 CLAMD_HOST = env.str("CLAMD_HOST", default="localhost")
@@ -312,6 +375,17 @@ CLAMD_PORT = env.int("CLAMD_PORT", default=3310)
 CLAMD_TIMEOUT = 10
 UPLOAD_ALLOWED_TYPES = ("image/jpeg", "image/png", "image/webp")
 UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+# Documents are checked and scanned but, unlike images, cannot be rebuilt from their pixels, so
+# they are only ever delivered as attachments through a short lived signed link.
+UPLOAD_DOCUMENT_TYPES = {
+    "application/pdf": "pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+}
+UPLOAD_DOCUMENT_MAX_BYTES = 25 * 1024 * 1024
+UPLOAD_DOCUMENT_MAX_UNPACKED_BYTES = 200 * 1024 * 1024  # a zip bomb guard for Office files
+DOCUMENT_LINK_TTL_SECONDS = 300
 UPLOAD_PRESIGN_TTL_SECONDS = 900
 UPLOAD_DAILY_LIMIT = 20
 UPLOAD_PROCESSING_TIMEOUT = timedelta(hours=2)
@@ -396,3 +470,89 @@ MENTORSHIP_SYNONYMS = {
     "finance": ["accounting", "financial modelling", "budgeting"],
     "sales": ["business development", "revenue"],
 }
+# Sessions: how long a request waits, how many a founder can have open, and how late is late.
+MENTORSHIP_REQUEST_TTL_HOURS = 72
+MENTORSHIP_DECIDE_BEFORE_START_HOURS = 2  # an unanswered request lapses this long before it starts
+MENTORSHIP_MAX_OPEN_REQUESTS = 5
+MENTORSHIP_REQUESTS_PER_DAY = 10
+MENTORSHIP_MAX_RESCHEDULES = 3
+MENTORSHIP_LATE_CANCEL_HOURS = 24
+MENTORSHIP_COMPLETE_AFTER_MINUTES = 15  # a confirmed session counts as held this long after it ends
+MENTORSHIP_FEEDBACK_WINDOW_DAYS = 14
+
+# --- Mentor calendar feeds ---------------------------------------------------
+# A mentor can share the private iCal address of their calendar so busy time is not offered.
+CALENDAR_FEED_READER = env.str(
+    "CALENDAR_FEED_READER", default="apps.integrations.calendars.web.WebFeedReader"
+)
+CALENDAR_SYNC_DAYS = 62  # a little more than the booking horizon
+CALENDAR_CONNECTS_PER_HOUR = 10
+CALENDAR_STALE_AFTER = timedelta(hours=3)  # a feed not read for this long is shown as stale
+
+# --- Venture launch toolkit ---------------------------------------------------
+TOOLKIT_MAX_VENTURES_PER_MEMBER = env.int("TOOLKIT_MAX_VENTURES_PER_MEMBER", default=3)
+# Each tool can ship (or be switched off) on its own.
+TOOLKIT_FEATURES = {
+    name: env.bool(f"TOOLKIT_FEATURE_{name.upper()}", default=True)
+    for name in ("score", "plan", "forecast", "decks", "prototypes", "partner")
+}
+# "fake" runs offline; otherwise a dotted path to an LLMProvider class.
+AI_PROVIDER = env.str("AI_PROVIDER", default="fake")
+AI_FALLBACK_PROVIDER = env.str("AI_FALLBACK_PROVIDER", default="")
+# Which model each kind of task uses, so routine steps can use a cheaper one.
+AI_MODEL_ROUTING = {
+    "default": env.str("AI_MODEL_DEFAULT", default="default-model"),
+    "research": env.str("AI_MODEL_RESEARCH", default=""),
+    "writer": env.str("AI_MODEL_WRITER", default=""),
+    "finance": env.str("AI_MODEL_FINANCE", default=""),
+    "deck": env.str("AI_MODEL_DECK", default=""),
+    "prototype": env.str("AI_MODEL_PROTOTYPE", default=""),
+    "reviewer": env.str("AI_MODEL_REVIEWER", default=""),
+    "partner": env.str("AI_MODEL_PARTNER", default=""),
+}
+AI_BASE_URL = env.str("AI_BASE_URL", default="")  # an OpenAI compatible chat completions API
+AI_API_KEY = env.str("AI_API_KEY", default="")
+AI_REQUEST_TIMEOUT_SECONDS = env.int("AI_REQUEST_TIMEOUT_SECONDS", default=60)
+AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per member, model calls
+# Estimated cost per million tokens in minor units, by model (input, output). For usage reports.
+AI_PRICE_PER_MILLION_TOKENS: dict[str, tuple[int, int]] = {}
+AI_COST_CURRENCY = "USD"
+AI_PARTNER_REPLY_TIMEOUT_SECONDS = env.int("AI_PARTNER_REPLY_TIMEOUT_SECONDS", default=10)
+RESEARCH_ALLOWED_DOMAINS = env.list("RESEARCH_ALLOWED_DOMAINS", default=[])
+RESEARCH_PROVIDER = env.str(
+    "RESEARCH_PROVIDER", default="apps.toolkit.ai.research.fake.FakeResearchProvider"
+)
+RESEARCH_SEARCH_URL = env.str("RESEARCH_SEARCH_URL", default="")
+RESEARCH_SEARCH_KEY = env.str("RESEARCH_SEARCH_KEY", default="")
+EXPORT_URL_TTL = env.int("EXPORT_URL_TTL", default=900)
+EXPORT_RETENTION_DAYS = env.int("EXPORT_RETENTION_DAYS", default=7)
+DECK_MAX_SLIDES = env.int("DECK_MAX_SLIDES", default=100)
+DECK_MAX_ELEMENTS_PER_SLIDE = 200
+DECK_VERSIONS_KEPT = env.int("DECK_VERSIONS_KEPT", default=30)
+PLAN_VERSIONS_KEPT = env.int("PLAN_VERSIONS_KEPT", default=20)
+TOOLKIT_MAX_ACTIVE_JOBS = env.int("TOOLKIT_MAX_ACTIVE_JOBS", default=4)
+PROTOTYPE_MAX_SCREENS = env.int("PROTOTYPE_MAX_SCREENS", default=20)
+VENTURE_DELETE_GRACE_DAYS = env.int("VENTURE_DELETE_GRACE_DAYS", default=14)
+# Research for one report runs its questions side by side. Tests turn it off (one connection).
+TOOLKIT_PARALLEL_RESEARCH = env.bool("TOOLKIT_PARALLEL_RESEARCH", default=True)
+
+# --- Video meetings ----------------------------------------------------------
+# One adapter per provider; a mentor picks one, and MEETING_DEFAULT_PROVIDER covers the rest.
+MEETING_DEFAULT_PROVIDER = env.str("MEETING_DEFAULT_PROVIDER", default="google_meet")
+MEETING_PROVIDERS = {
+    "google_meet": env.str(
+        "MEETING_GOOGLE_MEET_ADAPTER", default="apps.integrations.meetings.fake.FakeMeetingProvider"
+    ),
+    "zoom": env.str(
+        "MEETING_ZOOM_ADAPTER", default="apps.integrations.meetings.fake.FakeMeetingProvider"
+    ),
+}
+# Google Meet links are made as events on one platform calendar, through an OAuth refresh token.
+GOOGLE_MEET_CLIENT_ID = env.str("GOOGLE_MEET_CLIENT_ID", default="")
+GOOGLE_MEET_CLIENT_SECRET = env.str("GOOGLE_MEET_CLIENT_SECRET", default="")
+GOOGLE_MEET_REFRESH_TOKEN = env.str("GOOGLE_MEET_REFRESH_TOKEN", default="")
+GOOGLE_MEET_CALENDAR_ID = env.str("GOOGLE_MEET_CALENDAR_ID", default="primary")
+# Zoom meetings are made with a Server-to-Server OAuth app on the platform account.
+ZOOM_ACCOUNT_ID = env.str("ZOOM_ACCOUNT_ID", default="")
+ZOOM_CLIENT_ID = env.str("ZOOM_CLIENT_ID", default="")
+ZOOM_CLIENT_SECRET = env.str("ZOOM_CLIENT_SECRET", default="")
