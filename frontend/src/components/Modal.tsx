@@ -64,13 +64,15 @@ export function Modal({ open, onClose, title, eyebrow, children, actions }: Moda
 
   return createPortal(
     // The scrim closes the dialog on a pointer click; keyboard users have Esc and the buttons.
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className="wo-scrim"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
+      {/* The dialog handles Tab and Esc itself so focus stays inside it. */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
         ref={dialogRef}
         className="wo-modal"
