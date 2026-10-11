@@ -34,6 +34,8 @@ export function CardLink({ variant = "default", className, ...rest }: CardLinkPr
 }
 
 export function CardTitle({ className, ...rest }: HTMLAttributes<HTMLHeadingElement>) {
+  // The caller supplies the heading text.
+  // eslint-disable-next-line jsx-a11y/heading-has-content
   return <h3 {...rest} className={cx("wo-card__title", className)} />;
 }
 
