@@ -693,12 +693,582 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such post
+  /api/v1/admin/courses:
+    get:
+      operationId: admin_courses_list
+      summary: All courses, any state
+      parameters:
+      - in: query
+        name: access
+        schema:
+          enum:
+          - free
+          - paid
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `free` - free
+          * `paid` - paid
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - draft
+          - published
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `draft` - draft
+          * `published` - published
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_courses_create
+      description: Starts as a draft. A paid course needs `price_minor` (smallest
+        unit, above zero) and a three-letter `currency`; only free courses can be
+        opened to visitors.
+      summary: Create a course
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}:
+    get:
+      operationId: admin_courses_retrieve
+      summary: One course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    patch:
+      operationId: admin_courses_partial_update
+      summary: Edit a course
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCourseUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '412':
+          description: Changed since the ETag was issued
+        '428':
+          description: If-Match header missing
+    delete:
+      operationId: admin_courses_destroy
+      summary: Remove a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/cover:
+    put:
+      operationId: admin_courses_cover_update
+      description: Upload with `POST /uploads` (purpose `course_cover`) and wait for
+        `ready`.
+      summary: Use a finished upload as the cover
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCoverRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_courses_cover_destroy
+      summary: Remove the cover
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/duplicate:
+    post:
+      operationId: admin_courses_duplicate_create
+      description: Publishing needs at least one lesson. Unpublishing hides the course
+        from the catalogue; people already enrolled keep their access and progress.
+        Duplicating makes a draft copy of the modules and lessons (not enrolments,
+        ratings or the cover).
+      summary: Publish, unpublish or duplicate a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/courses/{course_id}/enrolments:
+    get:
+      operationId: admin_courses_enrolments_list
+      summary: Who is enrolled, and how far they have got
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminEnrolment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/grant:
+    post:
+      operationId: admin_courses_grant_create
+      description: The way into a paid course until purchasing exists. The member
+        is told.
+      summary: Give a member access to a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrolmentResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrolmentResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/modules:
+    post:
+      operationId: admin_courses_modules_create
+      summary: Add a module to the end of the course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModuleWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminModule'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/modules/order:
+    put:
+      operationId: admin_courses_modules_order_update
+      description: List every module id once, in the order you want.
+      summary: Reorder the modules
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not every module listed once
+  /api/v1/admin/courses/{course_id}/publish:
+    post:
+      operationId: admin_courses_publish_create
+      description: Publishing needs at least one lesson. Unpublishing hides the course
+        from the catalogue; people already enrolled keep their access and progress.
+        Duplicating makes a draft copy of the modules and lessons (not enrolments,
+        ratings or the cover).
+      summary: Publish, unpublish or duplicate a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
+  /api/v1/admin/courses/{course_id}/ratings:
+    get:
+      operationId: admin_courses_ratings_list
+      summary: Ratings and written feedback
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminRating'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/stats:
+    get:
+      operationId: admin_courses_stats_retrieve
+      summary: Enrolments, completion rate, rating and per-lesson completion
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseStats'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/courses/{course_id}/unpublish:
+    post:
+      operationId: admin_courses_unpublish_create
+      description: Publishing needs at least one lesson. Unpublishing hides the course
+        from the catalogue; people already enrolled keep their access and progress.
+        Duplicating makes a draft copy of the modules and lessons (not enrolments,
+        ratings or the cover).
+      summary: Publish, unpublish or duplicate a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
   /api/v1/admin/dashboard:
     get:
       operationId: admin_dashboard_retrieve
       description: 'Read from summary tables, never from raw events, so it is quick.
-        `refreshed_at` says how fresh they are. The learning, mentorship and revenue
-        sections report `available: false` until those parts of the platform exist.'
+        `refreshed_at` says how fresh they are. The mentorship and revenue sections
+        report `available: false` until those parts of the platform exist.'
       summary: 'The console home: queues, community, activity and email at a glance'
       tags:
       - admin
@@ -2340,6 +2910,62 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such job
+  /api/v1/admin/lessons/{lesson_id}:
+    patch:
+      operationId: admin_lessons_partial_update
+      summary: Edit a lesson
+      parameters:
+      - in: path
+        name: lesson_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLessonUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLesson'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_lessons_destroy
+      summary: Delete a lesson
+      parameters:
+      - in: path
+        name: lesson_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/members:
     get:
       operationId: admin_members_list
@@ -2656,6 +3282,360 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/mentor-applications:
+    get:
+      operationId: admin_mentor_applications_list
+      description: Oldest first, so the queue is worked in order. Filter by `status`
+        (`pending` is the queue, `info_requested` are waiting for the applicant) and
+        applicant name.
+      summary: Mentor applications
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 80
+      - in: query
+        name: status
+        schema:
+          type: string
+          maxLength: 14
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminMentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentor-applications/{application_id}:
+    get:
+      operationId: admin_mentor_applications_retrieve
+      summary: One mentor application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentor-applications/{application_id}/decision:
+    post:
+      operationId: admin_mentor_applications_decision_create
+      description: '`decline` and `request_info` need a `reason`, which the applicant
+        is shown. Approving gives the member the mentor role, badge and mentor section.'
+      summary: Approve, decline or ask for more information
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Already decided
+  /api/v1/admin/mentors:
+    get:
+      operationId: admin_mentors_list
+      description: Filter by `status` (`active` or `revoked`) and name.
+      summary: Mentors
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 80
+      - in: query
+        name: status
+        schema:
+          type: string
+          maxLength: 14
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminMentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentors/{user_id}/restore:
+    post:
+      operationId: admin_mentors_restore_create
+      summary: Restore a revoked mentor
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/mentors/{user_id}/revoke:
+    post:
+      operationId: admin_mentors_revoke_create
+      description: Removes the role, badge and listing. Needs a reason and a recent
+        MFA check.
+      summary: Revoke mentor status
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorReasonRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/modules/{module_id}:
+    patch:
+      operationId: admin_modules_partial_update
+      summary: Rename a module
+      parameters:
+      - in: path
+        name: module_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedModuleWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminModule'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_modules_destroy
+      summary: Delete a module and its lessons
+      parameters:
+      - in: path
+        name: module_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/modules/{module_id}/lessons:
+    post:
+      operationId: admin_modules_lessons_create
+      description: 'A video lesson takes a YouTube link (validated: https, youtube.com,
+        youtu.be, a real 11-character video id; the id and normalised address are
+        stored). A reading lesson takes `body`. A resource lesson takes `resource_url`
+        and `resource_name`.'
+      summary: Add a lesson to the end of a module
+      parameters:
+      - in: path
+        name: module_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLesson'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/modules/{module_id}/lessons/order:
+    put:
+      operationId: admin_modules_lessons_order_update
+      summary: Reorder the lessons in a module
+      parameters:
+      - in: path
+        name: module_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminModule'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not every lesson listed once
   /api/v1/admin/posts/{post_id}/feature:
     post:
       operationId: admin_posts_feature_create
@@ -4119,6 +5099,81 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not published
+  /api/v1/certificates:
+    get:
+      operationId: certificates_list
+      summary: Your certificates
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Certificate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/certificates/{certificate_id}:
+    get:
+      operationId: certificates_retrieve
+      summary: One of your certificates
+      parameters:
+      - in: path
+        name: certificate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/certificates/{certificate_id}/pdf:
+    get:
+      operationId: certificates_pdf_retrieve
+      summary: Download your certificate as a PDF
+      parameters:
+      - in: path
+        name: certificate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: PDF
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/comments/{comment_id}:
     patch:
       operationId: comments_partial_update
@@ -4294,6 +5349,211 @@ paths:
           description: Not found, or not visible to you
         '429':
           description: Daily limit
+  /api/v1/courses:
+    get:
+      operationId: courses_list
+      description: Published courses, newest first. Filter by text, category, level,
+        access (free or paid) or `enrolled=true`. Paid courses show their price and
+        stay locked.
+      summary: The course catalogue
+      parameters:
+      - in: query
+        name: access
+        schema:
+          enum:
+          - free
+          - paid
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `free` - free
+          * `paid` - paid
+      - in: query
+        name: category
+        schema:
+          type: string
+          default: ''
+          maxLength: 60
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: enrolled
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: level
+        schema:
+          enum:
+          - beginner
+          - intermediate
+          - advanced
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `beginner` - beginner
+          * `intermediate` - intermediate
+          * `advanced` - advanced
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/courses/{course_id}:
+    get:
+      operationId: courses_retrieve
+      description: Shows what is locked and what you have finished, and where to `resume`.
+      summary: One course with its modules and lessons
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseDetail'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/courses/{course_id}/enrol:
+    post:
+      operationId: courses_enrol_create
+      description: One action, idempotent (200 if already enrolled). Paid courses
+        answer 402 until purchasing exists; an admin can give access in the meantime.
+      summary: Enrol in a free course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrolmentResult'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrolmentResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+        '402':
+          description: A paid course
+  /api/v1/courses/{course_id}/rating:
+    put:
+      operationId: courses_rating_update
+      description: Enrolled members only. Sending again changes your rating. Feedback
+        is visible to admins.
+      summary: Rate a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/courses/categories:
+    get:
+      operationId: courses_categories_retrieve
+      summary: Course categories in use
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categories'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/editorial:
     get:
       operationId: editorial_list
@@ -5244,6 +6504,75 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/lessons/{lesson_id}:
+    get:
+      operationId: lessons_retrieve
+      description: Video lessons give the YouTube video id and a privacy-enhanced
+        embed address; reading lessons give their text; resource lessons their download
+        link. Allowed for enrolled members, and for anyone on a free course the admin
+        opened to visitors (with a stricter rate limit). Paid lessons need access;
+        the video id is not sent to anyone without it.
+      summary: Open a lesson
+      parameters:
+      - in: path
+        name: lesson_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - optionalBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonDetail'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/lessons/{lesson_id}/progress:
+    put:
+      operationId: lessons_progress_update
+      description: 'The player calls this about every 15 seconds and on pause, and
+        with `completed: true` when the member finishes. Finishing the last lesson
+        completes the course and queues the certificate.'
+      summary: Save progress in a lesson
+      parameters:
+      - in: path
+        name: lesson_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonProgressResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -5296,6 +6625,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/Preference'
           description: ''
+  /api/v1/me/courses:
+    get:
+      operationId: me_courses_retrieve
+      summary: Courses you are enrolled in, with progress
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/me/following:
     get:
       operationId: me_following_retrieve
@@ -5422,6 +6786,78 @@ paths:
           description: ''
         '401':
           description: Not logged in
+  /api/v1/me/mentor-application:
+    get:
+      operationId: me_mentor_application_retrieve
+      description: Includes the decision and its reason, or what the admin asked you
+        to add.
+      summary: Your latest mentor application
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/me/mentor-profile:
+    get:
+      operationId: me_mentor_profile_retrieve
+      summary: Your mentor section
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+    put:
+      operationId: me_mentor_profile_update
+      description: '`paused` hides you from the directory and recommendations without
+        ending anything already agreed. A mentor who joined by invitation creates
+        the section with their first save, which then needs every descriptive field.'
+      summary: Change your mentor section, or pause mentoring
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorProfileUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
   /api/v1/me/notification-preferences:
     get:
       operationId: me_notification_preferences_retrieve
@@ -5785,6 +7221,232 @@ paths:
           description: Not an approved member
         '404':
           description: No such profile, or not visible to you
+  /api/v1/mentor-applications:
+    post:
+      operationId: mentor_applications_create
+      description: 'Needs acceptance of the mentor conduct policy (`accept_conduct`).
+        One application can be open at a time; after a decline you can apply again
+        30 days later. Applying does not grant mentor status: an admin approves, declines
+        with a reason, or asks for more information.'
+      summary: Apply to become a mentor
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+        '409':
+          description: Already a mentor, already applied, or declined recently
+  /api/v1/mentor-applications/{application_id}:
+    patch:
+      operationId: mentor_applications_partial_update
+      description: Changing an application that is waiting for information sends it
+        back to review.
+      summary: Answer questions or change an open application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedApplicationUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+    delete:
+      operationId: mentor_applications_destroy
+      summary: Withdraw an open application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors:
+    get:
+      operationId: mentors_list
+      description: Approved mentors who are not paused. Filter by text (name, role,
+        company or an expertise tag), expertise, industry, stage, country and language.
+        Contact details are never shown.
+      summary: The mentor directory
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+          maxLength: 2
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: expertise
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: industry
+        schema:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      - in: query
+        name: language
+        schema:
+          enum:
+          - af
+          - am
+          - ar
+          - de
+          - en
+          - es
+          - fr
+          - ha
+          - hi
+          - ig
+          - pt
+          - sw
+          - yo
+          - zh
+          - zu
+          type: string
+          minLength: 1
+        description: |-
+          * `af` - af
+          * `am` - am
+          * `ar` - ar
+          * `de` - de
+          * `en` - en
+          * `es` - es
+          * `fr` - fr
+          * `ha` - ha
+          * `hi` - hi
+          * `ig` - ig
+          * `pt` - pt
+          * `sw` - sw
+          * `yo` - yo
+          * `zh` - zh
+          * `zu` - zu
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 80
+      - in: query
+        name: stage
+        schema:
+          type: string
+          maxLength: 80
+          pattern: ^[-a-zA-Z0-9_]+$
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors/{user_id}:
+    get:
+      operationId: mentors_retrieve
+      description: The mentor section of a member profile. 404 if the member is not
+        a listed mentor.
+      summary: One mentor
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
   /api/v1/notifications:
     get:
       operationId: notifications_retrieve
@@ -6283,6 +7945,83 @@ paths:
           description: Not found, or not visible to you
         '429':
           description: Daily limit
+  /api/v1/public/certificates/{code}:
+    get:
+      operationId: public_certificates_retrieve
+      description: 'For employers and others holding a certificate: confirms who completed
+        which course and when.'
+      summary: Check a certificate code
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifiedCertificate'
+          description: ''
+        '404':
+          description: Unknown code
+  /api/v1/public/courses:
+    get:
+      operationId: public_courses_list
+      description: Anonymous, cookie-free and cacheable. Any Authorization header
+        is ignored.
+      summary: Free courses open to visitors
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCoursePage'
+          description: ''
+        '400':
+          description: Bad query
+  /api/v1/public/courses/{slug}:
+    get:
+      operationId: public_courses_retrieve
+      description: Lessons are opened with `GET /lessons/{id}`, which allows visitors
+        for these courses.
+      summary: One free course open to visitors, with its outline
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCourse'
+          description: ''
+        '404':
+          description: Not found
   /api/v1/public/events:
     get:
       operationId: public_events_list
@@ -7464,6 +9203,14 @@ paths:
           description: ''
 components:
   schemas:
+    AccessEnum:
+      enum:
+      - free
+      - paid
+      type: string
+      description: |-
+        * `free` - free
+        * `paid` - paid
     AccessToken:
       type: object
       properties:
@@ -7543,6 +9290,116 @@ components:
       - posts_last_7_days
       - reactions_last_7_days
       - weekly_active
+    AdminCourse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        instructor:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        access:
+          type: string
+        price:
+          allOf:
+          - $ref: '#/components/schemas/Price'
+          nullable: true
+        open_to_visitors:
+          type: boolean
+        certificate_enabled:
+          type: boolean
+        rating:
+          $ref: '#/components/schemas/RatingSummary'
+        lesson_count:
+          type: integer
+        status:
+          type: string
+        progress:
+          $ref: '#/components/schemas/CourseProgress'
+        description:
+          type: string
+          description: Sanitised HTML
+        price_minor:
+          type: integer
+          nullable: true
+        currency:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        edited_at:
+          type: string
+          format: date-time
+          nullable: true
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminModule'
+      required:
+      - access
+      - category
+      - certificate_enabled
+      - cover
+      - created_at
+      - currency
+      - description
+      - edited_at
+      - excerpt
+      - id
+      - instructor
+      - lesson_count
+      - level
+      - modules
+      - open_to_visitors
+      - price
+      - price_minor
+      - progress
+      - published_at
+      - rating
+      - slug
+      - status
+      - title
+    AdminEnrolment:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        origin:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        percent:
+          type: integer
+      required:
+      - completed_at
+      - origin
+      - percent
+      - started_at
+      - user_id
     AdminEvent:
       type: object
       properties:
@@ -7891,6 +9748,238 @@ components:
       - description
       - title
       - type
+    AdminLesson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        position:
+          type: integer
+        duration_seconds:
+          type: integer
+          nullable: true
+        video_url:
+          type: string
+        video_id:
+          type: string
+        body:
+          type: string
+        resource_url:
+          type: string
+        resource_name:
+          type: string
+      required:
+      - body
+      - duration_seconds
+      - id
+      - position
+      - resource_name
+      - resource_url
+      - title
+      - type
+      - video_id
+      - video_url
+    AdminMentor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The member id of the mentor.
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        about:
+          type: string
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        capacity_per_week:
+          type: integer
+        paused:
+          type: boolean
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
+        status:
+          type: string
+        revoke_reason:
+          type: string
+        approved_at:
+          type: string
+          format: date-time
+      required:
+      - about
+      - approved_at
+      - capacity_per_week
+      - company
+      - current_role
+      - expertise
+      - headline
+      - id
+      - industries
+      - languages
+      - name
+      - paused
+      - photo
+      - rating_average
+      - rating_count
+      - revoke_reason
+      - slug
+      - stages
+      - status
+      - timezone
+      - years_experience
+    AdminMentorApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MentorApplicationStatusEnum'
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        linkedin_url:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        weekly_hours:
+          type: integer
+        availability_note:
+          type: string
+        motivation:
+          type: string
+        decision_reason:
+          type: string
+          description: The decline reason, or what is asked for.
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        applicant:
+          $ref: '#/components/schemas/Applicant'
+        decided_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - applicant
+      - availability_note
+      - company
+      - created_at
+      - current_role
+      - decided_at
+      - decided_by
+      - decision_reason
+      - expertise
+      - id
+      - industries
+      - languages
+      - linkedin_url
+      - motivation
+      - stages
+      - status
+      - timezone
+      - weekly_hours
+      - years_experience
+    AdminModule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        position:
+          type: integer
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminLesson'
+      required:
+      - id
+      - lessons
+      - position
+      - title
+    AdminRating:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        stars:
+          type: integer
+        feedback:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - feedback
+      - stars
+      - user_id
     AdminReport:
       type: object
       properties:
@@ -8048,6 +10137,102 @@ components:
         location:
           type: string
           maxLength: 120
+    Applicant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+      required:
+      - email
+      - id
+      - name
+    ApplicationCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        years_experience:
+          type: integer
+          maximum: 60
+          minimum: 1
+        current_role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        company:
+          type: string
+          minLength: 1
+          maxLength: 120
+        linkedin_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        weekly_hours:
+          type: integer
+          maximum: 40
+          minimum: 1
+        availability_note:
+          type: string
+          maxLength: 500
+        motivation:
+          type: string
+          minLength: 1
+          maxLength: 1500
+        accept_conduct:
+          type: boolean
+      required:
+      - accept_conduct
+      - company
+      - current_role
+      - expertise
+      - industries
+      - languages
+      - linkedin_url
+      - motivation
+      - stages
+      - timezone
+      - weekly_hours
+      - years_experience
     Apply:
       type: object
       properties:
@@ -8335,6 +10520,15 @@ components:
           format: date-time
       required:
       - scheduled_at
+    Categories:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+      required:
+      - categories
     CategoryEnum:
       enum:
       - update
@@ -8351,6 +10545,30 @@ components:
         * `resource` - resource
         * `event` - event
         * `opportunity` - opportunity
+    Certificate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        holder_name:
+          type: string
+        course_title:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        verify_url:
+          type: string
+      required:
+      - code
+      - course_title
+      - holder_name
+      - id
+      - issued_at
+      - verify_url
     CheckInRequest:
       type: object
       description: |-
@@ -8572,6 +10790,265 @@ components:
       required:
       - code
       - name
+    CourseCoverRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+      required:
+      - upload_id
+    CourseCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 60000
+        instructor:
+          type: string
+          minLength: 1
+          maxLength: 120
+        category:
+          type: string
+          minLength: 1
+          maxLength: 60
+        level:
+          $ref: '#/components/schemas/CourseLevelEnum'
+        access:
+          $ref: '#/components/schemas/AccessEnum'
+        price_minor:
+          type: integer
+          maximum: 100000000
+          minimum: 1
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+          minLength: 3
+        open_to_visitors:
+          type: boolean
+        certificate_enabled:
+          type: boolean
+      required:
+      - category
+      - description
+      - instructor
+      - level
+      - title
+    CourseDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        instructor:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        access:
+          type: string
+        price:
+          allOf:
+          - $ref: '#/components/schemas/Price'
+          nullable: true
+        open_to_visitors:
+          type: boolean
+        certificate_enabled:
+          type: boolean
+        rating:
+          $ref: '#/components/schemas/RatingSummary'
+        lesson_count:
+          type: integer
+        status:
+          type: string
+        progress:
+          $ref: '#/components/schemas/CourseProgress'
+        description:
+          type: string
+          description: Sanitised HTML
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutlineModule'
+        resume:
+          allOf:
+          - $ref: '#/components/schemas/Resume'
+          nullable: true
+        my_rating:
+          allOf:
+          - $ref: '#/components/schemas/MyRating'
+          nullable: true
+      required:
+      - access
+      - category
+      - certificate_enabled
+      - cover
+      - description
+      - excerpt
+      - id
+      - instructor
+      - lesson_count
+      - level
+      - modules
+      - my_rating
+      - open_to_visitors
+      - price
+      - progress
+      - rating
+      - resume
+      - slug
+      - status
+      - title
+    CourseLevelEnum:
+      enum:
+      - beginner
+      - intermediate
+      - advanced
+      type: string
+      description: |-
+        * `beginner` - beginner
+        * `intermediate` - intermediate
+        * `advanced` - advanced
+    CoursePage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseSummary'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    CourseProgress:
+      type: object
+      properties:
+        enrolled:
+          type: boolean
+        percent:
+          type: integer
+        completed_lessons:
+          type: integer
+        total_lessons:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        origin:
+          type: string
+      required:
+      - enrolled
+      - percent
+    CourseStats:
+      type: object
+      properties:
+        enrolled:
+          type: integer
+        completed:
+          type: integer
+        completion_rate:
+          type: number
+          format: double
+          nullable: true
+        rating:
+          $ref: '#/components/schemas/RatingSummary'
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/LessonStat'
+      required:
+      - completed
+      - completion_rate
+      - enrolled
+      - lessons
+      - rating
+    CourseSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        instructor:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        access:
+          type: string
+        price:
+          allOf:
+          - $ref: '#/components/schemas/Price'
+          nullable: true
+        open_to_visitors:
+          type: boolean
+        certificate_enabled:
+          type: boolean
+        rating:
+          $ref: '#/components/schemas/RatingSummary'
+        lesson_count:
+          type: integer
+        status:
+          type: string
+        progress:
+          $ref: '#/components/schemas/CourseProgress'
+      required:
+      - access
+      - category
+      - certificate_enabled
+      - cover
+      - excerpt
+      - id
+      - instructor
+      - lesson_count
+      - level
+      - open_to_visitors
+      - price
+      - progress
+      - rating
+      - slug
+      - status
+      - title
     CoverRequest:
       type: object
       description: |-
@@ -8601,9 +11078,9 @@ components:
         email:
           $ref: '#/components/schemas/EmailSnapshot'
         learning:
-          $ref: '#/components/schemas/Availability'
+          $ref: '#/components/schemas/LearningSnapshot'
         mentorship:
-          $ref: '#/components/schemas/Availability'
+          $ref: '#/components/schemas/MentorshipSnapshot'
         revenue:
           $ref: '#/components/schemas/Availability'
       required:
@@ -8615,6 +11092,31 @@ components:
       - pending
       - refreshed_at
       - revenue
+    DecisionEnum:
+      enum:
+      - approve
+      - decline
+      - request_info
+      type: string
+      description: |-
+        * `approve` - approve
+        * `decline` - decline
+        * `request_info` - request_info
+    DecisionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        reason:
+          type: string
+          maxLength: 1000
+      required:
+      - decision
     DirectorySkill:
       type: object
       properties:
@@ -8734,6 +11236,24 @@ components:
       - average_click_rate
       - average_open_rate
       - recent_campaigns
+    EnrolmentResult:
+      type: object
+      properties:
+        course_id:
+          type: string
+          format: uuid
+        origin:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        created:
+          type: boolean
+      required:
+      - course_id
+      - created
+      - origin
+      - started_at
     Event:
       type: object
       properties:
@@ -9395,6 +11915,19 @@ components:
           $ref: '#/components/schemas/GoogleRegistrationRequest'
       required:
       - id_token
+    GrantRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        user_id:
+          type: string
+          format: uuid
+      required:
+      - user_id
     Image:
       type: object
       description: Public addresses of the two sizes of a processed image.
@@ -9901,6 +12434,240 @@ components:
         * `internship` - internship
         * `volunteer` - volunteer
         * `other` - other
+    LanguagesEnum:
+      enum:
+      - af
+      - am
+      - ar
+      - de
+      - en
+      - es
+      - fr
+      - ha
+      - hi
+      - ig
+      - pt
+      - sw
+      - yo
+      - zh
+      - zu
+      type: string
+      description: |-
+        * `af` - af
+        * `am` - am
+        * `ar` - ar
+        * `de` - de
+        * `en` - en
+        * `es` - es
+        * `fr` - fr
+        * `ha` - ha
+        * `hi` - hi
+        * `ig` - ig
+        * `pt` - pt
+        * `sw` - sw
+        * `yo` - yo
+        * `zh` - zh
+        * `zu` - zu
+    LearningSnapshot:
+      type: object
+      properties:
+        available:
+          type: boolean
+        published_courses:
+          type: integer
+        enrolments:
+          type: integer
+        completed:
+          type: integer
+        completion_rate:
+          type: number
+          format: double
+          nullable: true
+        certificates:
+          type: integer
+        enrolments_last_30_days:
+          type: integer
+        lessons_completed_last_30_days:
+          type: integer
+      required:
+      - available
+      - certificates
+      - completed
+      - completion_rate
+      - enrolments
+      - enrolments_last_30_days
+      - lessons_completed_last_30_days
+      - published_courses
+    LessonCourse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+      required:
+      - id
+      - slug
+      - title
+    LessonCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/LessonTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        duration_seconds:
+          type: integer
+          maximum: 86400
+          minimum: 1
+          nullable: true
+        video_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        body:
+          type: string
+          minLength: 1
+          maxLength: 60000
+        resource_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        resource_name:
+          type: string
+          minLength: 1
+          maxLength: 160
+      required:
+      - title
+      - type
+    LessonDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        course:
+          $ref: '#/components/schemas/LessonCourse'
+        module:
+          $ref: '#/components/schemas/LessonModule'
+        type:
+          type: string
+        title:
+          type: string
+        duration_seconds:
+          type: integer
+          nullable: true
+        video:
+          allOf:
+          - $ref: '#/components/schemas/Video'
+          nullable: true
+        body:
+          type: string
+          description: Sanitised HTML for reading lessons
+        resource:
+          allOf:
+          - $ref: '#/components/schemas/Resource'
+          nullable: true
+        previous_lesson_id:
+          type: string
+          format: uuid
+          nullable: true
+        next_lesson_id:
+          type: string
+          format: uuid
+          nullable: true
+        progress:
+          allOf:
+          - $ref: '#/components/schemas/LessonProgress'
+          nullable: true
+      required:
+      - body
+      - course
+      - duration_seconds
+      - id
+      - module
+      - next_lesson_id
+      - previous_lesson_id
+      - progress
+      - resource
+      - title
+      - type
+      - video
+    LessonModule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+      required:
+      - id
+      - title
+    LessonProgress:
+      type: object
+      properties:
+        position_seconds:
+          type: integer
+        completed:
+          type: boolean
+      required:
+      - completed
+      - position_seconds
+    LessonProgressResult:
+      type: object
+      properties:
+        lesson_id:
+          type: string
+          format: uuid
+        position_seconds:
+          type: integer
+        completed:
+          type: boolean
+        course_percent:
+          type: integer
+        course_completed:
+          type: boolean
+      required:
+      - completed
+      - course_completed
+      - course_percent
+      - lesson_id
+      - position_seconds
+    LessonStat:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        completed_by:
+          type: integer
+      required:
+      - completed_by
+      - id
+      - title
+    LessonTypeEnum:
+      enum:
+      - video
+      - reading
+      - resource
+      type: string
+      description: |-
+        * `video` - video
+        * `reading` - reading
+        * `resource` - resource
     LinkPreview:
       type: object
       properties:
@@ -10088,6 +12855,285 @@ components:
       - status
       - status_changed_at
       - status_reason
+    Mentor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The member id of the mentor.
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        about:
+          type: string
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        capacity_per_week:
+          type: integer
+        paused:
+          type: boolean
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
+      required:
+      - about
+      - capacity_per_week
+      - company
+      - current_role
+      - expertise
+      - headline
+      - id
+      - industries
+      - languages
+      - name
+      - paused
+      - photo
+      - rating_average
+      - rating_count
+      - slug
+      - stages
+      - timezone
+      - years_experience
+    MentorApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MentorApplicationStatusEnum'
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        linkedin_url:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        weekly_hours:
+          type: integer
+        availability_note:
+          type: string
+        motivation:
+          type: string
+        decision_reason:
+          type: string
+          description: The decline reason, or what is asked for.
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - availability_note
+      - company
+      - created_at
+      - current_role
+      - decided_at
+      - decision_reason
+      - expertise
+      - id
+      - industries
+      - languages
+      - linkedin_url
+      - motivation
+      - stages
+      - status
+      - timezone
+      - weekly_hours
+      - years_experience
+    MentorApplicationStatusEnum:
+      enum:
+      - pending
+      - info_requested
+      - approved
+      - declined
+      - withdrawn
+      type: string
+      description: |-
+        * `pending` - pending
+        * `info_requested` - info_requested
+        * `approved` - approved
+        * `declined` - declined
+        * `withdrawn` - withdrawn
+    MentorLanguage:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
+    MentorPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mentor'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    MentorProfileUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        about:
+          type: string
+          maxLength: 1000
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        years_experience:
+          type: integer
+          maximum: 60
+          minimum: 1
+        current_role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        company:
+          type: string
+          minLength: 1
+          maxLength: 120
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        capacity_per_week:
+          type: integer
+          maximum: 20
+          minimum: 1
+        paused:
+          type: boolean
+    MentorReasonRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+    MentorTag:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    MentorshipSnapshot:
+      type: object
+      properties:
+        available:
+          type: boolean
+        pending_applications:
+          type: integer
+        active_mentors:
+          type: integer
+        listed_mentors:
+          type: integer
+      required:
+      - active_mentors
+      - available
+      - listed_mentors
+      - pending_applications
     Message:
       type: object
       properties:
@@ -10185,6 +13231,30 @@ components:
       required:
       - action
       - id
+    ModuleWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+      required:
+      - title
+    MyRating:
+      type: object
+      properties:
+        stars:
+          type: integer
+        feedback:
+          type: string
+      required:
+      - feedback
+      - stars
     Named:
       type: object
       properties:
@@ -10318,6 +13388,136 @@ components:
         * `mentoring` - mentoring
         * `seeking_mentor` - seeking_mentor
         * `partnerships` - partnerships
+    OrderRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 200
+      required:
+      - ids
+    OutlineLesson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        position:
+          type: integer
+        duration_seconds:
+          type: integer
+          nullable: true
+        locked:
+          type: boolean
+          description: True until you have access to open it
+        completed:
+          type: boolean
+      required:
+      - completed
+      - duration_seconds
+      - id
+      - locked
+      - position
+      - title
+      - type
+    OutlineModule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        position:
+          type: integer
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutlineLesson'
+      required:
+      - id
+      - lessons
+      - position
+      - title
+    PatchedApplicationUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        years_experience:
+          type: integer
+          maximum: 60
+          minimum: 1
+        current_role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        company:
+          type: string
+          minLength: 1
+          maxLength: 120
+        linkedin_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        weekly_hours:
+          type: integer
+          maximum: 40
+          minimum: 1
+        availability_note:
+          type: string
+          maxLength: 500
+        motivation:
+          type: string
+          minLength: 1
+          maxLength: 1500
     PatchedCampaignUpdateRequest:
       type: object
       description: |-
@@ -10371,6 +13571,47 @@ components:
           type: string
           minLength: 1
           maxLength: 40000
+    PatchedCourseUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          minLength: 1
+          maxLength: 60000
+        instructor:
+          type: string
+          minLength: 1
+          maxLength: 120
+        category:
+          type: string
+          minLength: 1
+          maxLength: 60
+        level:
+          $ref: '#/components/schemas/CourseLevelEnum'
+        access:
+          $ref: '#/components/schemas/AccessEnum'
+        price_minor:
+          type: integer
+          maximum: 100000000
+          minimum: 1
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+          minLength: 3
+        open_to_visitors:
+          type: boolean
+        certificate_enabled:
+          type: boolean
     PatchedEventUpdateRequest:
       type: object
       description: |-
@@ -10505,6 +13746,53 @@ components:
           type: string
           format: date
           nullable: true
+    PatchedLessonUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/LessonTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        duration_seconds:
+          type: integer
+          maximum: 86400
+          minimum: 1
+          nullable: true
+        video_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        body:
+          type: string
+          minLength: 1
+          maxLength: 60000
+        resource_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+        resource_name:
+          type: string
+          minLength: 1
+          maxLength: 160
+    PatchedModuleWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
     PatchedPostUpdateRequest:
       type: object
       description: |-
@@ -10941,6 +14229,17 @@ components:
       required:
       - eligible
       - matching
+    Price:
+      type: object
+      properties:
+        amount_minor:
+          type: integer
+          description: In the smallest unit (kobo, cents)
+        currency:
+          type: string
+      required:
+      - amount_minor
+      - currency
     Profile:
       type: object
       description: Output shape. Every field is optional because hidden groups are
@@ -11008,6 +14307,99 @@ components:
       required:
       - next_missing_field
       - score
+    ProgressRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        position_seconds:
+          type: integer
+          maximum: 86400
+          minimum: 0
+        completed:
+          type: boolean
+    PublicCourse:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        instructor:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        rating:
+          $ref: '#/components/schemas/RatingSummary'
+        description:
+          type: string
+          description: Sanitised HTML
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicOutlineModule'
+      required:
+      - category
+      - cover
+      - description
+      - instructor
+      - level
+      - modules
+      - rating
+      - slug
+      - title
+    PublicCoursePage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicCourseSummary'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    PublicCourseSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        instructor:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+        cover:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        lesson_count:
+          type: integer
+      required:
+      - category
+      - cover
+      - excerpt
+      - instructor
+      - lesson_count
+      - level
+      - slug
+      - title
     PublicEvent:
       type: object
       properties:
@@ -11261,6 +14653,46 @@ components:
       - startup
       - title
       - type
+    PublicOutlineLesson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        position:
+          type: integer
+        duration_seconds:
+          type: integer
+          nullable: true
+      required:
+      - duration_seconds
+      - id
+      - position
+      - title
+      - type
+    PublicOutlineModule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        position:
+          type: integer
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicOutlineLesson'
+      required:
+      - id
+      - lessons
+      - position
+      - title
     PublicPage:
       type: object
       properties:
@@ -11318,6 +14750,54 @@ components:
       - registrations_awaiting_approval
       - registrations_unverified
       - wins_awaiting_review
+    Rating:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        stars:
+          type: integer
+          maximum: 5
+          minimum: 1
+        feedback:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - stars
+    RatingRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        stars:
+          type: integer
+          maximum: 5
+          minimum: 1
+        feedback:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - stars
+    RatingSummary:
+      type: object
+      properties:
+        average:
+          type: number
+          format: double
+          nullable: true
+        count:
+          type: integer
+      required:
+      - average
+      - count
     ReactionKindEnum:
       enum:
       - like
@@ -11769,6 +15249,16 @@ components:
       required:
       - password
       - token
+    Resource:
+      type: object
+      properties:
+        url:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - url
     ResultEnum:
       enum:
       - created
@@ -11777,6 +15267,17 @@ components:
       description: |-
         * `created` - created
         * `skipped` - skipped
+    Resume:
+      type: object
+      properties:
+        lesson_id:
+          type: string
+          format: uuid
+        position_seconds:
+          type: integer
+      required:
+      - lesson_id
+      - position_seconds
     ReviewRequest:
       type: object
       description: |-
@@ -11945,7 +15446,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TagsEnum'
-          maxItems: 6
+          maxItems: 11
     SegmentPreviewRequest:
       type: object
       description: |-
@@ -12430,22 +15931,6 @@ components:
           type: string
       required:
       - status
-    StatusEnum:
-      enum:
-      - pending
-      - processing
-      - ready
-      - rejected
-      - expired
-      - discarded
-      type: string
-      description: |-
-        * `pending` - Pending
-        * `processing` - Processing
-        * `ready` - Ready
-        * `rejected` - Rejected
-        * `expired` - Expired
-        * `discarded` - Discarded
     TagsEnum:
       enum:
       - profile_complete
@@ -12454,6 +15939,11 @@ components:
       - founder_active
       - founder_dormant
       - job_poster
+      - learner_free
+      - learner_paid
+      - course_completed
+      - mentor_applicant
+      - mentor_approved
       type: string
       description: |-
         * `profile_complete` - profile_complete
@@ -12462,6 +15952,11 @@ components:
         * `founder_active` - founder_active
         * `founder_dormant` - founder_dormant
         * `job_poster` - job_poster
+        * `learner_free` - learner_free
+        * `learner_paid` - learner_paid
+        * `course_completed` - course_completed
+        * `mentor_applicant` - mentor_applicant
+        * `mentor_approved` - mentor_approved
     TeamAddRequest:
       type: object
       description: |-
@@ -12676,7 +16171,7 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/UploadStatusEnum'
           readOnly: true
         reason:
           type: string
@@ -12745,6 +16240,7 @@ components:
       - post_image
       - editorial_cover
       - campaign_image
+      - course_cover
       type: string
       description: |-
         * `profile_photo` - Profile Photo
@@ -12752,6 +16248,7 @@ components:
         * `post_image` - Post Image
         * `editorial_cover` - Editorial Cover
         * `campaign_image` - Campaign Image
+        * `course_cover` - Course Cover
     UploadRequestPurposeEnum:
       enum:
       - profile_photo
@@ -12759,6 +16256,7 @@ components:
       - post_image
       - editorial_cover
       - campaign_image
+      - course_cover
       type: string
       description: |-
         * `profile_photo` - profile_photo
@@ -12766,6 +16264,7 @@ components:
         * `post_image` - post_image
         * `editorial_cover` - editorial_cover
         * `campaign_image` - campaign_image
+        * `course_cover` - course_cover
     UploadRequestRequest:
       type: object
       description: |-
@@ -12791,6 +16290,62 @@ components:
       - content_type
       - purpose
       - size
+    UploadStatusEnum:
+      enum:
+      - pending
+      - processing
+      - ready
+      - rejected
+      - expired
+      - discarded
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `processing` - Processing
+        * `ready` - Ready
+        * `rejected` - Rejected
+        * `expired` - Expired
+        * `discarded` - Discarded
+    VerifiedCertificate:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        code:
+          type: string
+        holder_name:
+          type: string
+        course_title:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        verify_url:
+          type: string
+      required:
+      - code
+      - course_title
+      - holder_name
+      - issued_at
+      - valid
+      - verify_url
+    Video:
+      type: object
+      properties:
+        provider:
+          type: string
+        video_id:
+          type: string
+        url:
+          type: string
+        embed_url:
+          type: string
+          description: Privacy-enhanced youtube-nocookie.com address
+      required:
+      - embed_url
+      - provider
+      - url
+      - video_id
     VisibilityEnum:
       enum:
       - private

@@ -29,3 +29,5 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "local-client")
 GOOGLE_TOKEN_VERIFIER = os.environ.get(
     "GOOGLE_TOKEN_VERIFIER", "apps.integrations.identity.fake.FakeGoogleVerifier"
 )
+
+SERVE_API_SCHEMA = True

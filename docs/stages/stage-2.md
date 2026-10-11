@@ -169,6 +169,32 @@ Everything in the Stage 2 scope is built: feed, comments, reactions, follows, re
 moderation, link previews, notification centre and preferences, jobs, editorial and win
 submissions, events and demo days, campaigns and segments, and admin queues and dashboards.
 
+## Review of Stage 2 (done)
+
+A read-through of everything built in Stage 2, against the brief's security rules and acceptance
+criteria, found and fixed the following. Each fix has a test.
+
+| Finding | Fix |
+|---|---|
+| A refused job (for example a form with a mistake) used up the member's daily posting allowance. | The allowance is now counted only once the job is valid. |
+| Editing a post with the same mentions told the same people again each time. | A post remembers who it already told; an edit notifies only newly added people. |
+| A campaign sent a whole batch inside one transaction. A crash mid-batch would roll back the record of messages already sent, so a retry could mail them again. | Each message is sent in its own transaction (the provider's idempotency key covers the one in flight), and the campaign's status is re-read before every message, so the kill switch acts within one message. |
+| A cancelled campaign that had already sent could be deleted, losing its report. | A campaign that has started can never be deleted. |
+| The OpenAPI description, which lists every admin route, was served publicly in every environment. | It is served only when `SERVE_API_SCHEMA` is on (development and tests). Off by default, so staging and production do not publish it. |
+| Analytics events required by the brief were not all emitted: `report_actioned` and the newsletter events. | Reviewing or actioning a report records `report_actioned`; sending, delivery, opening, clicking and unsubscribing record the `newsletter_*` events with campaign and segment. Members who opted out of analytics are skipped as everywhere. |
+| No test guarded the whole API surface at once. | A sweep tries every protected route with every method: visitors must get 401; ordinary members and admins without a recent MFA check must get 403 on every admin route. 310 checks, all passing. |
+
+Checked and found sound: every route declares a policy; only intended routes are public (health,
+login and registration flows, the public pages, reference lists, unsubscribe, the email webhook,
+analytics ingest); daily limits exist on posts, comments, reports, jobs, wins and mail; personal
+data exports are audited and need step-up; raw webhook data, notifications, link previews and
+analytics are purged on a schedule.
+
+Known and accepted (recorded rather than fixed): the member-area search matches members, startups
+and jobs only until the other modules exist; instant job alerts are matched in memory per new job,
+which is fine until alerts number in the tens of thousands; derived marketing tags are computed when
+a segment is used rather than stored.
+
 ## Carried forward
 
 1. The CDN purger (provider decision still pending).

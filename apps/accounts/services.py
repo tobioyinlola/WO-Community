@@ -625,3 +625,17 @@ def retention(now: Any, days: int) -> float | None:
     from apps.accounts import selectors
 
     return selectors.retention(now, days)
+
+
+def grant_role(user_id: UUID, role: str) -> None:
+    """Give a user a role (idempotent). The caller records the audit entry."""
+    UserRole.objects.get_or_create(user_id=user_id, role=Role(role).value)
+
+
+def revoke_role(user_id: UUID, role: str) -> None:
+    """Take a role away. Roles are read per request, so this applies at once."""
+    UserRole.objects.filter(user_id=user_id, role=Role(role).value).delete()
+
+
+def has_role(user_id: UUID, role: str) -> bool:
+    return UserRole.objects.filter(user_id=user_id, role=Role(role).value).exists()
