@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.mentorship import session_views, views
+from apps.mentorship import calendar_views, session_views, views
 
 urlpatterns = [
     path("mentor-applications", views.MentorApplicationsView.as_view(), name="mentor-applications"),
@@ -18,6 +18,17 @@ urlpatterns = [
     path("me/mentor-profile", views.MyMentorProfileView.as_view(), name="my-mentor-profile"),
     path("me/availability", views.MyAvailabilityView.as_view(), name="my-availability"),
     path("me/mentorship-needs", views.MyNeedsView.as_view(), name="my-mentorship-needs"),
+    path("me/calendar", calendar_views.MyCalendarView.as_view(), name="my-calendar"),
+    path(
+        "me/calendar/sync",
+        calendar_views.CalendarRefreshView.as_view(),
+        name="my-calendar-sync",
+    ),
+    path(
+        "me/availability/preview",
+        calendar_views.AvailabilityPreviewView.as_view(),
+        name="my-availability-preview",
+    ),
     path("mentors", views.MentorsView.as_view(), name="mentors"),
     path("mentors/recommended", views.RecommendedMentorsView.as_view(), name="mentors-recommended"),
     path("mentors/<uuid:user_id>", views.MentorView.as_view(), name="mentor"),

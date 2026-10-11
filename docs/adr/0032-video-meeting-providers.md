@@ -43,6 +43,7 @@ Status: accepted (Stage 3, fourth slice)
 ## Consequences
 
 Meetings live on the platform's accounts, so the provider plan limits (for example Zoom's
-concurrent meetings) are the platform's. Reading a mentor's own calendar for busy time, or putting
-sessions on their calendar automatically, would need a per mentor sign-in and is not built; the
-`.ics` file is the interim answer. Recording, transcripts and attendance reports are not used.
+concurrent meetings) are the platform's. Putting sessions on a mentor's own calendar automatically
+would need a per mentor sign-in and is not built; the `.ics` file and the meeting invitation are
+the answer. Reading a mentor's calendar for busy time is a separate, sign-in free design
+(ADR 0035). Recording, transcripts and attendance reports are not used.

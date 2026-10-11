@@ -72,6 +72,20 @@ Design in ADR 0033.
 `resource` in lesson detail now says `kind` (`link` or `file`), with `size` and `content_type`.
 New setting: `STORAGE_PRIVATE_BUCKET` (a private bucket; the media bucket stays public).
 
+## Slice 6: mentor calendar busy time (done)
+
+Design in ADR 0035.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /me/calendar` | Whether a calendar is shared, its host, when it was last read, any error and whether it is stale. The address is never returned. |
+| `PUT /me/calendar` | Share the private iCal address (`feed_url`, https or webcal) and/or set `include_all_day`. Read once at once, so a wrong address is refused with the reason. |
+| `POST /me/calendar/sync` | Read it now (once a minute). Otherwise a worker reads it every 15 minutes. |
+| `DELETE /me/calendar` | Stop sharing; forgets the address and the busy time. |
+| `GET /me/availability/preview?days=` | Your windows, calendar busy time, booked sessions, free time and the start times founders see. |
+
+Setting: `CALENDAR_FEED_READER` (the web reader by default; a fake in tests).
+
 ## Decisions recorded
 
 - **Paid video** stays on unlisted YouTube behind the application lock (ADR 0034), with the
@@ -87,7 +101,7 @@ Stage 3 is complete except for one item that is a decision, not work:
 
 Carried forward:
 
-- A mentor's own calendar busy time (`scheduling.external_busy`) needs a per mentor sign-in and
-  is not built; sessions are offered against the weekly schedule and booked sessions only.
+- Sessions are not written to a mentor's calendar (it would need a sign-in); the `.ics` file and
+  the meeting invitation carry them there.
 - Stage 4 adds purchasing, which creates enrolments with source `purchase`; paid courses can be
   watched and downloaded only through enrolment until then.

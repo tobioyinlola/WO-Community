@@ -6842,6 +6842,143 @@ paths:
           description: Not an active member
         '404':
           description: Not found
+  /api/v1/me/availability/preview:
+    get:
+      operationId: me_availability_preview_retrieve
+      description: 'For the next `days` (default 14): your windows, the busy time
+        and booked sessions that remove from them, what is left free and the start
+        times founders see. Use it beside `PUT /me/availability` to choose your available
+        time.'
+      summary: Preview the times you are offering
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+          default: 14
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityPreview'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active mentor
+        '404':
+          description: No calendar is shared
+        '429':
+          description: Too many attempts
+  /api/v1/me/calendar:
+    get:
+      operationId: me_calendar_retrieve
+      description: Whether a calendar is shared, where it lives and when it was last
+        read. The address itself is never returned.
+      summary: Your shared calendar
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarStatus'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active mentor
+        '404':
+          description: No calendar is shared
+        '429':
+          description: Too many attempts
+    put:
+      operationId: me_calendar_update
+      description: 'Paste the private iCal address your calendar gives you (in Google
+        Calendar: settings, your calendar, ''Secret address in iCal format''; Outlook
+        and Apple have the same). It is read once now, so a wrong address is refused
+        with the reason, then every 15 minutes. Only the times you are busy are kept,
+        never titles or guests. Events marked free, cancelled events and (by default)
+        all-day events do not block time. Send only `include_all_day` to change that
+        for the calendar already shared.'
+      summary: Share a calendar so busy time is not offered
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarConnectRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarStatus'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active mentor
+        '404':
+          description: No calendar is shared
+        '429':
+          description: Too many attempts
+    delete:
+      operationId: me_calendar_destroy
+      description: Forgets the address and every stored busy range.
+      summary: Stop sharing your calendar
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active mentor
+        '404':
+          description: No calendar is shared
+        '429':
+          description: Too many attempts
+  /api/v1/me/calendar/sync:
+    post:
+      operationId: me_calendar_sync_create
+      description: Normally it is read every 15 minutes. At most once a minute.
+      summary: Read your calendar now
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarStatus'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active mentor
+        '404':
+          description: No calendar is shared
+        '429':
+          description: Too many attempts
   /api/v1/me/courses:
     get:
       operationId: me_courses_retrieve
@@ -11240,6 +11377,50 @@ components:
           description: False until that part of the platform exists
       required:
       - available
+    AvailabilityPreview:
+      type: object
+      properties:
+        timezone:
+          type: string
+        session_minutes:
+          type: integer
+        windows:
+          type: array
+          items:
+            $ref: '#/components/schemas/Range'
+          description: Your own availability windows.
+        calendar_busy:
+          type: array
+          items:
+            $ref: '#/components/schemas/Range'
+          description: Busy time from your shared calendar.
+        booked:
+          type: array
+          items:
+            $ref: '#/components/schemas/Range'
+          description: Requested and confirmed sessions.
+        free:
+          type: array
+          items:
+            $ref: '#/components/schemas/Range'
+          description: Windows minus busy and booked time.
+        bookable_starts:
+          type: array
+          items:
+            type: string
+            format: date-time
+          description: The start times founders are offered.
+        calendar:
+          $ref: '#/components/schemas/CalendarStatus'
+      required:
+      - bookable_starts
+      - booked
+      - calendar
+      - calendar_busy
+      - free
+      - session_minutes
+      - timezone
+      - windows
     Banner:
       type: object
       properties:
@@ -11343,6 +11524,66 @@ components:
       - reason
       - result
       - row
+    CalendarConnectRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        feed_url:
+          type: string
+          minLength: 1
+          description: The private iCal address of your calendar (https:// or webcal://).
+          maxLength: 1000
+        include_all_day:
+          type: boolean
+          description: Also treat all-day events as busy. Off by default.
+    CalendarStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        host:
+          type: string
+          description: Where the calendar lives; never the address.
+        include_all_day:
+          type: boolean
+        status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/CalendarStatusStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+        stale:
+          type: boolean
+          description: Not read recently; its busy time may be out of date.
+        busy_ranges:
+          type: integer
+          description: Busy ranges still ahead.
+      required:
+      - busy_ranges
+      - connected
+      - host
+      - include_all_day
+      - last_error
+      - last_synced_at
+      - stale
+      - status
+    CalendarStatusStatusEnum:
+      enum:
+      - active
+      - error
+      type: string
+      description: |-
+        * `active` - active
+        * `error` - error
     Campaign:
       type: object
       properties:
@@ -16071,6 +16312,18 @@ components:
       - registrations_awaiting_approval
       - registrations_unverified
       - wins_awaiting_review
+    Range:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+      required:
+      - ends_at
+      - starts_at
     Rating:
       type: object
       description: |-
