@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "blocks": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {"enum": ["paragraph", "bullets", "table", "heading"]},
+          "text": {"type": "string", "maxLength": 3000},
+          "items": {"type": "array", "maxItems": 12, "items": {"type": "string", "maxLength": 500}},
+          "columns": {"type": "array", "maxItems": 6, "items": {"type": "string", "maxLength": 60}},
+          "rows": {"type": "array", "maxItems": 20, "items": {"type": "array", "items": {"type": "string", "maxLength": 200}}},
+          "cites": {"type": "array", "maxItems": 6, "items": {"type": "integer"}}
+        },
+        "required": ["type"],
+        "additionalProperties": false
+      }
+    },
+    "missing": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {"type": "string", "maxLength": 60},
+          "message": {"type": "string", "maxLength": 240}
+        },
+        "required": ["field", "message"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["blocks", "missing"],
+  "additionalProperties": false
+}

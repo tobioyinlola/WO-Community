@@ -10637,6 +10637,289 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/plan:
+    get:
+      operationId: toolkit_ventures_plan_retrieve
+      summary: The latest plan and where each section stands
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPlan'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/generate:
+    post:
+      operationId: toolkit_ventures_plan_generate_create
+      description: Needs the six required profile fields (400 names what is missing).
+        Starts a job and answers 202; poll it, then read `plan`. Sections you edited
+        yourself are kept unless `overwrite_edited` is true. Pass `sections` to rewrite
+        only some. A repeated `Idempotency-Key` returns the same job.
+      summary: Write the business plan
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkPlanGenerateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/readiness:
+    get:
+      operationId: toolkit_ventures_plan_readiness_retrieve
+      summary: What is still missing before the plan can be shared
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPlanReadiness'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/sections/{number}:
+    get:
+      operationId: toolkit_ventures_plan_sections_retrieve
+      summary: One section with its text and citations
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPlanSection'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    patch:
+      operationId: toolkit_ventures_plan_sections_partial_update
+      description: '`base_version` must be the version you loaded; otherwise 409 so
+        two tabs cannot overwrite each other. Text is plain: markup is stripped.'
+      summary: Save your edit of a section
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkPlanSectionSaveRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPlanSection'
+          description: ''
+        '409':
+          description: The section changed elsewhere
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/sections/{number}/assist:
+    post:
+      operationId: toolkit_ventures_plan_sections_assist_create
+      description: Answers with a proposal and saves nothing. Accept it by saving
+        it with `PATCH` (send its `citations` too). A figure that is not in your data
+        or the sources is removed and listed in `removed_figures`.
+      summary: Ask for a rewrite of a section
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkPlanAssistRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPlanProposal'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/versions:
+    get:
+      operationId: toolkit_ventures_plan_versions_list
+      summary: Saved versions of the plan
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkPlanVersion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/versions/{version}/restore:
+    post:
+      operationId: toolkit_ventures_plan_versions_restore_create
+      description: The current text is saved as a version first, so this can be undone.
+      summary: Go back to a saved version
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPlan'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/ventures/{venture_id}/profile:
     get:
       operationId: toolkit_ventures_profile_retrieve
@@ -11440,14 +11723,6 @@ components:
       - email
       - id
       - status
-    ActionEnum:
-      enum:
-      - hide
-      - remove
-      type: string
-      description: |-
-        * `hide` - hide
-        * `remove` - remove
     Activity:
       type: object
       properties:
@@ -16990,6 +17265,23 @@ components:
         differentiator:
           type: string
           maxLength: 500
+    PatchedTkPlanSectionSaveRequest:
+      type: object
+      properties:
+        content:
+          type: object
+          additionalProperties: {}
+        base_version:
+          type: integer
+          minimum: 1
+          description: The section version you loaded; a different one answers 409.
+        citations:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: Sources that come with an accepted suggestion.
+          maxItems: 20
     PatchedTkProfileUpdateRequest:
       type: object
       description: |-
@@ -17088,6 +17380,28 @@ components:
       required:
       - release
       - status
+    PlanSectionStatusEnum:
+      enum:
+      - drafted
+      - needs_input
+      - edited
+      - needs_refresh
+      type: string
+      description: |-
+        * `drafted` - drafted
+        * `needs_input` - needs_input
+        * `edited` - edited
+        * `needs_refresh` - needs_refresh
+    PlanStatusEnum:
+      enum:
+      - generating
+      - ready
+      - failed
+      type: string
+      description: |-
+        * `generating` - generating
+        * `ready` - ready
+        * `failed` - failed
     Point:
       type: object
       properties:
@@ -18358,6 +18672,14 @@ components:
       - sent
       - skipped
       - unsubscribed
+    ReportActionActionEnum:
+      enum:
+      - hide
+      - remove
+      type: string
+      description: |-
+        * `hide` - hide
+        * `remove` - remove
     ReportActionRequest:
       type: object
       description: |-
@@ -18367,7 +18689,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/ReportActionActionEnum'
         note:
           type: string
           default: ''
@@ -19662,6 +19984,25 @@ components:
       - scored_weight
       - strengths
       - verdict
+    TkCitation:
+      type: object
+      properties:
+        number:
+          type: integer
+        claim_text:
+          type: string
+        source_name:
+          type: string
+        url:
+          type: string
+        date:
+          type: string
+      required:
+      - claim_text
+      - date
+      - number
+      - source_name
+      - url
     TkCompetitor:
       type: object
       properties:
@@ -19993,6 +20334,253 @@ components:
       - outputs
       - ready_for_score
       - venture
+    TkPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+        status:
+          $ref: '#/components/schemas/PlanStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkPlanSectionBrief'
+      required:
+      - created_at
+      - id
+      - sections
+      - status
+      - updated_at
+      - version
+    TkPlanAssistActionEnum:
+      enum:
+      - shorten
+      - expand
+      - rewrite_for_investors
+      - simplify
+      - add_data
+      - localise
+      type: string
+      description: |-
+        * `shorten` - shorten
+        * `expand` - expand
+        * `rewrite_for_investors` - rewrite_for_investors
+        * `simplify` - simplify
+        * `add_data` - add_data
+        * `localise` - localise
+    TkPlanAssistRequest:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/TkPlanAssistActionEnum'
+        country:
+          type: string
+          maxLength: 60
+      required:
+      - action
+    TkPlanGenerateRequest:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            type: integer
+            maximum: 99
+            minimum: 1
+          description: Rewrite only these sections. Leave out to write the whole plan.
+          maxItems: 44
+        overwrite_edited:
+          type: boolean
+          default: false
+          description: Also rewrite sections you edited yourself. Off by default.
+    TkPlanProposal:
+      type: object
+      properties:
+        action:
+          type: string
+        content:
+          type: object
+          additionalProperties: {}
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkCitation'
+        removed_figures:
+          type: array
+          items:
+            type: string
+        missing:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - action
+      - citations
+      - content
+      - missing
+      - removed_figures
+    TkPlanReadiness:
+      type: object
+      properties:
+        ready:
+          type: boolean
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkPlanReadinessRow'
+        blockers:
+          type: array
+          items:
+            type: string
+      required:
+      - blockers
+      - ready
+      - sections
+    TkPlanReadinessRow:
+      type: object
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
+        status:
+          type: string
+        stale:
+          type: boolean
+        problems:
+          type: array
+          items:
+            type: string
+      required:
+      - number
+      - problems
+      - stale
+      - status
+      - title
+    TkPlanSection:
+      type: object
+      properties:
+        number:
+          type: integer
+        chapter:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/PlanSectionStatusEnum'
+        stale:
+          type: boolean
+        stale_fields:
+          type: array
+          items:
+            type: string
+        prompts:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        version:
+          type: integer
+        edited_by_member:
+          type: boolean
+        word_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+        guidance:
+          type: string
+        content:
+          type: object
+          additionalProperties: {}
+          description: '`{"blocks": [...]}`: paragraph, heading, bullets or table
+            blocks of plain text. `cites` on a block lists citation numbers.'
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkCitation'
+      required:
+      - chapter
+      - citations
+      - content
+      - edited_by_member
+      - guidance
+      - number
+      - prompts
+      - stale
+      - stale_fields
+      - status
+      - title
+      - updated_at
+      - version
+      - word_count
+    TkPlanSectionBrief:
+      type: object
+      properties:
+        number:
+          type: integer
+        chapter:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/PlanSectionStatusEnum'
+        stale:
+          type: boolean
+        stale_fields:
+          type: array
+          items:
+            type: string
+        prompts:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        version:
+          type: integer
+        edited_by_member:
+          type: boolean
+        word_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - chapter
+      - edited_by_member
+      - number
+      - prompts
+      - stale
+      - stale_fields
+      - status
+      - title
+      - updated_at
+      - version
+      - word_count
+    TkPlanVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+        label:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - label
+      - version
     TkProfile:
       type: object
       properties:
