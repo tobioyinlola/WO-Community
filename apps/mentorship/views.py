@@ -13,6 +13,7 @@ from apps.mentorship.serializers import (
     ApplicationCreateSerializer,
     ApplicationUpdateSerializer,
     MentorApplicationSerializer,
+    MentoringSummarySerializer,
     MentorPageSerializer,
     MentorProfileUpdateSerializer,
     MentorQuerySerializer,
@@ -187,3 +188,20 @@ class MyMentorProfileView(APIView):
         mentors.save_profile(user_id=_uid(request), data=dict(serializer.validated_data))
         data = selectors.own_view(request.user)
         return _private(Response(MentorSerializer(data).data))
+
+
+class MyMentoringView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Your mentoring status",
+        description="Whether you are a mentor, where your application stands, whether you can "
+        "apply now, and whether to prompt you to apply because you ticked the mentor option "
+        "when registering.",
+        responses={200: MentoringSummarySerializer, **ERRORS},
+        tags=["mentorship"],
+    )
+    def get(self, request: Request) -> Response:
+        return _private(
+            Response(MentoringSummarySerializer(selectors.mentoring_summary(_uid(request))).data)
+        )

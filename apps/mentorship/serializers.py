@@ -168,3 +168,15 @@ class AdminMentorSerializer(MentorSerializer):
     status = serializers.CharField()
     revoke_reason = serializers.CharField()
     approved_at = serializers.DateTimeField()
+
+
+class MentoringSummarySerializer(serializers.Serializer):
+    is_mentor = serializers.BooleanField()
+    application_id = serializers.UUIDField(allow_null=True)
+    application_status = serializers.ChoiceField(choices=APPLICATION_STATUSES, allow_null=True)
+    interested = serializers.BooleanField(help_text="Ticked the mentor option at registration.")
+    can_apply = serializers.BooleanField()
+    can_apply_after = serializers.DateTimeField(allow_null=True)
+    prompt_to_apply = serializers.BooleanField(
+        help_text="Said they want to mentor at registration and have not applied yet."
+    )

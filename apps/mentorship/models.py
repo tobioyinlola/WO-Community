@@ -57,6 +57,14 @@ class MentorApplication(BaseModel):
         ]
 
 
+class MentorInterest(BaseModel):
+    """Ticked "I am also a mentor" at registration. Only a prompt to apply; it grants nothing."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mentor_interest"
+    )
+
+
 class MentorProfile(BaseModel):
     class Status(models.TextChoices):
         ACTIVE = "active"

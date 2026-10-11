@@ -117,7 +117,11 @@ class RegisterView(PublicAuthView):
             ip=client_ip(request),
             invitation_token=data["invitation_token"],
             anonymous_id=data["anonymous_id"],
-            signup={"profile": data["profile"], "startup": data["startup"]},
+            signup={
+                "profile": data["profile"],
+                "startup": data["startup"],
+                "also_mentor": data["also_mentor"],
+            },
         )
         if approved:
             return Response(
@@ -240,7 +244,11 @@ class GoogleSignInView(PublicAuthView):
                     "conduct": registration["accepted_conduct"],
                     "marketing": registration["marketing_consent"],
                 },
-                "signup": {"profile": registration["profile"], "startup": registration["startup"]},
+                "signup": {
+                    "profile": registration["profile"],
+                    "startup": registration["startup"],
+                    "also_mentor": registration["also_mentor"],
+                },
                 "anonymous_id": registration["anonymous_id"],
                 "invitation_token": registration["invitation_token"],
             }

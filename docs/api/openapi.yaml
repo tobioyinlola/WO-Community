@@ -6858,6 +6858,30 @@ paths:
           description: Not an active member
         '404':
           description: Not found
+  /api/v1/me/mentoring:
+    get:
+      operationId: me_mentoring_retrieve
+      description: Whether you are a mentor, where your application stands, whether
+        you can apply now, and whether to prompt you to apply because you ticked the
+        mentor option when registering.
+      summary: Your mentoring status
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSummary'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
   /api/v1/me/notification-preferences:
     get:
       operationId: me_notification_preferences_retrieve
@@ -8558,7 +8582,7 @@ paths:
       description: 'Results are what you may see of each item: someone who hides their
         basics from members cannot be found. Tolerates small typos. Jobs, courses
         and the rest join as their areas are built.'
-      summary: Search members, startups and jobs
+      summary: Search members, startups, jobs and mentors
       parameters:
       - in: query
         name: limit
@@ -8575,7 +8599,7 @@ paths:
         name: types
         schema:
           type: string
-        description: 'Comma list: members, startups, jobs'
+        description: 'Comma list: members, startups, jobs, mentors'
       tags:
       - member area
       security:
@@ -11860,6 +11884,10 @@ components:
         marketing_consent:
           type: boolean
           default: false
+        also_mentor:
+          type: boolean
+          default: false
+          description: I am also a mentor. Only records interest; an admin still approves.
         profile:
           $ref: '#/components/schemas/SignupProfileRequest'
         startup:
@@ -13118,6 +13146,41 @@ components:
       required:
       - name
       - slug
+    MentoringSummary:
+      type: object
+      properties:
+        is_mentor:
+          type: boolean
+        application_id:
+          type: string
+          format: uuid
+          nullable: true
+        application_status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MentorApplicationStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        interested:
+          type: boolean
+          description: Ticked the mentor option at registration.
+        can_apply:
+          type: boolean
+        can_apply_after:
+          type: string
+          format: date-time
+          nullable: true
+        prompt_to_apply:
+          type: boolean
+          description: Said they want to mentor at registration and have not applied
+            yet.
+      required:
+      - application_id
+      - application_status
+      - can_apply
+      - can_apply_after
+      - interested
+      - is_mentor
+      - prompt_to_apply
     MentorshipSnapshot:
       type: object
       properties:
@@ -13341,6 +13404,9 @@ components:
       - next_cursor
       - results
       - unread_count
+    NullEnum:
+      enum:
+      - null
     Onboarding:
       type: object
       properties:
@@ -14964,6 +15030,10 @@ components:
         marketing_consent:
           type: boolean
           default: false
+        also_mentor:
+          type: boolean
+          default: false
+          description: I am also a mentor. Only records interest; an admin still approves.
         profile:
           $ref: '#/components/schemas/SignupProfileRequest'
         startup:
@@ -15359,6 +15429,10 @@ components:
           items:
             $ref: '#/components/schemas/SearchHit'
         jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        mentors:
           type: array
           items:
             $ref: '#/components/schemas/SearchHit'
