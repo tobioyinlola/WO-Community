@@ -4,4 +4,5 @@ urlpatterns = [
     path("", include("apps.toolkit.ventures.urls")),
     path("", include("apps.toolkit.jobs.urls")),
     path("", include("apps.toolkit.ai.urls")),
+    path("", include("apps.toolkit.scoring.urls")),
 ]

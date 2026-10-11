@@ -514,6 +514,8 @@ DECK_MAX_ELEMENTS_PER_SLIDE = 200
 DECK_VERSIONS_KEPT = env.int("DECK_VERSIONS_KEPT", default=30)
 PROTOTYPE_MAX_SCREENS = env.int("PROTOTYPE_MAX_SCREENS", default=20)
 VENTURE_DELETE_GRACE_DAYS = env.int("VENTURE_DELETE_GRACE_DAYS", default=14)
+# Research for one report runs its questions side by side. Tests turn it off (one connection).
+TOOLKIT_PARALLEL_RESEARCH = env.bool("TOOLKIT_PARALLEL_RESEARCH", default=True)
 
 # --- Video meetings ----------------------------------------------------------
 # One adapter per provider; a mentor picks one, and MEETING_DEFAULT_PROVIDER covers the rest.

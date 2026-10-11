@@ -33,6 +33,7 @@ STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
 MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"
 MEDIA_BASE_URL = "https://media.test"
 AI_PROVIDER = "fake"
+TOOLKIT_PARALLEL_RESEARCH = False
 RESEARCH_PROVIDER = "apps.toolkit.ai.research.fake.FakeResearchProvider"
 CALENDAR_FEED_READER = "apps.integrations.calendars.fake.FakeFeedReader"
 MEETING_PROVIDERS = {
