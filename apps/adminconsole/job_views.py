@@ -45,6 +45,7 @@ def _get(job_id: UUID) -> Job:
 
 class AdminJobsView(APIView):
     policy = MODERATE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="All jobs, for moderation",

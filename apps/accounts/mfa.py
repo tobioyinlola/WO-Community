@@ -149,13 +149,14 @@ def begin_enrolment(user: User, *, ip: str = "") -> tuple[str, str]:
     """Create (or restart) an unconfirmed device. Returns ``(secret, otpauth_uri)``."""
     secret = pyotp.random_base32()
     with transaction.atomic():
-        device = MfaDevice.objects.select_for_update().filter(user=user).first()
-        if device is not None and device.confirmed_at is not None:
-            raise ConflictError("MFA is already set up.", code="mfa_already_enrolled")
         encrypted = crypto.encrypt(secret)
-        if device is None:
-            MfaDevice.objects.create(user=user, secret_encrypted=encrypted)
-        else:
+        # get_or_create copes with two requests arriving together: the loser reads the winner's row.
+        device, created = MfaDevice.objects.select_for_update().get_or_create(
+            user=user, defaults={"secret_encrypted": encrypted}
+        )
+        if not created:
+            if device.confirmed_at is not None:
+                raise ConflictError("MFA is already set up.", code="mfa_already_enrolled")
             device.secret_encrypted = encrypted
             device.last_used_step = 0
             device.save(update_fields=["secret_encrypted", "last_used_step", "updated_at"])

@@ -37,6 +37,7 @@ def _ip(request: Request) -> str:
 
 class MemberListView(APIView):
     policy = policies.admin_permission("members.view")
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Search and filter members",

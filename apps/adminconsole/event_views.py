@@ -46,6 +46,7 @@ def _one(request: Request, event: Event, status_code: int = 200) -> Response:
 
 class AdminEventsView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="All events, any state",
@@ -191,6 +192,7 @@ class EventSlotsView(APIView):
 
 class AttendeesView(APIView):
     policy = ATTENDEES
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Who registered",
