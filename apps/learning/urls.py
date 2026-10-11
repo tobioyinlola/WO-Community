@@ -10,6 +10,7 @@ urlpatterns = [
     path("courses/<uuid:course_id>/rating", views.RatingView.as_view(), name="course-rating"),
     path("me/courses", views.MyCoursesView.as_view(), name="my-courses"),
     path("lessons/<uuid:lesson_id>", views.LessonView.as_view(), name="lesson"),
+    path("lessons/<uuid:lesson_id>/file", views.LessonFileView.as_view(), name="lesson-file"),
     path(
         "lessons/<uuid:lesson_id>/progress",
         views.LessonProgressView.as_view(),

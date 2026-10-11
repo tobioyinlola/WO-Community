@@ -283,6 +283,15 @@ def _lesson_body(lesson: Lesson) -> dict[str, object]:
             "body": lesson.body,
             "resource_url": lesson.resource_url,
             "resource_name": lesson.resource_name,
+            "file": (
+                {
+                    "name": lesson.resource_name,
+                    "size": lesson.file_size,
+                    "content_type": lesson.file_content_type,
+                }
+                if lesson.file_key
+                else None
+            ),
         }
     ).data
 
@@ -294,7 +303,9 @@ class ModuleLessonsView(APIView):
         summary="Add a lesson to the end of a module",
         description="A video lesson takes a YouTube link (validated: https, youtube.com, "
         "youtu.be, a real 11-character video id; the id and normalised address are stored). A "
-        "reading lesson takes `body`. A resource lesson takes `resource_url` and `resource_name`.",
+        "reading lesson takes `body`. A resource lesson takes a `resource_url` link, or an "
+        "`upload_id` from a ready `course_file` upload (PDF, DOCX, XLSX or PPTX, stored by us and "
+        "handed out through short lived links), and a `resource_name`.",
         request=LessonCreateSerializer,
         responses={201: AdminLessonSerializer, **ERRORS},
         tags=["admin"],

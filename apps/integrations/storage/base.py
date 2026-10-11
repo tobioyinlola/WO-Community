@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 QUARANTINE = "quarantine"
 MEDIA = "media"
+PRIVATE = "private"
 
 
 class ObjectTooLarge(Exception):
@@ -28,7 +29,8 @@ class ObjectStorage(ABC):
     """Object storage with two logical buckets.
 
     ``quarantine`` takes raw client uploads and is never public. ``media`` holds
-    files that were checked and re-encoded, served through a cookieless CDN.
+    files that were checked and re-encoded, served through a cookieless CDN. ``private`` holds
+    checked documents, which are only ever handed out through short lived signed links.
     """
 
     @abstractmethod
@@ -54,6 +56,12 @@ class ObjectStorage(ABC):
     @abstractmethod
     def delete(self, *, bucket: str, key: str) -> None:
         """Remove an object. Missing objects are not an error."""
+
+    @abstractmethod
+    def presign_get(
+        self, *, bucket: str, key: str, expires_in: int, filename: str, content_type: str
+    ) -> str:
+        """A short lived address for one object that always downloads it as an attachment."""
 
     @abstractmethod
     def public_url(self, key: str) -> str:

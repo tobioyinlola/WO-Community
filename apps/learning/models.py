@@ -86,9 +86,13 @@ class Lesson(BaseModel):
     video_url = models.CharField(max_length=300, blank=True)
     # Reading lessons: sanitised rich text.
     body = models.TextField(blank=True)
-    # Resource lessons: a link to a downloadable file or page.
+    # Resource lessons: a link to a page or file elsewhere, or a document we store. The display
+    # name is shared; ``file_key`` is the object in the private bucket (never a public address).
     resource_url = models.CharField(max_length=300, blank=True)
     resource_name = models.CharField(max_length=160, blank=True)
+    file_key = models.CharField(max_length=200, blank=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
+    file_content_type = models.CharField(max_length=100, blank=True)
 
     class Meta:
         ordering = ["module__position", "position"]
