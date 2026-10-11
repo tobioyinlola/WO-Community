@@ -14,6 +14,7 @@ urlpatterns = [
         views.MyMentorApplicationView.as_view(),
         name="my-mentor-application",
     ),
+    path("me/mentoring", views.MyMentoringView.as_view(), name="my-mentoring"),
     path("me/mentor-profile", views.MyMentorProfileView.as_view(), name="my-mentor-profile"),
     path("mentors", views.MentorsView.as_view(), name="mentors"),
     path("mentors/<uuid:user_id>", views.MentorView.as_view(), name="mentor"),

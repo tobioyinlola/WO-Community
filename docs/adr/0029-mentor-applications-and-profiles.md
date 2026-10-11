@@ -41,9 +41,20 @@ Status: accepted (Stage 3, second slice)
   `mentor_application_submitted`, `_approved` and `_declined`; admins are notified of each new
   application, applicants of each outcome.
 
+## Follow-ups in the same slice
+
+- **"I am also a mentor" at registration.** Both registration paths (email and Google) accept an
+  optional `also_mentor` flag. It is carried on the sign-up event and recorded as a `MentorInterest`
+  row; it grants nothing and starts no application, because the account is not active yet.
+  `GET /me/mentoring` tells the front end where the member stands (mentor, application status,
+  whether they can apply, when a declined member may apply again) and `prompt_to_apply` is true
+  for an interested member who has not applied.
+- **Mentors in global search** (`types=mentors`, also part of the default). Only listed mentors
+  appear. A mentor who hides their basics from members is shown as "Community member" and found
+  only by role, company or expertise, never by their hidden name.
+
 ## Consequences
 
 Availability, matching, requests, booking, calendar integrations, reminders and feedback follow in
 later slices. The mentor rating fields exist (count and total) but nothing writes them until
-feedback exists. The registration option "I am also a mentor" is a front-end step that calls the
-application endpoint after the account exists.
+feedback exists. Mentor ratings are written by session feedback, which comes later.

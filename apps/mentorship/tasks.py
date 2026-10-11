@@ -6,7 +6,7 @@ from celery import shared_task
 
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
-from apps.mentorship.models import MentorApplication
+from apps.mentorship.models import MentorApplication, MentorInterest
 from apps.notifications import notify
 
 logger = structlog.get_logger(__name__)
@@ -69,3 +69,11 @@ def notify_revoked(event_id: str) -> None:
         {"reason": data["reason"]},
         dedupe_key=f"{event_id}:revoked",
     )
+
+
+@shared_task(name="mentorship.record_interest")
+def record_interest(event_id: str) -> None:
+    data = _payload(event_id)
+    if data is None or not data["details"].get("also_mentor"):
+        return
+    MentorInterest.objects.get_or_create(user_id=UUID(data["user_id"]))

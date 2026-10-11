@@ -84,6 +84,11 @@ class RegisterSerializer(StrictSerializer):
     accepted_privacy = serializers.BooleanField()
     accepted_conduct = serializers.BooleanField()
     marketing_consent = serializers.BooleanField(required=False, default=False)
+    also_mentor = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="I am also a mentor. Only records interest; an admin still approves.",
+    )
     profile = SignupProfileSerializer()
     startup = SignupStartupSerializer()
     anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)
@@ -110,6 +115,11 @@ class GoogleRegistrationSerializer(StrictSerializer):
     accepted_privacy = serializers.BooleanField()
     accepted_conduct = serializers.BooleanField()
     marketing_consent = serializers.BooleanField(required=False, default=False)
+    also_mentor = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="I am also a mentor. Only records interest; an admin still approves.",
+    )
     profile = SignupProfileSerializer()
     startup = SignupStartupSerializer()
     anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)

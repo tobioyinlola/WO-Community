@@ -17,6 +17,7 @@ from django.db.models.functions import Greatest
 from apps.accounts import services as accounts
 from apps.core.visibility import audience_for
 from apps.jobs import selectors as jobs
+from apps.mentorship import selectors as mentorship
 from apps.profiles import selectors as profiles
 from apps.profiles.models import FounderProfile
 from apps.startups import selectors as startups
@@ -112,10 +113,45 @@ def _jobs(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
     ]
 
 
+def _mentors(viewer: Any, query: str, limit: int) -> list[dict[str, Any]]:
+    """Listed mentors. A mentor who hides their name is found only by role, company or expertise."""
+    needle = " ".join(query.lower().split())
+    rows = list(
+        mentorship.filter_mentors(mentorship.listed(), q=query).order_by("-approved_at", "-id")[
+            : limit * OVERFETCH
+        ]
+    )
+    cards = profiles.cards_for(viewer, [r.user_id for r in rows])
+    hits: list[dict[str, Any]] = []
+    for row in rows:
+        card = cards[row.user_id]
+        by_work = (
+            needle in row.current_role.lower()
+            or needle in row.company.lower()
+            or needle in row.expertise
+        )
+        if card["hidden"] and not by_work:
+            continue
+        hits.append(
+            {
+                "type": "mentor",
+                "id": row.user_id,
+                "slug": card["slug"] or str(row.user_id),
+                "title": card["name"],
+                "subtitle": f"{row.current_role}, {row.company}",
+                "image": card["photo"],
+            }
+        )
+        if len(hits) == limit:
+            break
+    return hits
+
+
 SEARCHERS: dict[str, Callable[[Any, str, int], list[dict[str, Any]]]] = {
     "members": _members,
     "startups": _startups,
     "jobs": _jobs,
+    "mentors": _mentors,
 }
 
 

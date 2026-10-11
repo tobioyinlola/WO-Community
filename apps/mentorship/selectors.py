@@ -9,7 +9,7 @@ from rest_framework import exceptions
 from apps.accounts import services as accounts
 from apps.core.keyset import paginate
 from apps.mentorship.domain import LANGUAGES
-from apps.mentorship.models import MentorApplication, MentorProfile
+from apps.mentorship.models import MentorApplication, MentorInterest, MentorProfile
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
 
@@ -211,3 +211,32 @@ def snapshot() -> dict[str, int]:
         "active_mentors": MentorProfile.objects.filter(status=MentorProfile.Status.ACTIVE).count(),
         "listed_mentors": listed().count(),
     }
+
+
+def mentoring_summary(user_id: UUID) -> dict[str, Any]:
+    """Where the member stands as a mentor, and whether to prompt them to apply."""
+    from apps.mentorship.applications import REAPPLY_AFTER
+
+    is_mentor = accounts.has_role(user_id, "mentor")
+    latest = MentorApplication.objects.filter(applicant_id=user_id).order_by("-created_at").first()
+    status = latest.status if latest else None
+    can_apply_after = None
+    if latest and latest.status == MentorApplication.Status.DECLINED and latest.decided_at:
+        can_apply_after = latest.decided_at + REAPPLY_AFTER
+    waiting = status in ("pending", "info_requested")
+    interested = MentorInterest.objects.filter(user_id=user_id).exists()
+    return {
+        "is_mentor": is_mentor,
+        "application_id": latest.pk if latest else None,
+        "application_status": status,
+        "interested": interested,
+        "can_apply": not is_mentor and not waiting and not _cooling_down(can_apply_after),
+        "can_apply_after": can_apply_after if _cooling_down(can_apply_after) else None,
+        "prompt_to_apply": interested and not is_mentor and latest is None,
+    }
+
+
+def _cooling_down(until: Any) -> bool:
+    from django.utils import timezone
+
+    return until is not None and timezone.now() < until
