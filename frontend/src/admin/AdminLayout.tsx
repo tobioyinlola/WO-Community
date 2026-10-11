@@ -2,8 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Briefcase,
+  CalendarDays,
+  GraduationCap,
+  Newspaper,
   Flag,
   LayoutDashboard,
+  ListChecks,
+  Mail,
   Menu,
   ShieldCheck,
   Trophy,
@@ -53,6 +58,16 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
       { to: "/admin/wins", label: "Wins", icon: Trophy, needs: "editorial.manage", badge: "wins_awaiting_review" },
     ],
   },
+  {
+    title: "Content",
+    items: [
+      { to: "/admin/news", label: "News", icon: Newspaper, needs: "editorial.manage" },
+      { to: "/admin/events", label: "Events", icon: CalendarDays, needs: "events.manage" },
+      { to: "/admin/courses", label: "Courses", icon: GraduationCap, needs: "courses.manage" },
+      { to: "/admin/email", label: "Email", icon: Mail, needs: "campaigns.send" },
+    ],
+  },
+  { title: "Settings", items: [{ to: "/admin/lists", label: "Lists", icon: ListChecks, needs: "reference.manage" }] },
 ];
 
 /** The first section a person may open, used when they land on the console. */

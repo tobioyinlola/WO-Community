@@ -35,6 +35,7 @@ function EventCard({ event }: { event: EventSummary }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="app-cluster" style={{ marginBottom: "var(--space-2)" }}>
             <Badge variant="investor">{humanise(event.type)}</Badge>
+            {event.status === "cancelled" ? <Badge variant="danger" dot>Cancelled</Badge> : null}
             {event.registered ? <Badge variant="success" dot>Registered</Badge> : null}
             {event.spots_left === 0 && !event.registered ? <Badge variant="warning" dot>Full</Badge> : null}
           </div>

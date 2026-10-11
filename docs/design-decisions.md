@@ -50,8 +50,8 @@ Notes where the brief left a choice. Everything else is built exactly as the des
   paragraphs without invalid markup.
 - **Money** is typed in whole units and stored in minor units; dates read "10 Oct 2026", times use
   the 24 hour clock with a zone ("15:00 WAT"), and the currency symbol comes before the amount.
-- **Not yet built:** admin sections for news, events, courses, email and reference lists, and the toolkit's prototype editor beyond wording changes
-  (structure editing is left to templates and drafts).
+- **Not yet built:** paid courses (payments are deferred), demo day pitch slots, newsletter images, and the toolkit admin pages (rubrics, templates, usage). In the toolkit itself, the prototype
+  editor only changes wording; structure comes from templates and drafts.
 
 ## Admin console
 
@@ -66,3 +66,11 @@ Notes where the brief left a choice. Everything else is built exactly as the des
 - **Lists load a page at a time** with "Load more", because the console's endpoints page by offset.
 - **Wide tables scroll inside their own labelled box** (`TableScroll`) so the page never scrolls
   sideways and keyboard users can still reach the overflow.
+- **Tall modals scroll inside.** The brief does not say what a modal does when its content is taller
+  than the screen. The body scrolls and the title and buttons stay in view, so a long form (a story,
+  an event, an audience) can always be saved.
+- **Event times** are typed on the clock of the event's own place (Lagos by default) and converted
+  to a moment in time on save, so "18:00 WAT" is what everyone sees whatever their own zone.
+- **Edits that need a version** (events, stories, courses, newsletters) read the record first and send
+  the version they read, so a change made by someone else shows as a conflict, not a silent overwrite.
+- **Courses are free only** in the console until payments exist.

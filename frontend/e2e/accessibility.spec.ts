@@ -66,7 +66,7 @@ for (const { width, height, scheme } of COMBOS) {
   });
 }
 
-const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/security"];
+const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/news", "/admin/events", "/admin/courses", "/admin/email", "/admin/lists", "/admin/security"];
 
 for (const { width, height, scheme } of [COMBOS[1], COMBOS[2], COMBOS[4]]) {
   test(`admin console, ${width}px wide, ${scheme} theme`, async ({ browser }) => {

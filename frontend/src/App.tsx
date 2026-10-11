@@ -61,6 +61,11 @@ const AdminMentors = lazy(() => import("./admin/MentorApplications"));
 const AdminReports = lazy(() => import("./admin/Reports"));
 const AdminJobs = lazy(() => import("./admin/Queues").then((m) => ({ default: m.JobsReview })));
 const AdminWins = lazy(() => import("./admin/Queues").then((m) => ({ default: m.WinsReview })));
+const AdminNews = lazy(() => import("./admin/News"));
+const AdminEvents = lazy(() => import("./admin/Events"));
+const AdminCourses = lazy(() => import("./admin/Courses"));
+const AdminEmail = lazy(() => import("./admin/Email"));
+const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminSecurity = lazy(() => import("./admin/Security"));
 const NewsStory = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsStory })));
 
@@ -162,6 +167,11 @@ export function App() {
                     <Route path="reports" element={<AdminReports />} />
                     <Route path="jobs" element={<AdminJobs />} />
                     <Route path="wins" element={<AdminWins />} />
+                    <Route path="news" element={<AdminNews />} />
+                    <Route path="events" element={<AdminEvents />} />
+                    <Route path="courses" element={<AdminCourses />} />
+                    <Route path="email" element={<AdminEmail />} />
+                    <Route path="lists" element={<AdminLists />} />
                     <Route path="security" element={<AdminSecurity />} />
                     <Route path="*" element={<Navigate to="/admin" replace />} />
                   </Route>
