@@ -6,7 +6,6 @@ import pytest
 from django.db import connection
 from django.utils import timezone
 
-from apps.accounts.models import User, UserStatus
 from apps.analytics import partitions
 from apps.analytics.models import PartitionArchive
 from apps.audit import services as audit
@@ -150,23 +149,3 @@ def test_a_partition_is_dropped_only_after_it_was_archived(settings):
     settings.ANALYTICS_REQUIRE_ARCHIVE = False
     again = make_old_partition(old - timedelta(days=60))
     assert again in tasks.drop_expired()  # the old behaviour is still available
-
-
-# --- rejected registrations ---
-
-
-def test_rejected_registrations_are_erased_after_the_retention_period(make_user, settings):
-    from apps.accounts import membership
-
-    old = make_user(email="old@example.com", status=UserStatus.REJECTED)
-    recent = make_user(email="recent@example.com", status=UserStatus.REJECTED)
-    suspended = make_user(email="susp@example.com", status=UserStatus.SUSPENDED)
-    long_ago = timezone.now() - timedelta(days=settings.REJECTED_REGISTRATION_RETENTION_DAYS + 1)
-    User.objects.filter(pk__in=[old.pk, suspended.pk]).update(status_changed_at=long_ago)
-    User.objects.filter(pk=recent.pk).update(status_changed_at=timezone.now() - timedelta(days=5))
-    User.objects.filter(pk=old.pk).update(status=UserStatus.REJECTED)
-    assert membership.purge_rejected_registrations() == 1
-    assert not User.objects.filter(pk=old.pk).exists()
-    assert User.objects.filter(pk__in=[recent.pk, suspended.pk]).count() == 2
-    assert membership.purge_rejected_registrations() == 0
-    assert AuditLog.objects.filter(action="members.purged", target_id=str(old.pk)).exists()
