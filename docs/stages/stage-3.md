@@ -30,10 +30,15 @@ Design in ADR 0029. Endpoints: `POST /mentor-applications`, `GET /me/mentor-appl
 `GET` and `PUT /me/mentor-profile`; admin: `GET /admin/mentor-applications`, `.../{id}`,
 `POST .../{id}/decision`, `GET /admin/mentors`, `POST /admin/mentors/{id}/revoke` and `/restore`.
 
+## Slice 3: availability and recommendations (done)
+
+Design in ADR 0030. Endpoints: `GET` and `PUT /me/availability`, `GET /mentors/{id}/availability`,
+`GET /mentors/recommended`, `GET` and `PUT /me/mentorship-needs`, `GET /me/mentoring`, and the
+`available` filter on `GET /mentors`. Mentors also appear in global search (`types=mentors`).
+
 ## Still to do in Stage 3
 
-1. Mentorship, remaining: availability, matching and
-   recommendations, requests, booking with exclusion constraints, Google Meet and Zoom adapters,
+1. Mentorship, remaining: requests, booking with exclusion constraints, Google Meet and Zoom adapters,
    reminders, rescheduling and cancelling, feedback.
 2. Downloadable course files stored by us (needs document uploads).
 3. Decision before paid courses launch (Stage 4): whether embedded YouTube plus the application
