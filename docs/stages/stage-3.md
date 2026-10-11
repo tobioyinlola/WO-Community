@@ -23,9 +23,16 @@ Design and trade-offs are in ADR 0028.
 Notices: certificate ready, access granted. Segments: `learner_free`, `learner_paid`,
 `course_completed`. The dashboard has a live learning section.
 
+## Slice 2: mentor applications and profiles (done)
+
+Design in ADR 0029. Endpoints: `POST /mentor-applications`, `GET /me/mentor-application`,
+`PATCH` and `DELETE /mentor-applications/{id}`, `GET /mentors`, `GET /mentors/{member id}`,
+`GET` and `PUT /me/mentor-profile`; admin: `GET /admin/mentor-applications`, `.../{id}`,
+`POST .../{id}/decision`, `GET /admin/mentors`, `POST /admin/mentors/{id}/revoke` and `/restore`.
+
 ## Still to do in Stage 3
 
-1. Mentorship: applications and approval, mentor profiles and the badge, availability, matching and
+1. Mentorship, remaining: availability, matching and
    recommendations, requests, booking with exclusion constraints, Google Meet and Zoom adapters,
    reminders, rescheduling and cancelling, feedback.
 2. Downloadable course files stored by us (needs document uploads).
