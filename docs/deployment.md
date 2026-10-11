@@ -87,3 +87,10 @@ different subdomains so a marketing complaint cannot hurt password resets, for e
 migrations only), tests, API description drift and the deployment check; then builds the image,
 checks it starts and scans it for high and critical vulnerabilities; and scans the history for
 secrets.
+
+## CDN (Cloudflare)
+
+Set `CDN_PURGER=apps.integrations.cdn.cloudflare.CloudflarePurger`, `CLOUDFLARE_API_TOKEN` (Cache
+Purge on the one zone only), `CLOUDFLARE_ZONE_ID` and `CDN_ORIGIN_URL` (the public host behind
+Cloudflare). See ADR 0046. Authenticated routes and share links send `private, no-store` and must
+not be cached by a rule.
