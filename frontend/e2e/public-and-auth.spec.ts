@@ -61,7 +61,7 @@ test.describe("signing in", () => {
     await expect(page).toHaveURL(/\/app/);
     await page.getByRole("button", { name: "Account menu" }).click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/login/);
     await page.goto("/app");
     await expect(page).toHaveURL(/\/login/);
   });

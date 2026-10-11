@@ -137,7 +137,7 @@ export function Landing() {
 
       <section className="site-band site-band--subtle" aria-labelledby="members-get">
         <div className="wo-container">
-          <div className="app-split" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+          <div className="app-split app-split--even">
             <div>
               <span className="wo-eyebrow">Membership</span>
               <h2 className="display-sm" id="members-get" style={{ margin: "var(--space-4) 0 var(--space-6)" }}>

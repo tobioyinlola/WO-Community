@@ -1,5 +1,5 @@
 import DOMPurify from "dompurify";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode, type CSSProperties } from "react";
 import { Button, Alert } from "../components";
 import { messageOf } from "../api/errors";
 import { cx } from "../lib/cx";
@@ -200,6 +200,17 @@ export function LoadMore({
       <Button variant="secondary" loading={loading} onClick={onClick}>
         Load more
       </Button>
+    </div>
+  );
+}
+
+/** A table that scrolls sideways inside its own box on narrow screens, reachable by keyboard. */
+export function TableScroll({ label, children, style }: { label: string; children: ReactNode; style?: CSSProperties }) {
+  return (
+    // A box that scrolls must be focusable so keyboard users can scroll it.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+    <div className="app-tablewrap" role="region" aria-label={label} tabIndex={0} style={style}>
+      {children}
     </div>
   );
 }
