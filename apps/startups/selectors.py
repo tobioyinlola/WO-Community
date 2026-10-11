@@ -253,3 +253,9 @@ def member_ids_by_stage(slugs: list[str]) -> set[UUID]:
 
 def member_ids_in_directory() -> set[UUID]:
     return _member_ids(Startup.objects.filter(directory_opt_in=True))
+
+
+def sector_stage_of_member(user_id: UUID) -> list[tuple[str, str]]:
+    """The (sector slug, stage slug) of every startup the member owns or is on the team of."""
+    ids = startup_ids_of_member(user_id)
+    return list(Startup.objects.filter(pk__in=ids).values_list("sector__slug", "stage__slug"))

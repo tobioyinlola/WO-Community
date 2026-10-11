@@ -224,3 +224,12 @@ in one transaction that changes the profile and the `mentor` role together, so a
 badge means the profile is `revoked` (see `revoke_reason` and the audit log), not a partial write.
 Outcome and new-application notices come from the outbox events `mentorship.*`; if they are missing,
 check the outbox backlog first.
+
+## Migration fails creating the mentor availability constraints
+
+The availability tables use PostgreSQL exclusion constraints, which need the `btree_gist`
+extension. Migration `mentorship.0003` runs `CREATE EXTENSION IF NOT EXISTS btree_gist`; on a
+managed database the migration role must be allowed to do that (or an administrator creates it
+once with `CREATE EXTENSION btree_gist;` before deploying). Recommendations that look stale after a
+mentor change point at the Redis cache: the version key `mentorship:data-version` moves on every
+change, and entries expire after 15 minutes anyway.
