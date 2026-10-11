@@ -110,6 +110,21 @@ Edge by default) so nothing is downloaded. They need the API, the worker and the
 Some limits are daily (for example new job posts), so many repeated runs on one database can hit
 them; clear the cache (`redis-cli -n 1 FLUSHDB` in the local container) to reset.
 
+## What CI runs
+
+Every push and pull request runs these jobs (`.github/workflows/ci.yml`):
+
+| Job | What it checks |
+|---|---|
+| Quality gates | Lint, formatting, types, security scans, module boundaries, migrations, the back end tests, the toolkit evaluation set, that `docs/api/openapi.yaml` is current, and deployment settings. |
+| Web front end | Lint, type check, unit tests and the production build. |
+| Browser tests | The Playwright specs in Chromium against a real stack (Postgres, Redis, the API and a worker, with the demo community loaded). One job covers the screens and flows, a second the width and accessibility audit. |
+| Container image | Builds the image, checks its configuration and scans it for vulnerabilities. |
+| Secret scan | Scans the full history for credentials. |
+
+When a browser test fails, the reason is written as annotations on the run (the failing test, and
+the API requests that were refused), and screenshots and traces are kept as an artifact for 7 days.
+
 ## Quality gates
 
 `make ci` runs everything the pipeline runs: `ruff`, `black --check`, `mypy`, `bandit`,
