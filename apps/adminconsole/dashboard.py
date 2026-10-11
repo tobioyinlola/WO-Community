@@ -22,6 +22,7 @@ from apps.audit import services as audit
 from apps.campaigns import services as campaigns
 from apps.jobs import selectors as jobs
 from apps.learning import selectors as learning
+from apps.mentorship import selectors as mentorship
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
 from apps.startups import selectors as startups
@@ -341,7 +342,7 @@ def home(actor: Any) -> dict[str, Any]:
         },
         # Arrive with their modules in later stages.
         "learning": _learning(today),
-        "mentorship": {"available": False},
+        "mentorship": {"available": True, **mentorship.snapshot()},
         "revenue": {"available": False},
     }
 

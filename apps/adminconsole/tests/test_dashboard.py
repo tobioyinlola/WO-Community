@@ -80,7 +80,8 @@ def test_refreshing_again_overwrites_instead_of_double_counting(make_user):
 
 def test_each_day_is_counted_on_its_own_day(make_user):
     old = member(make_user, "old@example.com")
-    User.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=1, hours=1))
+    midday_yesterday = timezone.now().replace(hour=12, minute=0, second=0) - timedelta(days=1)
+    User.objects.filter(pk=old.pk).update(created_at=midday_yesterday)
     member(make_user, "new@example.com")
     dashboard.refresh(days=3)
     today = timezone.now().date()
@@ -288,7 +289,8 @@ def test_home_shows_queues_community_activity_and_email(as_admin, make_user):
 
 def test_unbuilt_areas_say_so(as_admin):
     body = as_admin.get(BASE).json()
-    assert body["mentorship"] == body["revenue"] == {"available": False}
+    assert body["revenue"] == {"available": False}
+    assert body["mentorship"]["available"] is True and body["mentorship"]["active_mentors"] == 0
     assert body["learning"]["available"] is True and body["learning"]["enrolments"] == 0
 
 

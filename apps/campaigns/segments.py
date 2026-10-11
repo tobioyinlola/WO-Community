@@ -19,6 +19,7 @@ from apps.core.serializers import StrictSerializer
 from apps.feed import selectors as feed
 from apps.jobs import selectors as jobs
 from apps.learning import selectors as learning
+from apps.mentorship import selectors as mentorship
 from apps.notifications import services as notifications
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
@@ -34,6 +35,8 @@ TAGS = (
     "learner_free",
     "learner_paid",
     "course_completed",
+    "mentor_applicant",
+    "mentor_approved",
 )
 ROLES = ("member", "mentor")
 PROFILE_COMPLETE_SCORE = 80
@@ -166,6 +169,10 @@ def compile_filters(definition: dict[str, Any]) -> Filters:
             f.include.append(learning.learner_ids("paid"))
         elif tag == "course_completed":
             f.include.append(learning.completer_ids())
+        elif tag == "mentor_applicant":
+            f.include.append(mentorship.applicant_ids())
+        elif tag == "mentor_approved":
+            f.include.append(mentorship.mentor_ids())
     return f
 
 
