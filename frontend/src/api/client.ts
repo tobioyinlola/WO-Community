@@ -54,7 +54,7 @@ function authorised(request: Request): Request {
 }
 
 /** Adds the token, and if the server says it has expired, renews it once and tries again. */
-async function authFetch(input: Request): Promise<Response> {
+export async function authFetch(input: Request): Promise<Response> {
   const spare = input.clone();
   const response = await fetch(authorised(input), { credentials: "include" });
   const path = new URL(input.url, window.location.origin).pathname;
@@ -95,4 +95,26 @@ export async function unwrapTagged<T>(call: Promise<Result<T>>): Promise<Tagged<
   const { data, error, response } = await call;
   if (!response.ok) throw new ApiError(response.status, problemOf(error, response));
   return { data: data as T, etag: response.headers.get("ETag") ?? "" };
+}
+
+/** Saves a file the API serves behind sign in (calendar files, PDFs) as a download. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const response = await authFetch(new Request(new URL(API_BASE + path, window.location.origin)));
+  if (!response.ok) {
+    let problem: Problem = { status: response.status, detail: response.statusText };
+    try {
+      problem = (await response.json()) as Problem;
+    } catch {
+      // not a problem document; keep the status text
+    }
+    throw new ApiError(response.status, problem);
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

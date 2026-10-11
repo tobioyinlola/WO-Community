@@ -19,6 +19,29 @@ import { Skeleton } from "./ui/blocks";
 import { ToastProvider } from "./ui/Toast";
 
 const Home = lazy(() => import("./pages/app/Home"));
+const Feed = lazy(() => import("./pages/app/Feed"));
+const Directory = lazy(() => import("./pages/app/Directory"));
+const MemberPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.MemberPage })));
+const StartupPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.StartupPage })));
+const Jobs = lazy(() => import("./pages/app/Jobs"));
+const JobDetail = lazy(() => import("./pages/app/Jobs").then((m) => ({ default: m.JobDetail })));
+const NewJob = lazy(() => import("./pages/app/Jobs").then((m) => ({ default: m.NewJob })));
+const Events = lazy(() => import("./pages/app/Events"));
+const EventDetail = lazy(() => import("./pages/app/Events").then((m) => ({ default: m.EventDetail })));
+const Learn = lazy(() => import("./pages/app/Learn"));
+const CourseDetail = lazy(() => import("./pages/app/Learn").then((m) => ({ default: m.CourseDetail })));
+const LessonPage = lazy(() => import("./pages/app/Learn").then((m) => ({ default: m.LessonPage })));
+const Certificates = lazy(() => import("./pages/app/Learn").then((m) => ({ default: m.Certificates })));
+const Mentors = lazy(() => import("./pages/app/Mentors"));
+const MentorDetail = lazy(() => import("./pages/app/Mentors").then((m) => ({ default: m.MentorDetail })));
+const SessionsPage = lazy(() => import("./pages/app/Mentors").then((m) => ({ default: m.SessionsPage })));
+const BecomeMentor = lazy(() => import("./pages/app/Mentors").then((m) => ({ default: m.BecomeMentor })));
+const Profile = lazy(() => import("./pages/app/Account"));
+const StartupForm = lazy(() => import("./pages/app/Account").then((m) => ({ default: m.StartupForm })));
+const Settings = lazy(() => import("./pages/app/Account").then((m) => ({ default: m.SettingsPage })));
+const Notifications = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NotificationsPage })));
+const News = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsPage })));
+const NewsStory = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsStory })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,7 +68,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
             <Suspense fallback={<Fallback />}>
               <Routes>
@@ -69,6 +92,31 @@ export function App() {
                 <Route element={<RequireAuth />}>
                   <Route path="app" element={<AppLayout />}>
                     <Route index element={<Home />} />
+                    <Route path="feed" element={<Feed />} />
+                    <Route path="directory" element={<Directory />} />
+                    <Route path="members/:id" element={<MemberPage />} />
+                    <Route path="startups/new" element={<StartupForm />} />
+                    <Route path="startups/:id" element={<StartupPage />} />
+                    <Route path="startups/:id/edit" element={<StartupForm />} />
+                    <Route path="jobs" element={<Jobs />} />
+                    <Route path="jobs/new" element={<NewJob />} />
+                    <Route path="jobs/:id" element={<JobDetail />} />
+                    <Route path="events" element={<Events />} />
+                    <Route path="events/:id" element={<EventDetail />} />
+                    <Route path="learn" element={<Learn />} />
+                    <Route path="learn/certificates" element={<Certificates />} />
+                    <Route path="learn/lesson/:id" element={<LessonPage />} />
+                    <Route path="learn/:id" element={<CourseDetail />} />
+                    <Route path="mentors" element={<Mentors />} />
+                    <Route path="mentors/sessions" element={<SessionsPage />} />
+                    <Route path="mentors/become" element={<BecomeMentor />} />
+                    <Route path="mentors/:id" element={<MentorDetail />} />
+                    <Route path="news" element={<News />} />
+                    <Route path="news/:id" element={<NewsStory />} />
+                    <Route path="notifications" element={<Notifications />} />
+                    <Route path="me" element={<Profile />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="*" element={<Navigate to="/app" replace />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
