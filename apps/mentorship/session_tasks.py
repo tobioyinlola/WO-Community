@@ -9,7 +9,7 @@ from celery import shared_task
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
 from apps.integrations import meetings
-from apps.mentorship import booking, lifecycle
+from apps.mentorship import booking, calendar_sync, lifecycle
 from apps.mentorship.models import MentorSession
 from apps.notifications import notify
 
@@ -342,6 +342,11 @@ def expire_requests() -> int:
 @shared_task(name="mentorship.send_reminders")
 def send_reminders() -> int:
     return lifecycle.send_reminders()
+
+
+@shared_task(name="mentorship.sync_calendars")
+def sync_calendars() -> int:
+    return calendar_sync.sync_all()
 
 
 @shared_task(name="mentorship.complete_due")

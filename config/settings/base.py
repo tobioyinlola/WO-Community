@@ -259,6 +259,7 @@ CELERY_BEAT_SCHEDULE = {
     "mentorship-reminders": {"task": "mentorship.send_reminders", "schedule": 300.0},
     "mentorship-expire-requests": {"task": "mentorship.expire_requests", "schedule": 600.0},
     "mentorship-complete-due": {"task": "mentorship.complete_due", "schedule": 300.0},
+    "mentorship-sync-calendars": {"task": "mentorship.sync_calendars", "schedule": 900.0},
     "campaigns-start-due": {"task": "campaigns.start_due", "schedule": 60.0},
     "dashboard-refresh": {"task": "adminconsole.refresh_dashboard", "schedule": 3600.0},
     "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
@@ -422,6 +423,15 @@ MENTORSHIP_MAX_RESCHEDULES = 3
 MENTORSHIP_LATE_CANCEL_HOURS = 24
 MENTORSHIP_COMPLETE_AFTER_MINUTES = 15  # a confirmed session counts as held this long after it ends
 MENTORSHIP_FEEDBACK_WINDOW_DAYS = 14
+
+# --- Mentor calendar feeds ---------------------------------------------------
+# A mentor can share the private iCal address of their calendar so busy time is not offered.
+CALENDAR_FEED_READER = env.str(
+    "CALENDAR_FEED_READER", default="apps.integrations.calendars.web.WebFeedReader"
+)
+CALENDAR_SYNC_DAYS = 62  # a little more than the booking horizon
+CALENDAR_CONNECTS_PER_HOUR = 10
+CALENDAR_STALE_AFTER = timedelta(hours=3)  # a feed not read for this long is shown as stale
 
 # --- Video meetings ----------------------------------------------------------
 # One adapter per provider; a mentor picks one, and MEETING_DEFAULT_PROVIDER covers the rest.

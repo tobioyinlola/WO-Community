@@ -275,3 +275,18 @@ minutes; if one "has expired", ask `GET /lessons/{id}/file` again. A 404 there m
 holds a link, not a stored file. The private bucket (`STORAGE_PRIVATE_BUCKET`) must exist and
 must not have public read access; if downloads 403 from storage, check the bucket name and that
 the application credentials can read it.
+
+## A mentor's calendar is not blocking time
+
+`GET /me/calendar` shows the state: `error` with a reason means the last read failed and the
+busy time from the last good read is being used (it can only make the mentor look busier).
+"That address does not return a calendar" is usually a sign-in page or the wrong link (use the
+secret iCal address, not the shareable web link); "did not answer in time" and status errors are
+the provider. A feed address that stops working was probably reset in the calendar app, so the
+mentor shares the new one. `stale` is true when nothing has been read for 3 hours: check that
+beat runs `mentorship.sync_calendars` (every 15 minutes) and a worker consumes the `default`
+queue. Google can take hours to publish a new event to its feed, which is outside our control;
+`GET /me/availability/preview` shows what is being removed. Feeds are read only from public
+hosts on ports 80, 443, 8080 and 8443 (the same rules as link previews), so an address on a
+private network cannot be shared.
+

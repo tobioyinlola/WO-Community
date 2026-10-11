@@ -338,3 +338,51 @@ class SessionFeedback(BaseModel):
                 name="sessionfeedback_stars_range",
             ),
         ]
+
+
+class CalendarConnection(BaseModel):
+    """A mentor private calendar feed, so time they are already busy is never offered."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "active"
+        ERROR = "error"  # the last read failed; the busy time from the last good read is kept
+
+    mentor = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="calendar_connection"
+    )
+    # The feed address is a secret (anyone holding it can read the calendar), so it is encrypted
+    # and never returned; only its host is shown.
+    feed_url_encrypted = models.TextField()
+    host = models.CharField(max_length=120)
+    include_all_day = models.BooleanField(default=False)
+    status = models.CharField(max_length=6, choices=Status.choices, default=Status.ACTIVE)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=40, blank=True)
+    event_count = models.PositiveIntegerField(default=0)
+    busy_hash = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=["active", "error"]), name="calendarconnection_status_valid"
+            )
+        ]
+
+
+class CalendarBusy(BaseModel):
+    """One range of time the mentor is busy in their calendar. Times only, never titles."""
+
+    mentor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="calendar_busy"
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(ends_at__gt=models.F("starts_at")), name="calendarbusy_span_valid"
+            )
+        ]
+        indexes = [models.Index(fields=["mentor", "starts_at"], name="calendarbusy_mentor_idx")]

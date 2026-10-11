@@ -11,6 +11,7 @@ from django.utils import timezone
 from apps.mentorship.models import (
     ACTIVE_SESSION_STATUSES,
     AvailabilitySlot,
+    CalendarBusy,
     MentorProfile,
     MentorSession,
 )
@@ -32,12 +33,11 @@ def booked_intervals(mentor_id: UUID, start: datetime, end: datetime) -> list[In
 
 
 def external_busy(mentor_id: UUID, start: datetime, end: datetime) -> list[Interval]:
-    """Busy time from a mentor connected calendar.
-
-    Reading a mentor own calendar needs a per mentor sign-in that is not built; the meeting
-    providers only create meetings on the platform account. Returns nothing until it is.
-    """
-    return []
+    """Busy time from the calendar the mentor shared (read by a worker, never in a request)."""
+    rows = CalendarBusy.objects.filter(
+        mentor_id=mentor_id, starts_at__lt=end, ends_at__gt=start
+    ).values_list("starts_at", "ends_at")
+    return [(a, b) for a, b in rows]
 
 
 def week_bounds(zone_name: str, at: datetime) -> Interval:

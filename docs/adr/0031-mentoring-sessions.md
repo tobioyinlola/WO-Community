@@ -98,7 +98,6 @@ can guard the calendar directly:
 
 ## Consequences
 
-The mentor's own calendar busy time is still a hook (`scheduling.external_busy`): reading it needs
-a sign-in per mentor, which the platform-level meeting accounts in ADR 0032 do not provide.
+The mentor's own calendar busy time is covered by ADR 0035 (a shared private calendar address).
 Recurring sessions, group sessions, payments for mentoring and an in-app message thread between the
 two people are not built.
