@@ -114,6 +114,10 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
           vuln-type: os,library
+      - name: List the findings
+        if: failure()
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest             image --quiet --format json --severity HIGH,CRITICAL --ignore-unfixed             --vuln-type os,library wo-community-backend:${{ github.sha }}             | jq -r '.Results[]? | .Target as $t | .Vulnerabilities[]? | "::error title=Trivy::\($t) | \(.PkgName) \(.InstalledVersion) | \(.VulnerabilityID) | fixed in \(.FixedVersion)"'
 
   secrets:
     name: Secret scan
