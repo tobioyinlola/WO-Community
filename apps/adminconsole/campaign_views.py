@@ -74,6 +74,7 @@ def _campaign(campaign_id: UUID) -> Campaign:
 
 class SegmentsView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Saved segments",
@@ -222,6 +223,7 @@ class TemplateView(APIView):
 
 class CampaignsView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Newsletters",

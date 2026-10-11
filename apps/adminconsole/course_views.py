@@ -56,6 +56,7 @@ def _one(course: Course, status_code: int = 200) -> Response:
 
 class AdminCoursesView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         operation_id="admin_courses_list",
@@ -384,6 +385,7 @@ class CourseStatsView(APIView):
 
 class CourseEnrolmentsView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Who is enrolled, and how far they have got",

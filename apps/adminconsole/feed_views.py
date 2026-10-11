@@ -113,6 +113,7 @@ REPORT_ERRORS = {
 
 class ReportListView(APIView):
     policy = HANDLE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="The moderation queue",
@@ -249,6 +250,7 @@ class ReportActionView(APIView):
 
 class AdminPreviewsView(APIView):
     policy = MODERATE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Link preview cards",

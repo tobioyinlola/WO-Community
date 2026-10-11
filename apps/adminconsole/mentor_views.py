@@ -39,6 +39,7 @@ def _filters(request: Request) -> dict[str, str]:
 
 class AdminMentorApplicationsView(APIView):
     policy = DECIDE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Mentor applications",
@@ -106,6 +107,7 @@ class AdminMentorDecisionView(APIView):
 
 class AdminMentorsView(APIView):
     policy = DECIDE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Mentors",
@@ -169,6 +171,7 @@ MANAGE_SESSIONS = policies.admin_permission("sessions.manage")
 
 class AdminSessionsView(APIView):
     policy = MANAGE_SESSIONS
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Mentoring sessions",

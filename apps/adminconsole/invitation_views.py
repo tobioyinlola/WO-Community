@@ -33,6 +33,7 @@ MANAGE = policies.admin_permission("invitations.manage")
 
 class InvitationListCreateView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="List invitations",

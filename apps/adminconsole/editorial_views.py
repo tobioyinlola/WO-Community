@@ -42,6 +42,7 @@ def _one(request: Request, item: EditorialItem, status_code: int = 200) -> Respo
 
 class AdminEditorialView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Editorial items, any state",
@@ -233,6 +234,7 @@ def comment_view(action: str) -> type[ModerateItemCommentView]:
 
 class AdminWinsView(APIView):
     policy = MANAGE
+    pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
         summary="Win submissions awaiting review (or any status)",
