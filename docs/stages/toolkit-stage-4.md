@@ -20,3 +20,15 @@ Design in ADR 0041.
 - A patch is all or nothing and validated as a whole; stale versions are 409.
 - Figures come from the forecast through links; typed figures are checked.
 - Images are re-encoded and private; a venture's erasure removes them.
+
+## Share links
+
+| Endpoint | What it does |
+|---|---|
+| `POST /ventures/{id}/shares` | Make a read only link to a deck, plan summary or score summary, with an optional password and expiry. The token is shown once. |
+| `GET /ventures/{id}/shares` | Your links, with view counts (never the token). |
+| `DELETE /ventures/{id}/shares/{share}` | Revoke at once. |
+| `GET /public/share/{token}` | Anonymous read. 401 `password_required`, otherwise the content; every other failure is 404. |
+| `POST /public/share/{token}` | Open a password link. Ten wrong tries in 15 minutes is 429. |
+
+Design in ADR 0042.

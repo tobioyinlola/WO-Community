@@ -21,6 +21,4 @@ Design in ADR 0040.
 - Changing the profile's prices, regions, funding and so on marks the forecast out of date.
 - Plan sections that use the forecast are marked out of date when its version moves.
 
-## Not yet in this stage
-
-- Decks, public sharing links (next commits in this stage).
+Decks and share links are in stage T4.

@@ -161,6 +161,7 @@ REST_FRAMEWORK = {
         "feed_read": "240/min",
         "lesson_progress": "60/min",
         "lesson_visitor": "30/min",
+        "toolkit_share": "60/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
