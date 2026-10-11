@@ -10388,6 +10388,64 @@ paths:
           description: Not an approved member
         '404':
           description: No such job, or not yours
+  /api/v1/toolkit/public/share/{token}:
+    get:
+      operationId: toolkit_public_share_retrieve
+      description: Read only. A link with a password answers 401 with `password_required`;
+        send the password with POST. Unknown, revoked and expired links are the same
+        404. Pages are marked noindex and are never cached.
+      summary: A shared deck, plan summary or score summary
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkSharedContent'
+          description: ''
+        '401':
+          description: This link needs a password
+        '404':
+          description: No such link
+        '429':
+          description: Too many requests
+    post:
+      operationId: toolkit_public_share_create
+      description: Anonymous. Every failure is the same 404, so a token cannot be
+        probed for state.
+      summary: Open a password protected share
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkSharePasswordRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkSharedContent'
+          description: ''
+        '404':
+          description: No such link, or the wrong password
+        '429':
+          description: Too many attempts
   /api/v1/toolkit/ventures:
     get:
       operationId: toolkit_ventures_list
@@ -12317,6 +12375,103 @@ paths:
               schema:
                 $ref: '#/components/schemas/TkScoreSummary'
           description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/shares:
+    get:
+      operationId: toolkit_ventures_shares_list
+      summary: Share links for a venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkShare'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_shares_create
+      description: Read only, optionally with a password and an expiry. The token
+        is in the answer once. Anyone with the link can see the content, so share
+        it only with people you trust.
+      summary: Create a share link
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkShareCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkShareCreated'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/shares/{share_id}:
+    delete:
+      operationId: toolkit_ventures_shares_destroy
+      description: The link stops working at once.
+      summary: Revoke a share link
+      parameters:
+      - in: path
+        name: share_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Revoked
         '401':
           description: Not authenticated
         '403':
@@ -20847,6 +21002,18 @@ components:
           type: string
       required:
       - status
+    SubjectTypeEnum:
+      enum:
+      - deck
+      - prototype
+      - plan_summary
+      - score_summary
+      type: string
+      description: |-
+        * `deck` - deck
+        * `prototype` - prototype
+        * `plan_summary` - plan_summary
+        * `score_summary` - score_summary
     Suggestion:
       type: object
       properties:
@@ -22436,6 +22603,181 @@ components:
       - label
       - score
       - status
+    TkShare:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject_type:
+          $ref: '#/components/schemas/SubjectTypeEnum'
+        subject_id:
+          type: string
+          format: uuid
+        has_password:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        view_count:
+          type: integer
+        last_viewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - expires_at
+      - has_password
+      - id
+      - last_viewed_at
+      - revoked_at
+      - subject_id
+      - subject_type
+      - view_count
+    TkShareCreateRequest:
+      type: object
+      properties:
+        subject_type:
+          $ref: '#/components/schemas/SubjectTypeEnum'
+        subject_id:
+          type: string
+          format: uuid
+          description: The deck or prototype id; for the plan or score summary, the
+            venture id.
+        password:
+          type: string
+          maxLength: 72
+        expires_in_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+      required:
+      - subject_id
+      - subject_type
+    TkShareCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject_type:
+          $ref: '#/components/schemas/SubjectTypeEnum'
+        subject_id:
+          type: string
+          format: uuid
+        has_password:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        view_count:
+          type: integer
+        last_viewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        token:
+          type: string
+          description: Shown once; only a hash is kept
+        url:
+          type: string
+          description: The page address to share
+      required:
+      - created_at
+      - expires_at
+      - has_password
+      - id
+      - last_viewed_at
+      - revoked_at
+      - subject_id
+      - subject_type
+      - token
+      - url
+      - view_count
+    TkSharePasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 72
+      required:
+      - password
+    TkSharedContent:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TkSharedContentTypeEnum'
+        title:
+          type: string
+        venture_name:
+          type: string
+        slides:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        theme:
+          type: object
+          additionalProperties: {}
+        sections:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        overall_score:
+          type: integer
+          nullable: true
+        verdict:
+          type: string
+        dimensions:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        strengths:
+          type: array
+          items:
+            type: string
+        gaps:
+          type: array
+          items:
+            type: string
+        disclaimer:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+      required:
+      - title
+      - type
+    TkSharedContentTypeEnum:
+      enum:
+      - deck
+      - plan_summary
+      - score_summary
+      type: string
+      description: |-
+        * `deck` - deck
+        * `plan_summary` - plan_summary
+        * `score_summary` - score_summary
     TkSuggestRequest:
       type: object
       description: |-
