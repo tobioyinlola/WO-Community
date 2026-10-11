@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {"type": "string"},
+          "explanation": {"type": "string", "minLength": 1, "maxLength": 500},
+          "next_step": {"type": "string", "minLength": 1, "maxLength": 300}
+        },
+        "required": ["key", "explanation", "next_step"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["dimensions"],
+  "additionalProperties": false
+}

@@ -1,4 +1,5 @@
 import hashlib
+from typing import Any
 from uuid import UUID
 
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -69,3 +70,14 @@ class JobCancelView(APIView):
         if job is None:
             raise exceptions.NotFound()
         return job_response(request, services.view(services.cancel(job)))
+
+
+def accepted(request: Request, job: Any, created: bool) -> Response:
+    """The answer to a request that started a job: 202 with the job to poll."""
+    response = job_response(request, services.view(job), status_code=202 if created else 200)
+    response["Location"] = f"/api/v1/toolkit/jobs/{job.pk}"
+    return response
+
+
+def idempotency_key(request: Request) -> str:
+    return request.headers.get("Idempotency-Key", "").strip()[:80]

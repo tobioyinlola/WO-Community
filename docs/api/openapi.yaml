@@ -10886,6 +10886,136 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/score:
+    post:
+      operationId: toolkit_ventures_score_create
+      description: Needs the six required profile fields (400 names what is missing).
+        Starts a job and answers 202; poll the job, then read `score/latest`. A repeated
+        `Idempotency-Key` returns the same job. The score is calculated from a rubric
+        in code and sourced facts; a model only writes the explanations.
+      summary: Run the validation score
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/score/history:
+    get:
+      operationId: toolkit_ventures_score_history_list
+      summary: Score history, oldest first, for a chart
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkScoreHistoryItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/score/latest:
+    get:
+      operationId: toolkit_ventures_score_latest_retrieve
+      summary: The latest score report
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAssessment'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/score/summary:
+    get:
+      operationId: toolkit_ventures_score_summary_retrieve
+      description: The scores and the top strengths and gaps, without evidence detail,
+        in a form that is safe to share.
+      summary: A one page summary of the latest score
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkScoreSummary'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/ventures/{venture_id}/team:
     get:
       operationId: toolkit_ventures_team_list
@@ -19478,6 +19608,60 @@ components:
       required:
       - blocks
       - name
+    TkAssessment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        overall_score:
+          type: integer
+          nullable: true
+        verdict:
+          type: string
+        rubric_version:
+          type: integer
+        profile_version:
+          type: integer
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkDimension'
+        strengths:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkFinding'
+        gaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkFinding'
+        next_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkNextAction'
+        explanation:
+          type: string
+        scored_weight:
+          type: integer
+        disclaimer:
+          type: string
+      required:
+      - created_at
+      - dimensions
+      - disclaimer
+      - explanation
+      - gaps
+      - id
+      - next_actions
+      - overall_score
+      - profile_version
+      - rubric_version
+      - scored_weight
+      - strengths
+      - verdict
     TkCompetitor:
       type: object
       properties:
@@ -19515,6 +19699,78 @@ components:
           maxLength: 500
       required:
       - name
+    TkDimension:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        weight:
+          type: integer
+        score:
+          type: integer
+          nullable: true
+        status:
+          $ref: '#/components/schemas/TkDimensionStatusEnum'
+        reason:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkEvidence'
+        explanation:
+          type: string
+        next_step:
+          type: string
+      required:
+      - evidence
+      - explanation
+      - key
+      - label
+      - next_step
+      - reason
+      - score
+      - status
+      - weight
+    TkDimensionStatusEnum:
+      enum:
+      - scored
+      - insufficient_data
+      type: string
+      description: |-
+        * `scored` - scored
+        * `insufficient_data` - insufficient_data
+    TkEvidence:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/TkEvidenceKindEnum'
+        text:
+          type: string
+        ref:
+          type: string
+        source_name:
+          type: string
+        url:
+          type: string
+        date:
+          type: string
+      required:
+      - date
+      - kind
+      - ref
+      - source_name
+      - text
+      - url
+    TkEvidenceKindEnum:
+      enum:
+      - profile
+      - fact
+      type: string
+      description: |-
+        * `profile` - profile
+        * `fact` - fact
     TkFillFromTextRequest:
       type: object
       description: |-
@@ -19528,6 +19784,23 @@ components:
           minLength: 1
           maxLength: 5000
       required:
+      - text
+    TkFinding:
+      type: object
+      properties:
+        dimension:
+          type: string
+        label:
+          type: string
+        score:
+          type: integer
+          nullable: true
+        text:
+          type: string
+      required:
+      - dimension
+      - label
+      - score
       - text
     TkImportStartupRequest:
       type: object
@@ -19614,6 +19887,31 @@ components:
         * `succeeded` - succeeded
         * `failed` - failed
         * `cancelled` - cancelled
+    TkNextAction:
+      type: object
+      properties:
+        dimension:
+          type: string
+        label:
+          type: string
+        text:
+          type: string
+        field:
+          type: string
+        estimated_points:
+          type: integer
+          description: Roughly what it adds to the score.
+        action:
+          type: object
+          additionalProperties: {}
+          description: '{type: edit_profile|open_forecast|find_mentor, field}'
+      required:
+      - action
+      - dimension
+      - estimated_points
+      - field
+      - label
+      - text
     TkOutputState:
       type: object
       properties:
@@ -19780,6 +20078,78 @@ components:
       required:
       - proposed
       - rejected
+    TkScoreHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        overall_score:
+          type: integer
+          nullable: true
+        verdict:
+          type: string
+        rubric_version:
+          type: integer
+      required:
+      - created_at
+      - id
+      - overall_score
+      - rubric_version
+      - verdict
+    TkScoreSummary:
+      type: object
+      properties:
+        venture_name:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        overall_score:
+          type: integer
+          nullable: true
+        verdict:
+          type: string
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkScoreSummaryDimension'
+        strengths:
+          type: array
+          items:
+            type: string
+        gaps:
+          type: array
+          items:
+            type: string
+        disclaimer:
+          type: string
+      required:
+      - dimensions
+      - disclaimer
+      - gaps
+      - generated_at
+      - overall_score
+      - strengths
+      - venture_name
+      - verdict
+    TkScoreSummaryDimension:
+      type: object
+      properties:
+        label:
+          type: string
+        score:
+          type: integer
+          nullable: true
+        status:
+          type: string
+      required:
+      - label
+      - score
+      - status
     TkSuggestRequest:
       type: object
       description: |-
