@@ -12,7 +12,8 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   fullyParallel: false,
   workers: 1,
-  reporter: [["list"]],
+  // On CI the failures are also written as annotations, which can be read without the raw log.
+  reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:5173",
     channel: process.env.E2E_BROWSER ?? "msedge",
