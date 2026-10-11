@@ -10388,6 +10388,52 @@ paths:
           description: Not an approved member
         '404':
           description: No such job, or not yours
+  /api/v1/toolkit/prototype-components:
+    get:
+      operationId: toolkit_prototype_components_list
+      summary: The components a prototype can use
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkComponent'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/prototype-templates:
+    get:
+      operationId: toolkit_prototype_templates_list
+      summary: Prototype templates
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkPrototypeTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/public/share/{token}:
     get:
       operationId: toolkit_public_share_retrieve
@@ -12223,6 +12269,368 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/prototypes:
+    get:
+      operationId: toolkit_ventures_prototypes_list
+      summary: Prototypes of a venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkPrototypeBrief'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_prototypes_create
+      summary: Create a prototype from a template
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkPrototypeCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPrototype'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/prototypes/{prototype_id}:
+    get:
+      operationId: toolkit_ventures_prototypes_retrieve
+      summary: A prototype
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPrototype'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    put:
+      operationId: toolkit_ventures_prototypes_update
+      summary: Rename a prototype
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkPrototypeRenameRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPrototype'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    patch:
+      operationId: toolkit_ventures_prototypes_partial_update
+      description: '`add`, `remove`, `replace`, `move` on `/screens/...`, `/theme`,
+        `/start` or `/kind`. All or nothing and validated as a whole; a stale `base_version`
+        is 409.'
+      summary: Change a prototype with patch operations
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkPrototypePatchRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPrototype'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    delete:
+      operationId: toolkit_ventures_prototypes_destroy
+      summary: Delete a prototype
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/prototypes/{prototype_id}/duplicate:
+    post:
+      operationId: toolkit_ventures_prototypes_duplicate_create
+      summary: Copy a prototype
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPrototype'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/prototypes/{prototype_id}/versions:
+    get:
+      operationId: toolkit_ventures_prototypes_versions_list
+      summary: Saved versions
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkPrototypeVersion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/prototypes/{prototype_id}/versions/{version}/restore:
+    post:
+      operationId: toolkit_ventures_prototypes_versions_restore_create
+      summary: Go back to a saved version
+      parameters:
+      - in: path
+        name: prototype_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPrototype'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/prototypes/generate:
+    post:
+      operationId: toolkit_ventures_prototypes_generate_create
+      description: Starts a job and answers 202. When it succeeds `result.id` is the
+        new prototype. The draft is checked against the component rules; if a valid
+        design cannot be made you get a template instead (`result.fallback`). Nothing
+        is written into your profile.
+      summary: Draft a prototype from the venture
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkPrototypeGenerateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/ventures/{venture_id}/restore:
     post:
       operationId: toolkit_ventures_restore_create
@@ -18500,6 +18908,21 @@ components:
         base_version:
           type: integer
           description: The version you loaded; a different one answers 409.
+    PatchedTkPrototypePatchRequest:
+      type: object
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        ops:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          maxItems: 200
+        label:
+          type: string
+          maxLength: 80
     PatchedTkTeamPatchRequest:
       type: object
       description: |-
@@ -18943,6 +19366,14 @@ components:
           minimum: 0
         completed:
           type: boolean
+    PrototypeKindEnum:
+      enum:
+      - web
+      - mobile
+      type: string
+      description: |-
+        * `web` - web
+        * `mobile` - mobile
     PublicCourse:
       type: object
       properties:
@@ -20593,6 +21024,18 @@ components:
       - message
       - starts_at
       - topic
+    ShareSubjectTypeEnum:
+      enum:
+      - deck
+      - prototype
+      - plan_summary
+      - score_summary
+      type: string
+      description: |-
+        * `deck` - deck
+        * `prototype` - prototype
+        * `plan_summary` - plan_summary
+        * `score_summary` - score_summary
     SignupProfileRequest:
       type: object
       description: |-
@@ -21002,18 +21445,6 @@ components:
           type: string
       required:
       - status
-    SubjectTypeEnum:
-      enum:
-      - deck
-      - prototype
-      - plan_summary
-      - score_summary
-      type: string
-      description: |-
-        * `deck` - deck
-        * `prototype` - prototype
-        * `plan_summary` - plan_summary
-        * `score_summary` - score_summary
     Suggestion:
       type: object
       properties:
@@ -21265,6 +21696,31 @@ components:
           maxLength: 500
       required:
       - name
+    TkComponent:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        category:
+          type: string
+        children:
+          type: boolean
+          description: Can hold other components
+        action:
+          type: boolean
+          description: Can navigate between screens
+        props:
+          type: object
+          additionalProperties: {}
+      required:
+      - action
+      - category
+      - children
+      - label
+      - name
+      - props
     TkDeck:
       type: object
       properties:
@@ -22531,6 +22987,127 @@ components:
       required:
       - proposed
       - rejected
+    TkPrototype:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        template_slug:
+          type: string
+        version:
+          type: integer
+        spec:
+          type: object
+          additionalProperties: {}
+          description: '`{kind, theme, start, screens: [{id, name, root}]}`; a screen
+            is a tree of registry components'
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - spec
+      - template_slug
+      - title
+      - updated_at
+      - version
+    TkPrototypeBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        template_slug:
+          type: string
+        kind:
+          $ref: '#/components/schemas/PrototypeKindEnum'
+        version:
+          type: integer
+        screen_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - kind
+      - screen_count
+      - template_slug
+      - title
+      - updated_at
+      - version
+    TkPrototypeCreateRequest:
+      type: object
+      properties:
+        template:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - template
+    TkPrototypeGenerateRequest:
+      type: object
+      properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PrototypeKindEnum'
+          default: web
+        brief:
+          type: string
+          maxLength: 500
+        title:
+          type: string
+          maxLength: 120
+    TkPrototypeRenameRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+      - title
+    TkPrototypeTemplate:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        screen_count:
+          type: integer
+        kind:
+          $ref: '#/components/schemas/PrototypeKindEnum'
+      required:
+      - description
+      - kind
+      - name
+      - screen_count
+      - slug
+    TkPrototypeVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+        label:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - label
+      - version
     TkScoreHistoryItem:
       type: object
       properties:
@@ -22610,7 +23187,7 @@ components:
           type: string
           format: uuid
         subject_type:
-          $ref: '#/components/schemas/SubjectTypeEnum'
+          $ref: '#/components/schemas/ShareSubjectTypeEnum'
         subject_id:
           type: string
           format: uuid
@@ -22647,7 +23224,7 @@ components:
       type: object
       properties:
         subject_type:
-          $ref: '#/components/schemas/SubjectTypeEnum'
+          $ref: '#/components/schemas/ShareSubjectTypeEnum'
         subject_id:
           type: string
           format: uuid
@@ -22670,7 +23247,7 @@ components:
           type: string
           format: uuid
         subject_type:
-          $ref: '#/components/schemas/SubjectTypeEnum'
+          $ref: '#/components/schemas/ShareSubjectTypeEnum'
         subject_id:
           type: string
           format: uuid
@@ -22724,7 +23301,8 @@ components:
       type: object
       properties:
         type:
-          $ref: '#/components/schemas/TkSharedContentTypeEnum'
+          type: string
+          description: deck, prototype, plan_summary or score_summary
         title:
           type: string
         venture_name:
@@ -22734,6 +23312,9 @@ components:
           items:
             type: object
             additionalProperties: {}
+        spec:
+          type: object
+          additionalProperties: {}
         theme:
           type: object
           additionalProperties: {}
@@ -22768,16 +23349,6 @@ components:
       required:
       - title
       - type
-    TkSharedContentTypeEnum:
-      enum:
-      - deck
-      - plan_summary
-      - score_summary
-      type: string
-      description: |-
-        * `deck` - deck
-        * `plan_summary` - plan_summary
-        * `score_summary` - score_summary
     TkSuggestRequest:
       type: object
       description: |-

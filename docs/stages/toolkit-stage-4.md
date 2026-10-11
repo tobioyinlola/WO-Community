@@ -32,3 +32,16 @@ Design in ADR 0041.
 | `POST /public/share/{token}` | Open a password link. Ten wrong tries in 15 minutes is 429. |
 
 Design in ADR 0042.
+
+## Prototypes
+
+Design in ADR 0043.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /prototype-components`, `GET /prototype-templates` | The component registry and the starting points. |
+| `GET/POST /ventures/{id}/prototypes` | List; create from a template. |
+| `POST .../prototypes/generate` | Draft from the profile and a short brief (a job; falls back to a template). |
+| `GET/PATCH/PUT/DELETE .../prototypes/{id}` | Read; patch operations (`base_version`, 409); rename; delete. |
+| `POST .../prototypes/{id}/duplicate` | Copy. |
+| `GET .../prototypes/{id}/versions`, `POST .../versions/{v}/restore` | History. |

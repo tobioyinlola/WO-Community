@@ -34,10 +34,11 @@ class TkSharePasswordSerializer(serializers.Serializer):
 
 
 class TkSharedContentSerializer(serializers.Serializer):
-    type = serializers.ChoiceField(choices=["deck", "plan_summary", "score_summary"])
+    type = serializers.CharField(help_text="deck, prototype, plan_summary or score_summary")
     title = serializers.CharField()
     venture_name = serializers.CharField(required=False)
     slides = serializers.ListField(child=serializers.DictField(), required=False)
+    spec = serializers.DictField(required=False)
     theme = serializers.DictField(required=False)
     sections = serializers.ListField(child=serializers.DictField(), required=False)
     overall_score = serializers.IntegerField(required=False, allow_null=True)

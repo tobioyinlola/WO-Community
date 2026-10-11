@@ -6,13 +6,13 @@ typed. Images are references to files the platform re-encoded. Anything not on t
 refused, so a deck is always safe to show, export and share.
 """
 
-import copy
 import re
 import secrets
 from typing import Any
 
 from django.conf import settings
 
+from apps.core import jsonpatch
 from apps.core.text import plain
 
 LAYOUTS = (
@@ -234,87 +234,9 @@ def clean_theme(theme: Any) -> dict[str, str]:
 
 # --- JSON patch, the subset a deck editor needs ----------------------------------------------
 
-
-class PatchError(Exception):
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.message = message
-
-
-def _walk(doc: Any, parts: list[str]) -> tuple[Any, str]:
-    node = doc
-    for part in parts[:-1]:
-        node = _step(node, part)
-    return node, parts[-1]
-
-
-def _step(node: Any, part: str) -> Any:
-    if isinstance(node, list):
-        if not part.isdigit() or int(part) >= len(node):
-            raise PatchError(f"No item {part}.")
-        return node[int(part)]
-    if isinstance(node, dict):
-        if part not in node:
-            raise PatchError(f"No {part}.")
-        return node[part]
-    raise PatchError(f"Cannot go into {part}.")
-
-
-def _split(path: Any) -> list[str]:
-    if not isinstance(path, str) or not path.startswith("/"):
-        raise PatchError("A path starts with a slash.")
-    parts = [p.replace("~1", "/").replace("~0", "~") for p in path.split("/")[1:]]
-    if not parts or parts[0] not in ("slides", "theme"):
-        raise PatchError("Only /slides and /theme can be changed.")
-    return parts
+PatchError = jsonpatch.PatchError
 
 
 def apply_patch(content: dict[str, Any], ops: Any) -> dict[str, Any]:
-    """Apply add, remove, replace and move operations to a copy of the content."""
-    if not isinstance(ops, list) or not 1 <= len(ops) <= 200:
-        raise PatchError("Send between 1 and 200 operations.")
-    doc = copy.deepcopy(content)
-    for op in ops:
-        if not isinstance(op, dict) or op.get("op") not in ("add", "remove", "replace", "move"):
-            raise PatchError("Each operation is add, remove, replace or move.")
-        kind = op["op"]
-        parts = _split(op.get("path"))
-        if kind == "move":
-            source = _split(op.get("from"))
-            holder, key = _walk(doc, source)
-            value = _step(holder, key)
-            if isinstance(holder, list):
-                holder.pop(int(key))
-            else:
-                del holder[key]
-            kind, payload = "add", value
-        else:
-            payload = op.get("value")
-        holder, key = _walk(doc, parts)
-        if kind == "remove":
-            if isinstance(holder, list) and key.isdigit() and int(key) < len(holder):
-                holder.pop(int(key))
-            elif isinstance(holder, dict) and key in holder:
-                del holder[key]
-            else:
-                raise PatchError("Nothing to remove there.")
-        elif kind == "replace":
-            if isinstance(holder, list) and key.isdigit() and int(key) < len(holder):
-                holder[int(key)] = payload
-            elif isinstance(holder, dict) and key in holder:
-                holder[key] = payload
-            else:
-                raise PatchError("Nothing to replace there.")
-        else:  # add
-            if isinstance(holder, list):
-                if key == "-":
-                    holder.append(payload)
-                elif key.isdigit() and int(key) <= len(holder):
-                    holder.insert(int(key), payload)
-                else:
-                    raise PatchError("Bad position.")
-            elif isinstance(holder, dict):
-                holder[key] = payload
-            else:
-                raise PatchError("Cannot add there.")
-    return doc
+    """Apply add, remove, replace and move operations under /slides and /theme to a copy."""
+    return jsonpatch.apply(content, ops, roots=("slides", "theme"))

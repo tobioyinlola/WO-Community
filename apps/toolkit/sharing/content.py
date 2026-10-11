@@ -13,6 +13,7 @@ from django.http import Http404
 from apps.toolkit.decks import service as decks
 from apps.toolkit.plans import selectors as plan_selectors
 from apps.toolkit.plans import service as plans
+from apps.toolkit.prototypes import service as prototypes
 from apps.toolkit.scoring import selectors as score_selectors
 from apps.toolkit.sharing.models import ShareLink
 from apps.toolkit.ventures.models import Venture
@@ -21,6 +22,8 @@ from apps.toolkit.ventures.models import Venture
 def subject_exists(venture: Venture, subject_type: str, subject_id: UUID) -> bool:
     if subject_type == "deck":
         return decks.get(venture, subject_id) is not None
+    if subject_type == "prototype":
+        return prototypes.get(venture, subject_id) is not None
     if subject_type == "plan_summary":
         return plans.latest(venture) is not None and subject_id == venture.pk
     if subject_type == "score_summary":
@@ -42,6 +45,16 @@ def build(link: ShareLink) -> dict[str, Any]:
             "venture_name": venture.name,
             "slides": slides,
             "theme": shown["theme"],
+        }
+    if link.subject_type == "prototype":
+        prototype = prototypes.get(venture, link.subject_id)
+        if prototype is None:
+            raise Http404
+        return {
+            "type": "prototype",
+            "title": prototype.title,
+            "venture_name": venture.name,
+            "spec": prototype.spec,
         }
     if link.subject_type == "plan_summary":
         plan = plans.latest(venture)
