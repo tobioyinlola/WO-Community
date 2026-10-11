@@ -95,9 +95,12 @@ test.describe("a signed-in member", () => {
     await expect(enrol.or(resume)).toBeVisible();
     if (await enrol.isVisible()) await enrol.click();
     await page.getByRole("link", { name: /Start|Continue/ }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Why this matters");
+    // Progress carries over between runs, so this opens whichever lesson is next rather than the first.
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(page.getByRole("button", { name: /Mark done and continue/ })).toBeVisible();
+    const before = await heading.innerText();
     await page.getByRole("button", { name: /Mark done and continue/ }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("The first steps");
+    await expect(heading).not.toHaveText(before);
   });
 
   test("searching the directory finds a member and opens their profile", async ({ page }) => {

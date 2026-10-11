@@ -847,3 +847,102 @@ a.app-list__item:hover {
   border-radius: var(--radius-md);
   overflow-x: auto;
 }
+
+/* ---------- route based tabs (a venture's sections) ---------- */
+.app-tablinks {
+  display: flex;
+  gap: var(--space-6);
+  min-width: max-content;
+  border-bottom: var(--stroke-1) solid var(--border-default);
+}
+.app-tablink {
+  margin-bottom: -1px;
+  padding: var(--space-3) 0;
+  font: 600 14px/16px var(--font-body);
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: var(--stroke-3) solid transparent;
+  white-space: nowrap;
+}
+.app-tablink:hover {
+  color: var(--text-primary);
+}
+.app-tablink[aria-current="page"] {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+button.app-linklike {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.app-rule {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: var(--space-2) 0;
+  width: 100%;
+}
+
+/* A slide preview. Its colours come from the deck's own palette, set inline from the saved theme. */
+.app-slide {
+  aspect-ratio: 16 / 9;
+  min-height: 220px;
+  padding: var(--space-6);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+  background: var(--bg-surface);
+}
+.app-slide__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-xl, 1.5rem);
+  font-weight: 700;
+}
+
+/* Prototype preview */
+.app-proto {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  padding: var(--space-4);
+  min-height: 280px;
+  overflow: auto;
+}
+.app-proto--mobile {
+  max-width: 380px;
+  margin-inline: auto;
+}
+.app-proto-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--bg-surface);
+}
+.app-proto-bar {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.app-proto-tab {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+}
+.app-proto-tab--on {
+  background: var(--accent-fill);
+  color: var(--text-on-accent, var(--text-primary));
+}
+
+/* The alert body is a div so it can hold a list or several paragraphs. */
+.wo-alert__text {
+  margin: 0;
+}
+.wo-alert__text ul,
+.wo-alert__text ol {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+}

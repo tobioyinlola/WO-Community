@@ -132,8 +132,9 @@ function UserMenu() {
             role="menuitem"
             onClick={async () => {
               setOpen(false);
-              await logout();
+              // Leave first: once the session ends the route guard would send the member to the sign in page.
               navigate("/", { replace: true });
+              await logout();
             }}
           >
             <LogOut size={20} strokeWidth={1.5} aria-hidden="true" />

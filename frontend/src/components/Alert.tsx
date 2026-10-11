@@ -34,7 +34,7 @@ export function Alert({ tone = "info", title, children, action, className }: Ale
       </span>
       <div>
         <p className="wo-alert__title">{title}</p>
-        {children ? <p>{children}</p> : null}
+        {children ? <div className="wo-alert__text">{children}</div> : null}
         {action ? <div style={{ marginTop: "var(--space-2)" }}>{action}</div> : null}
       </div>
     </div>

@@ -41,6 +41,18 @@ const StartupForm = lazy(() => import("./pages/app/Account").then((m) => ({ defa
 const Settings = lazy(() => import("./pages/app/Account").then((m) => ({ default: m.SettingsPage })));
 const Notifications = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NotificationsPage })));
 const News = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsPage })));
+const Ventures = lazy(() => import("./pages/launch/Ventures"));
+const Workspace = lazy(() => import("./pages/launch/Workspace"));
+const LaunchOverview = lazy(() => import("./pages/launch/Overview"));
+const ProfileTab = lazy(() => import("./pages/launch/ProfileTab"));
+const ScoreTab = lazy(() => import("./pages/launch/ScoreTab"));
+const PlanTab = lazy(() => import("./pages/launch/PlanTab"));
+const ForecastTab = lazy(() => import("./pages/launch/ForecastTab"));
+const DecksTab = lazy(() => import("./pages/launch/DecksTab"));
+const PrototypesTab = lazy(() => import("./pages/launch/PrototypesTab"));
+const PartnerTab = lazy(() => import("./pages/launch/PartnerTab"));
+const SharingTab = lazy(() => import("./pages/launch/SharingTab"));
+const SharedView = lazy(() => import("./pages/launch/SharedView"));
 const NewsStory = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsStory })));
 
 const queryClient = new QueryClient({
@@ -80,6 +92,7 @@ export function App() {
                   <Route path="legal/:doc" element={<Legal />} />
                   <Route path="design" element={<Design />} />
                 </Route>
+                <Route path="share/:token" element={<SharedView />} />
                 <Route element={<GuestOnly />}>
                   <Route element={<AuthLayout />}>
                     <Route path="login" element={<Login />} />
@@ -113,6 +126,18 @@ export function App() {
                     <Route path="mentors/:id" element={<MentorDetail />} />
                     <Route path="news" element={<News />} />
                     <Route path="news/:id" element={<NewsStory />} />
+                    <Route path="launch" element={<Ventures />} />
+                    <Route path="launch/:ventureId" element={<Workspace />}>
+                      <Route index element={<LaunchOverview />} />
+                      <Route path="profile" element={<ProfileTab />} />
+                      <Route path="score" element={<ScoreTab />} />
+                      <Route path="plan" element={<PlanTab />} />
+                      <Route path="forecast" element={<ForecastTab />} />
+                      <Route path="decks" element={<DecksTab />} />
+                      <Route path="prototypes" element={<PrototypesTab />} />
+                      <Route path="partner" element={<PartnerTab />} />
+                      <Route path="sharing" element={<SharingTab />} />
+                    </Route>
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="me" element={<Profile />} />
                     <Route path="settings" element={<Settings />} />
