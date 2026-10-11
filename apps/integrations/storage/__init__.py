@@ -2,6 +2,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 
 from apps.integrations.storage.base import (
+    ANCHOR,
     MEDIA,
     PRIVATE,
     QUARANTINE,
@@ -12,6 +13,7 @@ from apps.integrations.storage.base import (
 )
 
 __all__ = [
+    "ANCHOR",
     "MEDIA",
     "PRIVATE",
     "QUARANTINE",

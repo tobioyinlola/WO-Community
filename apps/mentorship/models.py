@@ -90,7 +90,7 @@ class MentorProfile(BaseModel):
     capacity_per_week = models.PositiveSmallIntegerField(default=3)
     session_minutes = models.PositiveSmallIntegerField(default=45)
     # Which video provider the mentor prefers; blank means the platform default.
-    meeting_provider = models.CharField(max_length=12, blank=True)
+    meeting_provider = models.CharField(max_length=12, blank=True, db_default="")
     paused = models.BooleanField(default=False)
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.ACTIVE)
     approved_at = models.DateTimeField()

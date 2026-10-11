@@ -6,8 +6,9 @@ from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.core import policies
+from apps.core.public import PublicView
 from apps.core.serializers import StrictSerializer
-from apps.memberarea import onboarding, search
+from apps.memberarea import onboarding, search, sitemap
 
 
 class ChecklistItemSerializer(serializers.Serializer):
@@ -103,3 +104,34 @@ class SearchView(APIView):
         response = Response(SearchResultSerializer(found).data)
         response["Cache-Control"] = "private, no-store"
         return response
+
+
+class SitemapPageSerializer(serializers.Serializer):
+    path = serializers.CharField(help_text="Front end path, for example /jobs/senior-engineer.")
+    lastmod = serializers.DateTimeField(allow_null=True)
+
+
+class FullSitemapSerializer(serializers.Serializer):
+    startups = SitemapPageSerializer(many=True)
+    founders = SitemapPageSerializer(many=True)
+    jobs = SitemapPageSerializer(many=True)
+    news = SitemapPageSerializer(many=True)
+    events = SitemapPageSerializer(many=True)
+    courses = SitemapPageSerializer(many=True)
+
+
+class FullSitemapView(PublicView):
+    cache_control = "public, max-age=3600, stale-while-revalidate=3600"
+
+    @extend_schema(
+        summary="Every public page of every kind, with its last change",
+        description="Startups, founders, jobs, news and wins, events and courses open to "
+        "visitors in one response, so the front end builds a single sitemap from it. Each list "
+        "is capped at 5,000 entries (50,000 for startups and founders), newest first.",
+        responses={200: FullSitemapSerializer},
+        tags=["public"],
+    )
+    def get(self, request: Request) -> Response:
+        if request.query_params:
+            raise serializers.ValidationError({"detail": "No parameters are accepted."})
+        return self.cached(request, FullSitemapSerializer(sitemap.build()).data)

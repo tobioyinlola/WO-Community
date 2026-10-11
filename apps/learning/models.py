@@ -90,9 +90,10 @@ class Lesson(BaseModel):
     # name is shared; ``file_key`` is the object in the private bucket (never a public address).
     resource_url = models.CharField(max_length=300, blank=True)
     resource_name = models.CharField(max_length=160, blank=True)
-    file_key = models.CharField(max_length=200, blank=True)
+    # db_default keeps the column safe to add while the previous release is still inserting rows.
+    file_key = models.CharField(max_length=200, blank=True, db_default="")
     file_size = models.PositiveIntegerField(null=True, blank=True)
-    file_content_type = models.CharField(max_length=100, blank=True)
+    file_content_type = models.CharField(max_length=100, blank=True, db_default="")
 
     class Meta:
         ordering = ["module__position", "position"]

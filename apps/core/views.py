@@ -2,6 +2,7 @@ import uuid
 
 from django.core.cache import cache
 from django.db import connection
+from django.http import Http404, HttpResponse
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.views import SpectacularAPIView
 from rest_framework import serializers, status
@@ -65,3 +66,25 @@ class PingView(_PublicView):
 class SchemaView(SpectacularAPIView):
     policy = policies.public
     authentication_classes: list = []
+
+
+class MetricsView(_PublicView):
+    """Prometheus scrape endpoint. 404 unless METRICS_TOKEN is set, then bearer token only."""
+
+    @extend_schema(exclude=True)
+    def get(self, request: Request) -> HttpResponse:
+        import hmac
+
+        from django.conf import settings
+
+        from apps.core import metrics
+
+        token = settings.METRICS_TOKEN
+        if not token:
+            raise Http404
+        supplied = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        if not hmac.compare_digest(supplied.encode(), token.encode()):
+            return HttpResponse(status=401, headers={"WWW-Authenticate": "Bearer"})
+        response = HttpResponse(metrics.render(), content_type=metrics.CONTENT_TYPE)
+        response["Cache-Control"] = "no-store"
+        return response

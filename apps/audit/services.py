@@ -118,6 +118,27 @@ def verify_day(day: date) -> bool:
     return True
 
 
+def head_of(day: date) -> dict[str, Any] | None:
+    """The last hash of a day's chain with how many rows it covers, or None if the day is empty.
+
+    The head commits to every row before it, so keeping it somewhere nobody can edit (see
+    ``apps.integrations.anchoring``) is enough to prove later that the day was not rewritten.
+    """
+    start, end = _day_bounds(day)
+    rows = AuditLog.objects.filter(created_at__gte=start, created_at__lt=end)
+    count = rows.count()
+    if not count:
+        return None
+    last = rows.order_by("-seq").first()
+    assert last is not None  # nosec B101
+    return {
+        "day": day.isoformat(),
+        "count": count,
+        "last_seq": last.seq,
+        "head_hash": last.hash,
+    }
+
+
 def distinct_actors_by_day(action: str, start: datetime, end: datetime) -> dict[date, int]:
     """For each day in [start, end), how many different people did ``action``."""
     rows = (

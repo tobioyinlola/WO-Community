@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: up down install migrate run worker beat test lint format typecheck security imports schema check ci
+.PHONY: up down install migrate run worker beat test lint format typecheck security imports schema check ci lint-migrations
 
 up:
 	docker compose up -d db redis mail storage
@@ -48,6 +48,14 @@ schema:
 	$(PY) manage.py spectacular --file docs/api/openapi.yaml --validate --fail-on-warn
 
 check:
-	DJANGO_SETTINGS_MODULE=config.settings.production $(PY) manage.py check --deploy --fail-level WARNING
+	$(PY) scripts/deploy_check.py
 
-ci: lint typecheck security imports test schema check
+ci: lint typecheck security imports lint-migrations test schema check
+
+# Lints only the migrations that are new compared with BASE (default: the main branch), because
+# old migrations already ran. Findings are real deploy risks: read them before ignoring one.
+BASE ?= origin/main
+lint-migrations:
+	DJANGO_SETTINGS_MODULE=config.settings.test $(PY) manage.py lintmigrations --no-cache \
+		--git-commit-id $(BASE) --ignore-initial-migrations --exclude-apps django_celery_beat \
+		--sql-analyser postgresql --ignore-name 0006_course_files  # uploads: widening a varchar is metadata only
