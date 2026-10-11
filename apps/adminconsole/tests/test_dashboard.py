@@ -80,7 +80,8 @@ def test_refreshing_again_overwrites_instead_of_double_counting(make_user):
 
 def test_each_day_is_counted_on_its_own_day(make_user):
     old = member(make_user, "old@example.com")
-    User.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=1, hours=1))
+    midday_yesterday = timezone.now().replace(hour=12, minute=0, second=0) - timedelta(days=1)
+    User.objects.filter(pk=old.pk).update(created_at=midday_yesterday)
     member(make_user, "new@example.com")
     dashboard.refresh(days=3)
     today = timezone.now().date()
@@ -288,7 +289,9 @@ def test_home_shows_queues_community_activity_and_email(as_admin, make_user):
 
 def test_unbuilt_areas_say_so(as_admin):
     body = as_admin.get(BASE).json()
-    assert body["learning"] == body["mentorship"] == body["revenue"] == {"available": False}
+    assert body["revenue"] == {"available": False}
+    assert body["mentorship"]["available"] is True and body["mentorship"]["active_mentors"] == 0
+    assert body["learning"]["available"] is True and body["learning"]["enrolments"] == 0
 
 
 def test_home_works_before_the_first_refresh(as_admin):
@@ -401,3 +404,30 @@ def test_admins_without_an_mfa_check_are_refused(admin, client_for, method, url)
 
 def test_only_a_super_admin_can_force_a_refresh(as_admin):
     assert as_admin.post(f"{BASE}/refresh").status_code == 403
+
+
+def test_the_learning_section_reports_courses_enrolments_and_completion(as_admin, make_user):
+    from apps.learning import learn
+    from apps.learning.tests.conftest import build_course, lesson_ids
+
+    teacher = make_user(roles=("content_editor",), email="teacher@example.com")
+    course = build_course(teacher)
+    build_course(teacher, title="Second", publish=False)
+    done, started = member(make_user, "done@example.com"), member(make_user, "started@example.com")
+    for user in (done, started):
+        learn.enrol(user_id=user.pk, course_id=course.pk)
+    for lesson in lesson_ids(course):
+        learn.update_progress(
+            user_id=done.pk, lesson_id=lesson, position_seconds=None, completed=True
+        )
+    dashboard.refresh(days=1)
+    learning = as_admin.get(BASE).json()["learning"]
+    assert learning["available"] is True and learning["published_courses"] == 1
+    assert (learning["enrolments"], learning["completed"], learning["completion_rate"]) == (
+        2,
+        1,
+        0.5,
+    )
+    assert (
+        learning["enrolments_last_30_days"] == 2 and learning["lessons_completed_last_30_days"] == 3
+    )

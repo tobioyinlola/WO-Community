@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "apps.editorial",
     "apps.events",
     "apps.campaigns",
+    "apps.learning",
+    "apps.mentorship",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -145,6 +147,8 @@ REST_FRAMEWORK = {
         "auth_google": "30/min",
         "search": "60/min",
         "feed_read": "240/min",
+        "lesson_progress": "60/min",
+        "lesson_visitor": "30/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -171,6 +175,9 @@ SPECTACULAR_SETTINGS = {
         "EditorialTypeEnum": "apps.editorial.models.ITEM_TYPES",
         "WinKindEnum": "apps.editorial.models.WIN_KINDS",
         "EventTypeEnum": "apps.events.models.EVENT_TYPES",
+        "LessonTypeEnum": "apps.learning.models.LESSON_TYPES",
+        "MentorApplicationStatusEnum": "apps.mentorship.models.APPLICATION_STATUSES",
+        "CourseLevelEnum": "apps.learning.models.LEVELS",
         "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
     },
 }
@@ -362,3 +369,6 @@ CAMPAIGN_FOOTER = env.str("CAMPAIGN_FOOTER", default="WO Community")
 CAMPAIGN_BATCH_SIZE = env.int("CAMPAIGN_BATCH_SIZE", default=50)
 CAMPAIGN_BATCH_DELAY_SECONDS = env.int("CAMPAIGN_BATCH_DELAY_SECONDS", default=5)
 API_BASE_URL = env.str("API_BASE_URL", default="http://localhost:8000")
+
+# Serve GET /api/v1/schema/. Off unless an environment turns it on.
+SERVE_API_SCHEMA = env.bool("SERVE_API_SCHEMA", default=False)

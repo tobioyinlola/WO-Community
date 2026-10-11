@@ -206,3 +206,21 @@ worker are running the hourly `adminconsole.refresh_dashboard`; a super admin ca
 number fixes itself on the next run; to repair older days run
 `adminconsole.dashboard.backfill(days)` from a shell. Early funnel steps (directory views, registration
 started) only count visitors who agreed to analytics, so they will always sit below real traffic.
+
+## Course progress not saving or certificates missing
+
+Progress is a plain write from the player (`PUT /lessons/{id}/progress`); a 403 means the member is
+not enrolled (or lost access), a 429 means the player is calling more than 60 times a minute. A
+completed course should produce a certificate within moments: certificates are made by the
+`learning.issue_certificate` task from the `learning.course_completed` outbox event, so a member who
+finished but has none points to a stuck outbox or no worker. Re-running is safe; issuing is
+idempotent. Certificates for courses with `certificate_enabled` off are never made.
+
+## A mentor application is stuck or a mentor lost the badge
+
+Applications waiting in `pending` appear in the admin queue (`GET /admin/mentor-applications`);
+`info_requested` ones are waiting for the applicant, not for an admin. Approval and revocation run
+in one transaction that changes the profile and the `mentor` role together, so a mentor without a
+badge means the profile is `revoked` (see `revoke_reason` and the audit log), not a partial write.
+Outcome and new-application notices come from the outbox events `mentorship.*`; if they are missing,
+check the outbox backlog first.

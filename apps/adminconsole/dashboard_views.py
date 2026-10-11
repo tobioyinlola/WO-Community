@@ -89,14 +89,32 @@ class AvailabilitySerializer(serializers.Serializer):
     available = serializers.BooleanField(help_text="False until that part of the platform exists")
 
 
+class LearningSnapshotSerializer(serializers.Serializer):
+    available = serializers.BooleanField()
+    published_courses = serializers.IntegerField()
+    enrolments = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    completion_rate = serializers.FloatField(allow_null=True)
+    certificates = serializers.IntegerField()
+    enrolments_last_30_days = serializers.IntegerField()
+    lessons_completed_last_30_days = serializers.IntegerField()
+
+
+class MentorshipSnapshotSerializer(serializers.Serializer):
+    available = serializers.BooleanField()
+    pending_applications = serializers.IntegerField()
+    active_mentors = serializers.IntegerField()
+    listed_mentors = serializers.IntegerField()
+
+
 class DashboardSerializer(serializers.Serializer):
     refreshed_at = serializers.DateTimeField(allow_null=True)
     pending = QueueCountsSerializer()
     community = CommunitySerializer()
     activity = ActivitySerializer()
     email = EmailSnapshotSerializer()
-    learning = AvailabilitySerializer()
-    mentorship = AvailabilitySerializer()
+    learning = LearningSnapshotSerializer()
+    mentorship = MentorshipSnapshotSerializer()
     revenue = AvailabilitySerializer()
 
 
@@ -139,7 +157,7 @@ class DashboardView(APIView):
     @extend_schema(
         summary="The console home: queues, community, activity and email at a glance",
         description="Read from summary tables, never from raw events, so it is quick. "
-        "`refreshed_at` says how fresh they are. The learning, mentorship and revenue "
+        "`refreshed_at` says how fresh they are. The mentorship and revenue "
         "sections report `available: false` until those parts of the platform exist.",
         responses={200: DashboardSerializer, **ERRORS},
         tags=["admin"],

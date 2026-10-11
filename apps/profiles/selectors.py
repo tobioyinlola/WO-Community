@@ -194,3 +194,19 @@ def active_member_counts_by_country() -> dict[str, int]:
         .annotate(n=Count("id"))
     )
     return {row["country"]: row["n"] for row in rows}
+
+
+def full_name_of(user_id: UUID) -> str:
+    """The name on the member's own profile, whatever its visibility (for their own documents)."""
+    return (
+        FounderProfile.objects.filter(user_id=user_id).values_list("full_name", flat=True).first()
+        or ""
+    )
+
+
+def ids_by_name(text: str) -> Any:
+    """Members whose own profile name contains the text. A search aid only: callers must not
+    reveal the match, since shown names still obey visibility."""
+    return FounderProfile.objects.filter(full_name__icontains=text).values_list(
+        "user_id", flat=True
+    )

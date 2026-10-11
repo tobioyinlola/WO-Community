@@ -45,6 +45,15 @@ def _outcome_title(payload: dict[str, Any]) -> str:
     return "A moderator handled your report"
 
 
+def _mentor_decision_title(payload: dict[str, Any]) -> str:
+    reason = payload.get("reason", "")
+    if payload.get("decision") == "approved":
+        return "Your mentor application was approved. Welcome as a mentor!"
+    if payload.get("decision") == "declined":
+        return f"Your mentor application was declined: {reason}"
+    return f"We need more information for your mentor application: {reason}"
+
+
 def _post_link(payload: dict[str, Any]) -> str:
     return f"/posts/{payload['post_id']}"
 
@@ -136,6 +145,36 @@ TYPES: dict[str, Spec] = {
         "event_reminders",
         lambda who, p: f"{p.get('title', 'An event')} you registered for has new times",
         lambda p: f"/events/{p['event_id']}",
+        email=True,
+    ),
+    "certificate_ready": Spec(
+        "learning",
+        lambda who, p: f"Your certificate for \"{p.get('title', 'your course')}\" is ready",
+        lambda p: f"/certificates/{p['certificate_id']}",
+        email=True,
+    ),
+    "course_granted": Spec(
+        "learning",
+        lambda who, p: f"You now have access to \"{p.get('title', 'a course')}\"",
+        lambda p: f"/courses/{p['course_id']}",
+        email=True,
+    ),
+    "mentor_application_received": Spec(
+        "mentorship",
+        lambda who, p: "A new mentor application is waiting for review",
+        lambda p: "/admin/mentor-applications",
+        email=True,
+    ),
+    "mentor_application_decision": Spec(
+        "mentorship",
+        lambda who, p: _mentor_decision_title(p),
+        lambda p: "/mentoring/application",
+        email=True,
+    ),
+    "mentor_revoked": Spec(
+        "mentorship",
+        lambda who, p: "Your mentor status was withdrawn",
+        lambda p: "/home",
         email=True,
     ),
     "member_approved": Spec(

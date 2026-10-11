@@ -21,6 +21,8 @@ from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.campaigns import services as campaigns
 from apps.jobs import selectors as jobs
+from apps.learning import selectors as learning
+from apps.mentorship import selectors as mentorship
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
 from apps.startups import selectors as startups
@@ -339,9 +341,30 @@ def home(actor: Any) -> dict[str, Any]:
             ),
         },
         # Arrive with their modules in later stages.
-        "learning": {"available": False},
-        "mentorship": {"available": False},
+        "learning": _learning(today),
+        "mentorship": {"available": True, **mentorship.snapshot()},
         "revenue": {"available": False},
+    }
+
+
+def _learning(today: date) -> dict[str, Any]:
+    figures = learning.snapshot()
+    last30 = today - timedelta(days=29)
+    return {
+        "available": True,
+        "published_courses": figures["published_courses"],
+        "enrolments": figures["enrolments"],
+        "completed": figures["completed"],
+        "completion_rate": (
+            round(figures["completed"] / figures["enrolments"], 4)
+            if figures["enrolments"]
+            else None
+        ),
+        "certificates": figures["certificates"],
+        "enrolments_last_30_days": int(_sum(event_metric("course_enrolled"), last30, today)),
+        "lessons_completed_last_30_days": int(
+            _sum(event_metric("lesson_completed"), last30, today)
+        ),
     }
 
 

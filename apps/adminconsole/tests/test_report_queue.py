@@ -281,3 +281,25 @@ def test_an_editor_without_report_permission_is_refused(make_user, client_for, m
 @pytest.mark.parametrize("method, url", ENDPOINTS)
 def test_an_admin_without_a_recent_mfa_check_is_refused(moderator, client_for, method, url):
     assert getattr(client_for(moderator), method)(url).status_code == 403
+
+
+def test_handling_a_report_is_recorded_for_analytics(
+    as_moderator, reporter_client, post, moderator
+):
+    from apps.analytics.models import AnalyticsEvent
+
+    first = file_report(reporter_client, "post", post)
+    as_moderator.post(f"{QUEUE}/{first}/review")
+    events = AnalyticsEvent.objects.filter(name="report_actioned")
+    assert [e.properties for e in events] == [{"outcome": "reviewed"}]
+    assert all(e.actor_id == moderator.pk for e in events)
+
+
+def test_actioning_a_report_is_recorded_for_analytics(as_moderator, reporter_client, post):
+    from apps.analytics.models import AnalyticsEvent
+
+    rid = file_report(reporter_client, "post", post)
+    as_moderator.post(f"{QUEUE}/{rid}/action", {"action": "hide"})
+    assert [e.properties for e in AnalyticsEvent.objects.filter(name="report_actioned")] == [
+        {"outcome": "actioned"}
+    ]
