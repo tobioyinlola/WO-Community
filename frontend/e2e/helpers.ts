@@ -20,7 +20,9 @@ export function watchConsole(page: Page): string[] {
   const problems: string[] = [];
   // The brand logo files are supplied separately; until they are added the app falls back to text.
   page.on("response", (response) => {
-    if (response.status() >= 400 && !response.url().includes("/assets/wo-")) {
+    // A venture with no score, plan or forecast yet answers 404 by design; the screens show an empty state.
+    const expectedMissing = response.status() === 404 && /\/toolkit\/ventures\/[^/]+\/(score\/latest|plan|forecast)$/.test(response.url());
+    if (response.status() >= 400 && !expectedMissing && !response.url().includes("/assets/wo-")) {
       problems.push(`${response.status()} ${response.url()}`);
     }
   });

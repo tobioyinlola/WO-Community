@@ -118,7 +118,7 @@ export function EmptyState({
     <div className="app-empty">
       {icon ? <span className="app-tile">{icon}</span> : null}
       <h3 className="h3 app-empty__title">{title}</h3>
-      {children ? <p className="app-empty__text">{children}</p> : null}
+      {children ? <div className="app-empty__text">{children}</div> : null}
       {action}
     </div>
   );
