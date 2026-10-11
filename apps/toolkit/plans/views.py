@@ -13,6 +13,7 @@ from apps.toolkit.plans import selectors, service
 from apps.toolkit.plans.models import PlanSection
 from apps.toolkit.plans.serializers import (
     TkPlanAssistSerializer,
+    TkPlanExportSerializer,
     TkPlanGenerateSerializer,
     TkPlanProposalSerializer,
     TkPlanReadinessSerializer,
@@ -226,3 +227,32 @@ class PlanVersionRestoreView(APIView):
             raise exceptions.NotFound()
         service.restore_version(plan, version)
         return _private(Response(TkPlanSerializer(selectors.plan_view(venture, plan)).data))
+
+
+class PlanExportView(APIView):
+    policy = member_policy("plan")
+
+    @extend_schema(
+        summary="Export the plan as a Word document or a PDF",
+        description="Starts a job and answers 202. When it succeeds, `result.id` is an export: "
+        "`GET /exports/{id}` gives a short lived download link. Sections with no text are left "
+        "out.",
+        parameters=[KEY],
+        request=TkPlanExportSerializer,
+        responses={202: TkJobSerializer, 200: TkJobSerializer, **ERRORS},
+        tags=["toolkit"],
+    )
+    def post(self, request: Request, venture_id: UUID) -> Response:
+        venture = owned_venture(request, venture_id)
+        body = TkPlanExportSerializer(data=request.data or {})
+        body.is_valid(raise_exception=True)
+        if service.latest(venture) is None:
+            raise exceptions.NotFound()
+        job, created = jobs.start(
+            owner_id=uid(request),
+            kind="exports.plan",
+            venture=venture,
+            payload={"format": body.validated_data["format"]},
+            idempotency_key=idempotency_key(request),
+        )
+        return accepted(request, job, created)

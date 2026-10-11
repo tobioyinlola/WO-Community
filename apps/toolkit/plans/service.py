@@ -22,8 +22,9 @@ from apps.toolkit.ai import runner, safety
 from apps.toolkit.ai.models import Fact
 from apps.toolkit.ai.research import gather
 from apps.toolkit.forecasts import selectors as forecasts
+from apps.toolkit.jobs import exports
 from apps.toolkit.jobs.services import JobCancelled, JobContext, JobFailed
-from apps.toolkit.plans import catalog, content
+from apps.toolkit.plans import catalog, content, export
 from apps.toolkit.plans.models import (
     BusinessPlan,
     Citation,
@@ -694,3 +695,47 @@ def readiness(venture: Venture) -> dict[str, Any]:
         if problems:
             blockers.append(f"{section.definition.title}: {', '.join(problems).lower()}")
     return {"ready": not blockers, "sections": rows, "blockers": blockers}
+
+
+# --- export ----------------------------------------------------------------------------------
+
+
+def export_plan(ctx: JobContext) -> dict[str, Any]:
+    """The ``exports.plan`` job. Payload: ``format`` (docx or pdf)."""
+    from apps.toolkit.plans import selectors
+
+    venture = ctx.venture
+    if venture is None:
+        raise JobFailed("no_venture", "This job needs a venture.")
+    fmt = str(ctx.payload.get("format", "docx"))
+    if fmt not in ("docx", "pdf"):
+        raise JobFailed("bad_format", "Choose docx or pdf.")
+    plan = latest(venture)
+    if plan is None:
+        raise JobFailed("no_plan", "Write the plan first.")
+    ctx.progress(10, "Collecting sections")
+    sections = [
+        {
+            "chapter": s.definition.chapter,
+            "title": s.definition.title,
+            "blocks": s.content.get("blocks", []),
+            "citations": selectors.citations_of(s),
+        }
+        for s in plan.sections.select_related("definition").order_by("number")
+        if s.content.get("blocks")
+    ]
+    if not sections:
+        raise JobFailed("empty_plan", "The plan has no text yet.")
+    ctx.progress(40, "Building the document")
+    body = export.document(venture.name, plan.version, sections)
+    data = export.render_docx(body) if fmt == "docx" else export.render_pdf(body)
+    safe = "".join(ch for ch in venture.name if ch.isalnum() or ch in " -_").strip() or "plan"
+    file = exports.store(
+        venture=venture,
+        owner_id=ctx.owner_id,
+        kind=f"plan.{fmt}",
+        filename=f"{safe} business plan v{plan.version}.{fmt}",
+        content_type=export.DOCX_TYPE if fmt == "docx" else export.PDF_TYPE,
+        data=data,
+    )
+    return exports.result_of(file)

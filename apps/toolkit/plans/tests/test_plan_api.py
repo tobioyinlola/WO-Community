@@ -270,3 +270,70 @@ def test_partial_rewrite_touches_only_the_chosen_sections(client, full_venture, 
     nine = client.get(url(full_venture, "/sections/9")).json()
     assert "Second draft." in str(five["content"]) and "First draft." in str(nine["content"])
     assert PlanSection.objects.filter(number=5).get().version == 2
+
+
+def export(client, venture, run_jobs, fmt="docx"):
+    started = client.post(url(venture, "/export"), {"format": fmt}, format="json")
+    assert started.status_code == 202, started.content
+    run_jobs()
+    return client.get(f"{BASE}/jobs/{started.json()['id']}").json()
+
+
+def test_the_plan_exports_to_word_and_pdf_with_a_signed_link(client, full_venture, run_jobs):
+    import io
+
+    from docx import Document
+
+    from apps.integrations.storage.base import PRIVATE
+    from apps.integrations.storage.fake import FakeStorage
+
+    research()
+    writer("Traders lose sales every week.")
+    generate(client, full_venture, run_jobs)
+    job = export(client, full_venture, run_jobs, "docx")
+    assert job["status"] == "succeeded", job
+    file = client.get(f"{BASE}/exports/{job['result']['id']}").json()
+    assert file["filename"].endswith(".docx") and file["url"] and file["size"] > 1000
+    stored = next(v for (b, k), v in FakeStorage.objects.items() if b == PRIVATE)
+    text = "\n".join(p.text for p in Document(io.BytesIO(stored[0])).paragraphs)
+    assert "Mamapesa" in text and "Traders lose sales every week." in text
+    assert "not audited" in text
+
+    pdf = export(client, full_venture, run_jobs, "pdf")
+    assert pdf["status"] == "succeeded"
+    again = client.get(f"{BASE}/exports/{pdf['result']['id']}").json()
+    from apps.toolkit.jobs.models import ExportFile
+
+    key = ExportFile.objects.get(pk=again["id"]).storage_key
+    assert again["content_type"] == "application/pdf"
+    assert FakeStorage.objects[(PRIVATE, key)][0].startswith(b"%PDF")
+
+
+def test_an_export_belongs_to_its_owner_and_expires(client, other_client, full_venture, run_jobs):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.toolkit.jobs import exports
+    from apps.toolkit.jobs.models import ExportFile
+
+    research()
+    writer()
+    generate(client, full_venture, run_jobs)
+    job = export(client, full_venture, run_jobs, "pdf")
+    path = f"{BASE}/exports/{job['result']['id']}"
+    assert other_client.get(path).status_code == 404
+    assert client.get(path).status_code == 200
+    ExportFile.objects.update(expires_at=timezone.now() - timedelta(minutes=1))
+    assert client.get(path).status_code == 404
+    assert exports.purge_expired() == 1
+    assert ExportFile.objects.count() == 0
+
+
+def test_exporting_needs_a_plan_and_a_known_format(client, full_venture, run_jobs):
+    assert client.post(url(full_venture, "/export"), {}, format="json").status_code == 404
+    research()
+    writer()
+    generate(client, full_venture, run_jobs)
+    bad = client.post(url(full_venture, "/export"), {"format": "exe"}, format="json")
+    assert bad.status_code == 400

@@ -4,3 +4,4 @@ from apps.toolkit.plans import service
 
 def register() -> None:
     jobs.register("plan.generate", service.generate)
+    jobs.register("exports.plan", service.export_plan, queue="exports")

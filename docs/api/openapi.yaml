@@ -10249,6 +10249,36 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/toolkit/exports/{export_id}:
+    get:
+      operationId: toolkit_exports_retrieve
+      description: Ask again for a new link when one has expired. Files are removed
+        after a week; generate the document again if it is gone (404).
+      summary: A generated document and a fresh download link
+      parameters:
+      - in: path
+        name: export_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkExportFile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: No such job, or not yours
   /api/v1/toolkit/jobs/{job_id}:
     get:
       operationId: toolkit_jobs_retrieve
@@ -10658,6 +10688,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TkPlan'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/plan/export:
+    post:
+      operationId: toolkit_ventures_plan_export_create
+      description: 'Starts a job and answers 202. When it succeeds, `result.id` is
+        an export: `GET /exports/{id}` gives a short lived download link. Sections
+        with no text are left out.'
+      summary: Export the plan as a Word document or a PDF
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkPlanExportRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
           description: ''
         '401':
           description: Not authenticated
@@ -14528,6 +14604,14 @@ components:
           maxLength: 254
       required:
       - email
+    FormatEnum:
+      enum:
+      - docx
+      - pdf
+      type: string
+      description: |-
+        * `docx` - docx
+        * `pdf` - pdf
     FounderCard:
       type: object
       properties:
@@ -20112,6 +20196,38 @@ components:
       description: |-
         * `profile` - profile
         * `fact` - fact
+    TkExportFile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        filename:
+          type: string
+        content_type:
+          type: string
+        size:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+        url:
+          type: string
+          description: A signed download link; it expires quickly
+        url_expires_in:
+          type: integer
+          description: Seconds the link works for
+      required:
+      - content_type
+      - expires_at
+      - filename
+      - id
+      - kind
+      - size
+      - url
+      - url_expires_in
     TkFillFromTextRequest:
       type: object
       description: |-
@@ -20387,6 +20503,13 @@ components:
           maxLength: 60
       required:
       - action
+    TkPlanExportRequest:
+      type: object
+      properties:
+        format:
+          allOf:
+          - $ref: '#/components/schemas/FormatEnum'
+          default: docx
     TkPlanGenerateRequest:
       type: object
       properties:
