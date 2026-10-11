@@ -53,6 +53,15 @@ const PrototypesTab = lazy(() => import("./pages/launch/PrototypesTab"));
 const PartnerTab = lazy(() => import("./pages/launch/PartnerTab"));
 const SharingTab = lazy(() => import("./pages/launch/SharingTab"));
 const SharedView = lazy(() => import("./pages/launch/SharedView"));
+const AdminLayout = lazy(() => import("./admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
+const AdminHome = lazy(() => import("./admin/AdminHome"));
+const AdminMembers = lazy(() => import("./admin/Members"));
+const AdminInvitations = lazy(() => import("./admin/Invitations"));
+const AdminMentors = lazy(() => import("./admin/MentorApplications"));
+const AdminReports = lazy(() => import("./admin/Reports"));
+const AdminJobs = lazy(() => import("./admin/Queues").then((m) => ({ default: m.JobsReview })));
+const AdminWins = lazy(() => import("./admin/Queues").then((m) => ({ default: m.WinsReview })));
+const AdminSecurity = lazy(() => import("./admin/Security"));
 const NewsStory = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsStory })));
 
 const queryClient = new QueryClient({
@@ -142,6 +151,19 @@ export function App() {
                     <Route path="me" element={<Profile />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/app" replace />} />
+                  </Route>
+                </Route>
+                <Route element={<RequireAuth />}>
+                  <Route path="admin" element={<AdminLayout />}>
+                    <Route index element={<AdminHome />} />
+                    <Route path="members" element={<AdminMembers />} />
+                    <Route path="invitations" element={<AdminInvitations />} />
+                    <Route path="mentors" element={<AdminMentors />} />
+                    <Route path="reports" element={<AdminReports />} />
+                    <Route path="jobs" element={<AdminJobs />} />
+                    <Route path="wins" element={<AdminWins />} />
+                    <Route path="security" element={<AdminSecurity />} />
+                    <Route path="*" element={<Navigate to="/admin" replace />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

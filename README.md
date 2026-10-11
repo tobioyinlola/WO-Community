@@ -17,6 +17,7 @@ can put in front of an investor.
 | **Learning** | Courses with lesson progress and certificates. |
 | **Mentoring** | Find a mentor, request and book a session, give feedback; mentors apply, set availability and accept. |
 | **News** | Editorial stories and community wins. |
+| **Admin console** | For staff: approve or decline new members, invite people, review jobs and wins, act on reports, decide mentor applications and watch the numbers. Admin accounts must use two step sign in. |
 | **Launch toolkit** | A private workspace per venture: a validation **score**, a 44 section **business plan**, a two-year financial **forecast**, **pitch decks**, clickable **prototypes** and a **venture partner** to talk things through. Everything is written from the member's own answers, anything proposed is shown before it is applied, and anything can be shared by link or with a chosen mentor. |
 
 Visitors who are not members can read the public site, browse public startups and jobs, and ask for
@@ -84,8 +85,14 @@ npm install
 npm run dev                   # http://localhost:5173, /api is proxied to the back end
 ```
 
+For the admin console, also run `DJANGO_SETTINGS_MODULE=config.settings.local python scripts/seed_admin_demo.py`.
+It gives `admin@demo.test` two step sign in with a known demo key (so the browser tests can work out
+the codes), adds `editor@demo.test` (a content editor who has not set up two step sign in yet), and
+adds a job, a reported post and a win waiting for review. Run it again to add more.
+
 The demo data includes members to sign in as (password `Demo-Passw0rd-2026`): `amaka@demo.test`
-(member), `ada@demo.test` (mentor) and `pending@demo.test` (awaiting approval).
+(member), `ada@demo.test` (mentor), `pending@demo.test` (awaiting approval), `admin@demo.test` and
+`editor@demo.test` (admin roles).
 
 On Windows the Celery worker needs the solo pool: `celery -A config worker --pool=solo -l info`.
 

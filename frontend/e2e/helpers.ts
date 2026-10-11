@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { ADMIN_KEY, freshCode } from "./totp";
 
 export const PASSWORD = "Demo-Passw0rd-2026";
 
@@ -32,4 +33,26 @@ export function watchConsole(page: Page): string[] {
   });
   page.on("pageerror", (error) => problems.push(error.message));
   return problems;
+}
+
+/** Signs in as the demo admin: password, then the code from the authenticator. */
+export async function signInAdmin(page: Page) {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill("admin@demo.test");
+  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Enter your code" })).toBeVisible();
+  // Each code works once. A run that started less than 30 seconds after the last one reuses its
+  // code and is refused, so wait for the next code and try again.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.getByLabel("Code").fill(await freshCode(ADMIN_KEY, attempt > 0));
+    await page.getByRole("button", { name: "Confirm" }).click();
+    const rejected = page.getByRole("alert");
+    await expect(page).toHaveURL(/\/app/, { timeout: attempt === 0 ? 6_000 : 20_000 }).catch(async () => {
+      if (attempt > 0 || (await rejected.count()) === 0) throw new Error("The code was not accepted");
+    });
+    if (/\/app/.test(page.url())) break;
+  }
+  await page.goto("/admin");
+  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
 }

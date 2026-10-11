@@ -1,3 +1,5 @@
+import { useAuth } from "../../auth/AuthProvider";
+import { permissionsFor } from "../../admin/permissions";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Circle, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -23,7 +25,8 @@ export default function Home() {
   const events = useQuery({ queryKey: ["home", "events"], queryFn: () => unwrap(api.GET("/api/v1/events", { params: { query: { when: "upcoming", limit: 3 } } })) });
   const sessions = useQuery({ queryKey: ["home", "sessions"], queryFn: () => unwrap(api.GET("/api/v1/sessions", { params: { query: { state: "upcoming", limit: 2 } } })) });
   const posts = useQuery({ queryKey: ["home", "posts"], queryFn: () => unwrap(api.GET("/api/v1/posts", { params: { query: { limit: 3 } } })) });
-  const ventures = useQuery({ queryKey: ["toolkit", "ventures"], queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
+  const { me } = useAuth();
+  const ventures = useQuery({ queryKey: ["toolkit", "ventures"], enabled: permissionsFor(me?.roles ?? []).has("toolkit.use"), queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
 
   const first = (profile.data?.full_name ?? "").split(" ")[0];
   const todo = onboarding.data?.items.filter((i) => !i.done) ?? [];
@@ -35,7 +38,7 @@ export default function Home() {
 
       {onboarding.data && !onboarding.data.complete ? (
         <Card variant="brand">
-          <div className="app-split" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+          <div className="app-split app-split--even">
             <div>
               <span className="wo-eyebrow">Get started</span>
               <CardTitle style={{ marginTop: "var(--space-3)" }}>Finish setting up</CardTitle>
