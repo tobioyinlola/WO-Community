@@ -56,5 +56,5 @@ Status: accepted (Stage 3, second slice)
 ## Consequences
 
 Availability, matching, requests, booking, calendar integrations, reminders and feedback follow in
-later slices. The mentor rating fields exist (count and total) but nothing writes them until
-feedback exists. Mentor ratings are written by session feedback, which comes later.
+later slices. The mentor rating fields (count and total) are written by session feedback
+(ADR 0031).

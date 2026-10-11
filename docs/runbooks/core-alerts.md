@@ -233,3 +233,45 @@ managed database the migration role must be allowed to do that (or an administra
 once with `CREATE EXTENSION btree_gist;` before deploying). Recommendations that look stale after a
 mentor change point at the Redis cache: the version key `mentorship:data-version` moves on every
 change, and entries expire after 15 minutes anyway.
+
+## A session has no meeting link
+
+A confirmed session shows `meeting.state: pending` for a moment while a worker makes the video
+meeting, then `ready`. `failed` means the provider refused or stayed unavailable through every
+retry; the mentor was told and can add their own link (`PUT /sessions/{id}/meeting-link`). If many
+sessions fail, look at the log line `meeting_creation_failed`: a 401 or 403 (`misconfigured`) means
+our credentials are wrong. For Google, the refresh token was revoked or the account password or
+consent changed, so create a new refresh token for the platform account and update
+`GOOGLE_MEET_REFRESH_TOKEN`; for Zoom, check the Server-to-Server app is active and still has the
+meeting scopes. Sessions already marked `failed` are not retried; the mentor adds a link, or
+support cancels and the founder asks again. A session stuck on `pending` with a healthy provider
+points at the `default` queue or the outbox backlog (`mentorship.create_meeting` is triggered by
+`mentorship.session_confirmed`).
+
+## Reminders, lapsing requests or feedback requests are missing
+
+Three beat jobs drive the session lifecycle: `mentorship.send_reminders` (5 minutes),
+`mentorship.expire_requests` (10 minutes) and `mentorship.complete_due` (5 minutes). If none of
+them fire, beat is not running. Reminders are claimed on the session row (`reminded_24h_at`,
+`reminded_1h_at`) before sending, so re-running is safe, but a session that was confirmed inside a
+reminder window is skipped for it on purpose. A session that should be `completed` but is still
+`confirmed` has not passed its end plus 15 minutes, or `complete_due` is not running.
+
+## A founder says a time was offered and then refused
+
+Offered times are recomputed on every request, and the database refuses overlapping holds, so
+the time was taken between the founder seeing it and asking (409 `That time was just taken`), or
+the mentor's week filled (a request counts toward the week's places while it waits). Declined,
+cancelled and lapsed requests give their place back. To see why a time is not offered, list the
+mentor's sessions (`GET /admin/sessions?mentor_id=`) and check requested and confirmed ones.
+
+## A course file will not upload or download
+
+Uploads of `course_file` are rejected with a reason on the upload (`GET /uploads/{id}`):
+`active_content` (scripts, macros or embedded objects), `encrypted`, `corrupt`,
+`type_mismatch` (the file is not what its type says) and `malware_detected`. Only people with
+`courses.manage` can upload documents (403 otherwise). Downloads are signed links that last 5
+minutes; if one "has expired", ask `GET /lessons/{id}/file` again. A 404 there means the lesson
+holds a link, not a stored file. The private bucket (`STORAGE_PRIVATE_BUCKET`) must exist and
+must not have public read access; if downloads 403 from storage, check the bucket name and that
+the application credentials can read it.
