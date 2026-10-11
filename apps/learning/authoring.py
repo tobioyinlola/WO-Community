@@ -17,6 +17,7 @@ from apps.core.text import clean_url, plain, rich_post, text_of
 from apps.integrations import youtube
 from apps.learning.models import ACCESS, LESSON_TYPES, LEVELS, Course, Lesson, Module
 from apps.uploads import services as uploads
+from apps.uploads.models import UploadPurpose
 
 MAX_DESCRIPTION_TEXT = 10_000
 MAX_READING_TEXT = 50_000
@@ -216,6 +217,9 @@ def duplicate(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
                     body=lesson.body,
                     resource_url=lesson.resource_url,
                     resource_name=lesson.resource_name,
+                    file_key=lesson.file_key,
+                    file_size=lesson.file_size,
+                    file_content_type=lesson.file_content_type,
                 )
                 for lesson in module.lessons.all()
             )
@@ -336,7 +340,7 @@ def reorder_lessons(*, actor: Any, module_id: UUID, ids: list[UUID]) -> Module:
 # --- lessons ---
 
 
-def _apply_lesson(lesson: Lesson, data: dict[str, Any]) -> None:
+def _apply_lesson(lesson: Lesson, data: dict[str, Any], *, actor: Any) -> None:
     if "type" in data:
         if data["type"] not in LESSON_TYPES:
             raise _invalid("type", "Choose video, reading or resource.")
@@ -361,14 +365,45 @@ def _apply_lesson(lesson: Lesson, data: dict[str, Any]) -> None:
         lesson.body = rich_post(data["body"])
         if len(text_of(lesson.body)) > MAX_READING_TEXT:
             raise _invalid("body", f"Up to {MAX_READING_TEXT} characters.")
+    if data.get("upload_id") and data.get("resource_url"):
+        raise _invalid("upload_id", "Give an uploaded file or a link, not both.")
     if "resource_url" in data:
         try:
             lesson.resource_url = clean_url(data["resource_url"])
         except exceptions.ValidationError as exc:
             raise _invalid("resource_url", " ".join(str(m) for m in exc.detail)) from exc
+        if lesson.resource_url:
+            _clear_file(lesson)  # a link replaces any stored file
     if "resource_name" in data:
         lesson.resource_name = plain(data["resource_name"])
+    if data.get("upload_id"):
+        upload = uploads.claim(
+            upload_id=data["upload_id"],
+            owner_id=actor.pk,
+            purpose=UploadPurpose.COURSE_FILE.value,
+        )
+        lesson.file_key = upload.base_key
+        lesson.file_size = upload.size
+        lesson.file_content_type = upload.declared_content_type
+        lesson.resource_url = ""
+        if not lesson.resource_name:
+            lesson.resource_name = plain(upload.original_filename)[:160]
     _check_lesson(lesson)
+
+
+def _clear_file(lesson: Lesson) -> None:
+    lesson.file_key, lesson.file_size, lesson.file_content_type = "", None, ""
+
+
+def _release_file(key: str, *, still_used_by: Any = None) -> None:
+    """Delete a stored document once no lesson (a duplicated course shares them) points at it."""
+    if not key:
+        return
+    others = Lesson.objects.filter(file_key=key)
+    if still_used_by is not None:
+        others = others.exclude(pk=still_used_by)
+    if not others.exists():
+        uploads.release_document(key)
 
 
 def _check_lesson(lesson: Lesson) -> None:
@@ -377,14 +412,18 @@ def _check_lesson(lesson: Lesson) -> None:
         if not lesson.video_id:
             raise _invalid("video_url", "A video lesson needs a YouTube link.")
         lesson.body, lesson.resource_url, lesson.resource_name = "", "", ""
+        _clear_file(lesson)
     elif lesson.type == "reading":
         if not text_of(lesson.body):
             raise _invalid("body", "A reading lesson needs some text.")
         lesson.video_provider = lesson.video_id = lesson.video_url = ""
         lesson.resource_url = lesson.resource_name = ""
+        _clear_file(lesson)
     else:
-        if not lesson.resource_url:
-            raise _invalid("resource_url", "A resource lesson needs a link to the file.")
+        if not lesson.resource_url and not lesson.file_key:
+            raise _invalid(
+                "resource_url", "A resource lesson needs an uploaded file or a link to one."
+            )
         if not lesson.resource_name:
             raise _invalid("resource_name", "Name the file members will download.")
         lesson.video_provider = lesson.video_id = lesson.video_url = ""
@@ -400,7 +439,7 @@ def add_lesson(*, actor: Any, module_id: UUID, data: dict[str, Any], ip: str = "
         lesson = Lesson(
             module=module, course=module.course, position=0 if last is None else last + 1
         )
-        _apply_lesson(lesson, data)
+        _apply_lesson(lesson, data, actor=actor)
         lesson.save()
         audit.record(
             actor=actor,
@@ -428,8 +467,11 @@ def _lock_lesson(lesson_id: UUID) -> Lesson:
 def update_lesson(*, actor: Any, lesson_id: UUID, data: dict[str, Any]) -> Lesson:
     with transaction.atomic():
         lesson = _lock_lesson(lesson_id)
-        _apply_lesson(lesson, data)
+        previous = lesson.file_key
+        _apply_lesson(lesson, data, actor=actor)
         lesson.save()
+        if previous and previous != lesson.file_key:
+            _release_file(previous, still_used_by=lesson.pk)
     return lesson
 
 
@@ -437,7 +479,9 @@ def delete_lesson(*, actor: Any, lesson_id: UUID, ip: str = "") -> None:
     with transaction.atomic():
         lesson = _lock_lesson(lesson_id)
         module, course_id = lesson.module, lesson.course_id
+        key, lesson_pk = lesson.file_key, lesson.pk
         lesson.delete()
+        _release_file(key, still_used_by=lesson_pk)
         for position, other in enumerate(module.lessons.all()):
             if other.position != position:
                 Lesson.objects.filter(pk=other.pk).update(position=position)

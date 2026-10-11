@@ -6,6 +6,7 @@ The quarantine bucket must be private; the media bucket is read through the CDN.
 
 from functools import cached_property
 from typing import Any
+from urllib.parse import quote
 
 import boto3
 from botocore.client import Config
@@ -14,6 +15,7 @@ from django.conf import settings
 
 from apps.integrations.storage.base import (
     MEDIA,
+    PRIVATE,
     QUARANTINE,
     ObjectInfo,
     ObjectStorage,
@@ -45,6 +47,7 @@ class S3Storage(ObjectStorage):
         names = {
             QUARANTINE: settings.STORAGE_QUARANTINE_BUCKET,
             MEDIA: settings.STORAGE_MEDIA_BUCKET,
+            PRIVATE: settings.STORAGE_PRIVATE_BUCKET,
         }
         return names[bucket]
 
@@ -88,12 +91,32 @@ class S3Storage(ObjectStorage):
             Key=key,
             Body=data,
             ContentType=content_type,
-            ContentDisposition="inline",
+            ContentDisposition="attachment" if bucket == PRIVATE else "inline",
             **extra,
         )
 
     def delete(self, *, bucket: str, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket_name(bucket), Key=key)
+
+    def presign_get(
+        self, *, bucket: str, key: str, expires_in: int, filename: str, content_type: str
+    ) -> str:
+        safe = "".join(c for c in filename if c.isprintable() and c not in '"\\/;')[:150]
+        ascii_name = safe.encode("ascii", "replace").decode().replace("?", "_") or "download"
+        disposition = (
+            f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(safe or "download")}'
+        )
+        url: str = self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.bucket_name(bucket),
+                "Key": key,
+                "ResponseContentDisposition": disposition,
+                "ResponseContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+        )
+        return url
 
     def public_url(self, key: str) -> str:
         return f"{settings.MEDIA_BASE_URL.rstrip('/')}/{key}"

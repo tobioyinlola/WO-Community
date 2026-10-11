@@ -11,6 +11,10 @@ class UploadPurpose(models.TextChoices):
     EDITORIAL_COVER = "editorial_cover"
     CAMPAIGN_IMAGE = "campaign_image"
     COURSE_COVER = "course_cover"
+    COURSE_FILE = "course_file"  # a document, not an image
+
+
+DOCUMENT_PURPOSES = frozenset({UploadPurpose.COURSE_FILE})
 
 
 class UploadStatus(models.TextChoices):
@@ -30,13 +34,15 @@ class Upload(BaseModel):
     status = models.CharField(
         max_length=12, choices=UploadStatus.choices, default=UploadStatus.PENDING
     )
-    declared_content_type = models.CharField(max_length=40)
+    declared_content_type = models.CharField(max_length=100)
     declared_size = models.PositiveIntegerField()
     # Kept as metadata only. Storage keys are random and never contain it.
     original_filename = models.CharField(max_length=255, blank=True)
     quarantine_key = models.CharField(max_length=200, unique=True)
-    # Prefix of the processed files in the media bucket: <base>/large.webp and <base>/thumb.webp.
+    # Images: prefix of the processed files in the media bucket (<base>/large.webp and
+    # <base>/thumb.webp). Documents: the key of the one object in the private bucket.
     base_key = models.CharField(max_length=200, blank=True)
+    size = models.PositiveIntegerField(null=True, blank=True)  # documents: stored bytes
     reject_reason = models.CharField(max_length=40, blank=True)
     width = models.PositiveIntegerField(null=True, blank=True)
     height = models.PositiveIntegerField(null=True, blank=True)

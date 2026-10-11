@@ -1,4 +1,5 @@
 from typing import ClassVar
+from urllib.parse import quote
 
 from django.conf import settings
 
@@ -63,6 +64,16 @@ class FakeStorage(ObjectStorage):
 
     def delete(self, *, bucket: str, key: str) -> None:
         self.objects.pop((bucket, key), None)
+
+    def presign_get(
+        self, *, bucket: str, key: str, expires_in: int, filename: str, content_type: str
+    ) -> str:
+        if (bucket, key) not in self.objects:
+            raise KeyError(key)
+        return (
+            f"https://private.test/{bucket}/{key}"
+            f"?expires_in={expires_in}&filename={quote(filename)}&type={quote(content_type)}"
+        )
 
     def public_url(self, key: str) -> str:
         return f"{settings.MEDIA_BASE_URL.rstrip('/')}/{key}"
