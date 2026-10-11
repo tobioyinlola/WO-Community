@@ -14,3 +14,10 @@ def headline(venture: Venture) -> dict[str, Any] | None:
     from apps.toolkit.forecasts import service
 
     return service.headline(venture)
+
+
+def series(venture: Venture, name: str) -> dict[str, Any] | None:
+    """Quarterly ``revenue`` or ``cash`` for a chart, or ``None`` without a forecast."""
+    from apps.toolkit.forecasts import service
+
+    return service.series(venture, name)
