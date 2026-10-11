@@ -33,3 +33,22 @@ Notes where the brief left a choice. Everything else is built exactly as the des
   far; filled icons on a sand tile are added with the first screen that needs them.
 - **Contrast** of the token pairs was taken from the brief; the screens built later should be
   checked in both themes before release.
+
+## Screens (member app and toolkit)
+
+- **Roles:** the API has no role field. Role words (Founder, Operator, Investor, Mentor) are shown
+  from a member's badges and what they are open to, and are never invented.
+- **Legal pages** are short summaries with a note that the full text is issued by the company; the
+  full documents were not supplied.
+- **Logos** are still missing; every place that shows one falls back to the name in text.
+- **Emoji:** none. Reactions use icons and words.
+- **Deck and prototype previews** draw colours from the deck's own saved palette, because that is the
+  member's content, not interface chrome. Everything around the preview uses tokens.
+- **Forecast chart:** a plain SVG with two lines (solid for revenue, dashed for cash) in token
+  colours, with a text label and a table of the 24 months as the accessible equivalent.
+- **Alert and empty state bodies** are `div`s rather than `p`s so they can hold lists and several
+  paragraphs without invalid markup.
+- **Money** is typed in whole units and stored in minor units; dates read "10 Oct 2026", times use
+  the 24 hour clock with a zone ("15:00 WAT"), and the currency symbol comes before the amount.
+- **Not yet built:** the admin console, and the toolkit's prototype editor beyond wording changes
+  (structure editing is left to templates and drafts).
