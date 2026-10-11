@@ -526,6 +526,7 @@ DECK_MAX_SLIDES = env.int("DECK_MAX_SLIDES", default=100)
 DECK_MAX_ELEMENTS_PER_SLIDE = 200
 DECK_VERSIONS_KEPT = env.int("DECK_VERSIONS_KEPT", default=30)
 PLAN_VERSIONS_KEPT = env.int("PLAN_VERSIONS_KEPT", default=20)
+TOOLKIT_MAX_ACTIVE_JOBS = env.int("TOOLKIT_MAX_ACTIVE_JOBS", default=4)
 PROTOTYPE_MAX_SCREENS = env.int("PROTOTYPE_MAX_SCREENS", default=20)
 VENTURE_DELETE_GRACE_DAYS = env.int("VENTURE_DELETE_GRACE_DAYS", default=14)
 # Research for one report runs its questions side by side. Tests turn it off (one connection).

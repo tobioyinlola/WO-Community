@@ -41,7 +41,11 @@ def get(venture: Venture) -> Forecast | None:
 
 def seed_assumptions(venture: Venture) -> dict[str, Any]:
     """A starting point from the profile: its template, currency, price and funding."""
-    fields = profile_of(venture).fields
+    return seed_from_fields(profile_of(venture).fields)
+
+
+def seed_from_fields(fields: dict[str, Any]) -> dict[str, Any]:
+    """The same, from profile fields alone (no database), so it can be checked in bulk."""
     template = next(
         (MODEL_TO_TEMPLATE[m] for m in fields.get("revenue_models", []) if m in MODEL_TO_TEMPLATE),
         "subscription",

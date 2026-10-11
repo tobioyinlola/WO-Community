@@ -1,6 +1,6 @@
 PY ?= python
 
-.PHONY: up down install migrate run worker beat test lint format typecheck security imports schema check ci lint-migrations
+.PHONY: toolkit-evaluate up down install migrate run worker beat test lint format typecheck security imports schema check ci lint-migrations
 
 up:
 	docker compose up -d db redis mail storage
@@ -25,6 +25,9 @@ beat:
 
 test:
 	pytest
+
+toolkit-evaluate:
+	DJANGO_SETTINGS_MODULE=config.settings.test $(PY) manage.py toolkit_evaluate
 
 lint:
 	ruff check .

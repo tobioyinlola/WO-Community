@@ -6,7 +6,7 @@ With several gunicorn workers set ``PROMETHEUS_MULTIPROC_DIR`` so every worker i
 """
 
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from django.utils import timezone
 from prometheus_client import (
@@ -30,16 +30,52 @@ LATENCY = Histogram(
 )
 
 
+TOOLKIT_JOBS = Counter("wo_toolkit_jobs_total", "Toolkit jobs that ended", ["kind", "status"])
+TOOLKIT_JOB_SECONDS = Histogram(
+    "wo_toolkit_job_seconds",
+    "Time from a toolkit job being queued until it ended",
+    ["kind"],
+    buckets=(1, 2.5, 5, 10, 30, 60, 120, 300, 900),
+)
+TOOLKIT_AI_RUNS = Counter(
+    "wo_toolkit_ai_runs_total", "Model calls made for the toolkit", ["prompt", "outcome"]
+)
+TOOLKIT_AI_TOKENS = Counter(
+    "wo_toolkit_ai_tokens_total", "Tokens used by toolkit model calls", ["direction"]
+)
+
+
+def observe_toolkit_job(kind: str, status: str, seconds: float) -> None:
+    TOOLKIT_JOBS.labels(kind, status).inc()
+    TOOLKIT_JOB_SECONDS.labels(kind).observe(max(0.0, seconds))
+
+
+def observe_ai_run(prompt: str, outcome: str, input_tokens: int, output_tokens: int) -> None:
+    TOOLKIT_AI_RUNS.labels(prompt, outcome).inc()
+    TOOLKIT_AI_TOKENS.labels("input").inc(input_tokens)
+    TOOLKIT_AI_TOKENS.labels("output").inc(output_tokens)
+
+
 def observe_request(method: str, route: str, status: int, seconds: float) -> None:
     # Routes are patterns (api/v1/posts/<uuid:post_id>), so cardinality stays bounded.
     REQUESTS.labels(method, route[:120], str(status)).inc()
     LATENCY.labels(method, route[:120]).observe(seconds)
 
 
+_extra_collectors: list[Callable[[], Iterator[Metric]]] = []
+
+
+def add_collector(collector: Callable[[], Iterator[Metric]]) -> None:
+    """Let a module add gauges that are read at scrape time (the core knows nothing of it)."""
+    _extra_collectors.append(collector)
+
+
 class QueueCollector:
     """Gauges for the outbox and failed tasks, read at scrape time."""
 
     def collect(self) -> Iterator[Metric]:
+        for extra in _extra_collectors:
+            yield from extra()
         from apps.core.models import FailedTask, OutboxEvent
 
         now = timezone.now()
