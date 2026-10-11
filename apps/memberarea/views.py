@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from apps.core import policies
 from apps.core.public import PublicView
 from apps.core.serializers import StrictSerializer
-from apps.memberarea import onboarding, search, sitemap
+from apps.editorial.serializers import EditorialItemPageSerializer
+from apps.memberarea import news, onboarding, search, sitemap
 
 
 class ChecklistItemSerializer(serializers.Serializer):
@@ -68,6 +69,9 @@ class SearchResultSerializer(serializers.Serializer):
     startups = SearchHitSerializer(many=True, required=False)
     jobs = SearchHitSerializer(many=True, required=False)
     mentors = SearchHitSerializer(many=True, required=False)
+    events = SearchHitSerializer(many=True, required=False)
+    news = SearchHitSerializer(many=True, required=False)
+    courses = SearchHitSerializer(many=True, required=False)
 
 
 class SearchView(APIView):
@@ -76,14 +80,16 @@ class SearchView(APIView):
     throttle_scope = "search"
 
     @extend_schema(
-        summary="Search members, startups, jobs and mentors",
+        summary="Search members, startups, jobs, mentors, events, news and courses",
         description="Results are what you may see of each item: someone who hides their basics "
-        "from members cannot be found. Tolerates small typos. Jobs, courses and the rest join "
-        "as their areas are built.",
+        "from members cannot be found. People and startups tolerate small typos; events, news "
+        "and courses match words in their title and text.",
         parameters=[
             OpenApiParameter("q", str, required=True, description="2 to 100 characters"),
             OpenApiParameter(
-                "types", str, description="Comma list: members, startups, jobs, mentors"
+                "types",
+                str,
+                description="Comma list: members, startups, jobs, mentors, events, news, courses",
             ),
             OpenApiParameter("limit", int, description="Per type, 1 to 20 (default 10)"),
         ],
@@ -135,3 +141,35 @@ class FullSitemapView(PublicView):
         if request.query_params:
             raise serializers.ValidationError({"detail": "No parameters are accepted."})
         return self.cached(request, FullSitemapSerializer(sitemap.build()).data)
+
+
+class FollowingNewsQuerySerializer(serializers.Serializer):
+    type = serializers.CharField(required=False, allow_blank=True, max_length=12, default="")
+    cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=50, default=20)
+
+
+class FollowingNewsView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="News about people and startups you follow",
+        description="Published news and wins that feature a startup you follow, or a startup of "
+        "someone you follow. Same shape as `GET /editorial`.",
+        parameters=[FollowingNewsQuerySerializer],
+        responses={
+            200: EditorialItemPageSerializer,
+            401: OpenApiResponse(description="Not logged in"),
+        },
+        tags=["member area"],
+    )
+    def get(self, request: Request) -> Response:
+        params = FollowingNewsQuerySerializer(data=request.query_params.dict())
+        params.is_valid(raise_exception=True)
+        data = params.validated_data
+        page = news.following_feed(
+            request.user, type=data["type"], cursor=data["cursor"], limit=data["limit"]
+        )
+        response = Response(EditorialItemPageSerializer(page).data)
+        response["Cache-Control"] = "private, no-store"
+        return response

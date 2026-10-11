@@ -18,3 +18,13 @@ class WinReviewed(DomainEvent):
     win_id: str
     approved: bool
     note: str
+
+
+@dataclass(frozen=True)
+class CommentReportHandled(DomainEvent):
+    """A moderator dealt with a report on a comment; the reporter is told."""
+
+    topic: ClassVar[str] = "editorial.comment_report_handled"
+    reporter_id: str
+    outcome: str  # "reviewed" or "actioned"
+    target_type: str

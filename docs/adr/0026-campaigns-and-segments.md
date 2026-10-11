@@ -52,7 +52,8 @@ Status: accepted (Stage 2)
 ## Consequences
 
 Open counts are approximate (mail clients block or fake tracking pixels), as everywhere. A/B tests,
-resend to non-openers, per-link click detail, send-time optimisation and the campaign analytics
-events (`newsletter_sent` and the rest) are not built. The `newsletter` entry in the notification
+resend to non-openers, per-link click detail and send-time optimisation are not built. The campaign analytics events
+(`newsletter_sent`, `_delivered`, `_opened`, `_clicked`, `_unsubscribed`) are recorded. The `newsletter` entry in the notification
 preferences matrix is unused for email; marketing email is governed by marketing consent alone.
-Sender domain setup (SPF, DKIM, DMARC, separate marketing subdomain, warm-up) is operational work.
+Sender domain setup (SPF, DKIM, DMARC, separate marketing subdomain, warm-up) is operational work,
+written up in `docs/deployment.md`.

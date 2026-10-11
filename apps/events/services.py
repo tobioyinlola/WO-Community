@@ -106,6 +106,8 @@ def _apply(event: Event, data: dict[str, Any]) -> None:
             setattr(event, field, _url(data[field], field))
     if "summary" in data:
         event.summary = rich_post(data["summary"])
+    if "organiser_email" in data:
+        event.organiser_email = data["organiser_email"].strip().lower()
     for field in ("registration_open", "public"):
         if field in data:
             setattr(event, field, bool(data[field]))

@@ -110,6 +110,53 @@ def send_rejected(to: str, reason: str) -> None:
     )
 
 
+def send_suspended(to: str, reason: str) -> None:
+    _send(
+        to,
+        "Your WO Community account has been suspended",
+        "Your account has been suspended, so you cannot log in or take part for now.\n\n"
+        f"Reason: {reason}\n\n"
+        "Anything already agreed with other members, such as mentoring sessions, has been "
+        "cancelled. If you think this is a mistake, reply to this email and our team will "
+        "look again.",
+        category="suspended",
+    )
+
+
+def send_reinstated(to: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/login"
+    _send(
+        to,
+        "Your WO Community account is active again",
+        f"Your account has been reinstated and you can log in again:\n{link}",
+        category="reinstated",
+    )
+
+
+def send_removed(to: str, reason: str) -> None:
+    _send(
+        to,
+        "Your WO Community account has been removed",
+        "Your account has been removed from WO Community and your public pages are down.\n\n"
+        f"Reason: {reason}\n\n"
+        "If you think this is a mistake, reply to this email and our team will look again.",
+        category="removed",
+    )
+
+
+def send_attendee_list(to: str, title: str, csv_text: str) -> None:
+    """The attendee list of an event, as CSV text in the message, for its organiser."""
+    _send(
+        to,
+        f"Attendees: {title}",
+        f'The attendee list for "{title}", as sent by the WO Community team.\n\n'
+        "It holds names and email addresses of members who registered. Keep it only as long as "
+        "you need it for the event, and do not use it for anything else.\n\n"
+        f"{csv_text}",
+        category="attendee_list",
+    )
+
+
 def send_password_reset(to: str, token: str) -> None:
     link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={token}"
     _send(

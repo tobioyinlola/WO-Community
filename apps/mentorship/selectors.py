@@ -1,7 +1,7 @@
 """Read side of mentorship: the directory, views of mentors and applications, admin lists."""
 
 import statistics
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import timedelta
 from typing import Any
 from uuid import UUID
@@ -18,6 +18,7 @@ from apps.mentorship.models import (
     MentorInterest,
     MentorProfile,
     MentorSession,
+    SeekerNeeds,
 )
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
@@ -238,6 +239,57 @@ def snapshot() -> dict[str, int]:
         "sessions_held_30d": MentorSession.objects.filter(
             status=MentorSession.Status.COMPLETED, ends_at__gte=now - timedelta(days=30)
         ).count(),
+    }
+
+
+def supply_and_demand() -> dict[str, Any]:
+    """How much mentoring is on offer, how much is asked for, and how well it is going.
+
+    Supply is what listed mentors offer: places a week, who has published times, and the
+    expertise they cover. Demand is what founders ask for: requests, how many are answered and
+    accepted, how fast, and the topics saved in needs. Held sessions, missed ones and ratings
+    show whether it works.
+    """
+    now = timezone.now()
+    since = now - timedelta(days=30)
+    profiles_listed = list(listed())
+    expertise: Counter[str] = Counter()
+    for row in profiles_listed:
+        expertise.update(row.expertise)
+    needs: Counter[str] = Counter()
+    for saved in SeekerNeeds.objects.values_list("needs", flat=True):
+        needs.update(saved)
+    ids = [p.user_id for p in profiles_listed]
+    from apps.mentorship import scheduling
+
+    with_times = len(set(scheduling.has_availability(ids))) if ids else 0
+    asked = MentorSession.objects.filter(created_at__gte=since)
+    answered = asked.exclude(responded_at__isnull=True)
+    accepted = answered.exclude(status=MentorSession.Status.DECLINED).count()
+    waits = [
+        (r - c).total_seconds() / 3600
+        for c, r in answered.values_list("created_at", "responded_at")
+        if r is not None
+    ]
+    finished = MentorSession.objects.filter(ends_at__gte=since, status__in=("completed", "no_show"))
+    held = finished.filter(status=MentorSession.Status.COMPLETED).count()
+    missed = finished.filter(status=MentorSession.Status.NO_SHOW).count()
+    rated = MentorProfile.objects.filter(rating_count__gt=0)
+    total_rating = sum(r.rating_total for r in rated)
+    total_count = sum(r.rating_count for r in rated)
+    return {
+        "weekly_capacity": sum(p.capacity_per_week for p in profiles_listed),
+        "mentors_with_times": with_times,
+        "top_expertise": [{"topic": t, "mentors": n} for t, n in expertise.most_common(5)],
+        "top_needs": [{"topic": t, "founders": n} for t, n in needs.most_common(5)],
+        "requests_30d": asked.count(),
+        "unanswered_over_48h": MentorSession.objects.filter(
+            status=MentorSession.Status.REQUESTED, created_at__lte=now - timedelta(hours=48)
+        ).count(),
+        "acceptance_rate_30d": round(accepted / answered.count(), 4) if answered.count() else None,
+        "median_response_hours_30d": round(statistics.median(waits), 1) if waits else None,
+        "no_show_rate_30d": round(missed / (held + missed), 4) if held + missed else None,
+        "average_rating": round(total_rating / total_count, 2) if total_count else None,
     }
 
 

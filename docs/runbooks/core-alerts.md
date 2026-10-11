@@ -290,3 +290,48 @@ queue. Google can take hours to publish a new event to its feed, which is outsid
 hosts on ports 80, 443, 8080 and 8443 (the same rules as link previews), so an address on a
 private network cannot be shared.
 
+## `audit_anchor_problem` in the logs
+
+The daily job logs this when yesterday's chain does not verify, when an anchor exists with a
+different head than the database now has, or when any of the last 7 anchors no longer matches.
+`outcome` says which: `chain_broken` means rows of that day were altered, removed or reordered
+(nothing is anchored until it is understood); `mismatch` or entries in `mismatched_days` mean a
+closed day changed after it was anchored. Treat either as a security incident: the anchors are
+write-once, so the database is the thing that changed. Compare the anchor object
+(`audit-anchors/<day>.json` in the anchor bucket: count, last sequence number, head hash) with
+`audit_auditlog` for that day and with the database backups. A day with no anchor passes; it
+predates anchoring or had no entries. If the job fails to write because the bucket lacks Object
+Lock, create the bucket with it enabled (it cannot be turned on later for an existing bucket).
+
+## Analytics partitions are not being dropped, or the archive fails
+
+With `ANALYTICS_REQUIRE_ARCHIVE` on (production), a monthly partition older than 13 months is
+dropped only after `analytics.archive_expired` has written it and recorded it in
+`analytics_partitionarchive`. If old partitions pile up, check the task's errors: the private
+bucket must exist and be writable, and the worker needs enough memory for one month (the file is
+built on disk and then read once). The archive is verified against the row count before it is
+recorded, so a failure leaves the partition in place. To check a file, read
+`archive/analytics/analytics_event_<year>_<month>.parquet` with any Parquet reader; the `sha256`
+in the table is that of the file.
+
+## Reading the metrics
+
+Scrape `GET /metrics` with `Authorization: Bearer <METRICS_TOKEN>`. Useful alerts:
+`wo_outbox_oldest_pending_seconds` above 300 (the dispatcher or workers are stuck; see "Outbox
+backlog" above), `wo_outbox_failed` or `wo_failed_tasks` above zero (look at the dead letters),
+and the 5xx share of `wo_http_requests_total` or high percentiles of `wo_http_request_seconds`
+per route. Under gunicorn set `PROMETHEUS_MULTIPROC_DIR`, or each worker reports only itself.
+
+## The weekly digest did not arrive
+
+The digest is sent Mondays 08:00 UTC by `memberarea.send_news_digest`, only to members who turned
+`news_digest` email on (it is off by default), and only when something was published in the last 7
+days. It is sent once per member per ISO week: the guard is a cache key, so clearing the cache
+mid-week can send it twice. A member who is not an active member or has no stored email gets none.
+
+## A site's link preview card is missing
+
+`GET /admin/link-previews?q=<domain>` shows the card's state and `fail_code`. `blocked_domain`
+means a moderator blocked the site (`GET /admin/blocked-domains`); other codes are the fetcher's
+(see ADR 0022). Fetching again is `POST /admin/link-previews/<id>/refresh`.
+

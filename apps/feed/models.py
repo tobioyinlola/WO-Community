@@ -209,3 +209,13 @@ class PostLink(BaseModel):
             models.UniqueConstraint(fields=["post", "preview"], name="feed_link_once"),
         ]
         ordering = ["position"]
+
+
+class BlockedDomain(BaseModel):
+    """A site that never gets a link preview card (it, and every subdomain of it)."""
+
+    domain = models.CharField(max_length=253, unique=True)
+    reason = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )

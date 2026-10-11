@@ -22,5 +22,5 @@ chain per day. Django cannot declare range partitioned tables.
 
 ## Consequences
 
-Retention is done by detaching old partitions, which a row level trigger does not block. Anchoring
-the daily head hash in write-once object storage needs the storage adapter and is deferred.
+Retention is done by detaching old partitions, which a row level trigger does not block. The daily
+head hash is anchored in write-once object storage (ADR 0036).

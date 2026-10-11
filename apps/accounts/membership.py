@@ -182,7 +182,7 @@ def suspend_member(*, actor: User, user_id: UUID, reason: str, ip: str = "") -> 
             UserStatus.SUSPENDED,
             reason,
             ip,
-            events.MemberSuspended(user_id=str(target.pk)),
+            events.MemberSuspended(user_id=str(target.pk), reason=reason),
         )
         analytics.track("member_suspended", actor_id=target.pk)
         _cut_off(target)
@@ -217,7 +217,7 @@ def remove_member(*, actor: User, user_id: UUID, reason: str, ip: str = "") -> U
             UserStatus.REMOVED,
             reason,
             ip,
-            events.MemberRemoved(user_id=str(target.pk)),
+            events.MemberRemoved(user_id=str(target.pk), reason=reason),
         )
         analytics.track("member_removed", actor_id=target.pk)
         _cut_off(target)

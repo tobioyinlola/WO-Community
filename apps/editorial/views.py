@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from apps.core import policies
 from apps.core.public import PublicView
-from apps.editorial import selectors, services
+from apps.editorial import reporting, selectors, services
 from apps.editorial.serializers import (
     BannerSerializer,
     CommentWriteSerializer,
@@ -21,6 +21,8 @@ from apps.editorial.serializers import (
     ItemCommentSerializer,
     ItemReactionResultSerializer,
     ItemReactionSerializer,
+    NewsCommentReportReceivedSerializer,
+    NewsCommentReportSerializer,
     PublicItemSerializer,
     PublicPageSerializer,
     WinCreateSerializer,
@@ -153,6 +155,34 @@ class ItemCommentView(APIView):
     def delete(self, request: Request, comment_id: UUID) -> Response:
         services.delete_comment(user_id=_uid(request), comment_id=comment_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ItemCommentReportView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Report a comment to the moderators",
+        description="You can report only a comment you can see, and not your own. Reporting the "
+        "same comment again answers 200 with the existing report. Limited per member per day.",
+        request=NewsCommentReportSerializer,
+        responses={
+            201: NewsCommentReportReceivedSerializer,
+            200: NewsCommentReportReceivedSerializer,
+            **ERRORS,
+            429: OpenApiResponse(description="Daily limit"),
+        },
+        tags=["editorial"],
+    )
+    def post(self, request: Request, comment_id: UUID) -> Response:
+        serializer = NewsCommentReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        report, created = reporting.report(
+            viewer=request.user, comment_id=comment_id, **serializer.validated_data
+        )
+        body = {"id": report.pk, "status": report.status, "created": created}
+        return Response(
+            NewsCommentReportReceivedSerializer(body).data, status=201 if created else 200
+        )
 
 
 def _reaction_result(request: Request, item_id: UUID, created: bool) -> Response:

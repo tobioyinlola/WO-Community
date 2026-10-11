@@ -4,6 +4,82 @@ info:
   version: 1.0.0
   description: REST API for the WO Community platform.
 paths:
+  /api/v1/admin/blocked-domains:
+    get:
+      operationId: admin_blocked_domains_list
+      summary: Sites that never get a preview card
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlockedDomain'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+    post:
+      operationId: admin_blocked_domains_create
+      description: The domain and every subdomain. Cards that already exist for it
+        are taken down now and nothing more is fetched from it. Posts keep their plain
+        link.
+      summary: Block a site from preview cards
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockDomainRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedDomain'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/blocked-domains/{entry_id}:
+    delete:
+      operationId: admin_blocked_domains_destroy
+      summary: Allow a site to have preview cards again
+      parameters:
+      - in: path
+        name: entry_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
   /api/v1/admin/campaign-templates:
     get:
       operationId: admin_campaign_templates_list
@@ -2166,6 +2242,37 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/events/{event_id}/attendees/send:
+    post:
+      operationId: admin_events_attendees_send_create
+      description: Sends the list as CSV text to the event's `organiser_email`, or
+        to your own address when none is set. The address cannot be chosen here, so
+        the list only goes where the event says. Needs a recent MFA check and is logged.
+      summary: Email the attendee list to the organiser
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/events/{event_id}/cancel:
     post:
       operationId: admin_events_cancel_create
@@ -2966,6 +3073,92 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/link-previews:
+    get:
+      operationId: admin_link_previews_list
+      description: Newest first. Search by address (`q`) or filter by `status`. Shows
+        how many posts use each card and whether its site is blocked.
+      summary: Link preview cards
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 200
+      - in: query
+        name: status
+        schema:
+          enum:
+          - pending
+          - ready
+          - failed
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `pending` - pending
+          * `ready` - ready
+          * `failed` - failed
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminPreview'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
+  /api/v1/admin/link-previews/{preview_id}/refresh:
+    post:
+      operationId: admin_link_previews_refresh_create
+      description: Queues a new fetch now. Refused for a blocked site.
+      summary: Fetch a card again
+      parameters:
+      - in: path
+        name: preview_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPreview'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such post
   /api/v1/admin/members:
     get:
       operationId: admin_members_list
@@ -4113,8 +4306,9 @@ paths:
   /api/v1/admin/reports:
     get:
       operationId: admin_reports_list
-      description: Reports oldest first, open ones by default. Each shows a short
-        look at the post or comment reported and how many open reports it has.
+      description: Reports oldest first, open ones by default, for posts, comments
+        and comments on news (`target_type=news_comment`). Each shows a short look
+        at what was reported and how many open reports it has.
       summary: The moderation queue
       parameters:
       - in: query
@@ -4168,12 +4362,16 @@ paths:
           enum:
           - post
           - comment
+          - news_comment
           type: string
           default: ''
           minLength: 1
         description: |-
+          `news_comment` is a comment on news or a win.
+
           * `post` - post
           * `comment` - comment
+          * `news_comment` - news_comment
       tags:
       - admin
       security:
@@ -5801,6 +5999,51 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not published
+  /api/v1/editorial-comments/{comment_id}/reports:
+    post:
+      operationId: editorial_comments_reports_create
+      description: You can report only a comment you can see, and not your own. Reporting
+        the same comment again answers 200 with the existing report. Limited per member
+        per day.
+      summary: Report a comment to the moderators
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsCommentReportRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsCommentReportReceived'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsCommentReportReceived'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+        '429':
+          description: Daily limit
   /api/v1/editorial/{item_id}:
     get:
       operationId: editorial_retrieve
@@ -7014,6 +7257,41 @@ paths:
           description: Not an active member, or not enrolled
         '404':
           description: Not found
+  /api/v1/me/follow-suggestions:
+    get:
+      operationId: me_follow_suggestions_list
+      description: Scored from what you share (sector, stage, country), who the people
+        you follow already follow, and recent activity; each suggestion carries its
+        `reasons`. Never someone you already follow, and only people whose profile
+        basics you can see.
+      summary: People you might want to follow
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+          default: 10
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Suggestion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/me/following:
     get:
       operationId: me_following_retrieve
@@ -7285,6 +7563,45 @@ paths:
           description: Not an active member
         '404':
           description: Not found
+  /api/v1/me/news/following:
+    get:
+      operationId: me_news_following_retrieve
+      description: Published news and wins that feature a startup you follow, or a
+        startup of someone you follow. Same shape as `GET /editorial`.
+      summary: News about people and startups you follow
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+          maxLength: 400
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: type
+        schema:
+          type: string
+          default: ''
+          maxLength: 12
+      tags:
+      - member area
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditorialItemPage'
+          description: ''
+        '401':
+          description: Not logged in
   /api/v1/me/notification-preferences:
     get:
       operationId: me_notification_preferences_retrieve
@@ -9085,9 +9402,9 @@ paths:
     get:
       operationId: search_retrieve
       description: 'Results are what you may see of each item: someone who hides their
-        basics from members cannot be found. Tolerates small typos. Jobs, courses
-        and the rest join as their areas are built.'
-      summary: Search members, startups, jobs and mentors
+        basics from members cannot be found. People and startups tolerate small typos;
+        events, news and courses match words in their title and text.'
+      summary: Search members, startups, jobs, mentors, events, news and courses
       parameters:
       - in: query
         name: limit
@@ -9104,7 +9421,8 @@ paths:
         name: types
         schema:
           type: string
-        description: 'Comma list: members, startups, jobs, mentors'
+        description: 'Comma list: members, startups, jobs, mentors, events, news,
+          courses'
       tags:
       - member area
       security:
@@ -10437,6 +10755,8 @@ components:
             $ref: '#/components/schemas/Slot'
         public:
           type: boolean
+        organiser_email:
+          type: string
         created_by:
           type: string
           format: uuid
@@ -10459,6 +10779,7 @@ components:
       - id
       - link
       - location
+      - organiser_email
       - past
       - public
       - recording_url
@@ -11048,6 +11369,47 @@ components:
       - lessons
       - position
       - title
+    AdminPreview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        domain:
+          type: string
+        status:
+          type: string
+        title:
+          type: string
+        site_name:
+          type: string
+        fail_code:
+          type: string
+        attempts:
+          type: integer
+        fetched_at:
+          type: string
+          format: date-time
+          nullable: true
+        posts:
+          type: integer
+          description: How many posts show this card.
+        blocked:
+          type: boolean
+      required:
+      - attempts
+      - blocked
+      - domain
+      - fail_code
+      - fetched_at
+      - id
+      - posts
+      - site_name
+      - status
+      - title
+      - url
     AdminRating:
       type: object
       properties:
@@ -11477,6 +11839,43 @@ components:
     BlankEnum:
       enum:
       - ''
+    BlockDomainRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          description: example.com, or a pasted address.
+          maxLength: 253
+        reason:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - domain
+    BlockedDomain:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        domain:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - domain
+      - id
+      - reason
     BookableTimes:
       type: object
       properties:
@@ -12138,6 +12537,39 @@ components:
       - slug
       - status
       - title
+    CourseFigure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        access:
+          type: string
+        enrolments:
+          type: integer
+        completed:
+          type: integer
+        completion_rate:
+          type: number
+          format: double
+          nullable: true
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
+      required:
+      - access
+      - completed
+      - completion_rate
+      - enrolments
+      - id
+      - rating_average
+      - rating_count
+      - title
     CourseLevelEnum:
       enum:
       - beginner
@@ -12609,6 +13041,11 @@ components:
         recording_url:
           type: string
           maxLength: 300
+        organiser_email:
+          type: string
+          format: email
+          description: Who the attendee list can be emailed to. Not shown to members.
+          maxLength: 254
         summary:
           type: string
           maxLength: 40000
@@ -13757,11 +14194,17 @@ components:
           type: integer
         lessons_completed_last_30_days:
           type: integer
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseFigure'
+          description: The ten most enrolled courses.
       required:
       - available
       - certificates
       - completed
       - completion_rate
+      - courses
       - enrolments
       - enrolments_last_30_days
       - lessons_completed_last_30_days
@@ -14651,14 +15094,59 @@ components:
         sessions_held_30d:
           type: integer
           description: Sessions held in the last 30 days.
+        weekly_capacity:
+          type: integer
+          description: Sessions a week listed mentors offer.
+        mentors_with_times:
+          type: integer
+          description: Listed mentors who have published availability.
+        top_expertise:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
+        top_needs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
+          description: What founders have saved as needs.
+        requests_30d:
+          type: integer
+        unanswered_over_48h:
+          type: integer
+        acceptance_rate_30d:
+          type: number
+          format: double
+          nullable: true
+        median_response_hours_30d:
+          type: number
+          format: double
+          nullable: true
+        no_show_rate_30d:
+          type: number
+          format: double
+          nullable: true
+        average_rating:
+          type: number
+          format: double
+          nullable: true
       required:
+      - acceptance_rate_30d
       - active_mentors
       - available
+      - average_rating
       - listed_mentors
+      - median_response_hours_30d
+      - mentors_with_times
+      - no_show_rate_30d
       - pending_applications
+      - requests_30d
       - requests_waiting
       - sessions_held_30d
       - sessions_upcoming
+      - top_expertise
+      - top_needs
+      - unanswered_over_48h
+      - weekly_capacity
     Message:
       type: object
       properties:
@@ -14837,6 +15325,37 @@ components:
           maxItems: 5
       required:
       - needs
+    NewsCommentReportReceived:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        created:
+          type: boolean
+          description: False if you had already reported this
+      required:
+      - created
+      - id
+      - status
+    NewsCommentReportRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReasonEnum'
+        details:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - reason
     NewsOpenGraph:
       type: object
       properties:
@@ -15267,6 +15786,10 @@ components:
         recording_url:
           type: string
           maxLength: 300
+        organiser_email:
+          type: string
+          format: email
+          maxLength: 254
         summary:
           type: string
           maxLength: 40000
@@ -17166,6 +17689,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SearchHit'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
     Segment:
       type: object
       properties:
@@ -17280,6 +17815,15 @@ components:
       required:
       - definition
       - name
+    SendResult:
+      type: object
+      properties:
+        sent_to_organiser:
+          type: boolean
+          description: False when the event has no organiser email and it went to
+            you.
+      required:
+      - sent_to_organiser
     Series:
       type: object
       properties:
@@ -17954,6 +18498,36 @@ components:
           type: string
       required:
       - status
+    Suggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        headline:
+          type: string
+        image:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        score:
+          type: integer
+        reasons:
+          type: array
+          items:
+            type: string
+      required:
+      - headline
+      - id
+      - image
+      - name
+      - reasons
+      - score
+      - slug
     TagsEnum:
       enum:
       - profile_complete
@@ -18079,6 +18653,17 @@ components:
           maxLength: 200
       required:
       - token
+    Topic:
+      type: object
+      properties:
+        topic:
+          type: string
+        mentors:
+          type: integer
+        founders:
+          type: integer
+      required:
+      - topic
     TractionItemKindEnum:
       enum:
       - users
