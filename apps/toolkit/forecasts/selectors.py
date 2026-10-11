@@ -8,7 +8,9 @@ from apps.toolkit.ventures.models import Venture
 def headline(venture: Venture) -> dict[str, Any] | None:
     """The saved forecast's headline numbers, or ``None`` while the venture has no forecast.
 
-    ``{"version": n, "currency": "NGN", "figures": {...}}``. Plans cite these as the venture's
-    own numbers; they are never produced by a model.
+    ``{"version": n, "currency": "NGN", "figures": {...}, "warnings": [...]}``. Plans cite these as
+    the venture's own numbers; they are never produced by a model.
     """
-    return None
+    from apps.toolkit.forecasts import service
+
+    return service.headline(venture)

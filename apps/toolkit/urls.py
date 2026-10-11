@@ -6,4 +6,5 @@ urlpatterns = [
     path("", include("apps.toolkit.ai.urls")),
     path("", include("apps.toolkit.scoring.urls")),
     path("", include("apps.toolkit.plans.urls")),
+    path("", include("apps.toolkit.forecasts.urls")),
 ]

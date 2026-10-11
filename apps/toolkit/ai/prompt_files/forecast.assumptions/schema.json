@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "proposals": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "maxLength": 60},
+          "value": {"type": "number"},
+          "rationale": {"type": "string", "minLength": 1, "maxLength": 300},
+          "fact": {"type": "integer", "minimum": 1}
+        },
+        "required": ["name", "value", "rationale", "fact"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["proposals"],
+  "additionalProperties": false
+}
