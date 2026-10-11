@@ -242,6 +242,23 @@ def headline(venture: Venture) -> dict[str, Any] | None:
     }
 
 
+def series(venture: Venture, name: str) -> dict[str, Any] | None:
+    """Quarterly revenue or end-of-quarter cash, for a chart. ``None`` without a forecast."""
+    forecast = get(venture)
+    if forecast is None or name not in ("revenue", "cash"):
+        return None
+    months = compute(forecast).months
+    values = []
+    for q in range(8):
+        chunk = months[q * 3 : q * 3 + 3]
+        values.append(sum(m.revenue for m in chunk) if name == "revenue" else chunk[-1].cash_end)
+    return {
+        "labels": [f"Q{q % 4 + 1} Y{q // 4 + 1}" for q in range(8)],
+        "values": values,
+        "currency": forecast.currency,
+    }
+
+
 # --- export job ------------------------------------------------------------------------------
 
 

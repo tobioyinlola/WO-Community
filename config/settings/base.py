@@ -182,6 +182,7 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "DeckStatusEnum": "apps.toolkit.decks.models.DECK_STATUSES",
         "PlanStatusEnum": "apps.toolkit.plans.models.PLAN_STATUSES",
         "PlanSectionStatusEnum": "apps.toolkit.plans.models.SECTION_STATUSES",
         "JobTypeEnum": "apps.jobs.models.JOB_TYPES",

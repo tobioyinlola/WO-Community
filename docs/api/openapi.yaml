@@ -10249,6 +10249,29 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/toolkit/deck-templates:
+    get:
+      operationId: toolkit_deck_templates_list
+      summary: Deck templates
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkDeckTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/exports/{export_id}:
     get:
       operationId: toolkit_exports_retrieve
@@ -10635,6 +10658,573 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/decks:
+    get:
+      operationId: toolkit_ventures_decks_list
+      summary: Decks of a venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkDeckBrief'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_decks_create
+      description: The slides are filled from the venture profile in the founder's
+        own words; figures are linked to the forecast and stay current. Nothing is
+        written by a model.
+      summary: Create a deck from a template
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkDeckCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeck'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}:
+    get:
+      operationId: toolkit_ventures_decks_retrieve
+      summary: A deck's content, as saved
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeck'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    put:
+      operationId: toolkit_ventures_decks_update
+      summary: Rename a deck or mark it ready
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkDeckUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeck'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    patch:
+      operationId: toolkit_ventures_decks_partial_update
+      description: '`ops` are add, remove, replace and move on `/slides/...` or `/theme/...`.
+        All or nothing; the result is validated as a whole. A stale `base_version`
+        is 409.'
+      summary: Change the slides with patch operations
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkDeckPatchRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeck'
+          description: ''
+        '409':
+          description: The deck changed elsewhere
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    delete:
+      operationId: toolkit_ventures_decks_destroy
+      summary: Delete a deck and its images
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/assets:
+    get:
+      operationId: toolkit_ventures_decks_assets_list
+      summary: Images added to a deck
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkDeckAsset'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_decks_assets_create
+      description: PNG, JPEG or WebP up to 5 MB. It is checked, scanned and re-encoded;
+        reference the returned id from an `image` element with a description.
+      summary: Add an image to a deck
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TkDeckAssetUploadRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeckAsset'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/assets/{asset_id}:
+    delete:
+      operationId: toolkit_ventures_decks_assets_destroy
+      description: 409 while a slide still uses it.
+      summary: Remove an image from a deck
+      parameters:
+      - in: path
+        name: asset_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/assist:
+    post:
+      operationId: toolkit_ventures_decks_assist_create
+      description: A proposal only. Apply what you accept with a `replace` operation.
+        A rewrite that adds a figure is dropped.
+      summary: Ask for reworded text on one slide
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkDeckAssistRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeckAssistResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/check:
+    get:
+      operationId: toolkit_ventures_decks_check_list
+      description: Gaps to fill, dense slides, missing notes and figures that are
+        not in the profile or forecast. Advice only; nothing is blocked.
+      summary: Check a deck before showing it
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkDeckFinding'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/export:
+    post:
+      operationId: toolkit_ventures_decks_export_create
+      description: Starts a job and answers 202. On success `result.id` is an export
+        for `GET /exports/{id}`.
+      summary: Export a deck as PowerPoint or PDF
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkDeckExportRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/shown:
+    get:
+      operationId: toolkit_ventures_decks_shown_retrieve
+      description: Linked figures are looked up now from the forecast and profile,
+        and image addresses are signed and short lived. Use this for preview and presenting.
+      summary: The deck as it should be shown
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeckShown'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/versions:
+    get:
+      operationId: toolkit_ventures_decks_versions_list
+      summary: Saved versions of a deck
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkDeckVersion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/decks/{deck_id}/versions/{version}/restore:
+    post:
+      operationId: toolkit_ventures_decks_versions_restore_create
+      description: The current deck is saved first, so this can be undone.
+      summary: Go back to a saved version
+      parameters:
+      - in: path
+        name: deck_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDeck'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/ventures/{venture_id}/export:
     get:
       operationId: toolkit_ventures_export_retrieve
@@ -14369,6 +14959,14 @@ components:
           maxLength: 1000
       required:
       - decision
+    DeckStatusEnum:
+      enum:
+      - draft
+      - ready
+      type: string
+      description: |-
+        * `draft` - draft
+        * `ready` - ready
     DirectorySkill:
       type: object
       properties:
@@ -17699,6 +18297,22 @@ components:
         differentiator:
           type: string
           maxLength: 500
+    PatchedTkDeckPatchRequest:
+      type: object
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        ops:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          description: add, remove, replace, move on /slides/... or /theme/...
+          maxItems: 200
+        label:
+          type: string
+          maxLength: 80
     PatchedTkPlanSectionSaveRequest:
       type: object
       properties:
@@ -19824,14 +20438,6 @@ components:
       - message
       - starts_at
       - topic
-    SeverityEnum:
-      enum:
-      - warning
-      - error
-      type: string
-      description: |-
-        * `warning` - warning
-        * `error` - error
     SignupProfileRequest:
       type: object
       description: |-
@@ -20492,6 +21098,257 @@ components:
           maxLength: 500
       required:
       - name
+    TkDeck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        template_slug:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeckStatusEnum'
+        version:
+          type: integer
+        content:
+          type: object
+          additionalProperties: {}
+          description: '`{"slides": [...], "theme": {...}}`'
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - content
+      - id
+      - status
+      - template_slug
+      - title
+      - updated_at
+      - version
+    TkDeckAsset:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        size:
+          type: integer
+        url:
+          type: string
+          description: A signed link that expires quickly
+      required:
+      - filename
+      - height
+      - id
+      - size
+      - url
+      - width
+    TkDeckAssetUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+    TkDeckAssistActionEnum:
+      enum:
+      - shorten
+      - punchier
+      - simplify
+      type: string
+      description: |-
+        * `shorten` - shorten
+        * `punchier` - punchier
+        * `simplify` - simplify
+    TkDeckAssistRequest:
+      type: object
+      properties:
+        slide_id:
+          type: string
+          minLength: 1
+          maxLength: 16
+        action:
+          $ref: '#/components/schemas/TkDeckAssistActionEnum'
+      required:
+      - action
+      - slide_id
+    TkDeckAssistResult:
+      type: object
+      properties:
+        slide_id:
+          type: string
+        action:
+          type: string
+        elements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        removed:
+          type: array
+          items:
+            type: string
+      required:
+      - action
+      - elements
+      - removed
+      - slide_id
+    TkDeckBrief:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        template_slug:
+          type: string
+        status:
+          $ref: '#/components/schemas/DeckStatusEnum'
+        version:
+          type: integer
+        slide_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - slide_count
+      - status
+      - template_slug
+      - title
+      - updated_at
+      - version
+    TkDeckCreateRequest:
+      type: object
+      properties:
+        template:
+          type: string
+          minLength: 1
+          maxLength: 40
+        title:
+          type: string
+          maxLength: 120
+      required:
+      - template
+    TkDeckExportFormatEnum:
+      enum:
+      - pptx
+      - pdf
+      type: string
+      description: |-
+        * `pptx` - pptx
+        * `pdf` - pdf
+    TkDeckExportRequest:
+      type: object
+      properties:
+        format:
+          allOf:
+          - $ref: '#/components/schemas/TkDeckExportFormatEnum'
+          default: pptx
+    TkDeckFinding:
+      type: object
+      properties:
+        slide:
+          type: integer
+          description: 1 based; 0 for the whole deck
+        element:
+          type: string
+        code:
+          type: string
+        severity:
+          $ref: '#/components/schemas/TkDeckFindingSeverityEnum'
+        message:
+          type: string
+      required:
+      - code
+      - element
+      - message
+      - severity
+      - slide
+    TkDeckFindingSeverityEnum:
+      enum:
+      - error
+      - warning
+      - info
+      type: string
+      description: |-
+        * `error` - error
+        * `warning` - warning
+        * `info` - info
+    TkDeckShown:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        version:
+          type: integer
+        slides:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        theme:
+          type: object
+          additionalProperties: {}
+      required:
+      - id
+      - slides
+      - theme
+      - title
+      - version
+    TkDeckTemplate:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        slide_count:
+          type: integer
+      required:
+      - description
+      - name
+      - slide_count
+      - slug
+    TkDeckUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        status:
+          $ref: '#/components/schemas/DeckStatusEnum'
+    TkDeckVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+        label:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - label
+      - version
     TkDimension:
       type: object
       properties:
@@ -20954,13 +21811,21 @@ components:
         code:
           type: string
         severity:
-          $ref: '#/components/schemas/SeverityEnum'
+          $ref: '#/components/schemas/TkForecastWarningSeverityEnum'
         message:
           type: string
       required:
       - code
       - message
       - severity
+    TkForecastWarningSeverityEnum:
+      enum:
+      - warning
+      - error
+      type: string
+      description: |-
+        * `warning` - warning
+        * `error` - error
     TkImportStartupRequest:
       type: object
       description: |-
