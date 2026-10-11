@@ -107,6 +107,9 @@ class MentorSerializer(serializers.Serializer):
     capacity_per_week = serializers.IntegerField()
     session_minutes = serializers.IntegerField()
     paused = serializers.BooleanField()
+    meeting_provider = serializers.CharField(
+        help_text="Preferred video provider; blank means the platform default."
+    )
     rating_average = serializers.FloatField(allow_null=True)
     rating_count = serializers.IntegerField()
 
@@ -151,6 +154,11 @@ class MentorProfileUpdateSerializer(StrictSerializer):
     capacity_per_week = serializers.IntegerField(min_value=1, max_value=20, required=False)
     session_minutes = serializers.ChoiceField(choices=[30, 45, 60], required=False)
     paused = serializers.BooleanField(required=False)
+    meeting_provider = serializers.ChoiceField(
+        choices=["", "google_meet", "zoom"],
+        required=False,
+        help_text="Video provider for your sessions; blank uses the platform default.",
+    )
 
 
 class DecisionSerializer(StrictSerializer):

@@ -371,6 +371,17 @@ urlpatterns = [
         name="admin-mentor-decision",
     ),
     path("admin/mentors", mentor_views.AdminMentorsView.as_view(), name="admin-mentors"),
+    path("admin/sessions", mentor_views.AdminSessionsView.as_view(), name="admin-sessions"),
+    path(
+        "admin/sessions/<uuid:session_id>",
+        mentor_views.AdminSessionView.as_view(),
+        name="admin-session",
+    ),
+    path(
+        "admin/sessions/<uuid:session_id>/cancel",
+        mentor_views.AdminSessionCancelView.as_view(),
+        name="admin-session-cancel",
+    ),
     path(
         "admin/mentors/<uuid:user_id>/revoke",
         mentor_views.AdminMentorRevokeView.as_view(),

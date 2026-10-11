@@ -1,15 +1,24 @@
 """Read side of mentorship: the directory, views of mentors and applications, admin lists."""
 
+import statistics
+from collections import defaultdict
+from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
 from apps.core.keyset import paginate
 from apps.mentorship.domain import LANGUAGES
-from apps.mentorship.models import MentorApplication, MentorInterest, MentorProfile
+from apps.mentorship.models import (
+    MentorApplication,
+    MentorInterest,
+    MentorProfile,
+    MentorSession,
+)
 from apps.profiles import selectors as profiles
 from apps.reference import selectors as reference
 
@@ -90,6 +99,7 @@ def views(viewer: Any, rows: list[MentorProfile]) -> list[dict[str, Any]]:
                 "capacity_per_week": row.capacity_per_week,
                 "session_minutes": row.session_minutes,
                 "paused": row.paused,
+                "meeting_provider": row.meeting_provider,
                 "rating_average": (
                     round(row.rating_total / row.rating_count, 2) if row.rating_count else None
                 ),
@@ -212,13 +222,46 @@ def mentor_ids() -> set[UUID]:
 
 
 def snapshot() -> dict[str, int]:
+    now = timezone.now()
     return {
         "pending_applications": MentorApplication.objects.filter(
             status=MentorApplication.Status.PENDING
         ).count(),
         "active_mentors": MentorProfile.objects.filter(status=MentorProfile.Status.ACTIVE).count(),
         "listed_mentors": listed().count(),
+        "requests_waiting": MentorSession.objects.filter(
+            status=MentorSession.Status.REQUESTED
+        ).count(),
+        "sessions_upcoming": MentorSession.objects.filter(
+            status=MentorSession.Status.CONFIRMED, starts_at__gt=now
+        ).count(),
+        "sessions_held_30d": MentorSession.objects.filter(
+            status=MentorSession.Status.COMPLETED, ends_at__gte=now - timedelta(days=30)
+        ).count(),
     }
+
+
+def mentee_ids() -> set[UUID]:
+    """Members who have asked a mentor for a session."""
+    return set(MentorSession.objects.values_list("mentee_id", flat=True))
+
+
+RESPONSE_WINDOW = timedelta(days=90)
+MIN_RESPONSES = 3  # fewer answered requests than this say nothing about how fast a mentor is
+
+
+def median_response_hours(mentor_ids: list[UUID]) -> dict[UUID, float]:
+    """Median hours from request to answer over the last 90 days, for mentors with enough."""
+    rows = MentorSession.objects.filter(
+        mentor_id__in=mentor_ids,
+        responded_at__isnull=False,
+        created_at__gte=timezone.now() - RESPONSE_WINDOW,
+    ).values_list("mentor_id", "created_at", "responded_at")
+    waits: dict[UUID, list[float]] = defaultdict(list)
+    for mentor_id, asked, answered in rows:
+        if answered is not None:
+            waits[mentor_id].append((answered - asked).total_seconds() / 3600)
+    return {m: statistics.median(w) for m, w in waits.items() if len(w) >= MIN_RESPONSES}
 
 
 def mentoring_summary(user_id: UUID) -> dict[str, Any]:

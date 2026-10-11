@@ -105,6 +105,9 @@ class MentorshipSnapshotSerializer(serializers.Serializer):
     pending_applications = serializers.IntegerField()
     active_mentors = serializers.IntegerField()
     listed_mentors = serializers.IntegerField()
+    requests_waiting = serializers.IntegerField(help_text="Session requests waiting for a mentor.")
+    sessions_upcoming = serializers.IntegerField(help_text="Confirmed sessions still ahead.")
+    sessions_held_30d = serializers.IntegerField(help_text="Sessions held in the last 30 days.")
 
 
 class DashboardSerializer(serializers.Serializer):
