@@ -245,13 +245,24 @@ def cancel_by_admin(*, actor: Any, session_id: UUID, reason: str, ip: str = "") 
     return session
 
 
-def cancel_for_revoked_mentor(mentor_id: UUID, reason: str) -> int:
-    """Close every session a revoked mentor still had open. Returns how many."""
+def cancel_open_sessions(
+    user_id: UUID, reason: str, *, as_mentor: bool = True, as_mentee: bool = True
+) -> int:
+    """Close every open session someone takes part in, for the platform. Returns how many.
+
+    Used when a mentor is withdrawn (as mentor only) and when a member is suspended or removed
+    (both sides). Both people are told, with the reason.
+    """
     closed = 0
     now = timezone.now()
+    role = Q(pk__in=[])
+    if as_mentor:
+        role |= Q(mentor_id=user_id)
+    if as_mentee:
+        role |= Q(mentee_id=user_id)
     ids = list(
         MentorSession.objects.filter(
-            mentor_id=mentor_id, status__in=ACTIVE_SESSION_STATUSES, starts_at__gt=now
+            role, status__in=ACTIVE_SESSION_STATUSES, starts_at__gt=now
         ).values_list("pk", flat=True)
     )
     for pk in ids:
@@ -259,14 +270,13 @@ def cancel_for_revoked_mentor(mentor_id: UUID, reason: str) -> int:
             session = MentorSession.objects.select_for_update().filter(pk=pk).first()
             if session is None or session.status not in ACTIVE_SESSION_STATUSES:
                 continue
-            _close(
-                session,
-                by=None,
-                reason=reason or "The mentor is no longer available.",
-                now=now,
-            )
+            _close(session, by=None, reason=reason or "A participant is unavailable.", now=now)
             closed += 1
     return closed
+
+
+def cancel_for_revoked_mentor(mentor_id: UUID, reason: str) -> int:
+    return cancel_open_sessions(mentor_id, reason, as_mentee=False)
 
 
 # --- moving ---

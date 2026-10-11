@@ -683,3 +683,38 @@ def test_the_dashboard_and_segments_know_about_sessions(
     from apps.mentorship import selectors
 
     assert selectors.mentee_ids() == {mentee.pk}
+
+
+# --- a member who is suspended or removed ---
+
+MEMBERS = "/api/v1/admin/members"
+
+
+def test_suspending_a_founder_cancels_their_open_sessions(
+    booking_mentor, mentee, mentee_client, applicant_client, as_admin, run_outbox
+):
+    agreed = confirmed(mentee_client, applicant_client, booking_mentor, run_outbox, index=0)
+    waiting = book(mentee_client, booking_mentor, 3)
+    done = as_admin.post(f"{MEMBERS}/{mentee.pk}/suspend", {"reason": "Spam"}, format="json")
+    assert done.status_code == 200, done.content
+    run_outbox()
+    run_outbox()  # the cancellations are events of their own
+    for session_id in (agreed["id"], waiting["id"]):
+        row = MentorSession.objects.get(pk=session_id)
+        assert row.status == "cancelled" and row.cancelled_by_id is None
+    assert FakeMeetingProvider.meetings == {}
+    assert notices(booking_mentor, "session_cancelled").count() == 2  # the mentor is told
+
+
+def test_removing_a_mentor_member_cancels_sessions_in_both_roles(
+    booking_mentor, mentee, mentee_client, applicant_client, as_admin, run_outbox
+):
+    as_mentor = confirmed(mentee_client, applicant_client, booking_mentor, run_outbox)
+    removed = as_admin.post(
+        f"{MEMBERS}/{booking_mentor.pk}/remove", {"reason": "Left"}, format="json"
+    )
+    assert removed.status_code in (200, 204), removed.content
+    run_outbox()
+    run_outbox()  # the cancellations are events of their own
+    assert MentorSession.objects.get(pk=as_mentor["id"]).status == "cancelled"
+    assert notices(mentee, "session_cancelled").count() == 1
