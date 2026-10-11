@@ -39,6 +39,17 @@ INSTALLED_APPS = [
     "apps.campaigns",
     "apps.learning",
     "apps.mentorship",
+    "apps.toolkit.ventures",
+    "apps.toolkit.jobs",
+    "apps.toolkit.ai",
+    "apps.toolkit.scoring",
+    "apps.toolkit.plans",
+    "apps.toolkit.forecasts",
+    "apps.toolkit.decks",
+    "apps.toolkit.prototypes",
+    "apps.toolkit.partner",
+    "apps.toolkit.sharing",
+    "apps.toolkit.admin_api",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -238,6 +249,7 @@ CELERY_TASK_QUEUES = (
     Queue("media", Exchange("media"), routing_key="media"),
     Queue("exports", Exchange("exports"), routing_key="exports"),
     Queue("analytics", Exchange("analytics"), routing_key="analytics"),
+    Queue("ai", Exchange("ai"), routing_key="ai"),
 )
 CELERY_TASK_ROUTES = {
     "core.dispatch_outbox": {"queue": "critical"},
@@ -245,6 +257,8 @@ CELERY_TASK_ROUTES = {
     "analytics.ensure_partitions": {"queue": "analytics"},
     "analytics.drop_expired": {"queue": "analytics"},
     "feed.fetch_link_preview": {"queue": "media"},
+    "toolkit.run_ai_job": {"queue": "ai"},
+    "toolkit.run_export_job": {"queue": "exports"},
 }
 CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
@@ -274,6 +288,8 @@ CELERY_BEAT_SCHEDULE = {
     "analytics-archive": {"task": "analytics.archive_expired", "schedule": 86400.0},
     "analytics-retention": {"task": "analytics.drop_expired", "schedule": 86400.0},
     "audit-anchor": {"task": "audit.anchor_previous_day", "schedule": 86400.0},
+    "toolkit-reap-jobs": {"task": "toolkit.reap_stuck_jobs", "schedule": 600.0},
+    "toolkit-erase-ventures": {"task": "toolkit.erase_deleted_ventures", "schedule": 86400.0},
     "accounts-purge-rejected": {"task": "accounts.purge_rejected", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
@@ -456,6 +472,48 @@ CALENDAR_FEED_READER = env.str(
 CALENDAR_SYNC_DAYS = 62  # a little more than the booking horizon
 CALENDAR_CONNECTS_PER_HOUR = 10
 CALENDAR_STALE_AFTER = timedelta(hours=3)  # a feed not read for this long is shown as stale
+
+# --- Venture launch toolkit ---------------------------------------------------
+TOOLKIT_MAX_VENTURES_PER_MEMBER = env.int("TOOLKIT_MAX_VENTURES_PER_MEMBER", default=3)
+# Each tool can ship (or be switched off) on its own.
+TOOLKIT_FEATURES = {
+    name: env.bool(f"TOOLKIT_FEATURE_{name.upper()}", default=True)
+    for name in ("score", "plan", "forecast", "decks", "prototypes", "partner")
+}
+# "fake" runs offline; otherwise a dotted path to an LLMProvider class.
+AI_PROVIDER = env.str("AI_PROVIDER", default="fake")
+AI_FALLBACK_PROVIDER = env.str("AI_FALLBACK_PROVIDER", default="")
+# Which model each kind of task uses, so routine steps can use a cheaper one.
+AI_MODEL_ROUTING = {
+    "default": env.str("AI_MODEL_DEFAULT", default="default-model"),
+    "research": env.str("AI_MODEL_RESEARCH", default=""),
+    "writer": env.str("AI_MODEL_WRITER", default=""),
+    "finance": env.str("AI_MODEL_FINANCE", default=""),
+    "deck": env.str("AI_MODEL_DECK", default=""),
+    "prototype": env.str("AI_MODEL_PROTOTYPE", default=""),
+    "reviewer": env.str("AI_MODEL_REVIEWER", default=""),
+    "partner": env.str("AI_MODEL_PARTNER", default=""),
+}
+AI_BASE_URL = env.str("AI_BASE_URL", default="")  # an OpenAI compatible chat completions API
+AI_API_KEY = env.str("AI_API_KEY", default="")
+AI_REQUEST_TIMEOUT_SECONDS = env.int("AI_REQUEST_TIMEOUT_SECONDS", default=60)
+AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per member, model calls
+# Estimated cost per million tokens in minor units, by model (input, output). For usage reports.
+AI_PRICE_PER_MILLION_TOKENS: dict[str, tuple[int, int]] = {}
+AI_COST_CURRENCY = "USD"
+AI_PARTNER_REPLY_TIMEOUT_SECONDS = env.int("AI_PARTNER_REPLY_TIMEOUT_SECONDS", default=10)
+RESEARCH_ALLOWED_DOMAINS = env.list("RESEARCH_ALLOWED_DOMAINS", default=[])
+RESEARCH_PROVIDER = env.str(
+    "RESEARCH_PROVIDER", default="apps.toolkit.ai.research.fake.FakeResearchProvider"
+)
+RESEARCH_SEARCH_URL = env.str("RESEARCH_SEARCH_URL", default="")
+RESEARCH_SEARCH_KEY = env.str("RESEARCH_SEARCH_KEY", default="")
+EXPORT_URL_TTL = env.int("EXPORT_URL_TTL", default=900)
+DECK_MAX_SLIDES = env.int("DECK_MAX_SLIDES", default=100)
+DECK_MAX_ELEMENTS_PER_SLIDE = 200
+DECK_VERSIONS_KEPT = env.int("DECK_VERSIONS_KEPT", default=30)
+PROTOTYPE_MAX_SCREENS = env.int("PROTOTYPE_MAX_SCREENS", default=20)
+VENTURE_DELETE_GRACE_DAYS = env.int("VENTURE_DELETE_GRACE_DAYS", default=14)
 
 # --- Video meetings ----------------------------------------------------------
 # One adapter per provider; a mentor picks one, and MEETING_DEFAULT_PROVIDER covers the rest.

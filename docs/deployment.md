@@ -10,7 +10,8 @@ reading the application.
 | Process | Command | Notes |
 |---|---|---|
 | API | `gunicorn config.wsgi:application` (the image default) | Stateless; run at least 2. Set `PROMETHEUS_MULTIPROC_DIR` to a writable temp directory when running several workers per container. |
-| Worker | `celery -A config worker -Q critical,default,email,exports,analytics` | Every queue except `media`. |
+| Worker | `celery -A config worker -Q critical,default,email,exports,analytics` | Every queue except `media` and `ai`. The `exports` queue also builds the toolkit documents; its image needs the fonts those files use. |
+| AI worker | `celery -A config worker -Q ai` | Toolkit model calls. Give it its own concurrency and time limits; it needs the model provider's address and key and no other credentials beyond the database and broker. |
 | Media worker | `celery -A config worker -Q media` | Fetches web pages and pictures for link previews. See *Egress* below. |
 | Beat | `celery -A config beat` | Exactly one. Schedules live in `CELERY_BEAT_SCHEDULE` (database scheduler). |
 | Migrations | `python manage.py migrate` | A release step before the new API starts, run by one process. |

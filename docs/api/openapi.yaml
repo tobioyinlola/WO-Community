@@ -10249,6 +10249,775 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/toolkit/jobs/{job_id}:
+    get:
+      operationId: toolkit_jobs_retrieve
+      description: Poll every couple of seconds with `If-None-Match`; an unchanged
+        job answers 304. `status` is queued, running, succeeded, failed or cancelled.
+        On success `result` says what was made.
+      summary: Where a job stands
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '304':
+          description: Unchanged
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: No such job, or not yours
+  /api/v1/toolkit/jobs/{job_id}/cancel:
+    post:
+      operationId: toolkit_jobs_cancel_create
+      description: A queued job is cancelled at once; a running one stops at its next
+        step.
+      summary: Stop a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkJob'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: No such job, or not yours
+  /api/v1/toolkit/ventures:
+    get:
+      operationId: toolkit_ventures_list
+      summary: Your ventures
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkVenturePage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    post:
+      operationId: toolkit_ventures_create
+      description: A member can have a few ventures at a time (409 beyond that). With
+        `from_startup_id` the profile is filled from a startup you own or are on the
+        team of.
+      summary: Start a venture
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkVentureCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkVenture'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+        '409':
+          description: Limit
+  /api/v1/toolkit/ventures/{venture_id}:
+    get:
+      operationId: toolkit_ventures_retrieve
+      summary: One venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkVenture'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    patch:
+      operationId: toolkit_ventures_partial_update
+      summary: Rename, archive or change nudges
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkVentureUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkVenture'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    delete:
+      operationId: toolkit_ventures_destroy
+      description: It disappears now and everything made from it is erased for good
+        after the grace period (14 days by default). Restore it before then with `POST
+        .../restore`.
+      summary: Delete a venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/competitors:
+    get:
+      operationId: toolkit_ventures_competitors_list
+      summary: Competitors
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkCompetitor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    post:
+      operationId: toolkit_ventures_competitors_create
+      description: Up to 8.
+      summary: Add a competitor
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkCompetitorWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkCompetitor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/competitors/{competitor_id}:
+    patch:
+      operationId: toolkit_ventures_competitors_partial_update
+      summary: Change a competitor
+      parameters:
+      - in: path
+        name: competitor_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkCompetitorPatchRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkCompetitor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    delete:
+      operationId: toolkit_ventures_competitors_destroy
+      summary: Remove a competitor
+      parameters:
+      - in: path
+        name: competitor_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/export:
+    get:
+      operationId: toolkit_ventures_export_retrieve
+      description: 'One JSON document: the profile, its history and every output.'
+      summary: Download everything held about a venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: JSON
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/package:
+    get:
+      operationId: toolkit_ventures_package_retrieve
+      description: Completeness, what is missing before a score can run, and where
+        each output (score, plan, forecast, decks, prototypes) stands.
+      summary: The venture board
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPackage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/profile:
+    get:
+      operationId: toolkit_ventures_profile_retrieve
+      summary: The venture profile
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkProfile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    patch:
+      operationId: toolkit_ventures_profile_partial_update
+      description: Send only what changed, a wizard step at a time. Every field is
+        checked; a null or blank clears it. Changing a field marks the outputs made
+        from it as needing a refresh. Anything that came from a suggestion is recorded
+        as such only because you saved it here.
+      summary: Save some profile fields
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkProfileUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkProfileUpdateResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+        '400':
+          description: A field is invalid (errors name each one)
+        '409':
+          description: '`base_version` is stale'
+  /api/v1/toolkit/ventures/{venture_id}/profile/fill-from-text:
+    post:
+      operationId: toolkit_ventures_profile_fill_from_text_create
+      description: Reads free text and returns the fields it clearly supports, already
+        validated. Nothing is saved; the member reviews the proposal and saves what
+        they want.
+      summary: Propose profile fields from a paragraph
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkFillFromTextRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkProposedFields'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+        '429':
+          description: Daily limit of assistant requests reached
+        '502':
+          description: The assistant could not produce an answer
+        '503':
+          description: The assistant is busy; try again
+  /api/v1/toolkit/ventures/{venture_id}/profile/import-startup:
+    post:
+      operationId: toolkit_ventures_profile_import_startup_create
+      description: Copies name, pitch, country, city, sector, stage, description and
+        team. Each copied field is marked as imported; nothing else changes.
+      summary: Fill the profile from your startup profile
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkImportStartupRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkProfileUpdateResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/profile/suggest:
+    post:
+      operationId: toolkit_ventures_profile_suggest_create
+      description: Up to three alternatives, grounded in what the profile already
+        says. Nothing is saved. To use one, send it with `PATCH .../profile`. Requests
+        for legal, tax or investment advice, or for made up results, are declined
+        with 400.
+      summary: Suggest wording for a profile field
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkSuggestRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkSuggestions'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+        '429':
+          description: Daily limit of assistant requests reached
+        '502':
+          description: The assistant could not produce an answer
+        '503':
+          description: The assistant is busy; try again
+  /api/v1/toolkit/ventures/{venture_id}/profile/versions:
+    get:
+      operationId: toolkit_ventures_profile_versions_list
+      summary: Profile history
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkProfileVersion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/restore:
+    post:
+      operationId: toolkit_ventures_restore_create
+      summary: Undo a delete during the grace period
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkVenture'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/team:
+    get:
+      operationId: toolkit_ventures_team_list
+      summary: Team
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkTeamMember'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    post:
+      operationId: toolkit_ventures_team_create
+      description: Up to 20.
+      summary: Add a team member
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkTeamWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkTeamMember'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/team/{member_id}:
+    patch:
+      operationId: toolkit_ventures_team_partial_update
+      summary: Change a team member
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkTeamPatchRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkTeamMember'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    delete:
+      operationId: toolkit_ventures_team_destroy
+      summary: Remove a team member
+      parameters:
+      - in: path
+        name: member_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
   /api/v1/unsubscribe:
     post:
       operationId: unsubscribe_create
@@ -16073,6 +16842,76 @@ components:
           maxLength: 300
         directory_opt_in:
           type: boolean
+    PatchedTkCompetitorPatchRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        website:
+          type: string
+          maxLength: 300
+        differentiator:
+          type: string
+          maxLength: 500
+    PatchedTkProfileUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        fields:
+          type: object
+          additionalProperties: {}
+          description: Only the fields that changed. Null or blank clears.
+        base_version:
+          type: integer
+          description: The version you loaded; a different one answers 409.
+    PatchedTkTeamPatchRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        linkedin:
+          type: string
+          maxLength: 300
+        is_founder:
+          type: boolean
+    PatchedTkVentureUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        archived:
+          type: boolean
+        nudges_enabled:
+          type: boolean
     Person:
       type: object
       properties:
@@ -18639,6 +19478,449 @@ components:
       required:
       - blocks
       - name
+    TkCompetitor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        website:
+          type: string
+        differentiator:
+          type: string
+      required:
+      - differentiator
+      - id
+      - name
+      - website
+    TkCompetitorWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        website:
+          type: string
+          maxLength: 300
+        differentiator:
+          type: string
+          maxLength: 500
+      required:
+      - name
+    TkFillFromTextRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
+      required:
+      - text
+    TkImportStartupRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        startup_id:
+          type: string
+          format: uuid
+      required:
+      - startup_id
+    TkJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        venture_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          $ref: '#/components/schemas/TkJobStatusEnum'
+        progress:
+          type: integer
+          description: 0 to 100
+        step_label:
+          type: string
+          description: What it is doing now
+        result:
+          type: object
+          additionalProperties: {}
+          description: What was made, once it succeeded
+        error_code:
+          type: string
+        error_detail:
+          type: string
+          description: Safe to show the member
+        group_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - error_code
+      - error_detail
+      - finished_at
+      - group_id
+      - id
+      - kind
+      - progress
+      - result
+      - started_at
+      - status
+      - step_label
+      - venture_id
+    TkJobStatusEnum:
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      - cancelled
+      type: string
+      description: |-
+        * `queued` - queued
+        * `running` - running
+        * `succeeded` - succeeded
+        * `failed` - failed
+        * `cancelled` - cancelled
+    TkOutputState:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TkOutputStateTypeEnum'
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          $ref: '#/components/schemas/TkOutputStateStatusEnum'
+        stale_fields:
+          type: array
+          items:
+            type: string
+        last_generated_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - last_generated_at
+      - stale_fields
+      - status
+      - type
+    TkOutputStateStatusEnum:
+      enum:
+      - not_started
+      - generating
+      - ready
+      - needs_refresh
+      - failed
+      type: string
+      description: |-
+        * `not_started` - not_started
+        * `generating` - generating
+        * `ready` - ready
+        * `needs_refresh` - needs_refresh
+        * `failed` - failed
+    TkOutputStateTypeEnum:
+      enum:
+      - score
+      - plan
+      - forecast
+      - deck
+      - prototype
+      type: string
+      description: |-
+        * `score` - score
+        * `plan` - plan
+        * `forecast` - forecast
+        * `deck` - deck
+        * `prototype` - prototype
+    TkPackage:
+      type: object
+      properties:
+        venture:
+          $ref: '#/components/schemas/TkVenture'
+        completeness:
+          type: integer
+        missing_required:
+          type: array
+          items:
+            type: string
+        ready_for_score:
+          type: boolean
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkOutputState'
+        next_steps:
+          type: array
+          items:
+            type: string
+      required:
+      - completeness
+      - missing_required
+      - next_steps
+      - outputs
+      - ready_for_score
+      - venture
+    TkProfile:
+      type: object
+      properties:
+        version:
+          type: integer
+        fields:
+          type: object
+          additionalProperties: {}
+          description: Validated profile fields; see the wizard steps.
+        field_meta:
+          type: object
+          additionalProperties: {}
+          description: Where each value came from and when it changed.
+        completeness:
+          type: integer
+        missing_required:
+          type: array
+          items:
+            type: string
+        competitors:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkCompetitor'
+        team:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkTeamMember'
+      required:
+      - competitors
+      - completeness
+      - field_meta
+      - fields
+      - missing_required
+      - team
+      - version
+    TkProfileUpdateResult:
+      type: object
+      properties:
+        profile:
+          $ref: '#/components/schemas/TkProfile'
+        changed:
+          type: array
+          items:
+            type: string
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkOutputState'
+      required:
+      - changed
+      - outputs
+      - profile
+    TkProfileVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+        changed_fields:
+          type: array
+          items:
+            type: string
+        actor:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - actor
+      - changed_fields
+      - created_at
+      - version
+    TkProposedFields:
+      type: object
+      properties:
+        proposed:
+          type: object
+          additionalProperties: {}
+          description: Valid values, ready to send to PATCH profile.
+        rejected:
+          type: object
+          additionalProperties: {}
+          description: Fields the text suggested that did not validate.
+      required:
+      - proposed
+      - rejected
+    TkSuggestRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        field:
+          type: string
+          minLength: 1
+          maxLength: 40
+        intent:
+          type: string
+          default: ''
+          description: What you want, for example 'shorter' or 'more specific about
+            farmers'.
+          maxLength: 500
+      required:
+      - field
+    TkSuggestions:
+      type: object
+      properties:
+        field:
+          type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+      required:
+      - field
+      - suggestions
+    TkTeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+        linkedin:
+          type: string
+        is_founder:
+          type: boolean
+      required:
+      - id
+      - is_founder
+      - linkedin
+      - name
+      - role
+    TkTeamWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        role:
+          type: string
+          minLength: 1
+          maxLength: 120
+        linkedin:
+          type: string
+          maxLength: 300
+        is_founder:
+          type: boolean
+      required:
+      - name
+      - role
+    TkVenture:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+        profile_completeness:
+          type: integer
+        imported_from_startup:
+          type: string
+          format: uuid
+          nullable: true
+        nudges_enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - deleted_at
+      - id
+      - imported_from_startup
+      - name
+      - nudges_enabled
+      - profile_completeness
+      - status
+      - updated_at
+    TkVentureCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        from_startup_id:
+          type: string
+          format: uuid
+          description: Copy from a startup profile you own or are on the team of.
+      required:
+      - name
+    TkVenturePage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkVenture'
+      required:
+      - results
     TokenRequest:
       type: object
       description: |-
