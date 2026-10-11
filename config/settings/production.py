@@ -35,3 +35,16 @@ MEDIA_BASE_URL = require("MEDIA_BASE_URL")
 # Google sign-in is optional, but once a client id is set the real verifier must check the tokens.
 if GOOGLE_CLIENT_ID and GOOGLE_TOKEN_VERIFIER.endswith("FakeGoogleVerifier"):  # noqa: F405
     raise RuntimeError("GOOGLE_TOKEN_VERIFIER must not be the fake verifier in production.")
+
+# Booked sessions need a real video meeting provider; the fake one only makes up addresses.
+_default_meetings = MEETING_PROVIDERS[MEETING_DEFAULT_PROVIDER]  # noqa: F405
+if _default_meetings.endswith("FakeMeetingProvider"):
+    raise RuntimeError("The default meeting provider must not be the fake provider in production.")
+if _default_meetings.endswith("GoogleMeetProvider"):
+    require("GOOGLE_MEET_CLIENT_ID")
+    require("GOOGLE_MEET_CLIENT_SECRET")
+    require("GOOGLE_MEET_REFRESH_TOKEN")
+if _default_meetings.endswith("ZoomProvider"):
+    require("ZOOM_ACCOUNT_ID")
+    require("ZOOM_CLIENT_ID")
+    require("ZOOM_CLIENT_SECRET")

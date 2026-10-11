@@ -177,6 +177,7 @@ SPECTACULAR_SETTINGS = {
         "EventTypeEnum": "apps.events.models.EVENT_TYPES",
         "LessonTypeEnum": "apps.learning.models.LESSON_TYPES",
         "MentorApplicationStatusEnum": "apps.mentorship.models.APPLICATION_STATUSES",
+        "MentoringSessionStatusEnum": "apps.mentorship.models.SESSION_STATUSES",
         "CourseLevelEnum": "apps.learning.models.LEVELS",
         "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
     },
@@ -255,6 +256,9 @@ CELERY_BEAT_SCHEDULE = {
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
+    "mentorship-reminders": {"task": "mentorship.send_reminders", "schedule": 300.0},
+    "mentorship-expire-requests": {"task": "mentorship.expire_requests", "schedule": 600.0},
+    "mentorship-complete-due": {"task": "mentorship.complete_due", "schedule": 300.0},
     "campaigns-start-due": {"task": "campaigns.start_due", "schedule": 60.0},
     "dashboard-refresh": {"task": "adminconsole.refresh_dashboard", "schedule": 3600.0},
     "jobs-warn-expiring": {"task": "jobs.warn_expiring", "schedule": 3600.0},
@@ -305,6 +309,8 @@ STORAGE_ACCESS_KEY_ID = env.str("STORAGE_ACCESS_KEY_ID", default="")
 STORAGE_SECRET_ACCESS_KEY = env.str("STORAGE_SECRET_ACCESS_KEY", default="")
 STORAGE_QUARANTINE_BUCKET = env.str("STORAGE_QUARANTINE_BUCKET", default="wo-quarantine")
 STORAGE_MEDIA_BUCKET = env.str("STORAGE_MEDIA_BUCKET", default="wo-media")
+# Checked documents (course files). Never public: members are given short lived signed links.
+STORAGE_PRIVATE_BUCKET = env.str("STORAGE_PRIVATE_BUCKET", default="wo-private")
 # Public address of the media bucket: a separate, cookieless domain behind the CDN.
 MEDIA_BASE_URL = env.str("MEDIA_BASE_URL", default="http://localhost:9000/wo-media")
 CLAMD_HOST = env.str("CLAMD_HOST", default="localhost")
@@ -312,6 +318,17 @@ CLAMD_PORT = env.int("CLAMD_PORT", default=3310)
 CLAMD_TIMEOUT = 10
 UPLOAD_ALLOWED_TYPES = ("image/jpeg", "image/png", "image/webp")
 UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+# Documents are checked and scanned but, unlike images, cannot be rebuilt from their pixels, so
+# they are only ever delivered as attachments through a short lived signed link.
+UPLOAD_DOCUMENT_TYPES = {
+    "application/pdf": "pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+}
+UPLOAD_DOCUMENT_MAX_BYTES = 25 * 1024 * 1024
+UPLOAD_DOCUMENT_MAX_UNPACKED_BYTES = 200 * 1024 * 1024  # a zip bomb guard for Office files
+DOCUMENT_LINK_TTL_SECONDS = 300
 UPLOAD_PRESIGN_TTL_SECONDS = 900
 UPLOAD_DAILY_LIMIT = 20
 UPLOAD_PROCESSING_TIMEOUT = timedelta(hours=2)
@@ -396,3 +413,33 @@ MENTORSHIP_SYNONYMS = {
     "finance": ["accounting", "financial modelling", "budgeting"],
     "sales": ["business development", "revenue"],
 }
+# Sessions: how long a request waits, how many a founder can have open, and how late is late.
+MENTORSHIP_REQUEST_TTL_HOURS = 72
+MENTORSHIP_DECIDE_BEFORE_START_HOURS = 2  # an unanswered request lapses this long before it starts
+MENTORSHIP_MAX_OPEN_REQUESTS = 5
+MENTORSHIP_REQUESTS_PER_DAY = 10
+MENTORSHIP_MAX_RESCHEDULES = 3
+MENTORSHIP_LATE_CANCEL_HOURS = 24
+MENTORSHIP_COMPLETE_AFTER_MINUTES = 15  # a confirmed session counts as held this long after it ends
+MENTORSHIP_FEEDBACK_WINDOW_DAYS = 14
+
+# --- Video meetings ----------------------------------------------------------
+# One adapter per provider; a mentor picks one, and MEETING_DEFAULT_PROVIDER covers the rest.
+MEETING_DEFAULT_PROVIDER = env.str("MEETING_DEFAULT_PROVIDER", default="google_meet")
+MEETING_PROVIDERS = {
+    "google_meet": env.str(
+        "MEETING_GOOGLE_MEET_ADAPTER", default="apps.integrations.meetings.fake.FakeMeetingProvider"
+    ),
+    "zoom": env.str(
+        "MEETING_ZOOM_ADAPTER", default="apps.integrations.meetings.fake.FakeMeetingProvider"
+    ),
+}
+# Google Meet links are made as events on one platform calendar, through an OAuth refresh token.
+GOOGLE_MEET_CLIENT_ID = env.str("GOOGLE_MEET_CLIENT_ID", default="")
+GOOGLE_MEET_CLIENT_SECRET = env.str("GOOGLE_MEET_CLIENT_SECRET", default="")
+GOOGLE_MEET_REFRESH_TOKEN = env.str("GOOGLE_MEET_REFRESH_TOKEN", default="")
+GOOGLE_MEET_CALENDAR_ID = env.str("GOOGLE_MEET_CALENDAR_ID", default="primary")
+# Zoom meetings are made with a Server-to-Server OAuth app on the platform account.
+ZOOM_ACCOUNT_ID = env.str("ZOOM_ACCOUNT_ID", default="")
+ZOOM_CLIENT_ID = env.str("ZOOM_CLIENT_ID", default="")
+ZOOM_CLIENT_SECRET = env.str("ZOOM_CLIENT_SECRET", default="")
