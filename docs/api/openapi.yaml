@@ -3567,8 +3567,9 @@ paths:
       operationId: admin_modules_lessons_create
       description: 'A video lesson takes a YouTube link (validated: https, youtube.com,
         youtu.be, a real 11-character video id; the id and normalised address are
-        stored). A reading lesson takes `body`. A resource lesson takes `resource_url`
-        and `resource_name`.'
+        stored). A reading lesson takes `body`. A resource lesson takes a `resource_url`
+        link, or an `upload_id` from a ready `course_file` upload (PDF, DOCX, XLSX
+        or PPTX, stored by us and handed out through short lived links), and a `resource_name`.'
       summary: Add a lesson to the end of a module
       parameters:
       - in: path
@@ -4484,6 +4485,140 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/sessions:
+    get:
+      operationId: admin_sessions_list
+      description: Newest first. Filter by `status`, `mentor_id` and `mentee_id`.
+        Shows both sides' feedback and each person's email, so it is for support and
+        moderation.
+      summary: Mentoring sessions
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: mentee_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: mentor_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: status
+        schema:
+          enum:
+          - requested
+          - confirmed
+          - declined
+          - cancelled
+          - expired
+          - completed
+          - no_show
+          type: string
+          minLength: 1
+        description: |-
+          * `requested` - requested
+          * `confirmed` - confirmed
+          * `declined` - declined
+          * `cancelled` - cancelled
+          * `expired` - expired
+          * `completed` - completed
+          * `no_show` - no_show
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminMentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/sessions/{session_id}:
+    get:
+      operationId: admin_sessions_retrieve
+      summary: One mentoring session
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/sessions/{session_id}/cancel:
+    post:
+      operationId: admin_sessions_cancel_create
+      description: For support cases. Both people are told, with the reason. Audited.
+      summary: Cancel a session
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorReasonRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Already closed
   /api/v1/admin/startups/{startup_id}/feature:
     post:
       operationId: admin_startups_feature_create
@@ -6537,6 +6672,37 @@ paths:
           description: Not an active member, or not enrolled
         '404':
           description: Not found
+  /api/v1/lessons/{lesson_id}/file:
+    get:
+      operationId: lessons_file_retrieve
+      description: For a resource lesson whose file we store. Returns a signed address
+        that lasts a few minutes and saves the file as an attachment; ask again when
+        it lapses. Same access rules as opening the lesson.
+      summary: Download link for a lesson document
+      parameters:
+      - in: path
+        name: lesson_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - optionalBearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonFile'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/lessons/{lesson_id}/progress:
     put:
       operationId: lessons_progress_update
@@ -7580,8 +7746,8 @@ paths:
     get:
       operationId: mentors_availability_retrieve
       description: Start times (UTC) for the next `days` (default 14, at most 30),
-        soonest first, with already booked time and the minimum notice removed. Empty
-        for a paused mentor or one with no sessions left this week.
+        soonest first, with already booked time, the minimum notice and weeks with
+        no sessions left removed. Empty for a paused mentor.
       summary: Times a mentor can be booked
       parameters:
       - in: query
@@ -8804,6 +8970,454 @@ paths:
           description: Not an active member
         '429':
           description: Too many searches
+  /api/v1/sessions:
+    get:
+      operationId: sessions_list
+      description: Sessions where you are the mentor or the founder. `state` picks
+        the list; upcoming and pending are soonest first, the rest newest first.
+      summary: Your mentoring sessions
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: role
+        schema:
+          enum:
+          - mentor
+          - mentee
+          type: string
+          minLength: 1
+        description: |-
+          * `mentor` - mentor
+          * `mentee` - mentee
+      - in: query
+        name: state
+        schema:
+          enum:
+          - upcoming
+          - pending
+          - past
+          - closed
+          - all
+          type: string
+          default: upcoming
+          minLength: 1
+        description: |-
+          `upcoming` confirmed and not yet over, `pending` waiting for an answer, `past` held or missed, `closed` declined, cancelled or lapsed.
+
+          * `upcoming` - upcoming
+          * `pending` - pending
+          * `past` - past
+          * `closed` - closed
+          * `all` - all
+      tags:
+      - sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSessionPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+    post:
+      operationId: sessions_create
+      description: 'Pick one of the mentor''s bookable times. The time is held for
+        you while the mentor decides (they have 72 hours, and the request lapses a
+        couple of hours before it starts). You can have 5 requests waiting and make
+        10 a day, and only one waiting request per mentor. Two people asking for the
+        same time at once is settled by the database: the second gets 409.'
+      summary: Ask a mentor for a session
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRequestRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+        '429':
+          description: Limit
+  /api/v1/sessions/{session_id}:
+    get:
+      operationId: sessions_retrieve
+      description: Only the mentor and the founder can see it. The meeting address
+        appears once the session is confirmed and the meeting is ready.
+      summary: One session
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/accept:
+    post:
+      operationId: sessions_accept_create
+      description: Confirms the session and starts creating the video meeting.
+      summary: Confirm a request (mentor)
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/calendar.ics:
+    get:
+      operationId: sessions_calendar.ics_retrieve
+      description: An iCalendar (.ics) file.
+      summary: Add a session to your calendar
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: iCalendar file
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/cancel:
+    post:
+      operationId: sessions_cancel_create
+      description: Either person can cancel before the start. A confirmed session
+        needs a reason, which the other person sees; cancelling inside 24 hours is
+        marked as late. A mentor answers a waiting request with decline instead.
+      summary: Cancel a session, or withdraw a request
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionOptionalReasonRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/decline:
+    post:
+      operationId: sessions_decline_create
+      description: The reason is shown to the founder.
+      summary: Decline a request (mentor)
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionReasonRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/feedback:
+    put:
+      operationId: sessions_feedback_update
+      description: 'Founders: 1 to 5 stars and an optional comment (shown to the mentor
+        and admins, never publicly), or report that the mentor did not come. Mentors:
+        whether the session was held or the founder missed it. Open for 14 days after
+        the session; sending again replaces your earlier feedback.'
+      summary: Give feedback on a finished session
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionFeedbackRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedbackItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/meeting-link:
+    put:
+      operationId: sessions_meeting_link_update
+      description: Only when the platform could not create a video meeting (`meeting.state`
+        is `failed`).
+      summary: Add your own meeting link (mentor)
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingLinkRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/reschedule:
+    post:
+      operationId: sessions_reschedule_create
+      description: Either person can suggest one of the mentor's bookable times for
+        a confirmed session. The session keeps its time until the other person accepts.
+        A session can be moved 3 times.
+      summary: Suggest a new time
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+    delete:
+      operationId: sessions_reschedule_destroy
+      description: The person who suggested the time takes it back; the other person
+        says no. Either way the session keeps its time.
+      summary: Withdraw your suggestion, or keep the original time
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
+  /api/v1/sessions/{session_id}/reschedule/accept:
+    post:
+      operationId: sessions_reschedule_accept_create
+      description: Only the person who did not suggest it. The time is checked again,
+        and 409 means it was taken meanwhile.
+      summary: Accept the suggested new time
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sessions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentoringSession'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not allowed to do this
+        '404':
+          description: Not found, or not your session
+        '409':
+          description: The session is not in a state that allows this
   /api/v1/startups:
     post:
       operationId: startups_create
@@ -9191,10 +9805,11 @@ paths:
   /api/v1/uploads:
     post:
       operationId: uploads_create
-      description: 'Post the form''s `form_data`, then the file as the last field
-        named `file`, to the form''s `url`. The file goes straight to storage, never
-        through this API. Then call `POST /uploads/{id}/complete`. Allowed: JPEG,
-        PNG or WebP up to 5 MB.'
+      description: Post the form's `form_data`, then the file as the last field named
+        `file`, to the form's `url`. The file goes straight to storage, never through
+        this API. Then call `POST /uploads/{id}/complete`. Images (JPEG, PNG or WebP,
+        up to 5 MB) are open to every member. The `course_file` purpose takes a PDF,
+        DOCX, XLSX or PPTX up to 25 MB and is only for people who manage courses.
       summary: Reserve an upload and get the form to send the file with
       tags:
       - uploads
@@ -9982,6 +10597,10 @@ components:
           type: string
         resource_name:
           type: string
+        file:
+          allOf:
+          - $ref: '#/components/schemas/AdminLessonFile'
+          nullable: true
       required:
       - body
       - duration_seconds
@@ -9993,6 +10612,20 @@ components:
       - type
       - video_id
       - video_url
+    AdminLessonFile:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+          nullable: true
+        content_type:
+          type: string
+      required:
+      - content_type
+      - name
+      - size
     AdminMentor:
       type: object
       properties:
@@ -10043,6 +10676,9 @@ components:
           type: integer
         paused:
           type: boolean
+        meeting_provider:
+          type: string
+          description: Preferred video provider; blank means the platform default.
         rating_average:
           type: number
           format: double
@@ -10067,6 +10703,7 @@ components:
       - id
       - industries
       - languages
+      - meeting_provider
       - name
       - paused
       - photo
@@ -10155,6 +10792,89 @@ components:
       - timezone
       - weekly_hours
       - years_experience
+    AdminMentoringSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MentoringSessionStatusEnum'
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        topic:
+          type: string
+        message:
+          type: string
+        mentor:
+          $ref: '#/components/schemas/SessionParty'
+        mentee:
+          $ref: '#/components/schemas/SessionParty'
+        meeting:
+          $ref: '#/components/schemas/SessionMeeting'
+        proposal:
+          allOf:
+          - $ref: '#/components/schemas/SessionProposal'
+          nullable: true
+        reschedule_count:
+          type: integer
+        reason:
+          type: string
+          description: Why it was declined or cancelled.
+        cancelled_by:
+          type: string
+          format: uuid
+          nullable: true
+        late_cancel:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        responded_at:
+          type: string
+          format: date-time
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        feedback:
+          $ref: '#/components/schemas/SessionFeedbackView'
+        actions:
+          $ref: '#/components/schemas/SessionActions'
+        mentor_email:
+          type: string
+        mentee_email:
+          type: string
+      required:
+      - actions
+      - cancelled_by
+      - confirmed_at
+      - created_at
+      - ends_at
+      - feedback
+      - id
+      - late_cancel
+      - meeting
+      - mentee
+      - mentee_email
+      - mentor
+      - mentor_email
+      - message
+      - proposal
+      - reason
+      - reschedule_count
+      - responded_at
+      - role
+      - starts_at
+      - status
+      - topic
     AdminModule:
       type: object
       properties:
@@ -10556,6 +11276,9 @@ components:
       required:
       - accepted
       - rejected
+    BlankEnum:
+      enum:
+      - ''
     BookableTimes:
       type: object
       properties:
@@ -11822,6 +12545,24 @@ components:
       required:
       - next_cursor
       - results
+    FeedbackItem:
+      type: object
+      properties:
+        stars:
+          type: integer
+          nullable: true
+        comment:
+          type: string
+        outcome:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - comment
+      - outcome
+      - stars
+      - updated_at
     FollowRequest:
       type: object
       description: |-
@@ -12782,6 +13523,10 @@ components:
           type: string
           minLength: 1
           maxLength: 160
+        upload_id:
+          type: string
+          format: uuid
+          description: A ready `course_file` upload, instead of `resource_url`.
       required:
       - title
       - type
@@ -12838,6 +13583,28 @@ components:
       - title
       - type
       - video
+    LessonFile:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Signed address; saves the file as an attachment.
+        expires_in:
+          type: integer
+          description: Seconds the address stays valid.
+        name:
+          type: string
+        size:
+          type: integer
+          nullable: true
+        content_type:
+          type: string
+      required:
+      - content_type
+      - expires_in
+      - name
+      - size
+      - url
     LessonModule:
       type: object
       properties:
@@ -13043,6 +13810,27 @@ components:
       - id
       - roles
       - status
+    MeetingLinkRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        url:
+          type: string
+          minLength: 1
+          description: An https link to your own meeting.
+          maxLength: 300
+      required:
+      - url
+    MeetingProviderEnum:
+      enum:
+      - google_meet
+      - zoom
+      type: string
+      description: "* `` - \n* `google_meet` - google_meet\n* `zoom` - zoom"
     Member:
       type: object
       properties:
@@ -13140,6 +13928,9 @@ components:
           type: integer
         paused:
           type: boolean
+        meeting_provider:
+          type: string
+          description: Preferred video provider; blank means the platform default.
         rating_average:
           type: number
           format: double
@@ -13156,6 +13947,7 @@ components:
       - id
       - industries
       - languages
+      - meeting_provider
       - name
       - paused
       - photo
@@ -13334,6 +14126,12 @@ components:
           $ref: '#/components/schemas/SessionMinutesEnum'
         paused:
           type: boolean
+        meeting_provider:
+          description: "Video provider for your sessions; blank uses the platform\
+            \ default.\n\n* `` - \n* `google_meet` - google_meet\n* `zoom` - zoom"
+          oneOf:
+          - $ref: '#/components/schemas/MeetingProviderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
     MentorReasonRequest:
       type: object
       description: |-
@@ -13398,6 +14196,114 @@ components:
       required:
       - name
       - slug
+    MentoringSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/MentoringSessionStatusEnum'
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        topic:
+          type: string
+        message:
+          type: string
+        mentor:
+          $ref: '#/components/schemas/SessionParty'
+        mentee:
+          $ref: '#/components/schemas/SessionParty'
+        meeting:
+          $ref: '#/components/schemas/SessionMeeting'
+        proposal:
+          allOf:
+          - $ref: '#/components/schemas/SessionProposal'
+          nullable: true
+        reschedule_count:
+          type: integer
+        reason:
+          type: string
+          description: Why it was declined or cancelled.
+        cancelled_by:
+          type: string
+          format: uuid
+          nullable: true
+        late_cancel:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        responded_at:
+          type: string
+          format: date-time
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        feedback:
+          $ref: '#/components/schemas/SessionFeedbackView'
+        actions:
+          $ref: '#/components/schemas/SessionActions'
+      required:
+      - actions
+      - cancelled_by
+      - confirmed_at
+      - created_at
+      - ends_at
+      - feedback
+      - id
+      - late_cancel
+      - meeting
+      - mentee
+      - mentor
+      - message
+      - proposal
+      - reason
+      - reschedule_count
+      - responded_at
+      - role
+      - starts_at
+      - status
+      - topic
+    MentoringSessionPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentoringSession'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - results
+    MentoringSessionStatusEnum:
+      enum:
+      - requested
+      - confirmed
+      - declined
+      - cancelled
+      - expired
+      - completed
+      - no_show
+      type: string
+      description: |-
+        * `requested` - requested
+        * `confirmed` - confirmed
+        * `declined` - declined
+        * `cancelled` - cancelled
+        * `expired` - expired
+        * `completed` - completed
+        * `no_show` - no_show
     MentoringSummary:
       type: object
       properties:
@@ -13444,11 +14350,23 @@ components:
           type: integer
         listed_mentors:
           type: integer
+        requests_waiting:
+          type: integer
+          description: Session requests waiting for a mentor.
+        sessions_upcoming:
+          type: integer
+          description: Confirmed sessions still ahead.
+        sessions_held_30d:
+          type: integer
+          description: Sessions held in the last 30 days.
       required:
       - active_mentors
       - available
       - listed_mentors
       - pending_applications
+      - requests_waiting
+      - sessions_held_30d
+      - sessions_upcoming
     Message:
       type: object
       properties:
@@ -13793,6 +14711,16 @@ components:
           maxItems: 200
       required:
       - ids
+    OutcomeEnum:
+      enum:
+      - held
+      - mentor_no_show
+      - mentee_no_show
+      type: string
+      description: |-
+        * `held` - held
+        * `mentor_no_show` - mentor_no_show
+        * `mentee_no_show` - mentee_no_show
     OutlineLesson:
       type: object
       properties:
@@ -14170,6 +15098,10 @@ components:
           type: string
           minLength: 1
           maxLength: 160
+        upload_id:
+          type: string
+          format: uuid
+          description: A ready `course_file` upload, instead of `resource_url`.
     PatchedModuleWriteRequest:
       type: object
       description: |-
@@ -15318,6 +16250,9 @@ components:
           type: integer
         paused:
           type: boolean
+        meeting_provider:
+          type: string
+          description: Preferred video provider; blank means the platform default.
         rating_average:
           type: number
           format: double
@@ -15347,6 +16282,7 @@ components:
       - id
       - industries
       - languages
+      - meeting_provider
       - name
       - paused
       - photo
@@ -15709,7 +16645,7 @@ components:
           format: uuid
           nullable: true
         state:
-          $ref: '#/components/schemas/StateEnum'
+          $ref: '#/components/schemas/ReportTargetStateEnum'
         excerpt:
           type: string
         created_at:
@@ -15728,6 +16664,34 @@ components:
       - post_id
       - state
       - type
+    ReportTargetStateEnum:
+      enum:
+      - visible
+      - hidden
+      - removed
+      type: string
+      description: |-
+        * `visible` - visible
+        * `hidden` - hidden
+        * `removed` - removed
+    RescheduleRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+          description: One of the mentor's bookable start times.
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - starts_at
     ResetPasswordRequest:
       type: object
       description: |-
@@ -15750,13 +16714,37 @@ components:
     Resource:
       type: object
       properties:
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ResourceKindEnum'
+          description: |-
+            `link` opens `url`; `file` is a stored document, fetched with `GET /lessons/{id}/file`.
+
+            * `link` - link
+            * `file` - file
         url:
           type: string
         name:
           type: string
+        size:
+          type: integer
+          nullable: true
+        content_type:
+          type: string
       required:
+      - content_type
+      - kind
       - name
+      - size
       - url
+    ResourceKindEnum:
+      enum:
+      - link
+      - file
+      type: string
+      description: |-
+        * `link` - link
+        * `file` - file
     ResultEnum:
       enum:
       - created
@@ -15788,6 +16776,16 @@ components:
           type: string
           default: ''
           maxLength: 500
+    RoleEnum:
+      enum:
+      - mentor
+      - mentee
+      - admin
+      type: string
+      description: |-
+        * `mentor` - mentor
+        * `mentee` - mentee
+        * `admin` - admin
     RolesEnum:
       enum:
       - member
@@ -15948,7 +16946,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TagsEnum'
-          maxItems: 11
+          maxItems: 12
     SegmentPreviewRequest:
       type: object
       description: |-
@@ -16027,6 +17025,109 @@ components:
       - id
       - last_used_at
       - user_agent
+    SessionActions:
+      type: object
+      properties:
+        accept:
+          type: boolean
+        decline:
+          type: boolean
+        cancel:
+          type: boolean
+        reschedule:
+          type: boolean
+        answer_reschedule:
+          type: boolean
+        add_link:
+          type: boolean
+      required:
+      - accept
+      - add_link
+      - answer_reschedule
+      - cancel
+      - decline
+      - reschedule
+    SessionFeedbackRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        stars:
+          type: integer
+          maximum: 5
+          minimum: 1
+          description: 'Founders: 1 to 5.'
+        comment:
+          type: string
+          default: ''
+          maxLength: 1000
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          default: held
+          description: |-
+            Founders: `held` or `mentor_no_show`. Mentors: `held` or `mentee_no_show`.
+
+            * `held` - held
+            * `mentor_no_show` - mentor_no_show
+            * `mentee_no_show` - mentee_no_show
+    SessionFeedbackView:
+      type: object
+      properties:
+        mine:
+          allOf:
+          - $ref: '#/components/schemas/FeedbackItem'
+          nullable: true
+        from_mentee:
+          allOf:
+          - $ref: '#/components/schemas/FeedbackItem'
+          nullable: true
+          description: Shown to the mentor and admins only.
+        from_mentor:
+          allOf:
+          - $ref: '#/components/schemas/FeedbackItem'
+          nullable: true
+          description: Shown to admins only.
+        can_give:
+          type: boolean
+        closes_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - can_give
+      - closes_at
+      - from_mentee
+      - from_mentor
+      - mine
+    SessionMeeting:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: google_meet, zoom, manual or blank.
+        state:
+          oneOf:
+          - $ref: '#/components/schemas/SessionMeetingStateEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        url:
+          type: string
+          description: Blank until the meeting is ready.
+      required:
+      - provider
+      - state
+      - url
+    SessionMeetingStateEnum:
+      enum:
+      - pending
+      - ready
+      - failed
+      type: string
+      description: "* `` - \n* `pending` - pending\n* `ready` - ready\n* `failed`\
+        \ - failed"
     SessionMinutesEnum:
       enum:
       - 30
@@ -16037,6 +17138,109 @@ components:
         * `30` - 30
         * `45` - 45
         * `60` - 60
+    SessionOptionalReasonRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          default: ''
+          maxLength: 1000
+    SessionParty:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      required:
+      - headline
+      - id
+      - name
+      - photo
+      - slug
+    SessionProposal:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        proposed_by:
+          type: string
+          format: uuid
+          nullable: true
+        note:
+          type: string
+        by_me:
+          type: boolean
+      required:
+      - by_me
+      - ends_at
+      - note
+      - proposed_by
+      - starts_at
+    SessionReasonRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+    SessionRequestRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        mentor_id:
+          type: string
+          format: uuid
+          description: The member id of the mentor.
+        starts_at:
+          type: string
+          format: date-time
+          description: One of the start times from `GET /mentors/{id}/availability`.
+        topic:
+          type: string
+          minLength: 1
+          description: What you want help with.
+          maxLength: 120
+        message:
+          type: string
+          minLength: 1
+          description: 20 to 1000 characters introducing yourself and your goal.
+          maxLength: 1000
+      required:
+      - mentor_id
+      - message
+      - starts_at
+      - topic
     SignupProfileRequest:
       type: object
       description: |-
@@ -16426,16 +17630,6 @@ components:
       - logo
       - name
       - slug
-    StateEnum:
-      enum:
-      - visible
-      - hidden
-      - removed
-      type: string
-      description: |-
-        * `visible` - visible
-        * `hidden` - hidden
-        * `removed` - removed
     Status:
       type: object
       properties:
@@ -16456,6 +17650,7 @@ components:
       - course_completed
       - mentor_applicant
       - mentor_approved
+      - mentee
       type: string
       description: |-
         * `profile_complete` - profile_complete
@@ -16469,6 +17664,7 @@ components:
         * `course_completed` - course_completed
         * `mentor_applicant` - mentor_applicant
         * `mentor_approved` - mentor_approved
+        * `mentee` - mentee
     TeamAddRequest:
       type: object
       description: |-
@@ -16701,16 +17897,24 @@ components:
             type: string
           nullable: true
           readOnly: true
+        filename:
+          type: string
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
         expires_at:
           type: string
           format: date-time
           readOnly: true
       required:
       - expires_at
+      - filename
       - height
       - id
       - purpose
       - reason
+      - size
       - status
       - urls
       - width
@@ -16753,6 +17957,7 @@ components:
       - editorial_cover
       - campaign_image
       - course_cover
+      - course_file
       type: string
       description: |-
         * `profile_photo` - Profile Photo
@@ -16761,6 +17966,7 @@ components:
         * `editorial_cover` - Editorial Cover
         * `campaign_image` - Campaign Image
         * `course_cover` - Course Cover
+        * `course_file` - Course File
     UploadRequestPurposeEnum:
       enum:
       - profile_photo
@@ -16769,6 +17975,7 @@ components:
       - editorial_cover
       - campaign_image
       - course_cover
+      - course_file
       type: string
       description: |-
         * `profile_photo` - profile_photo
@@ -16777,6 +17984,7 @@ components:
         * `editorial_cover` - editorial_cover
         * `campaign_image` - campaign_image
         * `course_cover` - course_cover
+        * `course_file` - course_file
     UploadRequestRequest:
       type: object
       description: |-
@@ -16790,7 +17998,7 @@ components:
         content_type:
           type: string
           minLength: 1
-          maxLength: 40
+          maxLength: 100
         size:
           type: integer
           minimum: 1

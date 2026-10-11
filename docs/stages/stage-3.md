@@ -36,11 +36,59 @@ Design in ADR 0030. Endpoints: `GET` and `PUT /me/availability`, `GET /mentors/{
 `GET /mentors/recommended`, `GET` and `PUT /me/mentorship-needs`, `GET /me/mentoring`, and the
 `available` filter on `GET /mentors`. Mentors also appear in global search (`types=mentors`).
 
-## Still to do in Stage 3
+## Slice 4: mentoring sessions (done)
 
-1. Mentorship, remaining: requests, booking with exclusion constraints, Google Meet and Zoom adapters,
-   reminders, rescheduling and cancelling, feedback.
-2. Downloadable course files stored by us (needs document uploads).
-3. Decision before paid courses launch (Stage 4): whether embedded YouTube plus the application
-   lock is enough for paid video.
-4. The CDN purger (provider decision still pending).
+Design in ADR 0031 (sessions) and ADR 0032 (video meetings).
+
+| Endpoint | What it does |
+|---|---|
+| `POST /sessions` | Ask a mentor for one of their bookable times (`mentor_id`, `starts_at`, `topic`, `message`). The time is held while the mentor decides. 5 waiting requests, 10 a day, one waiting request per mentor. |
+| `GET /sessions` | Your sessions as mentor or founder. `state`: `upcoming`, `pending`, `past`, `closed`, `all`; `role`; keyset paging. |
+| `GET /sessions/{id}` | One session: parties, meeting, any suggested time, feedback and what you can do (`actions`). 404 for anyone else. |
+| `POST /sessions/{id}/accept`, `/decline` | The mentor answers. Declining needs a reason. |
+| `POST /sessions/{id}/cancel` | Either person cancels (a founder can withdraw a waiting request). A confirmed session needs a reason; inside 24 hours it is marked late. |
+| `POST /sessions/{id}/reschedule` | Suggest another bookable time. `DELETE` withdraws it or keeps the original time. `POST .../reschedule/accept` moves the session. |
+| `PUT /sessions/{id}/meeting-link` | The mentor adds their own https link when the platform could not make a meeting. |
+| `PUT /sessions/{id}/feedback` | Founder: stars, comment or "mentor did not come". Mentor: held or "founder did not come". Open 14 days. |
+| `GET /sessions/{id}/calendar.ics` | The session as a calendar file. |
+| `GET /admin/sessions`, `/admin/sessions/{id}`, `POST .../cancel` | Support: list (status, mentor, founder), one session with both sides' feedback, and cancel with a reason (audited). Permission `sessions.manage`. |
+
+Also: `meeting_provider` on `PUT /me/mentor-profile` (`google_meet`, `zoom` or blank for the
+default); `GET /mentors/{id}/availability` now omits weeks with no places left. Timed jobs:
+`mentorship.expire_requests`, `mentorship.send_reminders`, `mentorship.complete_due`. New settings:
+`MEETING_DEFAULT_PROVIDER`, `MEETING_GOOGLE_MEET_ADAPTER`, `MEETING_ZOOM_ADAPTER`,
+`GOOGLE_MEET_*`, `ZOOM_*` and the `MENTORSHIP_*` session limits (see `.env.example`).
+
+## Slice 5: course files (done)
+
+Design in ADR 0033.
+
+| Endpoint | What it does |
+|---|---|
+| `POST /uploads` with `purpose: course_file` | Reserve a document upload (PDF, DOCX, XLSX or PPTX up to 25 MB). Only people who manage courses. Then upload and complete as for images; the result is `ready` with a `size` and no public address. |
+| `POST /admin/modules/{id}/lessons`, `PATCH /admin/lessons/{id}` with `upload_id` | Put the document in a resource lesson instead of a `resource_url`. Admin lessons show `file` (name, size, type). |
+| `GET /lessons/{id}/file` | A 5 minute signed link that saves the file as an attachment. Same access rule as opening the lesson. |
+
+`resource` in lesson detail now says `kind` (`link` or `file`), with `size` and `content_type`.
+New setting: `STORAGE_PRIVATE_BUCKET` (a private bucket; the media bucket stays public).
+
+## Decisions recorded
+
+- **Paid video** stays on unlisted YouTube behind the application lock (ADR 0034), with the
+  conditions that would reopen it.
+
+## Stage 3 closing notes
+
+Stage 3 is complete except for one item that is a decision, not work:
+
+- **The CDN purger.** The `cdn` adapter still has only logging and fake purgers because no CDN
+  provider has been chosen (Cloudflare, CloudFront and Fastly are the usual candidates). Choose
+  one before hardening or any deploy; the work is one adapter class plus its credentials.
+
+Carried forward:
+
+- A mentor's own calendar busy time (`scheduling.external_busy`) needs a per mentor sign-in and
+  is not built; sessions are offered against the weekly schedule and booked sessions only.
+- Suspending or removing a founder does not cancel their sessions; an admin does that by hand.
+- Stage 4 adds purchasing, which creates enrolments with source `purchase`; paid courses can be
+  watched and downloaded only through enrolment until then.
