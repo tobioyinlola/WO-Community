@@ -10,6 +10,7 @@ from apps.adminconsole import (
     feed_views,
     invitation_views,
     job_views,
+    mentor_views,
     reference_views,
     views,
 )
@@ -353,5 +354,31 @@ urlpatterns = [
         "admin/members/<uuid:user_id>/remove",
         views.RemoveView.as_view(),
         name="admin-member-remove",
+    ),
+    path(
+        "admin/mentor-applications",
+        mentor_views.AdminMentorApplicationsView.as_view(),
+        name="admin-mentor-applications",
+    ),
+    path(
+        "admin/mentor-applications/<uuid:application_id>",
+        mentor_views.AdminMentorApplicationView.as_view(),
+        name="admin-mentor-application",
+    ),
+    path(
+        "admin/mentor-applications/<uuid:application_id>/decision",
+        mentor_views.AdminMentorDecisionView.as_view(),
+        name="admin-mentor-decision",
+    ),
+    path("admin/mentors", mentor_views.AdminMentorsView.as_view(), name="admin-mentors"),
+    path(
+        "admin/mentors/<uuid:user_id>/revoke",
+        mentor_views.AdminMentorRevokeView.as_view(),
+        name="admin-mentor-revoke",
+    ),
+    path(
+        "admin/mentors/<uuid:user_id>/restore",
+        mentor_views.AdminMentorRestoreView.as_view(),
+        name="admin-mentor-restore",
     ),
 ]

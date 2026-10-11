@@ -100,6 +100,13 @@ class LearningSnapshotSerializer(serializers.Serializer):
     lessons_completed_last_30_days = serializers.IntegerField()
 
 
+class MentorshipSnapshotSerializer(serializers.Serializer):
+    available = serializers.BooleanField()
+    pending_applications = serializers.IntegerField()
+    active_mentors = serializers.IntegerField()
+    listed_mentors = serializers.IntegerField()
+
+
 class DashboardSerializer(serializers.Serializer):
     refreshed_at = serializers.DateTimeField(allow_null=True)
     pending = QueueCountsSerializer()
@@ -107,7 +114,7 @@ class DashboardSerializer(serializers.Serializer):
     activity = ActivitySerializer()
     email = EmailSnapshotSerializer()
     learning = LearningSnapshotSerializer()
-    mentorship = AvailabilitySerializer()
+    mentorship = MentorshipSnapshotSerializer()
     revenue = AvailabilitySerializer()
 
 
