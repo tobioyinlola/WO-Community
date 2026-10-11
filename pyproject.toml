@@ -22,6 +22,9 @@ dependencies = [
   "nh3==0.3.0",
   "Pillow==12.3.0",
   "httpx==0.28.1",
+  # Not imported directly: pinned because botocore, sentry-sdk and requests pull it in and
+  # versions before 2.8.0 have CVE-2026-97689 (unbounded chunk-size line in streaming reads).
+  "urllib3==2.8.0",
   "pyotp==2.9.0",
   "pyjwt[crypto]==2.15.0",
   "python-dateutil==2.9.0.post0",
