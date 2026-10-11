@@ -183,6 +183,7 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "ChangeSetStatusEnum": "apps.toolkit.partner.models.CHANGE_STATUSES",
         "PrototypeKindEnum": "apps.toolkit.prototypes.spec.KINDS",
         "ShareSubjectTypeEnum": "apps.toolkit.sharing.models.SUBJECT_TYPES",
         "DeckStatusEnum": "apps.toolkit.decks.models.DECK_STATUSES",
@@ -297,6 +298,10 @@ CELERY_BEAT_SCHEDULE = {
     "toolkit-reap-jobs": {"task": "toolkit.reap_stuck_jobs", "schedule": 600.0},
     "toolkit-erase-ventures": {"task": "toolkit.erase_deleted_ventures", "schedule": 86400.0},
     "toolkit-purge-exports": {"task": "toolkit.purge_exports", "schedule": 3600.0},
+    "toolkit-weekly-nudges": {
+        "task": "toolkit.weekly_nudges",
+        "schedule": crontab(day_of_week="mon", hour=7, minute=30),
+    },
     "accounts-purge-rejected": {"task": "accounts.purge_rejected", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},

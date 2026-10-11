@@ -9,5 +9,6 @@ urlpatterns = [
     path("", include("apps.toolkit.forecasts.urls")),
     path("", include("apps.toolkit.decks.urls")),
     path("", include("apps.toolkit.prototypes.urls")),
+    path("", include("apps.toolkit.partner.urls")),
     path("", include("apps.toolkit.sharing.urls")),
 ]
