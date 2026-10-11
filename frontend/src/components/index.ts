@@ -13,9 +13,11 @@ export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from ".
 export {
   Card,
   CardLink,
+  CardTo,
   CardText,
   CardTitle,
   type CardLinkProps,
+  type CardToProps,
   type CardProps,
   type CardVariant,
 } from "./Card";
@@ -29,7 +31,8 @@ export {
   type SelectProps,
   type TextareaProps,
 } from "./Input";
-export { MemberCard, type MemberCardProps, type MemberRole } from "./MemberCard";
+export { LOGO_SOURCES, Logo } from "./Logo";
+export { MemberCard,type MemberCardProps, type MemberRole } from "./MemberCard";
 export { Modal, type ModalProps } from "./Modal";
 export { StatTile, type StatTileProps } from "./StatTile";
 export { Tabs, type TabItem, type TabsProps } from "./Tabs";
