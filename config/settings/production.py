@@ -65,3 +65,9 @@ if any(TOOLKIT_FEATURES.values()):  # noqa: F405
         raise RuntimeError("RESEARCH_PROVIDER must not be the fake provider in production.")
     if RESEARCH_PROVIDER.endswith("WebResearchProvider") and not RESEARCH_ALLOWED_DOMAINS:  # noqa: F405
         raise RuntimeError("RESEARCH_ALLOWED_DOMAINS must list the sites research may read.")
+
+# Public pages are cached by the CDN; a change must be able to purge them.
+if CDN_PURGER.endswith("CloudflarePurger"):  # noqa: F405
+    require("CLOUDFLARE_API_TOKEN")
+    require("CLOUDFLARE_ZONE_ID")
+    require("CDN_ORIGIN_URL")

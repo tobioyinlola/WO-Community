@@ -333,6 +333,10 @@ EMAIL_REPLY_TO = env.str("EMAIL_REPLY_TO", default="")
 EMAIL_WEBHOOK_RETENTION_DAYS = 30
 
 CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
+# Cloudflare: a token scoped to Cache Purge on one zone, and the public host behind it.
+CLOUDFLARE_API_TOKEN = env.str("CLOUDFLARE_API_TOKEN", default="")
+CLOUDFLARE_ZONE_ID = env.str("CLOUDFLARE_ZONE_ID", default="")
+CDN_ORIGIN_URL = env.str("CDN_ORIGIN_URL", default="")
 STORAGE_ADAPTER = env.str("STORAGE_ADAPTER", default="apps.integrations.storage.fake.FakeStorage")
 MALWARE_SCANNER = env.str("MALWARE_SCANNER", default="apps.integrations.malware.fake.FakeScanner")
 
