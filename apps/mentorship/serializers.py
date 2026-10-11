@@ -105,6 +105,7 @@ class MentorSerializer(serializers.Serializer):
     languages = MentorLanguageSerializer(many=True)
     timezone = serializers.CharField()
     capacity_per_week = serializers.IntegerField()
+    session_minutes = serializers.IntegerField()
     paused = serializers.BooleanField()
     rating_average = serializers.FloatField(allow_null=True)
     rating_count = serializers.IntegerField()
@@ -122,6 +123,9 @@ class MentorQuerySerializer(serializers.Serializer):
     stage = serializers.SlugField(max_length=80, required=False, allow_blank=True)
     country = serializers.CharField(max_length=2, required=False, allow_blank=True)
     language = serializers.ChoiceField(choices=LANGUAGE_CODES, required=False)
+    available = serializers.BooleanField(
+        required=False, help_text="Only mentors who have published availability."
+    )
     cursor = serializers.CharField(required=False, allow_blank=True, default="")
     limit = serializers.IntegerField(min_value=1, max_value=50, default=20)
 
@@ -145,6 +149,7 @@ class MentorProfileUpdateSerializer(StrictSerializer):
     )
     timezone = serializers.CharField(max_length=64, required=False)
     capacity_per_week = serializers.IntegerField(min_value=1, max_value=20, required=False)
+    session_minutes = serializers.ChoiceField(choices=[30, 45, 60], required=False)
     paused = serializers.BooleanField(required=False)
 
 
@@ -179,4 +184,70 @@ class MentoringSummarySerializer(serializers.Serializer):
     can_apply_after = serializers.DateTimeField(allow_null=True)
     prompt_to_apply = serializers.BooleanField(
         help_text="Said they want to mentor at registration and have not applied yet."
+    )
+
+
+class WeeklyWindowSerializer(StrictSerializer):
+    weekday = serializers.IntegerField(min_value=0, max_value=6, help_text="0 is Monday.")
+    start = serializers.CharField(max_length=5, help_text="HH:MM in the mentor time zone.")
+    end = serializers.CharField(max_length=5, help_text="HH:MM, up to 24:00.")
+
+
+class OneOffWindowSerializer(StrictSerializer):
+    starts_at = serializers.DateTimeField()
+    ends_at = serializers.DateTimeField()
+
+
+class MentorScheduleSerializer(serializers.Serializer):
+    timezone = serializers.CharField()
+    session_minutes = serializers.IntegerField()
+    weekly = WeeklyWindowSerializer(many=True)
+    one_off = OneOffWindowSerializer(many=True)
+
+
+class MentorScheduleUpdateSerializer(StrictSerializer):
+    timezone = serializers.CharField(max_length=64, required=False)
+    weekly = WeeklyWindowSerializer(many=True, required=False)
+    one_off = OneOffWindowSerializer(many=True, required=False)
+
+
+class BookableTimesSerializer(serializers.Serializer):
+    timezone = serializers.CharField()
+    session_minutes = serializers.IntegerField()
+    times = serializers.ListField(child=serializers.DateTimeField())
+    sessions_left_this_week = serializers.IntegerField()
+
+
+class BookableQuerySerializer(serializers.Serializer):
+    days = serializers.IntegerField(min_value=1, max_value=30, default=14)
+
+
+class ReasonItemSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    score = serializers.IntegerField(help_text="0 to 100 for this signal.")
+    text = serializers.CharField()
+
+
+class RecommendedMentorSerializer(MentorSerializer):
+    score = serializers.IntegerField(help_text="0 to 100.")
+    reasons = ReasonItemSerializer(many=True)
+    components = serializers.DictField(child=serializers.FloatField())
+
+
+class RecommendationQuerySerializer(serializers.Serializer):
+    needs = serializers.CharField(
+        required=False, allow_blank=True, max_length=300, help_text="Comma list of up to 5 needs."
+    )
+    limit = serializers.IntegerField(min_value=1, max_value=20, default=10)
+
+
+class NeedsSerializer(serializers.Serializer):
+    needs = serializers.ListField(child=serializers.CharField(max_length=50))
+    languages = serializers.ListField(child=serializers.CharField())
+
+
+class NeedsUpdateSerializer(StrictSerializer):
+    needs = serializers.ListField(child=serializers.CharField(max_length=50), max_length=5)
+    languages = serializers.ListField(
+        child=serializers.ChoiceField(choices=LANGUAGE_CODES), max_length=5, required=False
     )

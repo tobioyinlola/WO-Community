@@ -32,6 +32,7 @@ def filter_mentors(
     stage: str = "",
     country: str = "",
     language: str = "",
+    available: bool = False,
 ) -> QuerySet[MentorProfile]:
     if expertise:
         queryset = queryset.filter(expertise__contains=[" ".join(expertise.lower().split())])
@@ -43,6 +44,12 @@ def filter_mentors(
         queryset = queryset.filter(languages__contains=[language])
     if country:
         queryset = queryset.filter(user_id__in=profiles.ids_by_country([country]))
+    if available:
+        from apps.mentorship import scheduling
+
+        queryset = queryset.filter(
+            user_id__in=scheduling.has_availability(queryset.values_list("user_id", flat=True))
+        )
     if q:
         needle = " ".join(q.lower().split())
         queryset = queryset.filter(
@@ -81,6 +88,7 @@ def views(viewer: Any, rows: list[MentorProfile]) -> list[dict[str, Any]]:
                 "languages": [{"code": c, "name": LANGUAGES.get(c, c)} for c in row.languages],
                 "timezone": row.timezone,
                 "capacity_per_week": row.capacity_per_week,
+                "session_minutes": row.session_minutes,
                 "paused": row.paused,
                 "rating_average": (
                     round(row.rating_total / row.rating_count, 2) if row.rating_count else None

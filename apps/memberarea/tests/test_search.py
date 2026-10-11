@@ -67,7 +67,12 @@ def test_matching_ignores_case(searcher, people):
 
 
 def test_unrelated_words_find_nothing(searcher, people):
-    assert find(searcher, "zzqx").json() == {"members": [], "startups": [], "jobs": [], "mentors": []}
+    assert find(searcher, "zzqx").json() == {
+        "members": [],
+        "startups": [],
+        "jobs": [],
+        "mentors": [],
+    }
 
 
 def test_a_member_can_find_themselves(searcher):

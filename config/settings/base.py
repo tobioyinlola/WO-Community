@@ -372,3 +372,27 @@ API_BASE_URL = env.str("API_BASE_URL", default="http://localhost:8000")
 
 # Serve GET /api/v1/schema/. Off unless an environment turns it on.
 SERVE_API_SCHEMA = env.bool("SERVE_API_SCHEMA", default=False)
+
+# Mentorship: how far ahead and how soon sessions can be booked, and how matches are scored.
+MENTORSHIP_MIN_NOTICE_HOURS = env.int("MENTORSHIP_MIN_NOTICE_HOURS", default=12)
+MENTORSHIP_HORIZON_DAYS = 60
+MENTORSHIP_RECOMMENDATION_TTL_SECONDS = 15 * 60
+# Weights are relative; a signal with no data for a founder drops out and the rest are rescaled.
+MENTORSHIP_MATCH_WEIGHTS = {
+    "expertise": 0.35,
+    "fit": 0.20,
+    "availability": 0.15,
+    "language": 0.10,
+    "capacity": 0.10,
+    "quality": 0.10,
+}
+# Words that mean the same thing when a founder describes a need and a mentor describes expertise.
+MENTORSHIP_SYNONYMS = {
+    "fundraising": ["investment", "raising capital", "venture capital", "investors"],
+    "marketing": ["growth", "branding", "go-to-market"],
+    "hiring": ["recruiting", "talent", "people"],
+    "product": ["product management", "product design", "ux"],
+    "legal": ["contracts", "compliance", "regulation"],
+    "finance": ["accounting", "financial modelling", "budgeting"],
+    "sales": ["business development", "revenue"],
+}
