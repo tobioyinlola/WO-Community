@@ -40,7 +40,6 @@ Status: accepted (Stage 2)
 
 ## Consequences
 
-Members cannot yet report an editorial comment; moderators remove them directly. Notifying members
-when something is published, a news digest and a "following" view of news are not built.
-Editorial items are not in member search. The public news pages are separate from the directory's
-sitemap, as with jobs, for the same layering reason.
+Members can report an editorial comment, there is a "following" view of news, notices when a
+followed startup is in the news and an opt-in weekly digest, news is in member search, and the public
+news pages are in the combined sitemap (ADR 0037).

@@ -9,7 +9,7 @@ from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.core import etag, policies
-from apps.feed import follows, moderation, selectors, services
+from apps.feed import follows, moderation, selectors, services, suggestions
 from apps.feed.serializers import (
     CommentCreateSerializer,
     CommentListSerializer,
@@ -29,6 +29,8 @@ from apps.feed.serializers import (
     ReactionSerializer,
     ReportCreateSerializer,
     ReportReceivedSerializer,
+    SuggestionQuerySerializer,
+    SuggestionSerializer,
 )
 
 IF_MATCH = OpenApiParameter("If-Match", str, OpenApiParameter.HEADER, required=True)
@@ -339,6 +341,27 @@ class MyFollowingView(APIView):
             request.user, kind=data["type"], cursor=data["cursor"], limit=data["limit"]
         )
         response = Response(FollowingListSerializer(page).data)
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+class FollowSuggestionsView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="People you might want to follow",
+        description="Scored from what you share (sector, stage, country), who the people you "
+        "follow already follow, and recent activity; each suggestion carries its `reasons`. "
+        "Never someone you already follow, and only people whose profile basics you can see.",
+        parameters=[SuggestionQuerySerializer],
+        responses={200: SuggestionSerializer(many=True), **ERRORS},
+        tags=["feed"],
+    )
+    def get(self, request: Request) -> Response:
+        params = SuggestionQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        results = suggestions.suggest(request.user, limit=params.validated_data["limit"])
+        response = Response(SuggestionSerializer(results, many=True).data)
         response["Cache-Control"] = "private, no-store"
         return response
 

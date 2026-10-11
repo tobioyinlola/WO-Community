@@ -2,7 +2,7 @@ from uuid import UUID
 
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
-from rest_framework import exceptions, status
+from rest_framework import exceptions, serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -24,6 +24,8 @@ from apps.events.serializers import (
     EventUpdateSerializer,
     SlotsSerializer,
 )
+from apps.integrations.email import EmailTemporarilyUnavailable
+from apps.notifications import emails
 
 MANAGE = policies.admin_permission("events.manage")
 # The attendee list holds names and email addresses, so reading it needs a fresh MFA check.
@@ -243,6 +245,50 @@ class AttendeesExportView(APIView):
         response["Content-Disposition"] = f'attachment; filename="{event.slug}-attendees.csv"'
         response["Cache-Control"] = "private, no-store"
         return response
+
+
+class ServiceUnavailable(exceptions.APIException):
+    status_code = 503
+    default_code = "service_unavailable"
+    default_detail = "The email provider is busy. Try again in a minute."
+
+
+class SendResultSerializer(serializers.Serializer):
+    sent_to_organiser = serializers.BooleanField(
+        help_text="False when the event has no organiser email and it went to you."
+    )
+
+
+class AttendeesSendView(APIView):
+    policy = ATTENDEES
+
+    @extend_schema(
+        summary="Email the attendee list to the organiser",
+        description="Sends the list as CSV text to the event's `organiser_email`, or to your own "
+        "address when none is set. The address cannot be chosen here, so the list only goes "
+        "where the event says. Needs a recent MFA check and is logged.",
+        request=None,
+        responses={202: SendResultSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request, event_id: UUID) -> Response:
+        event = Event.objects.exclude(status=Event.Status.REMOVED).filter(pk=event_id).first()
+        if event is None:
+            raise exceptions.NotFound()
+        actor = _actor(request)
+        to = event.organiser_email or actor.email
+        audit.record(
+            actor=actor,
+            action="events.attendees_sent",
+            target_type="event",
+            target_id=event_id,
+            ip=_ip(request),
+        )
+        try:
+            emails.send_attendee_list(to, event.title, selectors.attendees_csv(actor, event_id))
+        except EmailTemporarilyUnavailable as exc:
+            raise ServiceUnavailable() from exc
+        return Response({"sent_to_organiser": bool(event.organiser_email)}, status=202)
 
 
 class CheckInView(APIView):

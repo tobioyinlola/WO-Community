@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import structlog
+from celery.schedules import crontab
 from kombu import Exchange, Queue
 
 from apps.core.logging import shared_processors
@@ -256,6 +257,10 @@ CELERY_BEAT_SCHEDULE = {
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
+    "news-digest": {
+        "task": "memberarea.send_news_digest",
+        "schedule": crontab(day_of_week="mon", hour=8, minute=0),
+    },
     "mentorship-reminders": {"task": "mentorship.send_reminders", "schedule": 300.0},
     "mentorship-expire-requests": {"task": "mentorship.expire_requests", "schedule": 600.0},
     "mentorship-complete-due": {"task": "mentorship.complete_due", "schedule": 300.0},

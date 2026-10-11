@@ -249,6 +249,7 @@ def admin_views(actor: Any, events: list[Event], *, detail: bool = False) -> lis
             description=event.description,
             link=event.link,
             recording_url=event.recording_url,
+            organiser_email=event.organiser_email,
             summary=event.summary,
         )
     return views

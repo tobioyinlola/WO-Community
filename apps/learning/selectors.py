@@ -490,6 +490,34 @@ def completer_ids() -> set[UUID]:
     )
 
 
+def course_breakdown(limit: int = 10) -> list[dict[str, Any]]:
+    """The most enrolled courses with how many finished them and how they are rated."""
+    rows = (
+        Course.objects.exclude(status=Course.Status.REMOVED)
+        .annotate(
+            enrolled=Count("enrolments"),
+            done=Count("enrolments", filter=Q(enrolments__completed_at__isnull=False)),
+        )
+        .filter(enrolled__gt=0)
+        .order_by("-enrolled", "title")[:limit]
+    )
+    return [
+        {
+            "id": course.pk,
+            "title": course.title,
+            "access": course.access,
+            "enrolments": course.enrolled,
+            "completed": course.done,
+            "completion_rate": round(course.done / course.enrolled, 4),
+            "rating_average": (
+                round(course.rating_total / course.rating_count, 2) if course.rating_count else None
+            ),
+            "rating_count": course.rating_count,
+        }
+        for course in rows
+    ]
+
+
 def snapshot() -> dict[str, int]:
     live = Enrolment.objects.exclude(course__status=Course.Status.REMOVED)
     return {

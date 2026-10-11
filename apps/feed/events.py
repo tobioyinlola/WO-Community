@@ -40,3 +40,13 @@ class ReportHandled(DomainEvent):
 class LinkPreviewRequested(DomainEvent):
     topic: ClassVar[str] = "feed.link_preview_requested"
     preview_id: str
+
+
+@dataclass(frozen=True)
+class FollowStarted(DomainEvent):
+    """Someone followed a member or a startup, for the first time."""
+
+    topic: ClassVar[str] = "feed.follow_started"
+    follower_id: str
+    kind: str  # "member" or "startup"
+    target_id: str

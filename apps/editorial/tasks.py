@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import structlog
 from celery import shared_task
 
@@ -32,6 +34,19 @@ def notify_win_review(event_id: str) -> None:
             {"title": win.title, "reason": event.payload["note"]},
             dedupe_key=f"{event_id}:rejected",
         )
+
+
+@shared_task(name="editorial.notify_report_outcome")
+def notify_report_outcome(event_id: str) -> None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is None:
+        return
+    notify.notify(
+        UUID(event.payload["reporter_id"]),
+        "report_outcome",
+        {"outcome": event.payload["outcome"], "target_type": event.payload["target_type"]},
+        dedupe_key=f"{event_id}:outcome",
+    )
 
 
 @shared_task(name="editorial.publish_due")

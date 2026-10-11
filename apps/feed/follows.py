@@ -1,8 +1,8 @@
 """Following members and startups.
 
-Following is private to the follower: nobody is told who follows them (counts and notices can be
-added later without changing this). A follow stays on record if its target is later suspended or
-hidden, but it stops having any effect until the target is visible again.
+A follow stays on record if its target is later suspended or hidden, but it stops having any
+effect until the target is visible again. The person followed (a startup's owner, for a startup)
+gets one notice the first time someone follows them; there are no follower lists or counts.
 """
 
 from typing import Any
@@ -13,7 +13,9 @@ from django.db.models import QuerySet
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.core import events as domain_events
 from apps.core.keyset import paginate
+from apps.feed import events
 from apps.feed.models import Follow
 from apps.profiles import selectors as profiles
 from apps.startups import selectors as startups
@@ -51,6 +53,12 @@ def follow(*, viewer: Any, kind: str, target_id: UUID) -> bool:
             _, created = Follow.objects.get_or_create(
                 follower_id=viewer.pk, followee_type=kind, followee_id=target_id
             )
+            if created:
+                domain_events.publish(
+                    events.FollowStarted(
+                        follower_id=str(viewer.pk), kind=kind, target_id=str(target_id)
+                    )
+                )
     except IntegrityError:  # a concurrent identical request won the race
         return False
     return created

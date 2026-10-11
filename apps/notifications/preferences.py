@@ -13,6 +13,9 @@ CHANNELS = ("email", "in_app")
 # Every type a member can control, with what they get until they choose.
 DEFAULTS: dict[str, dict[str, bool]] = {
     "comments": {"email": True, "in_app": True},
+    "follows": {"email": False, "in_app": True},
+    "news": {"email": False, "in_app": True},
+    "news_digest": {"email": False, "in_app": False},
     "mentions": {"email": True, "in_app": True},
     "mentorship": {"email": True, "in_app": True},
     "approvals": {"email": True, "in_app": True},

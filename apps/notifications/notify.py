@@ -37,7 +37,7 @@ class Spec:
 
 
 def _outcome_title(payload: dict[str, Any]) -> str:
-    what = payload.get("target_type", "content")
+    what = str(payload.get("target_type", "content")).replace("news_comment", "comment")
     if payload.get("outcome") == "actioned":
         return f"A moderator removed or hid the {what} you reported"
     if payload.get("outcome") == "reviewed":
@@ -97,6 +97,20 @@ TYPES: dict[str, Spec] = {
         _post_link,
         email=True,
         rate_limited_email=True,
+    ),
+    "new_follower": Spec(
+        "follows",
+        lambda who, p: (
+            f"{who} started following {p['startup_name']}"
+            if p.get("kind") == "startup"
+            else f"{who} started following you"
+        ),
+        lambda p: f"/members/{p['actor_id']}",
+    ),
+    "news_featuring_followed": Spec(
+        "news",
+        lambda who, p: f"In the news: {p.get('title', 'a story about someone you follow')}",
+        lambda p: f"/news/{p['slug']}",
     ),
     "job_alert": Spec(
         "jobs",

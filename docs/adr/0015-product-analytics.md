@@ -59,7 +59,6 @@ onboarding checklist.
 
 ## Consequences
 
-Dashboards, the daily summary tables and the marketing tags (PRD 11.2 and 11.3) are not built: they
-read this table and belong with the admin dashboard and campaigns work. Monthly archival of expired
-partitions to columnar files in object storage is also still to do; until it exists the retention job
-should be left to run only once data approaches 13 months old (nothing is that old yet).
+Dashboards, the daily summary tables and the marketing tags (PRD 11.2 and 11.3) were built later
+(ADR 0026 and 0027). Expired monthly partitions are archived to Parquet before they are dropped, and
+production refuses to drop one that has no archive (ADR 0036).

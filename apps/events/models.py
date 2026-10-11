@@ -32,6 +32,8 @@ class Event(BaseModel):
     public = models.BooleanField(default=False)
     # After the event: the archive.
     recording_url = models.CharField(max_length=300, blank=True)
+    # Who receives the attendee list when an admin sends it. Never shown to members.
+    organiser_email = models.EmailField(max_length=254, blank=True, db_default="")
     summary = models.TextField(blank=True)  # sanitised HTML
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
