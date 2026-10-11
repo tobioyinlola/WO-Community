@@ -7,7 +7,7 @@ import { useCountries, useSectors, useSkills, useStages, withPlaceholder } from 
 import type { components } from "../../api/schema";
 import { Alert, Button, Card, ChoiceGroup, Checkbox, Input, Select, Switch, Textarea } from "../../components";
 import { formatDateTime, humanise } from "../../lib/format";
-import { Loaded, PageHeader, SkeletonRows } from "../../ui/blocks";
+import { Loaded, PageHeader, SkeletonRows, TableScroll } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
 
@@ -216,8 +216,9 @@ export function SettingsPage() {
           <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Notifications</h2>
           <Loaded query={prefs} skeleton={<SkeletonRows count={3} />}>
             {(data) => (
+              <TableScroll label="Notification settings">
               <table className="app-table" style={{ width: "100%" }}>
-                <thead><tr><th>What</th><th>In the app</th><th>By email</th></tr></thead>
+                <thead><tr><th scope="col">What</th><th>In the app</th><th>By email</th></tr></thead>
                 <tbody>
                   {Object.entries(data.preferences).map(([group, channels]) => (
                     <tr key={group}>
@@ -231,6 +232,7 @@ export function SettingsPage() {
                   ))}
                 </tbody>
               </table>
+              </TableScroll>
             )}
           </Loaded>
         </Card>

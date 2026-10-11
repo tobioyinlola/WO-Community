@@ -1,3 +1,4 @@
+import { TableScroll } from "../../ui/blocks";
 import type { ReactNode } from "react";
 import { Badge } from "../../components";
 
@@ -98,12 +99,12 @@ export function Node({ node, go, back }: { node: ProtoNode; go: (screen: string)
       return <label className="wo-check"><input type="checkbox" readOnly checked={Boolean(p.checked ?? p.on)} tabIndex={-1} />{text(p.label)}</label>;
     case "table":
       return (
-        <div style={{ overflowX: "auto" }}>
+        <TableScroll label="Table">
           <table className="app-table">
             <thead><tr>{list(p.columns).map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
             <tbody>{((p.rows as string[][]) ?? []).map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>
           </table>
-        </div>
+        </TableScroll>
       );
     case "stat":
       return <div><p className="caption app-muted" style={{ margin: 0 }}>{text(p.label)}</p><p className="h3" style={{ margin: 0 }}>{text(p.value)}</p>{text(p.change) ? <p className="caption" style={{ margin: 0 }}>{text(p.change)}</p> : null}</div>;

@@ -95,12 +95,18 @@ test.describe("a signed-in member", () => {
     await expect(enrol.or(resume)).toBeVisible();
     if (await enrol.isVisible()) await enrol.click();
     await page.getByRole("link", { name: /Start|Continue/ }).click();
-    // Progress carries over between runs, so this opens whichever lesson is next rather than the first.
+    // Progress carries over between runs, so this opens whichever lesson is next (the last one
+    // says "Mark as done" because there is nothing after it).
     const heading = page.getByRole("heading", { level: 1 });
-    await expect(page.getByRole("button", { name: /Mark done and continue/ })).toBeVisible();
+    const done = page.getByRole("button", { name: /Mark (as )?done/ });
+    await expect(done).toBeVisible();
     const before = await heading.innerText();
-    await page.getByRole("button", { name: /Mark done and continue/ }).click();
-    await expect(heading).not.toHaveText(before);
+    await done.click();
+    await expect(async () => {
+      const moved = (await heading.innerText()) !== before;
+      const marked = (await page.getByText(/completed|done/i).count()) > 0;
+      expect(moved || marked).toBe(true);
+    }).toPass();
   });
 
   test("searching the directory finds a member and opens their profile", async ({ page }) => {

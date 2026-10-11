@@ -6,7 +6,7 @@ import { api, unwrap } from "../../api/client";
 import { ApiError, messageOf } from "../../api/errors";
 import { Alert, Badge, Button, Card, Input, Select, Textarea } from "../../components";
 import { formatDate } from "../../lib/format";
-import { EmptyState, Loaded, SkeletonRows } from "../../ui/blocks";
+import { EmptyState, Loaded, SkeletonRows, TableScroll } from "../../ui/blocks";
 import { FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
 import { JobStatus, cancelJob, useExport, useJob } from "./jobs";
@@ -40,12 +40,12 @@ function BlockView({ block }: { block: Block }) {
   if (block.type === "paragraph") return <p className="body" style={{ margin: 0 }}>{block.text}</p>;
   if (block.type === "bullets") return <ul style={{ margin: 0 }}>{block.items.map((t, i) => <li key={i}>{t}</li>)}</ul>;
   return (
-    <div style={{ overflowX: "auto" }}>
+    <TableScroll label="Table">
       <table className="app-table">
         <thead><tr>{block.columns.map((c, i) => <th key={i} scope="col">{c}</th>)}</tr></thead>
         <tbody>{block.rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>
       </table>
-    </div>
+    </TableScroll>
   );
 }
 

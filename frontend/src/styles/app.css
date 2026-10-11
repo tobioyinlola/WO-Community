@@ -946,3 +946,38 @@ button.app-linklike {
   margin: var(--space-1) 0 0;
   padding-left: var(--space-5);
 }
+
+/* Two equal columns on wide screens, one on narrow ones. */
+.app-split--even {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+@media (max-width: 1023px) {
+  .app-split--even {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Form rows that set their own columns inline (prices, salaries) stack on narrow screens. */
+@media (max-width: 767px) {
+  .app-formgrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* Eyebrows and the logo fallback on brand surfaces use the on-brand colours. */
+.wo-card--brand .wo-eyebrow {
+  color: var(--text-highlight);
+}
+.site-hero__frame .wo-wordmark {
+  color: var(--text-on-brand);
+}
+
+/* A table that scrolls inside its own box instead of widening the page. */
+.app-tablewrap {
+  position: relative; /* keeps visually hidden captions inside the box */
+  max-width: 100%;
+  overflow-x: auto;
+}
+.app-main__inner {
+  min-width: 0;
+}

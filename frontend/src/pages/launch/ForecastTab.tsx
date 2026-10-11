@@ -6,7 +6,7 @@ import { ApiError } from "../../api/errors";
 import { Alert, Badge, Button, Card, Input, Select } from "../../components";
 import { formatDate, formatMoney, humanise } from "../../lib/format";
 import { fromMinor, toMinor } from "../../ui/fields";
-import { EmptyState, Loaded, SkeletonRows } from "../../ui/blocks";
+import { EmptyState, Loaded, SkeletonRows, TableScroll } from "../../ui/blocks";
 import { FormError, errorsFrom, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
 import { useExport } from "./jobs";
@@ -181,7 +181,7 @@ export default function ForecastTab() {
                   <Card><Chart months={r.months} currency={r.currency} /></Card>
                   <details>
                     <summary>See the 24 months as a table</summary>
-                    <div style={{ overflowX: "auto", marginTop: "var(--space-3)" }}>
+                    <TableScroll label="Forecast table" style={{ marginTop: "var(--space-3)" }}>
                       <table className="app-table">
                         <caption className="wo-visually-hidden">Monthly forecast</caption>
                         <thead><tr><th scope="col">Month</th><th scope="col">Revenue</th><th scope="col">Costs</th><th scope="col">Net income</th><th scope="col">Cash</th></tr></thead>
@@ -191,7 +191,7 @@ export default function ForecastTab() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </TableScroll>
                   </details>
                 </div>
               );
@@ -201,7 +201,7 @@ export default function ForecastTab() {
           {scenarios.data ? (
             <Card>
               <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Three ways it could go</h2>
-              <div style={{ overflowX: "auto" }}>
+              <TableScroll label="Forecast table">
                 <table className="app-table">
                   <thead><tr><th scope="col">Scenario</th><th scope="col">Year 2 revenue</th><th scope="col">Lowest cash</th><th scope="col">Break even</th></tr></thead>
                   <tbody>
@@ -211,7 +211,7 @@ export default function ForecastTab() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             </Card>
           ) : null}
 
