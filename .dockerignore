@@ -1,0 +1,21 @@
+# The image is the Django API only. Keep everything else out of the build context and out of the
+# image: the web front end has its own dependencies (and its own scans), and local tooling,
+# secrets and caches must never be copied in.
+.git
+.github
+.venv
+.env
+.env.*
+!.env.example
+frontend
+node_modules
+__pycache__
+*.pyc
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.coverage
+htmlcov
+*.egg-info
+staticfiles
+media
