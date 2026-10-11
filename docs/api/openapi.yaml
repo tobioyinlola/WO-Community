@@ -6625,6 +6625,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/Preference'
           description: ''
+  /api/v1/me/availability:
+    get:
+      operationId: me_availability_retrieve
+      description: Weekly windows (in your time zone) and upcoming one off windows.
+      summary: Your availability
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorSchedule'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+    put:
+      operationId: me_availability_update
+      description: 'Sends the whole schedule: `weekly` windows (weekday 0 is Monday,
+        HH:MM in your time zone) and `one_off` windows (future instants). Omitted
+        lists are emptied. Windows must be at least one session long, at most 12 hours,
+        and must not overlap.'
+      summary: Replace your availability
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorScheduleUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorSchedule'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
   /api/v1/me/courses:
     get:
       operationId: me_courses_retrieve
@@ -6875,6 +6926,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MentoringSummary'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/me/mentorship-needs:
+    get:
+      operationId: me_mentorship_needs_retrieve
+      summary: What you want mentoring on
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Needs'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+    put:
+      operationId: me_mentorship_needs_update
+      description: Up to 5 topics and the languages you can be mentored in. Recommendations
+        use these unless you pass `needs`.
+      summary: Save what you want mentoring on
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NeedsUpdateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Needs'
           description: ''
         '401':
           description: Not authenticated
@@ -7349,6 +7449,11 @@ paths:
       summary: The mentor directory
       parameters:
       - in: query
+        name: available
+        schema:
+          type: boolean
+        description: Only mentors who have published availability.
+      - in: query
         name: country
         schema:
           type: string
@@ -7464,6 +7569,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mentor'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors/{user_id}/availability:
+    get:
+      operationId: mentors_availability_retrieve
+      description: Start times (UTC) for the next `days` (default 14, at most 30),
+        soonest first, with already booked time and the minimum notice removed. Empty
+        for a paused mentor or one with no sessions left this week.
+      summary: Times a mentor can be booked
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+          default: 14
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookableTimes'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors/recommended:
+    get:
+      operationId: mentors_recommended_list
+      description: Scored from what you need help with (saved needs, or `needs` here),
+        your startup sector and stage, mentor availability, shared languages, mentor
+        capacity and ratings. Each mentor carries a 0 to 100 `score` and the `reasons`
+        behind it. Paused, revoked and fully booked mentors are left out. Results
+        are cached for 15 minutes and refresh when mentor data changes.
+      summary: Mentors recommended for you
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 10
+      - in: query
+        name: needs
+        schema:
+          type: string
+          maxLength: 300
+        description: Comma list of up to 5 needs.
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecommendedMentor'
           description: ''
         '401':
           description: Not authenticated
@@ -9854,6 +10039,8 @@ components:
           type: string
         capacity_per_week:
           type: integer
+        session_minutes:
+          type: integer
         paused:
           type: boolean
         rating_average:
@@ -9886,6 +10073,7 @@ components:
       - rating_average
       - rating_count
       - revoke_reason
+      - session_minutes
       - slug
       - stages
       - status
@@ -10368,6 +10556,25 @@ components:
       required:
       - accepted
       - rejected
+    BookableTimes:
+      type: object
+      properties:
+        timezone:
+          type: string
+        session_minutes:
+          type: integer
+        times:
+          type: array
+          items:
+            type: string
+            format: date-time
+        sessions_left_this_week:
+          type: integer
+      required:
+      - session_minutes
+      - sessions_left_this_week
+      - times
+      - timezone
     BulkInvitationRequest:
       type: object
       description: |-
@@ -12929,6 +13136,8 @@ components:
           type: string
         capacity_per_week:
           type: integer
+        session_minutes:
+          type: integer
         paused:
           type: boolean
         rating_average:
@@ -12952,6 +13161,7 @@ components:
       - photo
       - rating_average
       - rating_count
+      - session_minutes
       - slug
       - stages
       - timezone
@@ -13120,6 +13330,8 @@ components:
           type: integer
           maximum: 20
           minimum: 1
+        session_minutes:
+          $ref: '#/components/schemas/SessionMinutesEnum'
         paused:
           type: boolean
     MentorReasonRequest:
@@ -13136,6 +13348,46 @@ components:
           maxLength: 1000
       required:
       - reason
+    MentorSchedule:
+      type: object
+      properties:
+        timezone:
+          type: string
+        session_minutes:
+          type: integer
+        weekly:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyWindow'
+        one_off:
+          type: array
+          items:
+            $ref: '#/components/schemas/OneOffWindow'
+      required:
+      - one_off
+      - session_minutes
+      - timezone
+      - weekly
+    MentorScheduleUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        weekly:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyWindowRequest'
+        one_off:
+          type: array
+          items:
+            $ref: '#/components/schemas/OneOffWindowRequest'
     MentorTag:
       type: object
       properties:
@@ -13338,6 +13590,43 @@ components:
       required:
       - name
       - slug
+    Needs:
+      type: object
+      properties:
+        needs:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+        languages:
+          type: array
+          items:
+            type: string
+      required:
+      - languages
+      - needs
+    NeedsUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        needs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 5
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+      required:
+      - needs
     NewsOpenGraph:
       type: object
       properties:
@@ -13422,6 +13711,40 @@ components:
       - complete
       - items
       - profile_completeness
+    OneOffWindow:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+      required:
+      - ends_at
+      - starts_at
+    OneOffWindowRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+      required:
+      - ends_at
+      - starts_at
     OpenGraph:
       type: object
       properties:
@@ -14917,6 +15240,20 @@ components:
         * `illegal` - illegal
         * `inappropriate` - inappropriate
         * `other` - other
+    ReasonItem:
+      type: object
+      properties:
+        key:
+          type: string
+        score:
+          type: integer
+          description: 0 to 100 for this signal.
+        text:
+          type: string
+      required:
+      - key
+      - score
+      - text
     ReasonRequest:
       type: object
       description: |-
@@ -14931,6 +15268,97 @@ components:
           maxLength: 1000
       required:
       - reason
+    RecommendedMentor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The member id of the mentor.
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        about:
+          type: string
+        expertise:
+          type: array
+          items:
+            type: string
+        years_experience:
+          type: integer
+        current_role:
+          type: string
+        company:
+          type: string
+        industries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorTag'
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentorLanguage'
+        timezone:
+          type: string
+        capacity_per_week:
+          type: integer
+        session_minutes:
+          type: integer
+        paused:
+          type: boolean
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
+        score:
+          type: integer
+          description: 0 to 100.
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonItem'
+        components:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+      required:
+      - about
+      - capacity_per_week
+      - company
+      - components
+      - current_role
+      - expertise
+      - headline
+      - id
+      - industries
+      - languages
+      - name
+      - paused
+      - photo
+      - rating_average
+      - rating_count
+      - reasons
+      - score
+      - session_minutes
+      - slug
+      - stages
+      - timezone
+      - years_experience
     RecoveryCodes:
       type: object
       properties:
@@ -15599,6 +16027,16 @@ components:
       - id
       - last_used_at
       - user_agent
+    SessionMinutesEnum:
+      enum:
+      - 30
+      - 45
+      - 60
+      type: integer
+      description: |-
+        * `30` - 30
+        * `45` - 45
+        * `60` - 60
     SignupProfileRequest:
       type: object
       description: |-
@@ -16437,6 +16875,58 @@ components:
           type: string
       required:
       - status
+    WeeklyWindow:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        weekday:
+          type: integer
+          maximum: 6
+          minimum: 0
+          description: 0 is Monday.
+        start:
+          type: string
+          description: HH:MM in the mentor time zone.
+          maxLength: 5
+        end:
+          type: string
+          description: HH:MM, up to 24:00.
+          maxLength: 5
+      required:
+      - end
+      - start
+      - weekday
+    WeeklyWindowRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        weekday:
+          type: integer
+          maximum: 6
+          minimum: 0
+          description: 0 is Monday.
+        start:
+          type: string
+          minLength: 1
+          description: HH:MM in the mentor time zone.
+          maxLength: 5
+        end:
+          type: string
+          minLength: 1
+          description: HH:MM, up to 24:00.
+          maxLength: 5
+      required:
+      - end
+      - start
+      - weekday
     Win:
       type: object
       properties:
