@@ -202,3 +202,11 @@ def full_name_of(user_id: UUID) -> str:
         FounderProfile.objects.filter(user_id=user_id).values_list("full_name", flat=True).first()
         or ""
     )
+
+
+def ids_by_name(text: str) -> Any:
+    """Members whose own profile name contains the text. A search aid only: callers must not
+    reveal the match, since shown names still obey visibility."""
+    return FounderProfile.objects.filter(full_name__icontains=text).values_list(
+        "user_id", flat=True
+    )

@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.events",
     "apps.campaigns",
     "apps.learning",
+    "apps.mentorship",
     "apps.notifications",
     "apps.adminconsole",
 ]
@@ -175,6 +176,7 @@ SPECTACULAR_SETTINGS = {
         "WinKindEnum": "apps.editorial.models.WIN_KINDS",
         "EventTypeEnum": "apps.events.models.EVENT_TYPES",
         "LessonTypeEnum": "apps.learning.models.LESSON_TYPES",
+        "MentorApplicationStatusEnum": "apps.mentorship.models.APPLICATION_STATUSES",
         "CourseLevelEnum": "apps.learning.models.LEVELS",
         "ReactionKindEnum": "apps.feed.models.REACTION_KINDS",
     },
