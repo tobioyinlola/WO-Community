@@ -95,3 +95,39 @@ def erase_for(venture: Venture) -> None:
     storage = get_storage()
     for file in ExportFile.objects.filter(venture=venture):
         storage.delete(bucket=PRIVATE, key=file.storage_key)
+
+
+def export_listing(venture: Venture) -> list[dict[str, Any]]:
+    """Generated documents still held, by name (the files themselves expire)."""
+    return [
+        {
+            "kind": f.kind,
+            "filename": f.filename,
+            "size": f.size,
+            "expires_at": f.expires_at.isoformat(),
+        }
+        for f in ExportFile.objects.filter(venture=venture)
+    ]
+
+
+def queue_gauges() -> Any:
+    """Gauges for the toolkit job queue, read when Prometheus scrapes."""
+    from prometheus_client.core import GaugeMetricFamily
+
+    from apps.toolkit.jobs.models import AIJob
+
+    waiting = AIJob.objects.filter(status="queued")
+    oldest = waiting.order_by("created_at").values_list("created_at", flat=True).first()
+    yield GaugeMetricFamily(
+        "wo_toolkit_jobs_queued", "Toolkit jobs waiting for a worker", waiting.count()
+    )
+    yield GaugeMetricFamily(
+        "wo_toolkit_jobs_running",
+        "Toolkit jobs being worked on",
+        AIJob.objects.filter(status="running").count(),
+    )
+    yield GaugeMetricFamily(
+        "wo_toolkit_oldest_queued_seconds",
+        "Age of the oldest waiting toolkit job",
+        (timezone.now() - oldest).total_seconds() if oldest else 0,
+    )

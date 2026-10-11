@@ -11,12 +11,12 @@ import time
 from typing import Any
 from uuid import UUID
 
-import jsonschema  # type: ignore[import-untyped]
+import jsonschema
 import structlog
 from django.conf import settings
 from django.utils import timezone
 
-from apps.core import ratelimit
+from apps.core import metrics, ratelimit
 from apps.toolkit.ai import prompts, providers
 from apps.toolkit.ai.models import AIRun
 from apps.toolkit.ai.providers.base import (
@@ -85,6 +85,7 @@ def _record(
         currency=settings.AI_COST_CURRENCY,
         outcome=outcome,
     )
+    metrics.observe_ai_run(prompt.id, outcome, input_tokens, output_tokens)
 
 
 def _call(

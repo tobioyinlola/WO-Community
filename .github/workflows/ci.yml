@@ -52,6 +52,10 @@ jobs:
         run: make lint-migrations BASE=origin/${{ github.base_ref || 'main' }}
       - name: Tests
         run: pytest -q
+      - name: Toolkit evaluation set
+        run: python manage.py toolkit_evaluate
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
       - name: API description is up to date
         run: |
           python manage.py spectacular --file /tmp/openapi.yaml --validate --fail-on-warn

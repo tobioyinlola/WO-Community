@@ -50,3 +50,18 @@ if _default_meetings.endswith("ZoomProvider"):
     require("ZOOM_ACCOUNT_ID")
     require("ZOOM_CLIENT_ID")
     require("ZOOM_CLIENT_SECRET")
+
+# The launch toolkit needs a real model and a real research source, or its tools switched off.
+if any(TOOLKIT_FEATURES.values()):  # noqa: F405
+    if AI_PROVIDER == "fake":  # noqa: F405
+        raise RuntimeError(
+            "AI_PROVIDER must name a real provider in production, or switch the toolkit tools "
+            "off with TOOLKIT_FEATURE_<NAME>=false."
+        )
+    if AI_PROVIDER == "http":  # noqa: F405
+        require("AI_BASE_URL")
+        require("AI_API_KEY")
+    if RESEARCH_PROVIDER.endswith("FakeResearchProvider"):  # noqa: F405
+        raise RuntimeError("RESEARCH_PROVIDER must not be the fake provider in production.")
+    if RESEARCH_PROVIDER.endswith("WebResearchProvider") and not RESEARCH_ALLOWED_DOMAINS:  # noqa: F405
+        raise RuntimeError("RESEARCH_ALLOWED_DOMAINS must list the sites research may read.")

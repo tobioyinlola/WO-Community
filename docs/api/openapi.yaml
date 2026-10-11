@@ -10249,6 +10249,332 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/toolkit/admin/deck-templates:
+    get:
+      operationId: toolkit_admin_deck_templates_list
+      summary: Deck templates, including switched off ones
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkAdminDeckTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    put:
+      operationId: toolkit_admin_deck_templates_update
+      description: The template must build into a valid deck from an empty profile;
+        the 400 says why when it does not. Changes apply to decks made from now on.
+      summary: Create or replace a deck template
+      tags:
+      - toolkit-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkAdminDeckTemplateWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminDeckTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/plan-sections:
+    get:
+      operationId: toolkit_admin_plan_sections_list
+      summary: The business plan's sections
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkAdminPlanSection'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/plan-sections/{number}:
+    patch:
+      operationId: toolkit_admin_plan_sections_partial_update
+      description: Applies to plans generated from now on. The executive summary cannot
+        be switched off. Fields and topics must exist.
+      summary: Change a plan section's wording, inputs or whether it is used
+      parameters:
+      - in: path
+        name: number
+        schema:
+          type: integer
+        required: true
+      tags:
+      - toolkit-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTkAdminPlanSectionWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminPlanSection'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/prototype-templates:
+    get:
+      operationId: toolkit_admin_prototype_templates_list
+      summary: Prototype templates, including switched off ones
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkAdminPrototypeTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    put:
+      operationId: toolkit_admin_prototype_templates_update
+      description: The specification is checked against the component registry and
+        limits. `{name}` in text is replaced with the venture's name.
+      summary: Create or replace a prototype template
+      tags:
+      - toolkit-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkAdminPrototypeTemplateWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminPrototypeTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/quality:
+    get:
+      operationId: toolkit_admin_quality_retrieve
+      description: Refused model answers and failed jobs over the last seven days,
+        by prompt and kind, with identifiers to investigate. No content is shown.
+      summary: Where outputs are failing
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminQuality'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/score-rubrics:
+    get:
+      operationId: toolkit_admin_score_rubrics_list
+      summary: Score rubric versions
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkAdminRubric'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: toolkit_admin_score_rubrics_create
+      description: 'Checked before it is stored: weights must add up to 100 and verdicts
+        must cover every score. It is not used until it is activated.'
+      summary: Add a rubric version
+      tags:
+      - toolkit-admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkAdminRubricWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminRubric'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/score-rubrics/{version}/activate:
+    post:
+      operationId: toolkit_admin_score_rubrics_activate_create
+      description: Needs a recent multi-factor check. New scores use it at once; earlier
+        scores keep the version they were made with.
+      summary: Make a rubric version the one in use
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminRubric'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/settings:
+    get:
+      operationId: toolkit_admin_settings_retrieve
+      description: Read only. Feature flags and providers are changed by deployment.
+      summary: The toolkit's configuration, without secrets
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminSettings'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/usage:
+    get:
+      operationId: toolkit_admin_usage_list
+      description: Counts, tokens and estimated cost only; no member content is held.
+        Query `from`, `to` (dates, up to 366 days) and `group_by` (day, prompt, agent).
+      summary: AI use by day, prompt or agent
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkAdminUsageRow'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/admin/usage.csv:
+    get:
+      operationId: toolkit_admin_usage.csv_retrieve
+      summary: The same usage as a CSV file
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: text/csv
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/toolkit/deck-templates:
     get:
       operationId: toolkit_deck_templates_list
@@ -19461,6 +19787,38 @@ components:
           maxLength: 300
         directory_opt_in:
           type: boolean
+    PatchedTkAdminPlanSectionWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        chapter:
+          type: string
+          minLength: 1
+          maxLength: 80
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        guidance:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        depends_on:
+          type: object
+          additionalProperties: {}
+        required_inputs:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+          maxItems: 12
+        active:
+          type: boolean
     PatchedTkCompetitorPatchRequest:
       type: object
       description: |-
@@ -22205,6 +22563,274 @@ components:
       required:
       - blocks
       - name
+    TkAdminDeckTemplate:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        slides:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        position:
+          type: integer
+        active:
+          type: boolean
+      required:
+      - active
+      - description
+      - name
+      - position
+      - slides
+      - slug
+    TkAdminDeckTemplateWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 300
+        slides:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          maxItems: 40
+        position:
+          type: integer
+          maximum: 999
+          minimum: 0
+        active:
+          type: boolean
+          default: true
+      required:
+      - name
+      - slides
+      - slug
+    TkAdminPlanSection:
+      type: object
+      properties:
+        number:
+          type: integer
+        chapter:
+          type: string
+        title:
+          type: string
+        guidance:
+          type: string
+        depends_on:
+          type: object
+          additionalProperties: {}
+        required_inputs:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+      required:
+      - active
+      - chapter
+      - depends_on
+      - guidance
+      - number
+      - required_inputs
+      - title
+    TkAdminPrototypeTemplate:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        spec:
+          type: object
+          additionalProperties: {}
+        active:
+          type: boolean
+      required:
+      - active
+      - description
+      - name
+      - slug
+      - spec
+    TkAdminPrototypeTemplateWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 300
+        spec:
+          type: object
+          additionalProperties: {}
+        active:
+          type: boolean
+          default: true
+      required:
+      - name
+      - slug
+      - spec
+    TkAdminQuality:
+      type: object
+      properties:
+        window_days:
+          type: integer
+        runs:
+          type: integer
+        not_ok:
+          type: integer
+        by_prompt:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        failed_jobs:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        recent:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - by_prompt
+      - failed_jobs
+      - not_ok
+      - recent
+      - runs
+      - window_days
+    TkAdminRubric:
+      type: object
+      properties:
+        version:
+          type: integer
+        active:
+          type: boolean
+        notes:
+          type: string
+        config:
+          type: object
+          additionalProperties: {}
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - active
+      - config
+      - created_at
+      - notes
+      - version
+    TkAdminRubricWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        config:
+          type: object
+          additionalProperties: {}
+        notes:
+          type: string
+          maxLength: 300
+      required:
+      - config
+    TkAdminSettings:
+      type: object
+      properties:
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+        ai_provider:
+          type: string
+        ai_fallback_provider:
+          type: string
+        ai_daily_run_ceiling:
+          type: integer
+        research_provider:
+          type: string
+        research_domains:
+          type: integer
+        max_ventures_per_member:
+          type: integer
+        export_retention_days:
+          type: integer
+        venture_delete_grace_days:
+          type: integer
+      required:
+      - ai_daily_run_ceiling
+      - ai_fallback_provider
+      - ai_provider
+      - export_retention_days
+      - features
+      - max_ventures_per_member
+      - research_domains
+      - research_provider
+      - venture_delete_grace_days
+    TkAdminUsageRow:
+      type: object
+      properties:
+        key:
+          type: string
+        runs:
+          type: integer
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+        estimated_cost_minor:
+          type: integer
+        currency:
+          type: string
+        outcomes:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - currency
+      - estimated_cost_minor
+      - input_tokens
+      - key
+      - outcomes
+      - output_tokens
+      - runs
     TkAssessment:
       type: object
       properties:

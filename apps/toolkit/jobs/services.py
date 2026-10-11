@@ -12,10 +12,12 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
+from apps.core import metrics
 from apps.toolkit.jobs.models import AIJob
 from apps.toolkit.ventures.models import Venture
 
@@ -100,6 +102,12 @@ def start(
         existing = AIJob.objects.filter(owner_id=owner_id, kind=kind, idempotency_key=key).first()
         if existing is not None:
             return existing, False
+    # One member cannot fill the queue: a few at a time, the rest wait for their turn.
+    busy = AIJob.objects.filter(owner_id=owner_id, status__in=("queued", "running")).count()
+    if busy >= settings.TOOLKIT_MAX_ACTIVE_JOBS:
+        raise exceptions.Throttled(
+            detail="You already have several jobs running. Wait for one to finish, then try again."
+        )
     try:
         with transaction.atomic():
             job = AIJob.objects.create(
@@ -200,6 +208,9 @@ def _finish(
     if status == AIJob.Status.SUCCEEDED:
         updates.update(progress=100, result_ref=result or {}, step_label="")
     AIJob.objects.filter(pk=job.pk).update(**updates)
+    metrics.observe_toolkit_job(
+        job.kind, str(status), (updates["finished_at"] - job.created_at).total_seconds()
+    )
     for hook in _on_finish:
         try:
             hook(AIJob.objects.get(pk=job.pk))

@@ -37,6 +37,13 @@ defaults = {
     "GOOGLE_MEET_CLIENT_ID": "id",
     "GOOGLE_MEET_CLIENT_SECRET": "secret",
     "GOOGLE_MEET_REFRESH_TOKEN": "token",
+    "AI_PROVIDER": "http",
+    "AI_BASE_URL": "https://ai.example.com/v1",
+    "AI_API_KEY": "key",
+    "RESEARCH_PROVIDER": "apps.toolkit.ai.research.web.WebResearchProvider",
+    "RESEARCH_SEARCH_URL": "https://search.example.com/v1/search",
+    "RESEARCH_SEARCH_KEY": "key",
+    "RESEARCH_ALLOWED_DOMAINS": "data.example.org",
 }
 env = {**defaults, **ORIGINAL_ENV}
 sys.exit(
