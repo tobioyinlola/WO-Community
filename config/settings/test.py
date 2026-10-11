@@ -30,6 +30,10 @@ CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
 STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
 MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"
 MEDIA_BASE_URL = "https://media.test"
+MEETING_PROVIDERS = {
+    "google_meet": "apps.integrations.meetings.fake.FakeMeetingProvider",
+    "zoom": "apps.integrations.meetings.fake.FakeMeetingProvider",
+}
 RESEND_API_KEY = "re_test_key"  # noqa: S105  # nosec B105
 # "whsec_" followed by base64 of a throwaway key, the format Resend/Svix issue.
 RESEND_WEBHOOK_SECRET = (

@@ -15,6 +15,7 @@ from apps.accounts.tests.factories import UserFactory, UserRoleFactory
 from apps.core import outbox
 from apps.integrations.email.fake import FakeEmailAdapter
 from apps.integrations.malware.fake import FakeScanner
+from apps.integrations.meetings.fake import FakeMeetingProvider
 from apps.integrations.storage.fake import FakeStorage
 from apps.uploads import services as upload_services
 from apps.uploads.models import Upload, UploadStatus
@@ -27,6 +28,7 @@ def _clean_state() -> None:
     FakeEmailAdapter.reset()
     FakeStorage.reset()
     FakeScanner.reset()
+    FakeMeetingProvider.reset()
 
 
 @pytest.fixture
