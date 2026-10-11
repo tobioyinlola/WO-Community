@@ -35,8 +35,8 @@ Status: accepted (Stage 2)
 
 ## Consequences
 
-Per-module detail (mentor supply and demand, course completion, revenue) arrives with those
-modules by adding their daily numbers to the same table. Marketing tags are still computed when a
+Per-module detail now exists for mentor supply and demand and course completion (ADR 0037); revenue
+arrives with payments. Marketing tags are still computed when a
 segment is used rather than stored in a `MemberTag` table; that is cheap at this size and can change
 without altering the API. Charts of directory traffic by page and visitor-to-registration
 conversion by source need richer client events than exist today. Raw event archival to columnar

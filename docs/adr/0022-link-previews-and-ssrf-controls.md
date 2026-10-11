@@ -49,7 +49,7 @@ the feature.
 ## Consequences
 
 Rendering a preview from a page that needs JavaScript is not supported (such pages usually have
-Open Graph tags anyway). An admin cannot yet block a domain or force a refresh; a block list is easy
-to add in `parse_url`. Comments do not get previews. The fetch worker's network isolation is not
-enforced in code, so until the infrastructure rule exists these checks are the only barrier, which
-is why they are deliberately strict and thoroughly tested.
+Open Graph tags anyway). Admins can block a domain and force a refresh (ADR 0037). Comments do not get previews. The fetch worker's network isolation is not
+enforced in code: the egress rule it needs is written down in `docs/deployment.md`, and until the
+infrastructure applies it these checks are the only barrier, which is why they are deliberately
+strict and thoroughly tested.

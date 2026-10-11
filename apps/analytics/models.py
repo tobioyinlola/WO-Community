@@ -69,3 +69,13 @@ class ForwardCursor(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}@{self.last_seq}"
+
+
+class PartitionArchive(BaseModel):
+    """A monthly partition that was copied to object storage as Parquet before being dropped."""
+
+    partition = models.CharField(max_length=60, unique=True)
+    object_key = models.CharField(max_length=200)
+    rows = models.PositiveBigIntegerField()
+    size = models.PositiveBigIntegerField()
+    sha256 = models.CharField(max_length=64)

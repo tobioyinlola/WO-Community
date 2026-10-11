@@ -198,7 +198,8 @@ a segment is used rather than stored.
 ## Carried forward
 
 1. The CDN purger (provider decision still pending).
-2. Hardening follow-ups collected during this stage: run the `media` queue with an egress allow
-   list; consider monthly partitions for notifications if volume warrants; merge the jobs, news and
-   events sitemaps into the front end's sitemap; set up the marketing sending domain (SPF, DKIM,
-   DMARC, warm-up); members cannot yet report editorial comments; raw analytics archival.
+2. Hardening follow-ups collected during this stage were closed in the hardening pass (see
+   `docs/stages/hardening.md`): the media worker is its own process with its egress rule written down,
+   there is one combined sitemap, the sending domain checklist is in `docs/deployment.md`, editorial
+   comments can be reported, and analytics are archived. Monthly partitions for notifications remain
+   an option if volume warrants.

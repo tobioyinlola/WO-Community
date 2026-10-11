@@ -59,6 +59,9 @@ class LessonCreateSerializer(StrictSerializer):
     body = serializers.CharField(max_length=MAX_MARKUP, required=False, trim_whitespace=False)
     resource_url = serializers.CharField(max_length=300, required=False)
     resource_name = serializers.CharField(max_length=160, required=False)
+    upload_id = serializers.UUIDField(
+        required=False, help_text="A ready `course_file` upload, instead of `resource_url`."
+    )
 
 
 class LessonUpdateSerializer(StrictSerializer):
@@ -71,6 +74,9 @@ class LessonUpdateSerializer(StrictSerializer):
     body = serializers.CharField(max_length=MAX_MARKUP, required=False, trim_whitespace=False)
     resource_url = serializers.CharField(max_length=300, required=False)
     resource_name = serializers.CharField(max_length=160, required=False)
+    upload_id = serializers.UUIDField(
+        required=False, help_text="A ready `course_file` upload, instead of `resource_url`."
+    )
 
 
 class OrderSerializer(StrictSerializer):
@@ -211,8 +217,29 @@ class VideoSerializer(serializers.Serializer):
 
 
 class ResourceSerializer(serializers.Serializer):
-    url = serializers.CharField()
+    kind = serializers.ChoiceField(
+        choices=["link", "file"],
+        help_text="`link` opens `url`; `file` is a stored document, fetched with "
+        "`GET /lessons/{id}/file`.",
+    )
+    url = serializers.CharField(allow_blank=True)
     name = serializers.CharField()
+    size = serializers.IntegerField(allow_null=True)
+    content_type = serializers.CharField(allow_blank=True)
+
+
+class LessonFileSerializer(serializers.Serializer):
+    url = serializers.CharField(help_text="Signed address; saves the file as an attachment.")
+    expires_in = serializers.IntegerField(help_text="Seconds the address stays valid.")
+    name = serializers.CharField()
+    size = serializers.IntegerField(allow_null=True)
+    content_type = serializers.CharField()
+
+
+class AdminLessonFileSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    size = serializers.IntegerField(allow_null=True)
+    content_type = serializers.CharField()
 
 
 class LessonProgressSerializer(serializers.Serializer):
@@ -337,6 +364,7 @@ class AdminLessonSerializer(serializers.Serializer):
     body = serializers.CharField(allow_blank=True)
     resource_url = serializers.CharField(allow_blank=True)
     resource_name = serializers.CharField(allow_blank=True)
+    file = AdminLessonFileSerializer(allow_null=True, required=False)
 
 
 class AdminModuleSerializer(serializers.Serializer):

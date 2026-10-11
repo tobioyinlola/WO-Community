@@ -17,10 +17,8 @@ Status: accepted (Stage 3, first slice)
   lookalike hosts and malformed ids are refused. The check is a pure function with no network use.
   `video_provider` is stored so a later move to a protected host needs no data migration.
 - **Reading lessons** hold rich text cleaned by the same allow list as posts. **Resource lessons**
-  hold an https link and a display name. The design also mentions downloadable files stored by us;
-  that needs document uploads (type sniffing, virus scanning, private signed downloads) beyond the
-  current image-only upload pipeline, so resource files are links for now. This is a deliberate
-  gap, not an oversight.
+  hold an https link and a display name. Downloadable files stored by us came later, with the
+  document upload pipeline (ADR 0033): a resource lesson holds either a link or a stored file.
 - **Free and paid.** Free courses are open to any active member with one idempotent enrol action.
   Paid courses show price (whole minor units plus an ISO currency, checked by a database constraint)
   and are locked: enrolling answers 402 until purchasing exists (Stage 4). Meanwhile an admin can
@@ -29,7 +27,7 @@ Status: accepted (Stage 3, first slice)
 - **The video id is not sent to anyone without access.** Lesson detail answers 403 for a member who
   is not enrolled, and the course outline never includes video ids, so a paid lesson's address is
   not exposed through the API. (As the design warns, a video link that has leaked can still be
-  watched; the decision on a protected host for paid video remains for before paid courses launch.)
+  watched; the paid-video decision is recorded in ADR 0034: YouTube stays, unlisted.)
 - **Visitors.** Per course, a free course can be opened to visitors. Then `GET /lessons/{id}`
   works without logging in, under a stricter rate limit than members, and `GET /public/courses`
   lists these courses with their outline. Paid courses can never be opened to visitors.
@@ -60,5 +58,6 @@ Status: accepted (Stage 3, first slice)
 
 ## Consequences
 
-Quizzes, drip release, course prerequisites, learning paths, per-lesson comments and downloadable
-files stored by us are not built. Purchasing, receipts and the paid-video decision belong to Stage 4.
+Quizzes, drip release, course prerequisites, learning paths and per-lesson comments are not
+built. Downloadable files are covered by ADR 0033 and the paid-video decision by ADR 0034.
+Purchasing and receipts belong to Stage 4.

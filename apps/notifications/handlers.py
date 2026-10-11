@@ -32,6 +32,15 @@ def register() -> None:
         account_events.MemberRejected.topic, "notifications.send_rejected_email", "critical"
     )
     outbox.register_handler(
+        account_events.MemberSuspended.topic, "notifications.send_suspended_email", "critical"
+    )
+    outbox.register_handler(
+        account_events.MemberReinstated.topic, "notifications.send_reinstated_email", "critical"
+    )
+    outbox.register_handler(
+        account_events.MemberRemoved.topic, "notifications.send_removed_email", "critical"
+    )
+    outbox.register_handler(
         account_events.PasswordResetRequested.topic,
         "notifications.send_password_reset_email",
         "critical",

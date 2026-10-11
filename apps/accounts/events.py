@@ -43,6 +43,7 @@ class MemberRejected(DomainEvent):
 class MemberSuspended(DomainEvent):
     topic: ClassVar[str] = "accounts.member_suspended"
     user_id: str
+    reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ class MemberRemoved(DomainEvent):
 
     topic: ClassVar[str] = "accounts.member_removed"
     user_id: str
+    reason: str = ""
 
 
 @dataclass(frozen=True)

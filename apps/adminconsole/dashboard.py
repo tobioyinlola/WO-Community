@@ -342,7 +342,11 @@ def home(actor: Any) -> dict[str, Any]:
         },
         # Arrive with their modules in later stages.
         "learning": _learning(today),
-        "mentorship": {"available": True, **mentorship.snapshot()},
+        "mentorship": {
+            "available": True,
+            **mentorship.snapshot(),
+            **mentorship.supply_and_demand(),
+        },
         "revenue": {"available": False},
     }
 
@@ -365,6 +369,7 @@ def _learning(today: date) -> dict[str, Any]:
         "lessons_completed_last_30_days": int(
             _sum(event_metric("lesson_completed"), last30, today)
         ),
+        "courses": learning.course_breakdown(),
     }
 
 

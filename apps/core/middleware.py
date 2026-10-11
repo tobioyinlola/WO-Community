@@ -5,6 +5,8 @@ from collections.abc import Callable
 import structlog
 from django.http import HttpRequest, HttpResponse
 
+from apps.core import metrics
+
 logger = structlog.get_logger("request")
 
 CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
@@ -27,13 +29,17 @@ class RequestContextMiddleware:
         response = self.get_response(request)
         response["X-Request-ID"] = request_id
         match = getattr(request, "resolver_match", None)
+        elapsed = time.monotonic() - started
         logger.info(
             "request",
             method=request.method,
             route=match.route if match else request.path,
             status=response.status_code,
-            duration_ms=round((time.monotonic() - started) * 1000, 1),
+            duration_ms=round(elapsed * 1000, 1),
         )
+        route = match.route if match else "unmatched"
+        if route not in ("metrics", "health/live", "health/ready"):
+            metrics.observe_request(request.method or "", route, response.status_code, elapsed)
         return response
 
 

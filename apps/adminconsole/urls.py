@@ -173,6 +173,11 @@ urlpatterns = [
         name="admin-event-attendees",
     ),
     path(
+        "admin/events/<uuid:event_id>/attendees/send",
+        event_views.AttendeesSendView.as_view(),
+        name="admin-event-attendees-send",
+    ),
+    path(
         "admin/events/<uuid:event_id>/attendees.csv",
         event_views.AttendeesExportView.as_view(),
         name="admin-event-attendees-csv",
@@ -250,6 +255,18 @@ urlpatterns = [
         )
         for action in COMMENT_ACTIONS
     ],
+    path("admin/link-previews", feed_views.AdminPreviewsView.as_view(), name="admin-previews"),
+    path(
+        "admin/link-previews/<uuid:preview_id>/refresh",
+        feed_views.AdminPreviewRefreshView.as_view(),
+        name="admin-preview-refresh",
+    ),
+    path("admin/blocked-domains", feed_views.BlockedDomainsView.as_view(), name="admin-blocked"),
+    path(
+        "admin/blocked-domains/<uuid:entry_id>",
+        feed_views.BlockedDomainView.as_view(),
+        name="admin-blocked-domain",
+    ),
     path("admin/reports", feed_views.ReportListView.as_view(), name="admin-reports"),
     path(
         "admin/reports/<uuid:report_id>", feed_views.ReportDetailView.as_view(), name="admin-report"
@@ -371,6 +388,17 @@ urlpatterns = [
         name="admin-mentor-decision",
     ),
     path("admin/mentors", mentor_views.AdminMentorsView.as_view(), name="admin-mentors"),
+    path("admin/sessions", mentor_views.AdminSessionsView.as_view(), name="admin-sessions"),
+    path(
+        "admin/sessions/<uuid:session_id>",
+        mentor_views.AdminSessionView.as_view(),
+        name="admin-session",
+    ),
+    path(
+        "admin/sessions/<uuid:session_id>/cancel",
+        mentor_views.AdminSessionCancelView.as_view(),
+        name="admin-session-cancel",
+    ),
     path(
         "admin/mentors/<uuid:user_id>/revoke",
         mentor_views.AdminMentorRevokeView.as_view(),

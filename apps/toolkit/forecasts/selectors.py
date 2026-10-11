@@ -1,0 +1,23 @@
+"""Reads other tools use from forecasts, so they never reach into its tables."""
+
+from typing import Any
+
+from apps.toolkit.ventures.models import Venture
+
+
+def headline(venture: Venture) -> dict[str, Any] | None:
+    """The saved forecast's headline numbers, or ``None`` while the venture has no forecast.
+
+    ``{"version": n, "currency": "NGN", "figures": {...}, "warnings": [...]}``. Plans cite these as
+    the venture's own numbers; they are never produced by a model.
+    """
+    from apps.toolkit.forecasts import service
+
+    return service.headline(venture)
+
+
+def series(venture: Venture, name: str) -> dict[str, Any] | None:
+    """Quarterly ``revenue`` or ``cash`` for a chart, or ``None`` without a forecast."""
+    from apps.toolkit.forecasts import service
+
+    return service.series(venture, name)

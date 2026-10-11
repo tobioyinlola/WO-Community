@@ -4,8 +4,10 @@ Credentials come from the environment or the instance role, never from code.
 The quarantine bucket must be private; the media bucket is read through the CDN.
 """
 
+from datetime import UTC, datetime, timedelta
 from functools import cached_property
 from typing import Any
+from urllib.parse import quote
 
 import boto3
 from botocore.client import Config
@@ -13,7 +15,9 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 
 from apps.integrations.storage.base import (
+    ANCHOR,
     MEDIA,
+    PRIVATE,
     QUARANTINE,
     ObjectInfo,
     ObjectStorage,
@@ -45,6 +49,8 @@ class S3Storage(ObjectStorage):
         names = {
             QUARANTINE: settings.STORAGE_QUARANTINE_BUCKET,
             MEDIA: settings.STORAGE_MEDIA_BUCKET,
+            PRIVATE: settings.STORAGE_PRIVATE_BUCKET,
+            ANCHOR: settings.STORAGE_ANCHOR_BUCKET,
         }
         return names[bucket]
 
@@ -88,12 +94,48 @@ class S3Storage(ObjectStorage):
             Key=key,
             Body=data,
             ContentType=content_type,
-            ContentDisposition="inline",
+            ContentDisposition="attachment" if bucket == PRIVATE else "inline",
             **extra,
         )
 
     def delete(self, *, bucket: str, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket_name(bucket), Key=key)
+
+    def write_once(
+        self, *, bucket: str, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> bool:
+        """Needs a bucket created with S3 Object Lock; COMPLIANCE mode lets nobody shorten it."""
+        if self.head(bucket=bucket, key=key) is not None:
+            return False
+        self.client.put_object(
+            Bucket=self.bucket_name(bucket),
+            Key=key,
+            Body=data,
+            ContentType=content_type,
+            ObjectLockMode="COMPLIANCE",
+            ObjectLockRetainUntilDate=datetime.now(UTC) + timedelta(days=retain_days),
+        )
+        return True
+
+    def presign_get(
+        self, *, bucket: str, key: str, expires_in: int, filename: str, content_type: str
+    ) -> str:
+        safe = "".join(c for c in filename if c.isprintable() and c not in '"\\/;')[:150]
+        ascii_name = safe.encode("ascii", "replace").decode().replace("?", "_") or "download"
+        disposition = (
+            f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(safe or "download")}'
+        )
+        url: str = self.client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.bucket_name(bucket),
+                "Key": key,
+                "ResponseContentDisposition": disposition,
+                "ResponseContentType": content_type,
+            },
+            ExpiresIn=expires_in,
+        )
+        return url
 
     def public_url(self, key: str) -> str:
         return f"{settings.MEDIA_BASE_URL.rstrip('/')}/{key}"

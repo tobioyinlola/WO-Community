@@ -10,6 +10,8 @@ from .base import REST_FRAMEWORK as _REST_FRAMEWORK  # noqa: E402
 from .keys import ephemeral_jwt_keys  # noqa: E402
 
 DEBUG = False
+# Dev only (see make lint-migrations): the production image does not install it.
+INSTALLED_APPS = [*INSTALLED_APPS, "django_migration_linter"]  # noqa: F405
 ALLOWED_HOSTS = ["testserver", "localhost"]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
@@ -30,6 +32,14 @@ CDN_PURGER = "apps.integrations.cdn.fake.FakePurger"
 STORAGE_ADAPTER = "apps.integrations.storage.fake.FakeStorage"
 MALWARE_SCANNER = "apps.integrations.malware.fake.FakeScanner"
 MEDIA_BASE_URL = "https://media.test"
+AI_PROVIDER = "fake"
+TOOLKIT_PARALLEL_RESEARCH = False
+RESEARCH_PROVIDER = "apps.toolkit.ai.research.fake.FakeResearchProvider"
+CALENDAR_FEED_READER = "apps.integrations.calendars.fake.FakeFeedReader"
+MEETING_PROVIDERS = {
+    "google_meet": "apps.integrations.meetings.fake.FakeMeetingProvider",
+    "zoom": "apps.integrations.meetings.fake.FakeMeetingProvider",
+}
 RESEND_API_KEY = "re_test_key"  # noqa: S105  # nosec B105
 # "whsec_" followed by base64 of a throwaway key, the format Resend/Svix issue.
 RESEND_WEBHOOK_SECRET = (

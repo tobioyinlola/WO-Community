@@ -37,7 +37,7 @@ class Spec:
 
 
 def _outcome_title(payload: dict[str, Any]) -> str:
-    what = payload.get("target_type", "content")
+    what = str(payload.get("target_type", "content")).replace("news_comment", "comment")
     if payload.get("outcome") == "actioned":
         return f"A moderator removed or hid the {what} you reported"
     if payload.get("outcome") == "reviewed":
@@ -52,6 +52,24 @@ def _mentor_decision_title(payload: dict[str, Any]) -> str:
     if payload.get("decision") == "declined":
         return f"Your mentor application was declined: {reason}"
     return f"We need more information for your mentor application: {reason}"
+
+
+def _session_link(payload: dict[str, Any]) -> str:
+    return f"/sessions/{payload['session_id']}"
+
+
+def _session_cancelled_title(who: str, payload: dict[str, Any]) -> str:
+    reason = payload.get("reason", "")
+    suffix = f": {reason}" if reason else ""
+    if payload.get("by") == "platform":
+        return f"Your mentoring session was cancelled{suffix}"
+    return f"{who} cancelled your mentoring session{suffix}"
+
+
+def _reschedule_closed_title(who: str, payload: dict[str, Any]) -> str:
+    if payload.get("withdrawn"):
+        return f"{who} withdrew the suggested new time for your session"
+    return f"{who} kept the original time for your session"
 
 
 def _post_link(payload: dict[str, Any]) -> str:
@@ -79,6 +97,20 @@ TYPES: dict[str, Spec] = {
         _post_link,
         email=True,
         rate_limited_email=True,
+    ),
+    "new_follower": Spec(
+        "follows",
+        lambda who, p: (
+            f"{who} started following {p['startup_name']}"
+            if p.get("kind") == "startup"
+            else f"{who} started following you"
+        ),
+        lambda p: f"/members/{p['actor_id']}",
+    ),
+    "news_featuring_followed": Spec(
+        "news",
+        lambda who, p: f"In the news: {p.get('title', 'a story about someone you follow')}",
+        lambda p: f"/news/{p['slug']}",
     ),
     "job_alert": Spec(
         "jobs",
@@ -176,6 +208,72 @@ TYPES: dict[str, Spec] = {
         lambda who, p: "Your mentor status was withdrawn",
         lambda p: "/home",
         email=True,
+    ),
+    "session_requested": Spec(
+        "mentorship",
+        lambda who, p: f"{who} asked you for a mentoring session",
+        _session_link,
+        email=True,
+        rate_limited_email=True,
+    ),
+    "session_confirmed": Spec(
+        "mentorship",
+        lambda who, p: f"{who} confirmed your mentoring session",
+        _session_link,
+        email=True,
+    ),
+    "session_declined": Spec(
+        "mentorship",
+        lambda who, p: f"{who} cannot take your session request: {p.get('reason', '')}",
+        _session_link,
+        email=True,
+    ),
+    "session_cancelled": Spec("mentorship", _session_cancelled_title, _session_link, email=True),
+    "session_expired": Spec(
+        "mentorship",
+        lambda who, p: "Your mentoring request was not answered in time",
+        _session_link,
+        email=True,
+    ),
+    "session_reschedule_proposed": Spec(
+        "mentorship",
+        lambda who, p: f"{who} suggested a new time for your mentoring session",
+        _session_link,
+        email=True,
+        rate_limited_email=True,
+    ),
+    "session_rescheduled": Spec(
+        "mentorship",
+        lambda who, p: f"{who} accepted the new time: your mentoring session has moved",
+        _session_link,
+        email=True,
+    ),
+    "session_reschedule_closed": Spec(
+        "mentorship", _reschedule_closed_title, _session_link, email=True
+    ),
+    "session_reminder": Spec(
+        "mentorship",
+        lambda who, p: "Your mentoring session starts in "
+        f"{'1 hour' if p.get('when') == '1h' else '24 hours'}",
+        _session_link,
+        email=True,
+    ),
+    "session_feedback_request": Spec(
+        "mentorship",
+        lambda who, p: "How was your mentoring session? Share your feedback",
+        _session_link,
+        email=True,
+    ),
+    "session_meeting_failed": Spec(
+        "mentorship",
+        lambda who, p: "We could not create a video meeting for your session. Add a link",
+        _session_link,
+        email=True,
+    ),
+    "session_meeting_ready": Spec(
+        "mentorship",
+        lambda who, p: f"{who} added a meeting link for your mentoring session",
+        _session_link,
     ),
     "member_approved": Spec(
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"

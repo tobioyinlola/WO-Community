@@ -178,7 +178,8 @@ def my_courses(viewer_id: UUID, *, cursor: str, limit: int) -> dict[str, Any]:
     }
 
 
-def lesson_detail(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
+def open_lesson(viewer_id: UUID | None, lesson_id: UUID) -> Lesson:
+    """The lesson, if this viewer may open it; otherwise the right 401, 403 or 404."""
     lesson = Lesson.objects.select_related("course", "module").filter(pk=lesson_id).first()
     if lesson is None or lesson.course.status == Course.Status.REMOVED:
         raise exceptions.NotFound()
@@ -193,6 +194,40 @@ def lesson_detail(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
             if course.access == "paid"
             else "Enrol in this course to open its lessons."
         )
+    return lesson
+
+
+def lesson_file(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
+    """A short lived download link for the document in a resource lesson."""
+    lesson = open_lesson(viewer_id, lesson_id)
+    if lesson.type != "resource" or not lesson.file_key:
+        raise exceptions.NotFound()
+    url, ttl = uploads.document_link(
+        key=lesson.file_key,
+        filename=_download_name(lesson),
+        content_type=lesson.file_content_type or "application/octet-stream",
+    )
+    return {
+        "url": url,
+        "expires_in": ttl,
+        "name": lesson.resource_name,
+        "size": lesson.file_size,
+        "content_type": lesson.file_content_type,
+    }
+
+
+def _download_name(lesson: Lesson) -> str:
+    """The saved file name: the lesson's display name, with the right extension."""
+    extension = settings.UPLOAD_DOCUMENT_TYPES.get(lesson.file_content_type, "")
+    name = lesson.resource_name or "download"
+    return (
+        name if not extension or name.lower().endswith("." + extension) else f"{name}.{extension}"
+    )
+
+
+def lesson_detail(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
+    lesson = open_lesson(viewer_id, lesson_id)
+    course = lesson.course
     order = list(
         course.lessons.order_by("module__position", "position").values_list("pk", flat=True)
     )
@@ -221,7 +256,14 @@ def lesson_detail(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
     elif lesson.type == "reading":
         view["body"] = lesson.body
     else:
-        view["resource"] = {"url": lesson.resource_url, "name": lesson.resource_name}
+        view["resource"] = {
+            "kind": "file" if lesson.file_key else "link",
+            # A stored document has no address here: ask for a link with GET /lessons/{id}/file.
+            "url": lesson.resource_url,
+            "name": lesson.resource_name,
+            "size": lesson.file_size,
+            "content_type": lesson.file_content_type,
+        }
     enrolment = learn.enrolment_of(viewer_id, course.pk) if viewer_id is not None else None
     if enrolment is not None:
         row = LessonProgress.objects.filter(enrolment=enrolment, lesson=lesson).first()
@@ -284,6 +326,17 @@ def public_courses(*, cursor: str, limit: int) -> dict[str, Any]:
     }
 
 
+def public_sitemap() -> list[dict[str, Any]]:
+    """Slug and last change of every course open to visitors, for search engines."""
+    rows = (
+        published()
+        .filter(access="free", open_to_visitors=True)
+        .order_by("-published_at", "-id")
+        .values("slug", "updated_at")[:5000]
+    )
+    return [dict(row) for row in rows]
+
+
 def public_course(slug: str) -> dict[str, Any]:
     course = published().filter(access="free", open_to_visitors=True, slug=slug).first()
     if course is None:
@@ -338,6 +391,15 @@ def admin_course(course: Course) -> dict[str, Any]:
                         "body": lesson.body,
                         "resource_url": lesson.resource_url,
                         "resource_name": lesson.resource_name,
+                        "file": (
+                            {
+                                "name": lesson.resource_name,
+                                "size": lesson.file_size,
+                                "content_type": lesson.file_content_type,
+                            }
+                            if lesson.file_key
+                            else None
+                        ),
                     }
                     for lesson in module.lessons.all()
                 ],
@@ -426,6 +488,34 @@ def completer_ids() -> set[UUID]:
     return set(
         Enrolment.objects.filter(completed_at__isnull=False).values_list("user_id", flat=True)
     )
+
+
+def course_breakdown(limit: int = 10) -> list[dict[str, Any]]:
+    """The most enrolled courses with how many finished them and how they are rated."""
+    rows = (
+        Course.objects.exclude(status=Course.Status.REMOVED)
+        .annotate(
+            enrolled=Count("enrolments"),
+            done=Count("enrolments", filter=Q(enrolments__completed_at__isnull=False)),
+        )
+        .filter(enrolled__gt=0)
+        .order_by("-enrolled", "title")[:limit]
+    )
+    return [
+        {
+            "id": course.pk,
+            "title": course.title,
+            "access": course.access,
+            "enrolments": course.enrolled,
+            "completed": course.done,
+            "completion_rate": round(course.done / course.enrolled, 4),
+            "rating_average": (
+                round(course.rating_total / course.rating_count, 2) if course.rating_count else None
+            ),
+            "rating_count": course.rating_count,
+        }
+        for course in rows
+    ]
 
 
 def snapshot() -> dict[str, int]:

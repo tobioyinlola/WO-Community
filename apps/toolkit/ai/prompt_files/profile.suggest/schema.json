@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 2000},
+      "minItems": 1,
+      "maxItems": 3
+    }
+  },
+  "required": ["suggestions"],
+  "additionalProperties": false
+}

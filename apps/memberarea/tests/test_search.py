@@ -72,6 +72,9 @@ def test_unrelated_words_find_nothing(searcher, people):
         "startups": [],
         "jobs": [],
         "mentors": [],
+        "events": [],
+        "news": [],
+        "courses": [],
     }
 
 
@@ -186,7 +189,7 @@ def test_limit_is_applied_per_type(searcher, make_user):
         {"q": ""},
         {"q": "a"},
         {"q": "x" * 101},
-        {"q": "ok", "types": "courses"},
+        {"q": "ok", "types": "posts"},
         {"q": "ok", "limit": 0},
         {"q": "ok", "limit": 21},
         {"q": "ok", "limit": "many"},
@@ -220,3 +223,72 @@ def test_searches_are_rate_limited(searcher, monkeypatch):
     )
     statuses = [find(searcher, "ada").status_code for _ in range(3)]
     assert statuses == [200, 200, 429]
+
+
+# --- events, news and courses ---
+
+
+def test_events_news_and_courses_are_found_by_their_words(make_user, searcher):
+    from datetime import timedelta
+
+    from apps.editorial import services as editorial
+    from apps.events import services as events
+    from apps.learning import authoring
+
+    admin = make_user(roles=("community_admin",), email="admin2@example.com")
+    start = timezone.now() + timedelta(days=9)
+    event = events.create_event(
+        actor=admin,
+        data={
+            "type": "meetup",
+            "title": "Zanzibar founders retreat",
+            "description": "<p>Three days by the sea.</p>",
+            "starts_at": start,
+            "ends_at": start + timedelta(hours=4),
+            "timezone": "Africa/Dar_es_Salaam",
+            "location": "Stone Town",
+        },
+    )
+    events.publish(actor=admin, event_id=event.pk)
+    item = editorial.create_item(
+        actor=admin,
+        data={"type": "news", "title": "Zanzibar startup wins a grant", "body": "<p>Big.</p>"},
+    )
+    editorial.publish_now(actor=admin, item_id=item.pk)
+    course = authoring.create_course(
+        actor=admin,
+        data={
+            "title": "Zanzibar tourism marketing",
+            "description": "<p>Learn it.</p>",
+            "instructor": "Amani Said",
+            "category": "marketing",
+            "level": "beginner",
+        },
+    )
+    module = authoring.add_module(actor=admin, course_id=course.pk, title="One")
+    authoring.add_lesson(
+        actor=admin,
+        module_id=module.pk,
+        data={"type": "reading", "title": "Intro", "body": "<p>Hello</p>"},
+    )
+    authoring.publish(actor=admin, course_id=course.pk)
+
+    body = find(searcher, "zanzibar").json()
+    assert [h["title"] for h in body["events"]] == ["Zanzibar founders retreat"]
+    assert body["events"][0]["subtitle"].endswith("Stone Town")
+    assert [h["title"] for h in body["news"]] == ["Zanzibar startup wins a grant"]
+    assert [h["title"] for h in body["courses"]] == ["Zanzibar tourism marketing"]
+    assert body["courses"][0]["subtitle"] == "Amani Said"
+    only = find(searcher, "zanzibar", types="events").json()
+    assert set(only) == {"events"}
+
+
+def test_unpublished_and_cancelled_things_are_not_found(make_user, searcher):
+    from apps.editorial import services as editorial
+
+    admin = make_user(roles=("content_editor",), email="editor2@example.com")
+    editorial.create_item(
+        actor=admin,
+        data={"type": "news", "title": "Hidden draft zebra", "body": "<p>Draft.</p>"},
+    )
+    assert find(searcher, "zebra").json()["news"] == []

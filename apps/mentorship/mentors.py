@@ -10,6 +10,7 @@ from rest_framework import exceptions
 from apps.accounts import services as accounts
 from apps.audit import services as audit
 from apps.core import events as domain_events
+from apps.integrations import meetings
 from apps.mentorship import domain, events
 from apps.mentorship.applications import Conflict, Forbidden, NotFound
 from apps.mentorship.models import MentorProfile
@@ -36,6 +37,11 @@ def _fields(data: dict[str, Any]) -> dict[str, Any]:
         out["session_minutes"] = domain.session_minutes(data["session_minutes"])
     if "paused" in data:
         out["paused"] = bool(data["paused"])
+    if "meeting_provider" in data:
+        provider = data["meeting_provider"]
+        if provider and provider not in meetings.provider_names():
+            raise domain.invalid("meeting_provider", "Choose google_meet or zoom.")
+        out["meeting_provider"] = provider
     return out
 
 

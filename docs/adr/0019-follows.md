@@ -26,6 +26,7 @@ Status: accepted (Stage 2)
 
 ## Consequences
 
-Notifying someone when they gain a follower, and suggestions of whom to follow, are not built.
+A notice when someone is followed, and suggestions of whom to follow, were added later (ADR 0037);
+there are still no follower lists or counts.
 Following feeds are a query, not a stored timeline; at the planned scale that is fast enough, and a
 stored fan-out can replace it behind the same endpoint if it is not.

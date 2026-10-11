@@ -14,6 +14,7 @@ from apps.editorial.models import (
     EditorialItem,
     ItemComment,
     ItemReaction,
+    ItemStartup,
     WinSubmission,
 )
 from apps.profiles import selectors as profiles
@@ -71,14 +72,31 @@ def _views(viewer: Any, items: list[EditorialItem]) -> list[dict[str, Any]]:
     return views
 
 
-def feed(viewer: Any, *, type: str, cursor: str, limit: int) -> dict[str, Any]:  # noqa: A002
+def item_startup_ids(item_id: UUID) -> list[UUID]:
+    return list(ItemStartup.objects.filter(item_id=item_id).values_list("startup_id", flat=True))
+
+
+def feed(
+    viewer: Any,
+    *,
+    type: str,  # noqa: A002
+    cursor: str,
+    limit: int,
+    startup_ids: list[UUID] | None = None,
+) -> dict[str, Any]:
+    """Published items, newest first; ``startup_ids`` keeps only items featuring one of them."""
     queryset = published().prefetch_related("startup_links")
     if type:
         queryset = queryset.filter(type=type)
+    if startup_ids is not None:
+        queryset = queryset.filter(
+            pk__in=ItemStartup.objects.filter(startup_id__in=startup_ids).values("item_id")
+        )
+    scope = "following" if startup_ids is not None else "all"
     rows, next_cursor = paginate(
         queryset,
         fields=("published_at", "id"),
-        sort=f"editorial:{type}",
+        sort=f"editorial:{scope}:{type}",
         cursor=cursor,
         limit=limit,
     )
@@ -216,6 +234,12 @@ def public_feed(*, type: str, cursor: str, limit: int) -> dict[str, Any]:  # noq
         limit=limit,
     )
     return {"results": [_public_summary(v) for v in _views(None, rows)], "next_cursor": next_cursor}
+
+
+def public_sitemap() -> list[dict[str, Any]]:
+    """Slug and last change of every public news item and win, for search engines."""
+    rows = _public_queryset().order_by("-published_at", "-id").values("slug", "updated_at")[:5000]
+    return [dict(row) for row in rows]
 
 
 def public_detail(slug: str) -> dict[str, Any]:

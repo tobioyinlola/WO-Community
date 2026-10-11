@@ -8,7 +8,9 @@ RUN groupadd --system app && useradd --system --gid app --create-home app
 
 WORKDIR /app
 COPY pyproject.toml ./
-RUN pip install --upgrade pip && pip install .
+# pip bundles its own copies of urllib3, msgpack and setuptools, which image scanners report and
+# which no project pin can change. Nothing needs pip once the dependencies are installed.
+RUN pip install --upgrade pip && pip install . && pip uninstall -y pip
 
 COPY . .
 RUN chown -R app:app /app

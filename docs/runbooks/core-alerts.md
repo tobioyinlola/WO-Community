@@ -233,3 +233,105 @@ managed database the migration role must be allowed to do that (or an administra
 once with `CREATE EXTENSION btree_gist;` before deploying). Recommendations that look stale after a
 mentor change point at the Redis cache: the version key `mentorship:data-version` moves on every
 change, and entries expire after 15 minutes anyway.
+
+## A session has no meeting link
+
+A confirmed session shows `meeting.state: pending` for a moment while a worker makes the video
+meeting, then `ready`. `failed` means the provider refused or stayed unavailable through every
+retry; the mentor was told and can add their own link (`PUT /sessions/{id}/meeting-link`). If many
+sessions fail, look at the log line `meeting_creation_failed`: a 401 or 403 (`misconfigured`) means
+our credentials are wrong. For Google, the refresh token was revoked or the account password or
+consent changed, so create a new refresh token for the platform account and update
+`GOOGLE_MEET_REFRESH_TOKEN`; for Zoom, check the Server-to-Server app is active and still has the
+meeting scopes. Sessions already marked `failed` are not retried; the mentor adds a link, or
+support cancels and the founder asks again. A session stuck on `pending` with a healthy provider
+points at the `default` queue or the outbox backlog (`mentorship.create_meeting` is triggered by
+`mentorship.session_confirmed`).
+
+## Reminders, lapsing requests or feedback requests are missing
+
+Three beat jobs drive the session lifecycle: `mentorship.send_reminders` (5 minutes),
+`mentorship.expire_requests` (10 minutes) and `mentorship.complete_due` (5 minutes). If none of
+them fire, beat is not running. Reminders are claimed on the session row (`reminded_24h_at`,
+`reminded_1h_at`) before sending, so re-running is safe, but a session that was confirmed inside a
+reminder window is skipped for it on purpose. A session that should be `completed` but is still
+`confirmed` has not passed its end plus 15 minutes, or `complete_due` is not running.
+
+## A founder says a time was offered and then refused
+
+Offered times are recomputed on every request, and the database refuses overlapping holds, so
+the time was taken between the founder seeing it and asking (409 `That time was just taken`), or
+the mentor's week filled (a request counts toward the week's places while it waits). Declined,
+cancelled and lapsed requests give their place back. To see why a time is not offered, list the
+mentor's sessions (`GET /admin/sessions?mentor_id=`) and check requested and confirmed ones.
+
+## A course file will not upload or download
+
+Uploads of `course_file` are rejected with a reason on the upload (`GET /uploads/{id}`):
+`active_content` (scripts, macros or embedded objects), `encrypted`, `corrupt`,
+`type_mismatch` (the file is not what its type says) and `malware_detected`. Only people with
+`courses.manage` can upload documents (403 otherwise). Downloads are signed links that last 5
+minutes; if one "has expired", ask `GET /lessons/{id}/file` again. A 404 there means the lesson
+holds a link, not a stored file. The private bucket (`STORAGE_PRIVATE_BUCKET`) must exist and
+must not have public read access; if downloads 403 from storage, check the bucket name and that
+the application credentials can read it.
+
+## A mentor's calendar is not blocking time
+
+`GET /me/calendar` shows the state: `error` with a reason means the last read failed and the
+busy time from the last good read is being used (it can only make the mentor look busier).
+"That address does not return a calendar" is usually a sign-in page or the wrong link (use the
+secret iCal address, not the shareable web link); "did not answer in time" and status errors are
+the provider. A feed address that stops working was probably reset in the calendar app, so the
+mentor shares the new one. `stale` is true when nothing has been read for 3 hours: check that
+beat runs `mentorship.sync_calendars` (every 15 minutes) and a worker consumes the `default`
+queue. Google can take hours to publish a new event to its feed, which is outside our control;
+`GET /me/availability/preview` shows what is being removed. Feeds are read only from public
+hosts on ports 80, 443, 8080 and 8443 (the same rules as link previews), so an address on a
+private network cannot be shared.
+
+## `audit_anchor_problem` in the logs
+
+The daily job logs this when yesterday's chain does not verify, when an anchor exists with a
+different head than the database now has, or when any of the last 7 anchors no longer matches.
+`outcome` says which: `chain_broken` means rows of that day were altered, removed or reordered
+(nothing is anchored until it is understood); `mismatch` or entries in `mismatched_days` mean a
+closed day changed after it was anchored. Treat either as a security incident: the anchors are
+write-once, so the database is the thing that changed. Compare the anchor object
+(`audit-anchors/<day>.json` in the anchor bucket: count, last sequence number, head hash) with
+`audit_auditlog` for that day and with the database backups. A day with no anchor passes; it
+predates anchoring or had no entries. If the job fails to write because the bucket lacks Object
+Lock, create the bucket with it enabled (it cannot be turned on later for an existing bucket).
+
+## Analytics partitions are not being dropped, or the archive fails
+
+With `ANALYTICS_REQUIRE_ARCHIVE` on (production), a monthly partition older than 13 months is
+dropped only after `analytics.archive_expired` has written it and recorded it in
+`analytics_partitionarchive`. If old partitions pile up, check the task's errors: the private
+bucket must exist and be writable, and the worker needs enough memory for one month (the file is
+built on disk and then read once). The archive is verified against the row count before it is
+recorded, so a failure leaves the partition in place. To check a file, read
+`archive/analytics/analytics_event_<year>_<month>.parquet` with any Parquet reader; the `sha256`
+in the table is that of the file.
+
+## Reading the metrics
+
+Scrape `GET /metrics` with `Authorization: Bearer <METRICS_TOKEN>`. Useful alerts:
+`wo_outbox_oldest_pending_seconds` above 300 (the dispatcher or workers are stuck; see "Outbox
+backlog" above), `wo_outbox_failed` or `wo_failed_tasks` above zero (look at the dead letters),
+and the 5xx share of `wo_http_requests_total` or high percentiles of `wo_http_request_seconds`
+per route. Under gunicorn set `PROMETHEUS_MULTIPROC_DIR`, or each worker reports only itself.
+
+## The weekly digest did not arrive
+
+The digest is sent Mondays 08:00 UTC by `memberarea.send_news_digest`, only to members who turned
+`news_digest` email on (it is off by default), and only when something was published in the last 7
+days. It is sent once per member per ISO week: the guard is a cache key, so clearing the cache
+mid-week can send it twice. A member who is not an active member or has no stored email gets none.
+
+## A site's link preview card is missing
+
+`GET /admin/link-previews?q=<domain>` shows the card's state and `fail_code`. `blocked_domain`
+means a moderator blocked the site (`GET /admin/blocked-domains`); other codes are the fetcher's
+(see ADR 0022). Fetching again is `POST /admin/link-previews/<id>/refresh`.
+

@@ -40,12 +40,36 @@ def _months_back(value: date, months: int) -> date:
     return date(index // 12, index % 12 + 1, 1)
 
 
-def drop_expired_partitions(now: datetime, keep_months: int) -> list[str]:
+def expired_partitions(now: datetime, keep_months: int) -> list[str]:
+    """Names of the monthly partitions older than the retention window."""
+    oldest_kept = _months_back(now.date(), keep_months)
+    found: list[str] = []
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT c.relname FROM pg_inherits i "
+            "JOIN pg_class c ON c.oid = i.inhrelid "
+            "JOIN pg_class p ON p.oid = i.inhparent "
+            "WHERE p.relname = %s ORDER BY c.relname",
+            [TABLE],
+        )
+        for (name,) in cursor.fetchall():
+            parts = name.removeprefix(f"{TABLE}_").split("_")
+            if len(parts) != 2 or not all(part.isdigit() for part in parts):
+                continue
+            if date(int(parts[0]), int(parts[1]), 1) < oldest_kept:
+                found.append(name)
+    return found
+
+
+def drop_expired_partitions(
+    now: datetime, keep_months: int, *, archived: "set[str] | None" = None
+) -> list[str]:
     """Drop whole monthly partitions older than the retention window.
 
     Dropping a partition is instant and leaves no dead rows, which is why the
     table is partitioned by month. The current month and ``keep_months`` before
-    it are kept.
+    it are kept. When ``archived`` is given, only partitions in it are dropped, so nothing is
+    lost before its copy exists.
     """
     oldest_kept = _months_back(now.date(), keep_months)
     dropped: list[str] = []
@@ -62,6 +86,8 @@ def drop_expired_partitions(now: datetime, keep_months: int) -> list[str]:
             if len(parts) != 2 or not all(part.isdigit() for part in parts):
                 continue  # the default partition and anything unexpected
             if date(int(parts[0]), int(parts[1]), 1) < oldest_kept:
+                if archived is not None and name not in archived:
+                    continue
                 cursor.execute(f"DROP TABLE {name}")  # noqa: S608
                 dropped.append(name)
     return dropped

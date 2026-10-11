@@ -7,6 +7,7 @@ from celery import shared_task
 from apps.core.models import OutboxEvent
 from apps.feed import links
 from apps.notifications import notify
+from apps.startups import selectors as startups
 
 logger = structlog.get_logger(__name__)
 
@@ -67,6 +68,31 @@ def notify_report_outcome(event_id: str) -> None:
         "report_outcome",
         {"outcome": data["outcome"], "target_type": data["target_type"]},
         dedupe_key=f"{event_id}:outcome",
+    )
+
+
+@shared_task(name="feed.notify_follow")
+def notify_follow(event_id: str) -> None:
+    data = _payload(event_id)
+    if data is None:
+        return
+    follower_id = UUID(data["follower_id"])
+    target_id = UUID(data["target_id"])
+    payload: dict[str, str] = {"actor_id": str(follower_id), "kind": data["kind"]}
+    if data["kind"] == "startup":
+        startup = startups.get_startup(target_id)
+        if startup is None:
+            return
+        recipient = startup.owner_id
+        payload.update(startup_id=str(startup.pk), startup_name=startup.name)
+    else:
+        recipient = target_id
+    # One notice per follower and target, ever: unfollowing and following again stays quiet.
+    notify.notify(
+        recipient,
+        "new_follower",
+        payload,
+        dedupe_key=f"follow:{follower_id.hex}{target_id.hex}",  # 80 characters at most
     )
 
 
