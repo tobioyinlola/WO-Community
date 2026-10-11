@@ -8,8 +8,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.toolkit.jobs import services
-from apps.toolkit.jobs.serializers import TkJobSerializer
+from apps.toolkit.jobs import exports, services
+from apps.toolkit.jobs.serializers import TkExportFileSerializer, TkJobSerializer
 from apps.toolkit.ventures.permissions import member_policy, uid
 
 ERRORS = {
@@ -70,6 +70,25 @@ class JobCancelView(APIView):
         if job is None:
             raise exceptions.NotFound()
         return job_response(request, services.view(services.cancel(job)))
+
+
+class ExportFileView(APIView):
+    policy = member_policy()
+
+    @extend_schema(
+        summary="A generated document and a fresh download link",
+        description="Ask again for a new link when one has expired. Files are removed after "
+        "a week; generate the document again if it is gone (404).",
+        responses={200: TkExportFileSerializer, **ERRORS},
+        tags=["toolkit"],
+    )
+    def get(self, request: Request, export_id: UUID) -> Response:
+        file = exports.owned(uid(request), export_id)
+        if file is None:
+            raise exceptions.NotFound()
+        response = Response(TkExportFileSerializer(exports.view(file)).data)
+        response["Cache-Control"] = "private, no-store"
+        return response
 
 
 def accepted(request: Request, job: Any, created: bool) -> Response:

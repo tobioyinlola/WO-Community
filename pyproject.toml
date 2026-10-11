@@ -34,6 +34,12 @@ dependencies = [
   "opentelemetry-instrumentation-psycopg==0.66b1",
   "opentelemetry-instrumentation-celery==0.66b1",
   "opentelemetry-instrumentation-httpx==0.66b1",
+  "pydantic==2.14.0",
+  "jsonschema==4.26.0",
+  "python-docx==1.2.0",
+  "python-pptx==1.0.2",
+  "openpyxl==3.1.5",
+  "reportlab==5.0.1",
 ]
 
 [project.optional-dependencies]
@@ -44,6 +50,7 @@ dev = [
   "ruff==0.13.3",
   "black==26.3.1",
   "mypy==1.18.2",
+  "hypothesis==6.169.0",
   "django-stubs[compatible-mypy]==5.2.5",
   "djangorestframework-stubs==3.16.4",
   "bandit==1.8.6",
@@ -81,7 +88,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "/tests/"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*"]
+module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*", "reportlab.*", "openpyxl.*", "pptx.*", "docx.*", "jsonschema.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

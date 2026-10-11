@@ -108,3 +108,7 @@ class TkPlanVersionSerializer(serializers.Serializer):
     version = serializers.IntegerField()
     label = serializers.CharField(allow_blank=True)  # type: ignore[assignment]
     created_at = serializers.DateTimeField()
+
+
+class TkPlanExportSerializer(serializers.Serializer):
+    format = serializers.ChoiceField(choices=["docx", "pdf"], default="docx")

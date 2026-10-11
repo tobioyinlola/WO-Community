@@ -292,6 +292,7 @@ CELERY_BEAT_SCHEDULE = {
     "audit-anchor": {"task": "audit.anchor_previous_day", "schedule": 86400.0},
     "toolkit-reap-jobs": {"task": "toolkit.reap_stuck_jobs", "schedule": 600.0},
     "toolkit-erase-ventures": {"task": "toolkit.erase_deleted_ventures", "schedule": 86400.0},
+    "toolkit-purge-exports": {"task": "toolkit.purge_exports", "schedule": 3600.0},
     "accounts-purge-rejected": {"task": "accounts.purge_rejected", "schedule": 86400.0},
     "uploads-cleanup": {"task": "uploads.cleanup", "schedule": 3600.0},
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
@@ -511,6 +512,7 @@ RESEARCH_PROVIDER = env.str(
 RESEARCH_SEARCH_URL = env.str("RESEARCH_SEARCH_URL", default="")
 RESEARCH_SEARCH_KEY = env.str("RESEARCH_SEARCH_KEY", default="")
 EXPORT_URL_TTL = env.int("EXPORT_URL_TTL", default=900)
+EXPORT_RETENTION_DAYS = env.int("EXPORT_RETENTION_DAYS", default=7)
 DECK_MAX_SLIDES = env.int("DECK_MAX_SLIDES", default=100)
 DECK_MAX_ELEMENTS_PER_SLIDE = 200
 DECK_VERSIONS_KEPT = env.int("DECK_VERSIONS_KEPT", default=30)

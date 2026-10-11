@@ -56,3 +56,23 @@ class AIJob(BaseModel):
             models.Index(fields=["status", "created_at"], name="tk_job_status_idx"),
             models.Index(fields=["group_id"], name="tk_job_group_idx"),
         ]
+
+
+class ExportFile(BaseModel):
+    """A generated document (plan, forecast, deck) held privately and handed out by signed link."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="toolkit_exports"
+    )
+    venture = models.ForeignKey(
+        "tk_ventures.Venture", on_delete=models.CASCADE, related_name="export_files"
+    )
+    kind = models.CharField(max_length=40)  # plan.docx, plan.pdf, forecast.xlsx, ...
+    filename = models.CharField(max_length=160)
+    content_type = models.CharField(max_length=120)
+    storage_key = models.CharField(max_length=200, unique=True)
+    size = models.PositiveIntegerField()
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [models.Index(fields=["expires_at"], name="tk_export_expiry_idx")]

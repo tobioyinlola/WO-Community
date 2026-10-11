@@ -465,6 +465,7 @@ SECTIONS: list[Section] = [
     ),
 ]
 
+
 def seed_rows() -> list[dict[str, Any]]:
     return [
         {

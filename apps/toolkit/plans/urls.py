@@ -7,6 +7,7 @@ base = "ventures/<uuid:venture_id>/plan"
 urlpatterns = [
     path(base, views.PlanView.as_view(), name="tk-plan"),
     path(f"{base}/generate", views.PlanStartView.as_view(), name="tk-plan-generate"),
+    path(f"{base}/export", views.PlanExportView.as_view(), name="tk-plan-export"),
     path(f"{base}/readiness", views.PlanReadinessView.as_view(), name="tk-plan-readiness"),
     path(f"{base}/versions", views.PlanVersionsView.as_view(), name="tk-plan-versions"),
     path(

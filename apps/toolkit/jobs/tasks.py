@@ -40,3 +40,10 @@ def run_export_job(self: Any, job_id: str) -> None:
 @shared_task(name="toolkit.reap_stuck_jobs")
 def reap_stuck_jobs() -> int:
     return services.reap_stuck()
+
+
+@shared_task(name="toolkit.purge_exports")
+def purge_exports() -> int:
+    from apps.toolkit.jobs import exports
+
+    return exports.purge_expired()

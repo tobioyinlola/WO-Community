@@ -17,3 +17,14 @@ class TkJobSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     started_at = serializers.DateTimeField(allow_null=True)
     finished_at = serializers.DateTimeField(allow_null=True)
+
+
+class TkExportFileSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    kind = serializers.CharField()
+    filename = serializers.CharField()
+    content_type = serializers.CharField()
+    size = serializers.IntegerField()
+    expires_at = serializers.DateTimeField()
+    url = serializers.CharField(help_text="A signed download link; it expires quickly")
+    url_expires_in = serializers.IntegerField(help_text="Seconds the link works for")
