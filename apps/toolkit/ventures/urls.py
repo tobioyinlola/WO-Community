@@ -1,9 +1,16 @@
 from django.urls import path
 
-from apps.toolkit.ventures import views
+from apps.toolkit.ventures import grant_views, views
 
 urlpatterns = [
     path("ventures", views.VenturesView.as_view(), name="tk-ventures"),
+    path("ventures-shared-with-me", grant_views.SharedWithMeView.as_view(), name="tk-shared"),
+    path("ventures/<uuid:venture_id>/grants", grant_views.GrantsView.as_view(), name="tk-grants"),
+    path(
+        "ventures/<uuid:venture_id>/grants/<uuid:grant_id>",
+        grant_views.GrantView.as_view(),
+        name="tk-grant",
+    ),
     path("ventures/<uuid:venture_id>", views.VentureView.as_view(), name="tk-venture"),
     path(
         "ventures/<uuid:venture_id>/restore",

@@ -45,3 +45,19 @@ Design in ADR 0043.
 | `GET/PATCH/PUT/DELETE .../prototypes/{id}` | Read; patch operations (`base_version`, 409); rename; delete. |
 | `POST .../prototypes/{id}/duplicate` | Copy. |
 | `GET .../prototypes/{id}/versions`, `POST .../versions/{v}/restore` | History. |
+
+## Venture partner and mentor access
+
+Design in ADR 0044.
+
+| Endpoint | What it does |
+|---|---|
+| `GET/POST /ventures/{id}/partner/conversations` | List; start. |
+| `GET/DELETE .../partner/conversations/{c}` | Read with messages; delete. |
+| `POST .../conversations/{c}/messages` | Say something: 201 with the reply, or 202 with a job to poll. |
+| `POST .../partner/change-sets/{id}/apply`, `/undo`, `/dismiss` | Apply proposed profile changes (`accept` to choose fields), put them back, or turn them down. |
+| `GET/POST .../partner/decisions`, `DELETE .../decisions/{id}` | The decision log. |
+| `GET .../partner/nudges`, `POST .../nudges/{id}/read` | This week's next step. |
+| `GET .../partner/mentors` | Mentors ranked for what the venture needs. |
+| `GET/POST /ventures/{id}/grants`, `DELETE .../grants/{id}` | Let a listed mentor read the venture; take it back. |
+| `GET /ventures-shared-with-me` | For a mentor: ventures opened to them. |

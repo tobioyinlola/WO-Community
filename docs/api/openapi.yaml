@@ -10544,6 +10544,32 @@ paths:
           description: Not found, or not yours
         '409':
           description: Limit
+  /api/v1/toolkit/ventures-shared-with-me:
+    get:
+      operationId: toolkit_ventures_shared_with_me_list
+      description: 'For a mentor: founders who gave you read access. Open one with
+        the usual read endpoints (`profile`, `score/latest`, `plan`, ...); writes
+        are refused.'
+      summary: Ventures shared with you
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkSharedVenture'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
   /api/v1/toolkit/ventures/{venture_id}:
     get:
       operationId: toolkit_ventures_retrieve
@@ -11689,6 +11715,102 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/grants:
+    get:
+      operationId: toolkit_ventures_grants_list
+      summary: Who can read this venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkGrant'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+    post:
+      operationId: toolkit_ventures_grants_create
+      description: 'Read only: the mentor sees what you see (profile, score, plan,
+        forecast, decks) and can change nothing. Revoke at any time. Only listed mentors
+        can be chosen.'
+      summary: Let a mentor read this venture
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkGrantCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkGrant'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/grants/{grant_id}:
+    delete:
+      operationId: toolkit_ventures_grants_destroy
+      summary: Take access back
+      parameters:
+      - in: path
+        name: grant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Revoked
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours
   /api/v1/toolkit/ventures/{venture_id}/package:
     get:
       operationId: toolkit_ventures_package_retrieve
@@ -11719,6 +11841,483 @@ paths:
           description: Not an approved member
         '404':
           description: Not found, or not yours
+  /api/v1/toolkit/ventures/{venture_id}/partner/change-sets/{change_set_id}/apply:
+    post:
+      operationId: toolkit_ventures_partner_change_sets_apply_create
+      description: Writes the chosen changes (or all of them). Each field is recorded
+        as an accepted suggestion. Outputs made from those fields are marked out of
+        date.
+      summary: Apply proposed changes to the profile
+      parameters:
+      - in: path
+        name: change_set_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkChangeApplyRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkChangeSet'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/change-sets/{change_set_id}/dismiss:
+    post:
+      operationId: toolkit_ventures_partner_change_sets_dismiss_create
+      summary: Dismiss proposed changes
+      parameters:
+      - in: path
+        name: change_set_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkChangeSet'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/change-sets/{change_set_id}/undo:
+    post:
+      operationId: toolkit_ventures_partner_change_sets_undo_create
+      description: Puts the previous values back, except any field you have edited
+        since.
+      summary: Undo applied changes
+      parameters:
+      - in: path
+        name: change_set_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkChangeUndo'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/conversations:
+    get:
+      operationId: toolkit_ventures_partner_conversations_list
+      summary: Conversations with the venture partner
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkConversation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_partner_conversations_create
+      summary: Start a conversation
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkConversationCreateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkConversation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/conversations/{conversation_id}:
+    get:
+      operationId: toolkit_ventures_partner_conversations_retrieve
+      summary: A conversation with its messages
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkConversationDetail'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    delete:
+      operationId: toolkit_ventures_partner_conversations_destroy
+      summary: Delete a conversation
+      parameters:
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/conversations/{conversation_id}/messages:
+    post:
+      operationId: toolkit_ventures_partner_conversations_messages_create
+      description: Answers 201 with the reply when it is ready within a few seconds,
+        otherwise 202 with a `job` to poll; the reply then appears in the conversation.
+        Requests for legal, tax or investment advice, or for made up proof, are declined
+        without calling a model. Anything the partner proposes to change in your profile
+        comes back as a change set that you apply or dismiss.
+      summary: Say something to the partner
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      - in: path
+        name: conversation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkSendMessageRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPartnerReply'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkPartnerReply'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/decisions:
+    get:
+      operationId: toolkit_ventures_partner_decisions_list
+      summary: The decision log
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkDecision'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+    post:
+      operationId: toolkit_ventures_partner_decisions_create
+      description: The partner reads the latest decisions, so it stops suggesting
+        what you already ruled out.
+      summary: Record a decision
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkDecisionCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkDecision'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/decisions/{decision_id}:
+    delete:
+      operationId: toolkit_ventures_partner_decisions_destroy
+      summary: Remove a decision
+      parameters:
+      - in: path
+        name: decision_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Removed
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/mentors:
+    get:
+      operationId: toolkit_ventures_partner_mentors_retrieve
+      description: Ranked from the weakest areas of the latest score and the topics
+        the partner has raised. Nobody is contacted; book from the mentor's page.
+      summary: Mentors who could help with what this venture needs
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkMentorSuggestion'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/nudges:
+    get:
+      operationId: toolkit_ventures_partner_nudges_list
+      summary: Weekly next steps
+      parameters:
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TkNudge'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
+  /api/v1/toolkit/ventures/{venture_id}/partner/nudges/{nudge_id}/read:
+    post:
+      operationId: toolkit_ventures_partner_nudges_read_create
+      summary: Mark a next step as seen
+      parameters:
+      - in: path
+        name: nudge_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: venture_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Marked
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: Not found, or not yours, or the tool is off
   /api/v1/toolkit/ventures/{venture_id}/plan:
     get:
       operationId: toolkit_ventures_plan_retrieve
@@ -14509,6 +15108,14 @@ components:
       - name
       - photo
       - slug
+    AuthorEnum:
+      enum:
+      - user
+      - assistant
+      type: string
+      description: |-
+        * `user` - user
+        * `assistant` - assistant
     Availability:
       type: object
       properties:
@@ -14941,6 +15548,18 @@ components:
       - id
       - issued_at
       - verify_url
+    ChangeSetStatusEnum:
+      enum:
+      - proposed
+      - applied
+      - undone
+      - dismissed
+      type: string
+      description: |-
+        * `proposed` - proposed
+        * `applied` - applied
+        * `undone` - undone
+        * `dismissed` - dismissed
     CheckInRequest:
       type: object
       description: |-
@@ -21640,6 +22259,77 @@ components:
       - scored_weight
       - strengths
       - verdict
+    TkChange:
+      type: object
+      properties:
+        field:
+          type: string
+        label:
+          type: string
+        from_value:
+          nullable: true
+        to_value: {}
+        reason:
+          type: string
+        applied:
+          type: boolean
+      required:
+      - applied
+      - field
+      - from_value
+      - label
+      - reason
+      - to_value
+    TkChangeApplyRequest:
+      type: object
+      properties:
+        accept:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+          description: Apply only these fields. Leave out to apply all.
+          maxItems: 6
+    TkChangeSet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ChangeSetStatusEnum'
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkChange'
+        applied_at:
+          type: string
+          format: date-time
+          nullable: true
+        undone_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - applied_at
+      - changes
+      - id
+      - status
+      - undone_at
+    TkChangeUndo:
+      type: object
+      properties:
+        change_set:
+          $ref: '#/components/schemas/TkChangeSet'
+        skipped:
+          type: array
+          items:
+            type: string
+          description: Fields left alone because you changed them since
+      required:
+      - change_set
+      - skipped
     TkCitation:
       type: object
       properties:
@@ -21721,6 +22411,90 @@ components:
       - label
       - name
       - props
+    TkConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - message_count
+      - title
+      - updated_at
+    TkConversationCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 120
+    TkConversationDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkMessage'
+      required:
+      - id
+      - message_count
+      - messages
+      - title
+      - updated_at
+    TkDecision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        rationale:
+          type: string
+        decided_on:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - decided_on
+      - id
+      - rationale
+      - text
+    TkDecisionCreateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 3
+          maxLength: 300
+        rationale:
+          type: string
+          maxLength: 1000
+        decided_on:
+          type: string
+          format: date
+      required:
+      - text
     TkDeck:
       type: object
       properties:
@@ -22449,6 +23223,49 @@ components:
       description: |-
         * `warning` - warning
         * `error` - error
+    TkGrant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mentor_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        can_comment:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - can_comment
+      - created_at
+      - expires_at
+      - id
+      - mentor_id
+      - name
+    TkGrantCreateRequest:
+      type: object
+      properties:
+        mentor_id:
+          type: string
+          format: uuid
+          description: The mentor's user id from the mentor directory
+        can_comment:
+          type: boolean
+          default: false
+        expires_in_days:
+          type: integer
+          maximum: 365
+          minimum: 1
+      required:
+      - mentor_id
     TkImportStartupRequest:
       type: object
       description: |-
@@ -22534,6 +23351,65 @@ components:
         * `succeeded` - succeeded
         * `failed` - failed
         * `cancelled` - cancelled
+    TkMentorSuggestion:
+      type: object
+      properties:
+        topics:
+          type: array
+          items:
+            type: string
+        mentors:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - mentors
+      - topics
+    TkMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          allOf:
+          - $ref: '#/components/schemas/AuthorEnum'
+          description: |-
+            Who wrote it
+
+            * `user` - user
+            * `assistant` - assistant
+        text:
+          type: string
+        next_steps:
+          type: array
+          items:
+            type: string
+        mentor_topics:
+          type: array
+          items:
+            type: string
+        declined:
+          type: string
+          nullable: true
+          description: legal, tax, investment, deception
+        change_set:
+          allOf:
+          - $ref: '#/components/schemas/TkChangeSet'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author
+      - change_set
+      - created_at
+      - declined
+      - id
+      - mentor_topics
+      - next_steps
+      - text
     TkNextAction:
       type: object
       properties:
@@ -22559,6 +23435,36 @@ components:
       - field
       - label
       - text
+    TkNudge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        week_key:
+          type: string
+        code:
+          type: string
+        text:
+          type: string
+        action:
+          type: object
+          additionalProperties: {}
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - action
+      - code
+      - created_at
+      - id
+      - read_at
+      - text
+      - week_key
     TkOutputState:
       type: object
       properties:
@@ -22640,6 +23546,25 @@ components:
       - outputs
       - ready_for_score
       - venture
+    TkPartnerReply:
+      type: object
+      properties:
+        user_message:
+          $ref: '#/components/schemas/TkMessage'
+        assistant_message:
+          allOf:
+          - $ref: '#/components/schemas/TkMessage'
+          nullable: true
+        job:
+          allOf:
+          - $ref: '#/components/schemas/TkJob'
+          nullable: true
+          description: 'Present (with HTTP 202) when the reply is not ready yet: poll
+            it, then read the conversation'
+      required:
+      - assistant_message
+      - job
+      - user_message
     TkPlan:
       type: object
       properties:
@@ -23180,6 +24105,15 @@ components:
       - label
       - score
       - status
+    TkSendMessageRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - text
     TkShare:
       type: object
       properties:
@@ -23349,6 +24283,29 @@ components:
       required:
       - title
       - type
+    TkSharedVenture:
+      type: object
+      properties:
+        venture_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        can_comment:
+          type: boolean
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        shared_at:
+          type: string
+          format: date-time
+      required:
+      - can_comment
+      - expires_at
+      - name
+      - shared_at
+      - venture_id
     TkSuggestRequest:
       type: object
       description: |-
