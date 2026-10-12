@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, Download, Flag, Mail, ShieldCheck, Trophy, UserCheck, UserPlus, type LucideIcon } from "lucide-react";
+import { Briefcase, Download, Flag, LifeBuoy, Mail, ShieldCheck, Trophy, UserCheck, UserPlus, type LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, unwrap } from "../api/client";
@@ -167,6 +167,7 @@ export default function Overview() {
         have.has("mentors.decide") && { id: "mentors", icon: UserCheck, count: d.mentorship.pending_applications, text: "mentor applications are waiting", to: "/admin/mentors", action: "Review" },
         have.has("jobs.moderate") && { id: "jobs", icon: Briefcase, count: d.pending.jobs_awaiting_review, text: "jobs are waiting for review", to: "/admin/jobs", action: "Review" },
         have.has("editorial.manage") && { id: "wins", icon: Trophy, count: d.pending.wins_awaiting_review, text: "wins are waiting for review", to: "/admin/wins", action: "Review" },
+        have.has("support.manage") && { id: "support", icon: LifeBuoy, count: d.pending.support_overdue, text: "support requests have waited past the reply time", to: "/admin/support?tab=open&sort=created", action: "Reply" },
         have.has("members.view") && { id: "unconfirmed", icon: Mail, count: d.pending.registrations_unverified, text: "sign ups have not confirmed their email", to: "/admin/members?status=pending", action: "See who" },
       ].filter(Boolean) as Attention[]).filter((x) => x.count > 0)
     : [];

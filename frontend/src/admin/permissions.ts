@@ -21,6 +21,7 @@ const COMMUNITY_ADMIN = [
   "reports.handle",
   "feed.moderate",
   "dashboard.view",
+  "support.manage",
 ];
 const SUPER_ADMIN = [...COMMUNITY_ADMIN, "roles.manage", "audit.read", "settings.manage", "toolkit.settings"];
 

@@ -113,6 +113,9 @@ export function Login() {
       <p className="body-sm" style={{ margin: 0 }}>
         <Link className="app-link" to="/forgot-password">
           Forgot your password?
+        </Link>{" "}
+        <Link className="app-link" to="/help">
+          Contact support
         </Link>
       </p>
       <hr className="app-divider" style={{ margin: 0 }} />

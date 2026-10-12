@@ -7,8 +7,8 @@ import { signIn, signInAdmin } from "./helpers";
  * narrowest and widest, for WCAG 2.2 AA rules an automated tool can judge and for sideways scroll.
  * It does not replace trying the app with a screen reader.
  */
-const PUBLIC = ["/", "/explore", "/news", "/login", "/register", "/forgot-password", "/legal/terms"];
-const MEMBER = ["/app", "/app/feed", "/app/directory", "/app/jobs", "/app/jobs/new", "/app/events", "/app/learn", "/app/mentors", "/app/mentors/sessions", "/app/news", "/app/notifications", "/app/me", "/app/settings", "/app/launch"];
+const PUBLIC = ["/", "/explore", "/news", "/login", "/register", "/forgot-password", "/legal/terms", "/help"];
+const MEMBER = ["/app", "/app/feed", "/app/directory", "/app/jobs", "/app/jobs/new", "/app/events", "/app/learn", "/app/mentors", "/app/mentors/sessions", "/app/news", "/app/notifications", "/app/me", "/app/settings", "/app/launch", "/app/support", "/app/search?q=ada"];
 const TABS = ["", "/profile", "/score", "/plan", "/forecast", "/decks", "/prototypes", "/partner", "/sharing"];
 const COMBOS = [
   { width: 360, height: 780, scheme: "light" },
@@ -66,7 +66,7 @@ for (const { width, height, scheme } of COMBOS) {
   });
 }
 
-const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/approvals", "/admin/approvals?next=1", "/admin/news", "/admin/events", "/admin/courses", "/admin/email", "/admin/lists", "/admin/settings", "/admin/settings?section=community", "/admin/settings?section=team", "/admin/settings?section=appearance", "/admin/design", "/admin/security"];
+const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/approvals", "/admin/approvals?next=1", "/admin/news", "/admin/events", "/admin/courses", "/admin/email", "/admin/lists", "/admin/settings", "/admin/settings?section=community", "/admin/settings?section=team", "/admin/settings?section=appearance", "/admin/design", "/admin/security", "/admin/support", "/admin/support/replies", "/admin/search?q=ada"];
 
 for (const { width, height, scheme } of [COMBOS[1], COMBOS[2], COMBOS[4]]) {
   test(`admin console, ${width}px wide, ${scheme} theme`, async ({ browser }) => {

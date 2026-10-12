@@ -6,6 +6,9 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { GuestOnly, RequireAuth } from "./auth/guards";
 import { AppLayout } from "./layouts/AppLayout";
 import { SearchPage } from "./shell/SearchPage";
+import { HelpPage } from "./pages/support/Help";
+import { MySupportPage } from "./pages/support/MySupport";
+import { SupportTicketPage } from "./pages/support/Ticket";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { PublicLayout } from "./layouts/PublicLayout";
 import { Design } from "./pages/Design";
@@ -71,6 +74,8 @@ const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
 const AdminSettings = lazy(() => import("./admin/Settings"));
 const AdminDesign = lazy(() => import("./admin/AdminDesign"));
+const AdminSupport = lazy(() => import("./admin/Support"));
+const AdminSupportReplies = lazy(() => import("./admin/SupportReplies"));
 const AdminSecurity = lazy(() => import("./admin/Security"));
 const NewsStory = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsStory })));
 
@@ -109,6 +114,7 @@ export function App() {
                   <Route path="news" element={<NewsList />} />
                   <Route path="news/:slug" element={<NewsItem />} />
                   <Route path="legal/:doc" element={<Legal />} />
+                  <Route path="help" element={<HelpPage />} />
                   <Route path="design" element={<Design />} />
                 </Route>
                 <Route path="share/:token" element={<SharedView />} />
@@ -158,6 +164,8 @@ export function App() {
                       <Route path="sharing" element={<SharingTab />} />
                     </Route>
                     <Route path="search" element={<SearchPage scope="member" />} />
+                    <Route path="support" element={<MySupportPage />} />
+                    <Route path="support/:id" element={<SupportTicketPage />} />
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="me" element={<Profile />} />
                     <Route path="settings" element={<Settings />} />
@@ -181,6 +189,8 @@ export function App() {
                     <Route path="lists" element={<AdminLists />} />
                     <Route path="settings" element={<AdminSettings />} />
                     <Route path="search" element={<SearchPage scope="admin" />} />
+                    <Route path="support" element={<AdminSupport />} />
+                    <Route path="support/replies" element={<AdminSupportReplies />} />
                     <Route path="design" element={<AdminDesign />} />
                     <Route path="security" element={<AdminSecurity />} />
                     <Route path="*" element={<AdminStub />} />

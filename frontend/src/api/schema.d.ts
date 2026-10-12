@@ -2161,6 +2161,188 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/support/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** People a request can be assigned to */
+        get: operations["admin_support_agents_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/attachments/{attachment_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A short lived link to a file on a request */
+        get: operations["admin_support_attachments_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/canned-replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saved replies */
+        get: operations["admin_support_canned_replies_list"];
+        put?: never;
+        /** Save a reply */
+        post: operations["admin_support_canned_replies_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/canned-replies/{reply_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change a saved reply */
+        put: operations["admin_support_canned_replies_update"];
+        post?: never;
+        /** Delete a saved reply */
+        delete: operations["admin_support_canned_replies_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Numbers for the top of the inbox */
+        get: operations["admin_support_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The support inbox
+         * @description `status=working` means everything not resolved. `assignee` is `me`, `unassigned` or a person's id. `q` matches the ticket number (SUP-1042), subject, name and email.
+         */
+        get: operations["admin_support_tickets_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One request with its whole conversation, internal notes included */
+        get: operations["admin_support_ticket_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change status, assignee, priority or category */
+        patch: operations["admin_support_tickets_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reply to the member, or leave an internal note
+         * @description A reply moves the request to `status` (default: awaiting the member) and tells the member. An internal note changes nothing and is never shown to the member.
+         */
+        post: operations["admin_support_tickets_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a resolved request */
+        post: operations["admin_support_tickets_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a request
+         * @description Records who resolved it and when, and tells the member.
+         */
+        post: operations["admin_support_tickets_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/win-submissions": {
         parameters: {
             query?: never;
@@ -4912,6 +5094,138 @@ export interface paths {
         patch: operations["startups_visibility_partial_update"];
         trace?: never;
     };
+    "/api/v1/support/attachments/{attachment_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A short lived link to a file attached to one of your requests */
+        get: operations["support_attachments_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for help without signing in
+         * @description Meant for sign in problems. We answer by email. A hidden field named `website` must stay empty.
+         */
+        post: operations["support_contact_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your support requests */
+        get: operations["support_tickets_list"];
+        put?: never;
+        /**
+         * Send a support request
+         * @description Attach up to three files (PDF or image, 5 MB each) by passing the ids of ready `support_attachment` uploads.
+         */
+        post: operations["support_tickets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One of your requests, with its conversation
+         * @description Internal notes are never included.
+         */
+        get: operations["support_tickets_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say whether the help was useful */
+        post: operations["support_tickets_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reply on one of your requests */
+        post: operations["support_tickets_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a resolved request
+         * @description Allowed for 14 days after it was resolved.
+         */
+        post: operations["support_tickets_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toolkit/admin/deck-templates": {
         parameters: {
             query?: never;
@@ -7020,6 +7334,35 @@ export interface components {
             mentor_email: string;
             mentee_email: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        AdminMessageRequest: {
+            body: string;
+            /** @default false */
+            internal: boolean;
+            /**
+             * @description Where the request goes after this reply. Ignored for an internal note.
+             *
+             *     * `in_progress` - in_progress
+             *     * `awaiting_member` - awaiting_member
+             *     * `resolved` - resolved
+             * @default awaiting_member
+             */
+            status: components["schemas"]["AdminMessageStatusEnum"];
+            /** @description Ready `support_attachment` uploads, at most 3. */
+            attachments?: string[];
+        };
+        /**
+         * @description * `in_progress` - in_progress
+         *     * `awaiting_member` - awaiting_member
+         *     * `resolved` - resolved
+         * @enum {string}
+         */
+        AdminMessageStatusEnum: "in_progress" | "awaiting_member" | "resolved";
         AdminModule: {
             /** Format: uuid */
             id: string;
@@ -7077,6 +7420,82 @@ export interface components {
             ventures?: components["schemas"]["AdminHit"][];
             tickets?: components["schemas"]["AdminHit"][];
         };
+        AdminTicketDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+            priority: string;
+            readonly member: {
+                [key: string]: unknown;
+            };
+            readonly assignee: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            first_response_at: string;
+            readonly is_overdue: boolean;
+            readonly reopened_count: number;
+            readonly messages: {
+                [key: string]: unknown;
+            }[];
+            readonly previous_tickets: number;
+            /** Format: date-time */
+            readonly member_joined_at: string | null;
+        };
+        AdminTicketRow: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+            priority: string;
+            readonly member: {
+                [key: string]: unknown;
+            };
+            readonly assignee: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            first_response_at: string;
+            readonly is_overdue: boolean;
+            readonly reopened_count: number;
+        };
+        /**
+         * @description * `open` - open
+         *     * `in_progress` - in_progress
+         *     * `awaiting_member` - awaiting_member
+         *     * `resolved` - resolved
+         * @enum {string}
+         */
+        AdminTicketUpdateStatusEnum: "open" | "in_progress" | "awaiting_member" | "resolved";
         AdminWin: {
             /** Format: uuid */
             id: string;
@@ -7198,6 +7617,17 @@ export interface components {
          * @enum {string}
          */
         ApplyMethodEnum: "url" | "email";
+        Attachment: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly filename: string;
+            readonly size: number;
+            readonly content_type: string;
+        };
+        AttachmentLink: {
+            url: string;
+            expires_in: number;
+        };
         Attendee: {
             /** Format: uuid */
             user_id: string;
@@ -7467,6 +7897,28 @@ export interface components {
             /** Format: date-time */
             scheduled_at: string;
         };
+        CannedReplyOut: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly title: string;
+            readonly body: string;
+            readonly category: string;
+            readonly active: boolean;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CannedReplyRequest: {
+            title: string;
+            body: string;
+            /** @default  */
+            category: string;
+            /** @default true */
+            active: boolean;
+        };
         Categories: {
             categories: string[];
         };
@@ -7597,6 +8049,15 @@ export interface components {
         Country: {
             code: string;
             name: string;
+        };
+        Counts: {
+            open: number;
+            in_progress: number;
+            awaiting_member: number;
+            resolved: number;
+            resolved_this_week: number;
+            working: number;
+            total: number;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -7989,6 +8450,17 @@ export interface components {
             outcome: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        FeedbackRequest: {
+            satisfaction: components["schemas"]["SatisfactionEnum"];
+            /** @default  */
+            comment: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -8861,6 +9333,17 @@ export interface components {
         Message: {
             detail: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        MessageCreateRequest: {
+            message: string;
+            /** @description Ready `support_attachment` uploads, at most 3. */
+            attachments?: string[];
+        };
         MetricInfo: {
             metric: string;
             description: string;
@@ -9214,6 +9697,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AdminReport"][];
         };
+        PaginatedAdminTicketRowList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminTicketRow"][];
+        };
         PaginatedAdminWinList: {
             /** @example 123 */
             count: number;
@@ -9303,6 +9801,34 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Segment"][];
+        };
+        PaginatedTicketList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Ticket"][];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PatchedAdminTicketUpdateRequest: {
+            status?: components["schemas"]["AdminTicketUpdateStatusEnum"];
+            /** Format: uuid */
+            assignee?: string | null;
+            priority?: components["schemas"]["PriorityEnum"];
+            category?: components["schemas"]["SupportCategoryEnum"];
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -9775,6 +10301,13 @@ export interface components {
             amount_minor: number;
             currency: string;
         };
+        /**
+         * @description * `low` - low
+         *     * `normal` - normal
+         *     * `high` - high
+         * @enum {string}
+         */
+        PriorityEnum: "low" | "normal" | "high";
         /** @description Output shape. Every field is optional because hidden groups are left out entirely. */
         Profile: {
             /** Format: uuid */
@@ -9818,6 +10351,21 @@ export interface components {
          * @enum {string}
          */
         PrototypeKindEnum: "web" | "mobile";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PublicContactRequest: {
+            name: string;
+            /** Format: email */
+            email: string;
+            subject: string;
+            message: string;
+            /** @default  */
+            website: string;
+        };
         PublicCourse: {
             slug: string;
             title: string;
@@ -9971,6 +10519,8 @@ export interface components {
             open_reports: number;
             jobs_awaiting_review: number;
             wins_awaiting_review: number;
+            support_unanswered: number;
+            support_overdue: number;
         };
         Range: {
             /** Format: date-time */
@@ -10372,6 +10922,12 @@ export interface components {
          * @enum {string}
          */
         RolesEnum: "member" | "mentor";
+        /**
+         * @description * `up` - up
+         *     * `down` - down
+         * @enum {string}
+         */
+        SatisfactionEnum: "up" | "down";
         SaveResult: {
             /** Format: uuid */
             job_id: string;
@@ -10783,6 +11339,12 @@ export interface components {
             name: string;
             logo: components["schemas"]["Image"] | null;
         };
+        Stats: {
+            counts: components["schemas"]["Counts"];
+            median_first_response_seconds: number | null;
+            overdue: number;
+            sla_hours: number;
+        };
         Status: {
             status: string;
         };
@@ -10795,6 +11357,40 @@ export interface components {
             image: components["schemas"]["Image"] | null;
             score: number;
             reasons: string[];
+        };
+        /**
+         * @description * `account` - account
+         *     * `approval` - approval
+         *     * `profile` - profile
+         *     * `learning` - learning
+         *     * `mentorship` - mentorship
+         *     * `jobs_events` - jobs_events
+         *     * `payments` - payments
+         *     * `problem` - problem
+         *     * `other` - other
+         * @enum {string}
+         */
+        SupportCategoryEnum: "account" | "approval" | "profile" | "learning" | "mentorship" | "jobs_events" | "payments" | "problem" | "other";
+        SupportMessage: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly author: {
+                [key: string]: unknown;
+            };
+            readonly body: string;
+            readonly is_internal: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            attachments: components["schemas"]["Attachment"][];
+        };
+        SupportPerson: {
+            /** Format: uuid */
+            id: string | null;
+            name: string;
+            email: string;
+            avatar: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * @description * `profile_complete` - profile_complete
@@ -10855,6 +11451,62 @@ export interface components {
         TemplateWriteRequest: {
             name: string;
             blocks: {
+                [key: string]: unknown;
+            }[];
+        };
+        Ticket: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        TicketCreateRequest: {
+            category: components["schemas"]["SupportCategoryEnum"];
+            subject: string;
+            message: string;
+            /** @description Ready `support_attachment` uploads, at most 3. */
+            attachments?: string[];
+        };
+        TicketDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+            readonly messages: {
                 [key: string]: unknown;
             }[];
         };
@@ -12103,9 +12755,10 @@ export interface components {
          *     * `campaign_image` - Campaign Image
          *     * `course_cover` - Course Cover
          *     * `course_file` - Course File
+         *     * `support_attachment` - Support Attachment
          * @enum {string}
          */
-        UploadPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file";
+        UploadPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "support_attachment";
         /**
          * @description * `profile_photo` - profile_photo
          *     * `startup_logo` - startup_logo
@@ -12114,9 +12767,10 @@ export interface components {
          *     * `campaign_image` - campaign_image
          *     * `course_cover` - course_cover
          *     * `course_file` - course_file
+         *     * `support_attachment` - support_attachment
          * @enum {string}
          */
-        UploadRequestPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file";
+        UploadRequestPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "support_attachment";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -18936,6 +19590,620 @@ export interface operations {
             };
             /** @description Only listed startups can be featured */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_agents_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportPerson"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_attachments_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentLink"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CannedReplyOut"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CannedReplyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CannedReplyOut"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CannedReplyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CannedReplyOut"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stats"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_list: {
+        parameters: {
+            query?: {
+                assignee?: string;
+                category?: string;
+                created_after?: string | null;
+                created_before?: string | null;
+                limit?: number;
+                offset?: number;
+                /**
+                 * @description * `number` - number
+                 *     * `-number` - -number
+                 *     * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 *     * `last_activity_at` - last_activity_at
+                 *     * `-last_activity_at` - -last_activity_at
+                 *     * `status` - status
+                 *     * `-status` - -status
+                 *     * `category` - category
+                 *     * `-category` - -category
+                 */
+                ordering?: "number" | "-number" | "created_at" | "-created_at" | "last_activity_at" | "-last_activity_at" | "status" | "-status" | "category" | "-category";
+                /**
+                 * @description * `low` - low
+                 *     * `normal` - normal
+                 *     * `high` - high
+                 */
+                priority?: "low" | "normal" | "high" | "";
+                q?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminTicketRowList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_ticket_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAdminTicketUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMessageRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportMessage"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26285,6 +27553,350 @@ export interface operations {
             };
             /** @description If-Match header missing */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_attachments_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentLink"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_contact_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicContactRequest"];
+            };
+        };
+        responses: {
+            /** @description Received */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /**
+                 * @description * `open` - open
+                 *     * `in_progress` - in_progress
+                 *     * `awaiting_member` - awaiting_member
+                 *     * `resolved` - resolved
+                 */
+                status?: "open" | "in_progress" | "awaiting_member" | "resolved" | "";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTicketList"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Send the same value when retrying, so a double click opens one request. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TicketCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not resolved yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportMessage"];
+                };
+            };
+            /** @description Invalid message */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request is resolved: reopen it first */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not resolved, or too long ago */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

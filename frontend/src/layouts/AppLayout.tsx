@@ -14,16 +14,23 @@ import "../styles/admin.css";
 import "../styles/member-shell.css";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { MemberTopBar } from "./shell/MemberTopBar";
+import { SupportProvider, useSupport } from "../support/SupportProvider";
 import { MEMBER_NAV } from "./shell/memberNav";
-
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL ?? "support@withonyeka.com";
-const SUPPORT_HREF = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("WO Community support")}`;
 
 /**
  * The signed-in frame, built the same way as the admin console: a floating sidebar that collapses
  * to a rail (a drawer on narrow screens), a floating top bar with search, and the page.
  */
 export function AppLayout() {
+  return (
+    <SupportProvider>
+      <Frame />
+    </SupportProvider>
+  );
+}
+
+function Frame() {
+  const support = useSupport();
   const { isPending, me } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,7 +75,7 @@ export function AppLayout() {
       person={{ id: me?.id, name, role: roles.includes("mentor") ? "mentor" : "member" }}
       home={{ to: "/app", label: "WO Community, home" }}
       navLabel="Main"
-      help={{ label: "Contact support", href: SUPPORT_HREF }}
+      help={{ label: "Contact support", onClick: () => support.open() }}
     />
   );
 
