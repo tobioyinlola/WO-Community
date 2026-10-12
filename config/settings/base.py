@@ -187,6 +187,8 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "CategoryEnum": "apps.feed.models.CATEGORIES",
+        "SupportCategoryEnum": "apps.support.domain.CATEGORIES",
         "ChangeSetStatusEnum": "apps.toolkit.partner.models.CHANGE_STATUSES",
         "PrototypeKindEnum": "apps.toolkit.prototypes.spec.KINDS",
         "ShareSubjectTypeEnum": "apps.toolkit.sharing.models.SUBJECT_TYPES",

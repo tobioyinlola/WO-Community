@@ -24,9 +24,9 @@ from apps.support.serializers import (
     AttachmentLinkSerializer,
     CannedReplyOutSerializer,
     CannedReplySerializer,
-    MessageSerializer,
-    PersonSerializer,
     StatsSerializer,
+    SupportMessageSerializer,
+    SupportPersonSerializer,
     person,
 )
 
@@ -66,7 +66,7 @@ class AdminTicketsView(APIView):
     @extend_schema(
         operation_id="admin_support_tickets_list",
         summary="The support inbox",
-        description="`status=open` means everything not resolved. `assignee` is `me`, "
+        description="`status=working` means everything not resolved. `assignee` is `me`, "
         "`unassigned` or a person's id. `q` matches the ticket number (SUP-1042), subject, name "
         "and email.",
         parameters=[AdminTicketQuerySerializer],
@@ -125,7 +125,11 @@ class AdminTicketMessagesView(APIView):
         description="A reply moves the request to `status` (default: awaiting the member) and "
         "tells the member. An internal note changes nothing and is never shown to the member.",
         request=AdminMessageSerializer,
-        responses={201: MessageSerializer, 400: OpenApiResponse(description="Invalid"), **ERRORS},
+        responses={
+            201: SupportMessageSerializer,
+            400: OpenApiResponse(description="Invalid"),
+            **ERRORS,
+        },
         tags=["admin"],
     )
     def post(self, request: Request, ticket_id: UUID) -> Response:
@@ -140,7 +144,7 @@ class AdminTicketMessagesView(APIView):
             status=data.validated_data["status"],
             upload_ids=data.validated_data["attachments"],
         )
-        return Response(MessageSerializer(row).data, status=status.HTTP_201_CREATED)
+        return Response(SupportMessageSerializer(row).data, status=status.HTTP_201_CREATED)
 
 
 class AdminTicketResolveView(APIView):
@@ -201,7 +205,7 @@ class AdminSupportAgentsView(APIView):
 
     @extend_schema(
         summary="People a request can be assigned to",
-        responses={200: PersonSerializer(many=True), **ERRORS},
+        responses={200: SupportPersonSerializer(many=True), **ERRORS},
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
@@ -212,7 +216,7 @@ class AdminSupportAgentsView(APIView):
             .order_by("email")
         )
         rows = [person(u) for u in users if "support.manage" in permissions_for(u.role_names())]
-        return Response(PersonSerializer(rows, many=True).data)
+        return Response(SupportPersonSerializer(rows, many=True).data)
 
 
 class AdminCannedRepliesView(APIView):

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from rest_framework import serializers
@@ -13,6 +14,16 @@ Category = serializers.ChoiceField(choices=domain.CATEGORIES)
 
 def _words(value: str) -> str:
     return plain(value)
+
+
+def _known_category(value: str) -> str:
+    """Blank means any; otherwise it must be one of the categories.
+
+    Checked by hand rather than as a choice field so the API description has one category list.
+    """
+    if value and value not in domain.CATEGORIES:
+        raise serializers.ValidationError("Choose one of the listed categories.")
+    return value
 
 
 # --- input ---
@@ -101,12 +112,8 @@ class AdminTicketUpdateSerializer(StrictSerializer):
 
 class AdminTicketQuerySerializer(StrictSerializer):
     q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
-    status = serializers.ChoiceField(
-        choices=("open", *domain.STATUSES), required=False, allow_blank=True, default=""
-    )
-    category = serializers.ChoiceField(
-        choices=domain.CATEGORIES, required=False, allow_blank=True, default=""
-    )
+    status = serializers.CharField(required=False, allow_blank=True, default="", max_length=20)
+    category = serializers.CharField(required=False, allow_blank=True, default="", max_length=20)
     priority = serializers.ChoiceField(
         choices=domain.PRIORITIES, required=False, allow_blank=True, default=""
     )
@@ -119,6 +126,16 @@ class AdminTicketQuerySerializer(StrictSerializer):
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
     offset = serializers.IntegerField(required=False, min_value=0)
 
+    def validate_status(self, value: str) -> str:
+        if value and value not in ("working", *domain.STATUSES):
+            raise serializers.ValidationError(
+                "Choose a status, or working for everything not resolved."
+            )
+        return value
+
+    def validate_category(self, value: str) -> str:
+        return _known_category(value)
+
     def validate_assignee(self, value: str) -> str:
         if value in ("", "me", "unassigned"):
             return value
@@ -129,10 +146,11 @@ class AdminTicketQuerySerializer(StrictSerializer):
 class CannedReplySerializer(StrictSerializer):
     title = serializers.CharField(min_length=2, max_length=80)
     body = serializers.CharField(min_length=1, max_length=4000)
-    category = serializers.ChoiceField(
-        choices=domain.CATEGORIES, required=False, allow_blank=True, default=""
-    )
+    category = serializers.CharField(required=False, allow_blank=True, default="", max_length=20)
     active = serializers.BooleanField(required=False, default=True)
+
+    def validate_category(self, value: str) -> str:
+        return _known_category(value)
 
 
 # --- output ---
@@ -149,15 +167,17 @@ class AttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupportAttachment
         fields = ["id", "filename", "size", "content_type"]
+        read_only_fields = fields
 
 
-class MessageSerializer(serializers.ModelSerializer):
+class SupportMessageSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     attachments = AttachmentSerializer(many=True)
 
     class Meta:
         model = SupportMessage
         fields = ["id", "author", "body", "is_internal", "created_at", "attachments"]
+        read_only_fields = fields
 
     def get_author(self, obj: SupportMessage) -> dict[str, Any]:
         return dict(AuthorSerializer(selectors.author_card(obj)).data)
@@ -187,6 +207,7 @@ class TicketSerializer(serializers.ModelSerializer):
             "satisfaction",
             "satisfaction_comment",
         ]
+        read_only_fields = fields
 
     def get_category_label(self, obj: SupportTicket) -> str:
         return domain.CATEGORY_LABELS[obj.category]
@@ -203,13 +224,14 @@ class TicketDetailSerializer(TicketSerializer):
 
     class Meta(TicketSerializer.Meta):
         fields = [*TicketSerializer.Meta.fields, "messages"]
+        read_only_fields = fields
 
     def get_messages(self, obj: SupportTicket) -> list[dict[str, Any]]:
         rows = selectors.messages(obj, include_internal=False)
-        return list(MessageSerializer(rows, many=True).data)
+        return list(SupportMessageSerializer(rows, many=True).data)
 
 
-class PersonSerializer(serializers.Serializer):
+class SupportPersonSerializer(serializers.Serializer):
     id = serializers.UUIDField(allow_null=True)
     name = serializers.CharField()
     email = serializers.CharField()
@@ -244,14 +266,15 @@ class AdminTicketRowSerializer(TicketSerializer):
             "is_overdue",
             "reopened_count",
         ]
+        read_only_fields = fields
 
     def get_member(self, obj: SupportTicket) -> dict[str, Any]:
-        return dict(PersonSerializer(person(obj.member, obj.name, obj.email)).data)
+        return dict(SupportPersonSerializer(person(obj.member, obj.name, obj.email)).data)
 
     def get_assignee(self, obj: SupportTicket) -> dict[str, Any] | None:
         if obj.assignee is None:
             return None
-        return dict(PersonSerializer(person(obj.assignee)).data)
+        return dict(SupportPersonSerializer(person(obj.assignee)).data)
 
     def get_is_overdue(self, obj: SupportTicket) -> bool:
         from datetime import timedelta
@@ -279,16 +302,17 @@ class AdminTicketDetailSerializer(AdminTicketRowSerializer):
             "previous_tickets",
             "member_joined_at",
         ]
+        read_only_fields = fields
 
     def get_messages(self, obj: SupportTicket) -> list[dict[str, Any]]:
         return list(
-            MessageSerializer(selectors.messages(obj, include_internal=True), many=True).data
+            SupportMessageSerializer(selectors.messages(obj, include_internal=True), many=True).data
         )
 
     def get_previous_tickets(self, obj: SupportTicket) -> int:
         return selectors.previous_count(obj)
 
-    def get_member_joined_at(self, obj: SupportTicket) -> Any:
+    def get_member_joined_at(self, obj: SupportTicket) -> datetime | None:
         return obj.member.created_at if obj.member else None
 
 
@@ -313,6 +337,7 @@ class CannedReplyOutSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupportCannedReply
         fields = ["id", "title", "body", "category", "active"]
+        read_only_fields = fields
 
 
 class AttachmentLinkSerializer(serializers.Serializer):

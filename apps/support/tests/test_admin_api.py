@@ -136,7 +136,11 @@ def test_filters_and_search(as_ada, as_sam, sam):
     assert get(assignee=str(sam.pk)) == [a["id"]]
     assert get(q="phone") == [a["id"]]
     assert get(q=a["reference"]) == [a["id"]] and get(q=f"#{a['number']}") == [a["id"]]
+    assert set(get(status="working")) == {a["id"], b["id"]}
     assert set(get(status="open")) == {a["id"], b["id"]}
+    say(as_sam, a)
+    assert get(status="open") == [b["id"]]
+    assert get(status="awaiting_member") == [a["id"]]
     assert get(status="resolved") == []
     assert get(created_after=(timezone.now() + timedelta(days=1)).date().isoformat()) == []
 
@@ -274,9 +278,7 @@ def test_a_reply_to_someone_without_an_account_goes_by_email(api_client, as_sam,
 # --- changing a request ---
 
 
-def test_status_assignee_priority_and_category_can_be_changed_and_are_audited(
-    as_ada, as_sam, sam, truncate_audit
-):
+def test_status_assignee_priority_and_category_can_be_changed_and_are_audited(as_ada, as_sam, sam):
     ticket = open_one(as_ada)
     changed = as_sam.patch(
         one(ticket),
