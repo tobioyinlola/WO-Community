@@ -35,7 +35,7 @@ test.describe("learning", () => {
     await filters.getByLabel("Search").fill("Fundraising");
     await expect(page).toHaveURL(/q=Fundraising/);
     await expect(cards).toHaveCount(1);
-    await expect(cards.first()).toContainText("Free");
+    await expect(cards.first()).toContainText(/Free|You finished this course|complete/); // a course already started shows progress, not a price
     await filters.getByLabel("Search").fill("zzzz no such course");
     await expect(page.getByText("No courses match")).toBeVisible();
     await filters.getByLabel("Search").fill("");

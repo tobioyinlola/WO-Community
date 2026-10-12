@@ -66,7 +66,7 @@ for (const { width, height, scheme } of COMBOS) {
   });
 }
 
-const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/approvals", "/admin/approvals?next=1", "/admin/news", "/admin/events", "/admin/courses", "/admin/courses?new=1", "/admin/course-requests", "/admin/email", "/admin/lists", "/admin/settings", "/admin/settings?section=community", "/admin/settings?section=team", "/admin/settings?section=appearance", "/admin/design", "/admin/security", "/admin/support", "/admin/support/replies", "/admin/search?q=ada"];
+const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/approvals", "/admin/approvals?next=1", "/admin/news", "/admin/events", "/admin/courses", "/admin/courses?new=1", "/admin/course-requests", "/admin/certificates", "/admin/learning/certificate-template", "/admin/email", "/admin/lists", "/admin/settings", "/admin/settings?section=community", "/admin/settings?section=team", "/admin/settings?section=appearance", "/admin/design", "/admin/security", "/admin/support", "/admin/support/replies", "/admin/search?q=ada"];
 
 for (const { width, height, scheme } of [COMBOS[1], COMBOS[2], COMBOS[4]]) {
   test(`admin console, ${width}px wide, ${scheme} theme`, async ({ browser }) => {
