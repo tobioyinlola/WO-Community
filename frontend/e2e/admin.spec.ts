@@ -18,40 +18,44 @@ test.describe("the admin console", () => {
     await signIn(page, EDITOR);
     await page.goto("/admin");
     await expect(page.getByRole("heading", { level: 1, name: "Set up two step sign in" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Admin" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Admin sections" })).toHaveCount(0);
     const key = (await page.locator("code").first().innerText()).trim();
     await page.getByLabel("Code from the app").fill(await freshCode(key));
     await page.getByRole("button", { name: "Turn on two step sign in" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Keep these recovery codes" })).toBeVisible();
     await page.getByRole("button", { name: "I have saved them" }).click();
-    const nav = page.getByRole("navigation", { name: "Admin" });
-    await expect(nav.getByRole("link", { name: "Jobs" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Members" })).toHaveCount(0);
+    const nav = page.getByRole("navigation", { name: "Admin sections" });
+    await expect(nav.getByRole("button", { name: "Jobs" })).toBeVisible();
+    await expect(nav.getByRole("button", { name: "Members" })).toHaveCount(0);
     expect(problems).toEqual([]);
   });
 
   test("the overview shows what is waiting", async ({ page }) => {
     const problems = watchConsole(page);
     await signInAdmin(page);
-    await expect(page.getByText("Waiting for approval")).toBeVisible();
-    await expect(page.getByText("Open reports")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Community" })).toBeVisible();
+    await expect(page.getByText("Pending approvals").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Needs your attention" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dynamics" })).toBeVisible();
+    await expect(page.getByRole("listbox", { name: /one column for each day/ })).toBeVisible();
     expect(problems).toEqual([]);
   });
 
   test("a member can be suspended and reinstated, and the editor's two step sign in reset", async ({ page }) => {
     await signInAdmin(page);
     await page.goto("/admin/members?q=samuel");
-    await page.getByRole("button", { name: "Suspend samuel@demo.test" }).click();
+    await page.getByRole("button", { name: "Actions for samuel@demo.test" }).click();
+    await page.getByRole("menuitem", { name: "Suspend" }).click();
     await page.getByLabel("Reason").fill("Checking the console");
     await page.getByRole("button", { name: "Suspend", exact: true }).click();
     await expect(page.getByText("Member suspended")).toBeVisible();
-    await page.getByRole("button", { name: "Reinstate samuel@demo.test" }).click();
+    await page.getByRole("button", { name: "Actions for samuel@demo.test" }).click();
+    await page.getByRole("menuitem", { name: "Reinstate" }).click();
     await page.getByRole("button", { name: "Reinstate", exact: true }).click();
     await expect(page.getByText("Member reinstated")).toBeVisible();
 
     await page.goto("/admin/members?q=editor");
-    await page.getByRole("button", { name: `Reset two step sign in for ${EDITOR}` }).click();
+    await page.getByRole("button", { name: `Actions for ${EDITOR}` }).click();
+    await page.getByRole("menuitem", { name: "Reset two step sign in" }).click();
     await page.getByRole("button", { name: "Reset", exact: true }).click();
     await expect(page.getByText("Two step sign in reset")).toBeVisible();
   });
@@ -219,6 +223,91 @@ test.describe("the admin console", () => {
     await page.getByRole("button", { name: `Delete ${name} renamed` }).click();
     await page.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(page.getByText("Entry deleted")).toBeVisible();
+  });
+
+  test("the sidebar collapses to a rail, remembers it, and a flyout lists a group's pages", async ({ page }) => {
+    await signInAdmin(page);
+    await page.getByRole("button", { name: "Collapse sidebar" }).click();
+    await expect(page.getByRole("button", { name: "Expand sidebar" })).toHaveAttribute("aria-expanded", "false");
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
+    await page.getByRole("button", { name: "Members", exact: true }).hover();
+    await expect(page.getByRole("menuitem", { name: /Approvals/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("[");
+    await expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
+  });
+
+  test("the command palette jumps to a page", async ({ page }) => {
+    await signInAdmin(page);
+    await page.keyboard.press("Control+k");
+    await page.getByPlaceholder(/Jump to a page/).fill("invit");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/admin\/invitations/);
+  });
+
+  test("members can be filtered, sorted and selected for bulk actions", async ({ page }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/members");
+    await page.getByLabel("Status", { exact: true }).selectOption("pending");
+    await page.getByRole("button", { name: "Apply filters" }).click();
+    await expect(page.getByRole("button", { name: "Remove filter Status: Pending" })).toBeVisible();
+    await page.getByRole("button", { name: "Member", exact: true }).click();
+    await expect(page).toHaveURL(/sort=email/);
+    await page.getByRole("checkbox", { name: /^Select / }).first().check();
+    await expect(page.getByRole("region", { name: "Actions for the selected rows" })).toBeVisible();
+    await page.getByRole("button", { name: "Clear all" }).first().click();
+    await expect(page.getByRole("button", { name: "Remove filter Status: Pending" })).toHaveCount(0);
+  });
+
+  test("a request opens in the drawer, can be stepped through, and a decision can be undone", async ({ page }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/approvals");
+    await page.locator("tbody tr").first().click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer.getByText(/^Request /)).toBeVisible();
+    await expect(drawer.getByRole("heading", { level: 2 })).toBeVisible();
+    await page.keyboard.press("j");
+    await page.keyboard.press("k");
+    await drawer.getByRole("button", { name: "Reject" }).click();
+    await drawer.getByLabel("Why are you rejecting this request?").fill("Not a fit for the community");
+    await drawer.getByRole("button", { name: "Reject", exact: true }).click();
+    await expect(page.getByText(/^Rejecting /)).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.locator("tbody tr").first()).toBeVisible();
+    await page.keyboard.press("Escape");
+  });
+
+  test("a request is approved from the keyboard once the undo window has passed", async ({ page }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/approvals?next=1");
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Approve" })).toBeVisible();
+    await page.keyboard.press("a");
+    await expect(page.getByText(/^Approving /)).toBeVisible();
+    await expect(page.getByText(/ approved$/)).toBeVisible({ timeout: 30_000 });
+  });
+
+  test("settings show the job board and the appearance choices", async ({ page }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/settings?section=community");
+    const waits = page.getByLabel("New jobs wait for an admin before they go live");
+    const was = await waits.isChecked();
+    await waits.setChecked(!was);
+    await expect(page.getByRole("region", { name: "Unsaved changes" })).toBeVisible();
+    await page.getByRole("button", { name: "Discard" }).click();
+    await expect(page.getByRole("region", { name: "Unsaved changes" })).toHaveCount(0);
+    await page.goto("/admin/settings?section=appearance");
+    await page.getByLabel("Dark", { exact: false }).first().check();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.getByLabel("Light", { exact: false }).first().check();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  });
+
+  test("the design page shows the components in both themes", async ({ page }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/design");
+    await expect(page.getByRole("heading", { level: 1, name: "Admin design" })).toBeVisible();
+    await expect(page.locator("[data-theme=dark].adm-frame").first()).toBeVisible();
   });
 
   test("the code generator matches the published test vector", async () => {

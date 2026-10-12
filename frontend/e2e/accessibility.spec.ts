@@ -66,7 +66,7 @@ for (const { width, height, scheme } of COMBOS) {
   });
 }
 
-const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/news", "/admin/events", "/admin/courses", "/admin/email", "/admin/lists", "/admin/security"];
+const ADMIN_PAGES = ["/admin", "/admin/members", "/admin/invitations", "/admin/mentors", "/admin/reports", "/admin/jobs", "/admin/wins", "/admin/approvals", "/admin/approvals?next=1", "/admin/news", "/admin/events", "/admin/courses", "/admin/email", "/admin/lists", "/admin/settings", "/admin/settings?section=community", "/admin/settings?section=team", "/admin/settings?section=appearance", "/admin/design", "/admin/security"];
 
 for (const { width, height, scheme } of [COMBOS[1], COMBOS[2], COMBOS[4]]) {
   test(`admin console, ${width}px wide, ${scheme} theme`, async ({ browser }) => {
