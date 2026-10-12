@@ -4532,6 +4532,52 @@ paths:
           description: No such report
         '409':
           description: Already actioned
+  /api/v1/admin/search:
+    get:
+      operationId: admin_search_retrieve
+      description: Members (pending ones too), approvals, courses, jobs, events, ventures
+        and support tickets. A group is left out when the role does not hold its permission.
+      summary: Search the console
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 6
+      - in: query
+        name: q
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 100
+        required: true
+      - in: query
+        name: types
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSearchResult'
+          description: ''
+        '400':
+          description: Invalid query
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '429':
+          description: Too many searches
   /api/v1/admin/segments:
     get:
       operationId: admin_segments_list
@@ -8581,6 +8627,34 @@ paths:
           description: Neither or both of ids and all
         '401':
           description: Not logged in
+  /api/v1/notifications/unread-count:
+    get:
+      operationId: notifications_unread_count_retrieve
+      description: For the bell. Poll every 30 to 60 seconds with the last `ETag`
+        in `If-None-Match`; an unchanged count answers 304 with no body.
+      summary: How many notifications you have not read
+      parameters:
+      - in: header
+        name: If-None-Match
+        schema:
+          type: string
+      tags:
+      - notifications
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCount'
+          description: ''
+        '304':
+          description: Nothing changed
+        '401':
+          description: Not logged in
+        '403':
+          description: Not an active member
   /api/v1/ping:
     get:
       operationId: ping_retrieve
@@ -9675,6 +9749,87 @@ paths:
           description: Not an active member
         '429':
           description: Too many searches
+  /api/v1/search/recents:
+    get:
+      operationId: search_recents_retrieve
+      summary: Your recent searches
+      parameters:
+      - in: query
+        name: scope
+        schema:
+          enum:
+          - member
+          - admin
+          type: string
+          default: member
+          minLength: 1
+        description: |-
+          * `member` - member
+          * `admin` - admin
+      tags:
+      - search
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recents'
+          description: ''
+        '401':
+          description: Not logged in
+    post:
+      operationId: search_recents_create
+      description: Keeps the latest eight terms. A term already there moves to the
+        top.
+      summary: Remember a search
+      tags:
+      - search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RememberRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recents'
+          description: ''
+        '400':
+          description: Invalid term
+        '401':
+          description: Not logged in
+    delete:
+      operationId: search_recents_destroy
+      summary: Clear your recent searches
+      parameters:
+      - in: query
+        name: scope
+        schema:
+          enum:
+          - member
+          - admin
+          type: string
+          default: member
+          minLength: 1
+        description: |-
+          * `member` - member
+          * `admin` - admin
+      tags:
+      - search
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Cleared
+        '401':
+          description: Not logged in
   /api/v1/sessions:
     get:
       operationId: sessions_list
@@ -14714,6 +14869,30 @@ components:
       - timezone
       - title
       - type
+    AdminHit:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        subtitle:
+          type: string
+        status:
+          type: string
+        url:
+          type: string
+          description: Path in the console
+      required:
+      - id
+      - status
+      - subtitle
+      - title
+      - type
+      - url
     AdminItem:
       type: object
       properties:
@@ -15390,6 +15569,37 @@ components:
       - reporter
       - status
       - target
+    AdminSearchResult:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
+        ventures:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminHit'
     AdminWin:
       type: object
       properties:
@@ -21894,6 +22104,15 @@ components:
           maxLength: 1000
       required:
       - reason
+    Recents:
+      type: object
+      properties:
+        terms:
+          type: array
+          items:
+            type: string
+      required:
+      - terms
     RecommendedMentor:
       type: object
       properties:
@@ -22149,6 +22368,24 @@ components:
       required:
       - index
       - reason
+    RememberRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        term:
+          type: string
+          minLength: 2
+          maxLength: 100
+        scope:
+          allOf:
+          - $ref: '#/components/schemas/ScopeEnum'
+          default: member
+      required:
+      - term
     RenewRequest:
       type: object
       description: |-
@@ -22529,6 +22766,14 @@ components:
           format: date-time
       required:
       - publish_at
+    ScopeEnum:
+      enum:
+      - member
+      - admin
+      type: string
+      description: |-
+        * `member` - member
+        * `admin` - admin
     SearchHit:
       type: object
       properties:
@@ -26184,6 +26429,13 @@ components:
             $ref: '#/components/schemas/TractionItemRequest'
       required:
       - metrics
+    UnreadCount:
+      type: object
+      properties:
+        unread_count:
+          type: integer
+      required:
+      - unread_count
     UnsubscribeRequest:
       type: object
       description: |-

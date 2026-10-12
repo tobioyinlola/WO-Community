@@ -196,6 +196,45 @@ class NotificationsView(APIView):
         return response
 
 
+class UnreadCountSerializer(serializers.Serializer):
+    unread_count = serializers.IntegerField()
+
+
+class UnreadCountView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="How many notifications you have not read",
+        description="For the bell. Poll every 30 to 60 seconds with the last `ETag` in "
+        "`If-None-Match`; an unchanged count answers 304 with no body.",
+        parameters=[OpenApiParameter("If-None-Match", str, OpenApiParameter.HEADER)],
+        responses={
+            200: UnreadCountSerializer,
+            304: OpenApiResponse(description="Nothing changed"),
+            401: OpenApiResponse(description="Not logged in"),
+            403: OpenApiResponse(description="Not an active member"),
+        },
+        tags=["notifications"],
+    )
+    def get(self, request: Request) -> Response:
+        user_id = cast(UUID, request.user.pk)
+        tag = centre.count_fingerprint(user_id)
+        candidates = [
+            t.strip().removeprefix("W/")
+            for t in request.headers.get("If-None-Match", "").split(",")
+        ]
+        if tag in candidates:
+            not_modified = Response(status=status.HTTP_304_NOT_MODIFIED)
+            not_modified["ETag"] = tag
+            return not_modified
+        response = Response(
+            UnreadCountSerializer({"unread_count": centre.unread_count(user_id)}).data
+        )
+        response["ETag"] = tag
+        response["Cache-Control"] = "private, no-cache"
+        return response
+
+
 class MarkReadView(APIView):
     policy = policies.active_member
 
