@@ -469,7 +469,7 @@ def test_blocking_the_day_of_a_session_names_it(mentor_client, booking_mentor, m
 # --- two people asking for the same time at once ---
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 def test_two_mentees_asking_for_one_slot_at_once_get_one_booking(
     booking_mentor, make_user, client_for
 ):
