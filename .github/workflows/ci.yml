@@ -89,6 +89,93 @@ jobs:
       - name: Build
         run: npm run build
 
+  e2e:
+    name: Browser tests (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: screens and flows
+            specs: e2e/public-and-auth.spec.ts e2e/member.spec.ts e2e/launch.spec.ts e2e/admin.spec.ts
+          - name: widths and accessibility
+            specs: e2e/accessibility.spec.ts
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: wo
+          POSTGRES_PASSWORD: wo
+          POSTGRES_DB: wo
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wo" --health-interval 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6380:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      E2E_BROWSER: chromium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install -e ".[dev]"
+      - name: Install the web app and a browser
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Prepare the demo community
+        run: |
+          python manage.py migrate
+          python scripts/seed_demo.py
+          python scripts/seed_admin_demo.py
+      - name: Start the API and the worker
+        run: |
+          nohup python manage.py runserver 127.0.0.1:8000 --noreload > "$GITHUB_WORKSPACE/api.log" 2>&1 &
+          nohup celery -A config worker -l info -c 2 -Q critical,default,email,media,exports,analytics,ai > "$GITHUB_WORKSPACE/worker.log" 2>&1 &
+          for attempt in $(seq 1 60); do
+            curl -fs http://127.0.0.1:8000/health/live && exit 0
+            sleep 2
+          done
+          cat "$GITHUB_WORKSPACE/api.log"
+          exit 1
+      - name: Run the browser tests
+        working-directory: frontend
+        run: npx playwright test ${{ matrix.specs }}
+      - name: Show what the API refused
+        if: failure()
+        run: |
+          # Written as annotations so the reason is readable without downloading the log.
+          grep -E '" (400|401|403|409|412|428|429|500) ' api.log | tail -40 | while IFS= read -r line; do
+            echo "::warning title=API::${line:0:300}"
+          done
+          grep -iE 'traceback|error' worker.log | tail -10 | while IFS= read -r line; do
+            echo "::warning title=Worker::${line:0:300}"
+          done
+      - name: Keep the evidence when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-evidence-${{ strategy.job-index }}
+          path: |
+            frontend/test-results
+            api.log
+            worker.log
+          retention-days: 7
+
   image:
     name: Container image
     runs-on: ubuntu-latest

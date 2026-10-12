@@ -422,3 +422,11 @@ def test_an_order_must_name_every_entry_exactly_once(as_admin):
 def test_an_order_for_another_list_is_refused(as_admin):
     sector_ids = [e["id"] for e in as_admin.get(SECTORS).json()]
     assert as_admin.put(f"{STAGES}/order", {"ids": sector_ids}).status_code == 409
+
+
+def test_a_blank_slug_is_made_from_the_name(as_admin):
+    # The console sends an empty slug and lets the server choose, the same as leaving it out.
+    sent_blank = as_admin.post(SECTORS, {"name": "Space tech", "slug": ""}, format="json")
+    left_out = as_admin.post(SECTORS, {"name": "Deep sea tech"}, format="json")
+    assert sent_blank.status_code == 201 and sent_blank.json()["slug"] == "space-tech"
+    assert left_out.status_code == 201 and left_out.json()["slug"] == "deep-sea-tech"

@@ -7,6 +7,7 @@ import "@fontsource/jetbrains-mono/500.css";
 import "./styles/tokens.css";
 import "./styles/components.css";
 import "./styles/extras.css";
+import "./styles/app.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
