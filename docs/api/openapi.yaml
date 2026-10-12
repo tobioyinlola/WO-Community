@@ -3248,7 +3248,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedMemberList'
+                $ref: '#/components/schemas/PaginatedMemberRowList'
           description: ''
         '401':
           description: Not authenticated
@@ -18453,6 +18453,74 @@ components:
       - status
       - status_changed_at
       - status_reason
+    MemberRow:
+      type: object
+      description: 'A member in the table: the account, plus what they gave on joining.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        email_verified_at:
+          type: string
+          format: date-time
+        approved_at:
+          type: string
+          format: date-time
+        approval_source:
+          type: string
+        status_reason:
+          type: string
+        status_changed_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        name:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        startup:
+          type: string
+          readOnly: true
+        sector:
+          type: string
+          readOnly: true
+        stage:
+          type: string
+          readOnly: true
+      required:
+      - approval_source
+      - approved_at
+      - country
+      - created_at
+      - email
+      - email_verified_at
+      - id
+      - last_login
+      - name
+      - roles
+      - sector
+      - stage
+      - startup
+      - status
+      - status_changed_at
+      - status_reason
     Mentor:
       type: object
       properties:
@@ -19741,7 +19809,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Invitation'
-    PaginatedMemberList:
+    PaginatedMemberRowList:
       type: object
       required:
       - count
@@ -19763,7 +19831,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/Member'
+            $ref: '#/components/schemas/MemberRow'
     PaginatedSegmentList:
       type: object
       required:

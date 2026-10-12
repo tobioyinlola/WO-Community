@@ -71,5 +71,36 @@ def application_of(user: Any) -> dict[str, Any]:
             if startup
             else None
         ),
-        "timeline": sorted(timeline, key=lambda e: e["at"]),
+        "timeline": timeline,
     }
+
+
+def applicant_summaries(user_ids: list[Any]) -> dict[Any, dict[str, str]]:
+    """Name, country and first startup for a page of members, in two queries."""
+    from apps.profiles.models import FounderProfile
+    from apps.startups.models import Startup
+
+    out: dict[Any, dict[str, str]] = {
+        uid: {"name": "", "country": "", "startup": "", "sector": "", "stage": ""}
+        for uid in user_ids
+    }
+    for uid, name, country in FounderProfile.objects.filter(user_id__in=user_ids).values_list(
+        "user_id", "full_name", "country"
+    ):
+        out[uid]["name"] = name
+        out[uid]["country"] = country
+    seen: set[Any] = set()
+    for startup in (
+        Startup.objects.filter(owner_id__in=user_ids)
+        .select_related("sector", "stage")
+        .order_by("created_at")
+    ):
+        if startup.owner_id in seen:
+            continue
+        seen.add(startup.owner_id)
+        out[startup.owner_id].update(
+            startup=startup.name, sector=startup.sector.name, stage=startup.stage.name
+        )
+        if not out[startup.owner_id]["country"]:
+            out[startup.owner_id]["country"] = startup.country
+    return out

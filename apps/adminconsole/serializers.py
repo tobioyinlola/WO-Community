@@ -44,6 +44,34 @@ class MemberSerializer(serializers.Serializer):
         return sorted(obj.role_names())  # type: ignore[attr-defined]
 
 
+class MemberRowSerializer(MemberSerializer):
+    """A member in the table: the account, plus what they gave on joining."""
+
+    name = serializers.SerializerMethodField()
+    country = serializers.SerializerMethodField()
+    startup = serializers.SerializerMethodField()
+    sector = serializers.SerializerMethodField()
+    stage = serializers.SerializerMethodField()
+
+    def _summary(self, obj: Any) -> dict[str, str]:
+        return self.context.get("summaries", {}).get(obj.pk, {})
+
+    def get_name(self, obj: Any) -> str:
+        return self._summary(obj).get("name", "")
+
+    def get_country(self, obj: Any) -> str:
+        return self._summary(obj).get("country", "")
+
+    def get_startup(self, obj: Any) -> str:
+        return self._summary(obj).get("startup", "")
+
+    def get_sector(self, obj: Any) -> str:
+        return self._summary(obj).get("sector", "")
+
+    def get_stage(self, obj: Any) -> str:
+        return self._summary(obj).get("stage", "")
+
+
 class InvitationQuerySerializer(StrictSerializer):
     q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
     status = serializers.ChoiceField(choices=INVITATION_STATUSES, required=False, default="")

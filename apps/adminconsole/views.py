@@ -13,6 +13,7 @@ from apps.adminconsole import selectors as queues
 from apps.adminconsole.serializers import (
     ApplicationSerializer,
     MemberQuerySerializer,
+    MemberRowSerializer,
     MemberSerializer,
     QueueCountsSerializer,
     ReasonSerializer,
@@ -44,7 +45,7 @@ class MemberListView(APIView):
     @extend_schema(
         summary="Search and filter members",
         parameters=[MemberQuerySerializer],
-        responses={200: MemberSerializer(many=True), **ERRORS},
+        responses={200: MemberRowSerializer(many=True), **ERRORS},
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
@@ -56,7 +57,10 @@ class MemberListView(APIView):
         queryset = selectors.list_members(**filters)
         paginator = AdminLimitOffsetPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
-        return paginator.get_paginated_response(MemberSerializer(page, many=True).data)
+        rows = list(page or [])
+        summaries = queues.applicant_summaries([m.pk for m in rows])
+        data = MemberRowSerializer(rows, many=True, context={"summaries": summaries}).data
+        return paginator.get_paginated_response(data)
 
 
 class MemberDetailView(APIView):

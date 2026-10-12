@@ -476,3 +476,35 @@ def test_application_needs_the_members_permission_and_a_real_member(
     assert client_for(editor, mfa_age=5).get(url(target, "application")).status_code == 403
     missing = f"{MEMBERS}/00000000-0000-0000-0000-000000000000/application"
     assert as_admin.get(missing).status_code == 404
+
+
+def test_list_rows_carry_name_country_and_startup_without_a_query_each(
+    as_admin, make_user, django_assert_max_num_queries
+):
+    from apps.profiles import services as profile_services
+    from apps.startups import services as startup_services
+
+    person = make_user(email="founder@example.com", email_verified_at=timezone.now())
+    profile_services.create_from_signup(
+        person.pk, {"full_name": "Ife Bello", "country": "NG", "city": "Lagos"}
+    )
+    startup_services.create_from_signup(
+        person.pk,
+        {
+            "name": "Kuda Foods",
+            "country": "NG",
+            "city": "Lagos",
+            "sector": "agritech",
+            "stage": "seed",
+            "pitch": "Fresh produce in a day.",
+        },
+    )
+    for i in range(5):
+        make_user(email=f"extra{i}@example.com")
+    with django_assert_max_num_queries(15):
+        rows = as_admin.get(MEMBERS, {"q": "example.com"}).json()["results"]
+    mine = next(r for r in rows if r["email"] == "founder@example.com")
+    assert (mine["name"], mine["country"], mine["startup"]) == ("Ife Bello", "NG", "Kuda Foods")
+    assert mine["sector"] and mine["stage"]
+    other = next(r for r in rows if r["email"] == "extra0@example.com")
+    assert other["name"] == "" and other["startup"] == ""
