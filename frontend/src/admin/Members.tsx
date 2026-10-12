@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Check, Download, MoreHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { REFERRAL_SOURCES } from "../referrals/ref";
 import { api, unwrap } from "../api/client";
 import { useCountries } from "../api/reference";
 import type { components } from "../api/schema";
@@ -30,7 +31,7 @@ const STATUSES: Status[] = ["pending", "active", "suspended", "removed", "reject
 const TONE: Record<string, Tone> = { active: "success", pending: "warning", suspended: "danger", removed: "neutral", rejected: "neutral" };
 const SORTABLE = ["created_at", "email", "last_login", "status"];
 const SIZES = [25, 50, 100];
-const COLUMN_LABELS: Record<string, string> = { country: "Country", startup: "Startup", roles: "Roles", status: "Status", verified: "Email confirmed", created_at: "Joined", last_login: "Last active" };
+const COLUMN_LABELS: Record<string, string> = { country: "Country", startup: "Startup", source: "Source", referrer: "Referred by", roles: "Roles", status: "Status", verified: "Email confirmed", created_at: "Joined", last_login: "Last active" };
 
 type Action = { kind: "approve" | "reinstate" | "reset-mfa" | "reject" | "suspend" | "remove"; member: Member };
 
@@ -97,13 +98,14 @@ export default function Members() {
   const verified = params.get("verified") ?? "";
   const from = params.get("from") ?? "";
   const to = params.get("to") ?? "";
+  const source = params.get("source") ?? "";
   const sort = parseSort(params.get("sort"));
   const size = SIZES.includes(Number(params.get("size"))) ? Number(params.get("size")) : 25;
   const page = Math.max(0, Number(params.get("page") ?? 0) || 0);
   const ordering = `${sort.desc ? "-" : ""}${sort.id}` as Ordering;
 
   // The panel edits a draft; Apply writes it to the address so the view can be shared.
-  const [draft, setDraft] = useState({ q, status, role, verified, from, to });
+  const [draft, setDraft] = useState({ q, status, role, verified, from, to, source });
   const set = (next: Record<string, string>, keepPage = false) => {
     const merged = new URLSearchParams(params);
     for (const [k, v] of Object.entries(next)) {
@@ -114,10 +116,10 @@ export default function Members() {
     setParams(merged, { replace: true });
     setSelected(new Set());
   };
-  const apply = () => set({ q: draft.q.trim(), status: draft.status, role: draft.role, verified: draft.verified, from: draft.from, to: draft.to });
+  const apply = () => set({ q: draft.q.trim(), status: draft.status, role: draft.role, verified: draft.verified, from: draft.from, to: draft.to, source: draft.source });
   const clearAll = () => {
-    setDraft({ q: "", status: "", role: "", verified: "", from: "", to: "" });
-    set({ q: "", status: "", role: "", verified: "", from: "", to: "" });
+    setDraft({ q: "", status: "", role: "", verified: "", from: "", to: "", source: "" });
+    set({ q: "", status: "", role: "", verified: "", from: "", to: "", source: "" });
   };
 
   const filters = useMemo(
@@ -128,8 +130,9 @@ export default function Members() {
       ...(verified ? { email_verified: verified === "yes" } : {}),
       ...(from ? { joined_after: from } : {}),
       ...(to ? { joined_before: to } : {}),
+      ...(source ? { referral_source: source } : {}),
     }),
-    [q, status, role, verified, from, to],
+    [q, status, role, verified, from, to, source],
   );
 
   const list = useQuery({
@@ -245,6 +248,18 @@ export default function Members() {
           ),
       },
       {
+        id: "source",
+        header: "Source",
+        meta: { label: "Source" } satisfies ColumnMeta,
+        cell: ({ row }) => row.original.referral_label || <span className="app-faint">Did not say</span>,
+      },
+      {
+        id: "referrer",
+        header: "Referred by",
+        meta: { label: "Referred by" } satisfies ColumnMeta,
+        cell: ({ row }) => (row.original.referrer ? row.original.referrer.name : <span className="app-faint">Nobody named</span>),
+      },
+      {
         id: "roles",
         header: "Roles",
         meta: { label: "Roles" } satisfies ColumnMeta,
@@ -295,6 +310,7 @@ export default function Members() {
     status && { id: "status", label: `Status: ${humanise(status)}`, onRemove: () => set({ status: "" }) },
     role && { id: "role", label: `Role: ${ROLE_LABELS[role] ?? humanise(role)}`, onRemove: () => set({ role: "" }) },
     verified && { id: "verified", label: verified === "yes" ? "Email confirmed" : "Email not confirmed", onRemove: () => set({ verified: "" }) },
+    source && { id: "source", label: source === "none" ? "Source: did not say" : `Source: ${REFERRAL_SOURCES.find((s) => s.value === source)?.label ?? source}`, onRemove: () => set({ source: "" }) },
     (from || to) && { id: "period", label: `Joined ${from ? formatDate(from) : "any time"} to ${to ? formatDate(to) : "now"}`, onRemove: () => set({ from: "", to: "" }) },
   ].filter(Boolean) as Array<{ id: string; label: string; onRemove: () => void }>;
 
@@ -369,6 +385,7 @@ export default function Members() {
             <Input label="Search by email" value={draft.q} onChange={(e) => setDraft({ ...draft, q: e.target.value })} />
             <Select label="Status" options={[{ value: "", label: "Any status" }, ...STATUSES.map((s) => ({ value: s, label: humanise(s) }))]} value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Status | "" })} />
             <Select label="Role" options={[{ value: "", label: "Any role" }, ...Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))]} value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} />
+            <Select label="How they heard of us" options={[{ value: "", label: "Any source" }, { value: "none", label: "Did not say" }, ...REFERRAL_SOURCES.map((s) => ({ value: s.value, label: s.label }))]} value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value })} />
             <Select label="Email" options={[{ value: "", label: "Any" }, { value: "yes", label: "Confirmed" }, { value: "no", label: "Not confirmed" }]} value={draft.verified} onChange={(e) => setDraft({ ...draft, verified: e.target.value })} />
           </div>
           <div className="adm-filters__actions">

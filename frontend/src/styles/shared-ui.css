@@ -935,3 +935,182 @@
   display: flex;
   gap: var(--space-2);
 }
+
+/* ---------- Referrals: the sign up question and the member card ---------- */
+.wo-referral {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+}
+.wo-referral__legend {
+  padding: 0 var(--space-2);
+  font: 700 17px/24px var(--font-display);
+  color: var(--text-primary);
+}
+.wo-referral__lead,
+.wo-referral__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 14px/20px var(--font-body);
+}
+.wo-referral__note {
+  color: var(--success-text);
+  font-weight: 600;
+}
+.wo-referrer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--stroke-1) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+}
+.wo-referrer__text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  font: 400 13px/18px var(--font-body);
+  color: var(--text-secondary);
+}
+.wo-referrer__text strong {
+  color: var(--text-primary);
+  font: 700 15px/22px var(--font-body);
+}
+.wo-referrer-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.wo-referrer-results {
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  border: var(--stroke-1) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+}
+.wo-referrer-results__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.wo-referrer-results__item:hover {
+  background: var(--bg-subtle);
+}
+.wo-referrer-results__item:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.wo-referrer__none {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 14px/20px var(--font-body);
+}
+
+/* The member's own referral card. */
+.wo-refcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.wo-refcard__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.wo-refcard__url {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke-1) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font: 500 13px/20px var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wo-refcard__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.wo-refcard__person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font: 400 14px/20px var(--font-body);
+}
+.wo-refcard__person span {
+  color: var(--text-secondary);
+}
+
+/* ---------- Referral figures on the dashboard ---------- */
+.wo-sources {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.wo-sources__row {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  font: 400 14px/20px var(--font-body);
+}
+.wo-sources__bar {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+.wo-sources__bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--chart-1, var(--bg-brand));
+}
+.wo-top {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.wo-top__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font: 400 14px/20px var(--font-body);
+}
+.wo-top__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

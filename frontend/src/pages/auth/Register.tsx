@@ -5,6 +5,8 @@ import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
 import { useAuth } from "../../auth/AuthProvider";
 import { Alert, Button, Checkbox, Input, Select, Textarea } from "../../components";
+import { EMPTY_REFERRAL, ReferralFields, referralBody, type ReferralDraft } from "../../referrals/ReferralFields";
+import { rememberRefCode, storedRefCode } from "../../referrals/ref";
 import { useDocumentTitle } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 
@@ -27,6 +29,7 @@ interface Draft {
   privacy: boolean;
   conduct: boolean;
   marketing: boolean;
+  referral: ReferralDraft;
 }
 
 const EMPTY: Draft = {
@@ -46,6 +49,7 @@ const EMPTY: Draft = {
   privacy: false,
   conduct: false,
   marketing: false,
+  referral: EMPTY_REFERRAL,
 };
 
 /** Which step each server field belongs to, so a failure takes the member back to it. */
@@ -61,6 +65,9 @@ export function Register() {
   const { status } = useAuth();
   const [params] = useSearchParams();
   const invitation = params.get("invite") ?? "";
+  // A referral link keeps its code for the visit, so moving between pages does not lose it.
+  const refCode = (params.get("ref") ?? storedRefCode()).trim().toUpperCase().slice(0, 12);
+  const [refNote, setRefNote] = useState("");
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [step, setStep] = useState(0);
   const [done, setDone] = useState<"pending" | "approved" | null>(null);
@@ -80,6 +87,27 @@ export function Register() {
       .catch(() => undefined);
   }, [invitation]);
 
+  // Someone who opened a member's link starts with that member chosen, and can change it.
+  useEffect(() => {
+    if (!refCode) return;
+    rememberRefCode(refCode);
+    void unwrap(api.GET("/api/v1/members/referrer-by-code", { params: { query: { code: refCode } } }))
+      .then((who) => {
+        if (!who.found) return;
+        setDraft((d) => ({
+          ...d,
+          referral: {
+            ...d.referral,
+            kind: d.referral.kind || "member",
+            code: refCode,
+            referrer: d.referral.referrer ?? (who.id ? { id: who.id, name: who.name, startup: who.startup, photo: who.photo } : null),
+          },
+        }));
+        setRefNote(who.id ? `You are joining through ${who.name}'s link. You can change this.` : "You are joining through a member's link.");
+      })
+      .catch(() => undefined);
+  }, [refCode]);
+
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
 
@@ -93,6 +121,7 @@ export function Register() {
         marketing_consent: draft.marketing,
         also_mentor: draft.also_mentor,
         invitation_token: invitation,
+        referral: referralBody(draft.referral),
         profile: { full_name: draft.full_name.trim(), country: draft.country, city: draft.city.trim() },
         startup: {
           name: draft.s_name.trim(),
@@ -297,6 +326,7 @@ export function Register() {
 
       {step === 3 ? (
         <div className="app-stack">
+          <ReferralFields draft={draft.referral} onChange={(referral) => set("referral", referral)} note={refNote} />
           <Checkbox
             label={
               <span>

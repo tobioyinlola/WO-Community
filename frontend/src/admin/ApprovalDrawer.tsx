@@ -11,6 +11,7 @@ import { formatDateTime, humanise, timeAgo } from "../lib/format";
 import { Skeleton } from "../ui/blocks";
 import { MeterBar, StatusChip, type Tone } from "./kit/TableBits";
 import { ROLE_LABELS } from "./permissions";
+import { describeReferral, ReferralEditor } from "./ReferralEditor";
 
 type Row = components["schemas"]["MemberRow"];
 
@@ -39,6 +40,7 @@ interface Props {
 /** The request in full: who asked, what they gave, what has happened, and the decision. */
 export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, onApprove, rejecting, onRejectingChange, onReject }: Props) {
   const [reason, setReason] = useState("");
+  const [editingReferral, setEditingReferral] = useState(false);
   const reasonBox = useRef<HTMLDivElement>(null);
   // A different request starts with an empty reason.
   useEffect(() => setReason(""), [member.id]);
@@ -134,6 +136,14 @@ export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, 
                 {rows.map(([k, v]) => (
                   <div key={k} className="adm-kv__row"><dt>{k}</dt><dd>{v}</dd></div>
                 ))}
+                <div className="adm-kv__row">
+                  <dt>Referred by</dt>
+                  <dd>
+                    {a?.referral ? describeReferral(a.referral) : "Not available"}
+                    {a?.referral?.code_used ? <span className="app-faint"> (link {a.referral.code_used})</span> : null}
+                    {a?.referral ? <> <button type="button" className="wo-linkbtn" onClick={() => setEditingReferral(true)}>Edit</button></> : null}
+                  </dd>
+                </div>
                 <div className="adm-kv__row"><dt>Profile completeness</dt><dd>{a?.profile ? <MeterBar value={a.profile.completeness} label="Profile completeness" /> : "Not available"}</dd></div>
                 <div className="adm-kv__row"><dt>Startup completeness</dt><dd>{a?.startup ? <MeterBar value={a.startup.completeness} label="Startup completeness" /> : "Not available"}</dd></div>
               </dl>
@@ -192,6 +202,7 @@ export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, 
               <p className="adm-sheet__done">This request has already been decided.</p>
             )}
           </footer>
+            {editingReferral && a?.referral ? <ReferralEditor memberId={member.id} current={a.referral} onClose={() => setEditingReferral(false)} /> : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Circle, MessageCircle, Rocket, ThumbsUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
+import { ReferralCard } from "../../referrals/ReferralCard";
 import { Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
 import { formatDate, formatTime, humanise, timeAgo } from "../../lib/format";
 import { PageHeader, RichText, Section, Skeleton } from "../../ui/blocks";
@@ -152,6 +153,9 @@ export default function Home() {
                 ))}
               </ul>
             ) : <Quiet>No events are scheduled yet.</Quiet>}
+          </Section>
+          <Section title="Your referrals">
+            <ReferralCard />
           </Section>
           <Section title="Build your venture">
             <CardTo to="/app/launch" variant="accent">

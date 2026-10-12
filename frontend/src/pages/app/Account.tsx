@@ -1,3 +1,4 @@
+import { ReferralCard } from "../../referrals/ReferralCard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -92,6 +93,10 @@ export default function ProfilePage() {
                 <p className="body-sm app-muted" style={{ margin: "var(--space-2) 0 0" }}>
                   {tagged.data.completeness?.score ?? 0}% complete{tagged.data.completeness?.next_missing_field ? `. Next: add your ${humanise(tagged.data.completeness.next_missing_field).toLowerCase()}.` : "."}
                 </p>
+              </Card>
+              <Card>
+                <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Your referrals</h2>
+                <ReferralCard />
               </Card>
               <MyStartups />
             </aside>
