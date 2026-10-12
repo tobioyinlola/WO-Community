@@ -4,19 +4,22 @@ from typing import Any
 from uuid import UUID
 
 from django.conf import settings
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, F, FloatField, Q, QuerySet
+from django.db.models.functions import Cast
 from rest_framework import exceptions
 
 from apps.core.keyset import paginate
 from apps.integrations import youtube
-from apps.learning import learn
+from apps.learning import learn, lms
 from apps.learning.models import (
     Certificate,
     Course,
     CourseRating,
     Enrolment,
+    EnrolmentRequest,
     Lesson,
     LessonProgress,
+    WishlistItem,
 )
 from apps.uploads import services as uploads
 
@@ -38,9 +41,16 @@ def _rating(course: Course) -> dict[str, Any]:
 
 
 def _price(course: Course) -> dict[str, Any] | None:
+    """What it costs now. During a promotion the usual price is shown struck out beside it."""
     if course.access == "free":
         return None
-    return {"amount_minor": course.price_minor, "currency": course.currency}
+    promo = lms.promo_active(course)
+    return {
+        "amount_minor": course.promo_price_minor if promo else course.price_minor,
+        "currency": course.currency,
+        "original_minor": course.price_minor if promo else None,
+        "promo_ends_at": course.promo_ends_at if promo else None,
+    }
 
 
 def course_summary(course: Course, viewer_id: UUID | None) -> dict[str, Any]:
@@ -48,10 +58,16 @@ def course_summary(course: Course, viewer_id: UUID | None) -> dict[str, Any]:
         "id": course.pk,
         "slug": course.slug,
         "title": course.title,
+        "subtitle": course.subtitle,
         "excerpt": _excerpt(course),
         "instructor": course.instructor,
         "category": course.category,
         "level": course.level,
+        "language": course.language,
+        "language_label": lms.LANGUAGES.get(course.language, course.language),
+        "learners_count": course.learners_count,
+        "duration_seconds": course.total_duration_seconds,
+        "enrolment_active": course.enrolment_active,
         "cover": uploads.image_urls(course.cover_key),
         "access": course.access,
         "price": _price(course),
@@ -66,7 +82,23 @@ def course_summary(course: Course, viewer_id: UUID | None) -> dict[str, Any]:
         if viewer_id is not None
         else {"enrolled": False, "percent": 0}
     )
+    view["wishlisted"] = (
+        viewer_id is not None
+        and WishlistItem.objects.filter(user_id=viewer_id, course=course).exists()
+    )
+    asked = (
+        EnrolmentRequest.objects.filter(user_id=viewer_id, course=course)
+        .order_by("-created_at")
+        .first()
+        if viewer_id is not None
+        else None
+    )
+    view["access_request"] = asked.status if asked else None
     return view
+
+
+DURATIONS = {"short": (1, 7200), "medium": (7200, 21600), "long": (21600, 10**9)}
+SORTS = ("newest", "popular", "rating")
 
 
 def catalogue(
@@ -79,22 +111,57 @@ def catalogue(
     enrolled: bool,
     cursor: str,
     limit: int,
+    language: str = "",
+    rating_min: int = 0,
+    duration: str = "",
+    sort: str = "newest",
 ) -> dict[str, Any]:
     queryset = published()
     if q:
-        queryset = queryset.filter(Q(title__icontains=q) | Q(description_text__icontains=q))
+        queryset = queryset.filter(
+            Q(title__icontains=q)
+            | Q(subtitle__icontains=q)
+            | Q(instructor__icontains=q)
+            | Q(description_text__icontains=q)
+        )
     if category:
         queryset = queryset.filter(category__iexact=category)
     if level:
         queryset = queryset.filter(level=level)
     if access:
         queryset = queryset.filter(access=access)
+    if language:
+        queryset = queryset.filter(language=language)
+    if rating_min:
+        # An average of at least N: the total of stars over the count, without dividing by zero.
+        queryset = queryset.filter(
+            rating_count__gt=0, rating_total__gte=F("rating_count") * rating_min
+        )
+    if duration in DURATIONS:
+        low, high = DURATIONS[duration]
+        queryset = queryset.filter(total_duration_seconds__gte=low, total_duration_seconds__lt=high)
     if enrolled:
         queryset = queryset.filter(enrolments__user_id=viewer_id)
-    rows, next_cursor = paginate(
-        queryset, fields=("published_at", "id"), sort="courses", cursor=cursor, limit=limit
-    )
-    return {"results": [course_summary(c, viewer_id) for c in rows], "next_cursor": next_cursor}
+    if sort == "newest":
+        rows, next_cursor = paginate(
+            queryset, fields=("published_at", "id"), sort="courses", cursor=cursor, limit=limit
+        )
+        return {"results": [course_summary(c, viewer_id) for c in rows], "next_cursor": next_cursor}
+    # Popular and best rated sort by a number, so the cursor is simply how many were already shown.
+    if sort == "popular":
+        ordered = queryset.order_by("-learners_count", "-published_at", "-id")
+    else:
+        ordered = queryset.annotate(
+            average=Cast(F("rating_total"), FloatField())
+            / Cast(F("rating_count") + 0.0001, FloatField())
+        ).order_by("-average", "-rating_count", "-published_at", "-id")
+    offset = int(cursor) if cursor.isdigit() else 0
+    page = list(ordered[offset : offset + limit + 1])
+    more = len(page) > limit
+    return {
+        "results": [course_summary(c, viewer_id) for c in page[:limit]],
+        "next_cursor": str(offset + limit) if more else None,
+    }
 
 
 def categories() -> list[str]:
@@ -105,7 +172,7 @@ def _visible_course(viewer_id: UUID | None, course_id: UUID) -> Course:
     course = Course.objects.filter(pk=course_id).exclude(status=Course.Status.REMOVED).first()
     if course is None:
         raise exceptions.NotFound()
-    if course.status != Course.Status.PUBLISHED:
+    if course.status not in learn.OPEN_STATUSES:
         # Unpublished courses stay open to people already enrolled, and to no one else.
         if viewer_id is None or learn.enrolment_of(viewer_id, course.pk) is None:
             raise exceptions.NotFound()
@@ -137,7 +204,8 @@ def outline(course: Course, viewer_id: UUID | None) -> list[dict[str, Any]]:
                         "title": lesson.title,
                         "position": lesson.position,
                         "duration_seconds": lesson.duration_seconds,
-                        "locked": not open_,
+                        "preview": lesson.is_preview,
+                        "locked": not open_ and not lesson.is_preview,
                         "completed": lesson.pk in finished,
                     }
                     for lesson in module.lessons.all()
@@ -184,6 +252,9 @@ def open_lesson(viewer_id: UUID | None, lesson_id: UUID) -> Lesson:
     if lesson is None or lesson.course.status == Course.Status.REMOVED:
         raise exceptions.NotFound()
     course = lesson.course
+    # A lecture marked as a free preview opens for any signed in member of an open course.
+    if lesson.is_preview and viewer_id is not None and course.status in learn.OPEN_STATUSES:
+        return lesson
     if not learn.can_open_lessons(course, viewer_id):
         if course.status != Course.Status.PUBLISHED and viewer_id is None:
             raise exceptions.NotFound()
@@ -239,6 +310,8 @@ def lesson_detail(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
         "type": lesson.type,
         "title": lesson.title,
         "duration_seconds": lesson.duration_seconds,
+        "description": lesson.description,
+        "preview": lesson.is_preview,
         "video": None,
         "body": "",
         "resource": None,
@@ -386,6 +459,8 @@ def admin_course(course: Course) -> dict[str, Any]:
                         "title": lesson.title,
                         "position": lesson.position,
                         "duration_seconds": lesson.duration_seconds,
+                        "description": lesson.description,
+                        "is_preview": lesson.is_preview,
                         "video_url": lesson.video_url,
                         "video_id": lesson.video_id,
                         "body": lesson.body,
@@ -408,6 +483,15 @@ def admin_course(course: Course) -> dict[str, Any]:
     return {
         **course_summary(course, None),
         "description": course.description,
+        "learn_bullets": course.learn_bullets,
+        "requirements": course.requirements,
+        "audience": course.audience,
+        "promo_video_id": course.promo_video_id,
+        "promo_price_minor": course.promo_price_minor,
+        "promo_starts_at": course.promo_starts_at,
+        "promo_ends_at": course.promo_ends_at,
+        "checklist": lms.publish_checklist(course),
+        "pending_requests": course.requests.filter(status="pending").count(),
         "price_minor": course.price_minor,
         "currency": course.currency,
         "published_at": course.published_at,

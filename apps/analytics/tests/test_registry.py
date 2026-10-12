@@ -40,6 +40,7 @@ REQUIRED_EVENTS = {
         "course_completed",
         "course_checkout_started",
         "course_purchased",
+        "course_published",
     ],
     "mentorship": [
         "mentor_application_submitted",

@@ -10,6 +10,7 @@ from apps.adminconsole import (
     feed_views,
     invitation_views,
     job_views,
+    lms_views,
     mentor_views,
     reference_views,
     referral_views,
@@ -32,6 +33,76 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path(
+        "admin/course-requests",
+        lms_views.AccessRequestsView.as_view(),
+        name="admin-course-requests",
+    ),
+    path(
+        "admin/course-requests/<uuid:request_id>/approve",
+        lms_views.ApproveRequestView.as_view(),
+        name="admin-course-request-approve",
+    ),
+    path(
+        "admin/course-requests/<uuid:request_id>/decline",
+        lms_views.DeclineRequestView.as_view(),
+        name="admin-course-request-decline",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/requests",
+        lms_views.CourseRequestsView.as_view(),
+        name="admin-course-requests-one",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/learners",
+        lms_views.CourseLearnersView.as_view(),
+        name="admin-course-learners",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/learners.csv",
+        lms_views.CourseLearnersCsvView.as_view(),
+        name="admin-course-learners-csv",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/learners/<uuid:user_id>",
+        lms_views.LearnerView.as_view(),
+        name="admin-course-learner",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/reviews",
+        lms_views.CourseReviewsView.as_view(),
+        name="admin-course-reviews",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/questions",
+        lms_views.CourseQuestionsView.as_view(),
+        name="admin-course-questions",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/announcements",
+        lms_views.CourseAnnouncementsView.as_view(),
+        name="admin-course-announcements",
+    ),
+    path(
+        "admin/questions/<uuid:question_id>/answer",
+        lms_views.StaffAnswerView.as_view(),
+        name="admin-question-answer",
+    ),
+    path("admin/youtube/validate", lms_views.YouTubeValidateView.as_view(), name="admin-youtube"),
+    path(
+        "admin/modules/<uuid:module_id>/lessons/bulk",
+        lms_views.BulkLecturesView.as_view(),
+        name="admin-lessons-bulk",
+    ),
+    *[
+        path(
+            f"admin/{kind}s/<uuid:item_id>/{verb}",
+            lms_views.moderation(kind, verb == "hide").as_view(),
+            name=f"admin-{kind}-{verb}",
+        )
+        for kind in ("review", "question", "answer")
+        for verb in ("hide", "restore")
+    ],
     path(
         "admin/referrals/summary",
         referral_views.ReferralSummaryView.as_view(),

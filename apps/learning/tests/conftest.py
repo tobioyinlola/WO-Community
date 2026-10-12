@@ -2,6 +2,7 @@ import pytest
 from django.utils import timezone
 
 from apps.learning import authoring
+from apps.learning.models import Course
 
 VIDEO = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 VIDEO_TWO = "https://youtu.be/9bZkp7q19f0"
@@ -76,6 +77,8 @@ def build_course(editor, *, publish=True, **overrides):
         },
     )
     if publish:
+        # A thumbnail is part of what a course needs before it can go live.
+        Course.objects.filter(pk=course.pk).update(cover_key="media/course_cover/test")
         authoring.publish(actor=editor, course_id=course.pk)
     course.refresh_from_db()
     return course

@@ -58,3 +58,49 @@ def parse(value: str) -> YouTubeVideo:
 
 def embed_url(video_id: str) -> str:
     return f"https://www.youtube-nocookie.com/embed/{video_id}"
+
+
+# --- the title of a video, for admins adding lectures ---
+
+OEMBED = "https://www.youtube.com/oembed"
+
+
+def oembed_title(video_id: str) -> str:
+    """The video's title from YouTube, or "" when it cannot be had.
+
+    Only the fixed YouTube address is ever asked, with nothing but an 11 character id, so this
+    cannot be steered to another host. A failure is not an error: the admin types a title instead.
+    """
+    import httpx
+
+    if not VIDEO_ID.match(video_id):
+        return ""
+    try:
+        response = httpx.get(
+            OEMBED,
+            params={"url": f"https://www.youtube.com/watch?v={video_id}", "format": "json"},
+            timeout=4.0,
+            follow_redirects=False,
+        )
+        if response.status_code != 200:
+            return ""
+        return str(response.json().get("title", ""))[:160]
+    except Exception:  # noqa: BLE001 - anything at all means "no title", never a failed request
+        return ""
+
+
+def fake_title(video_id: str) -> str:
+    """Stands in for YouTube in tests and offline work."""
+    return f"Video {video_id}" if VIDEO_ID.match(video_id) else ""
+
+
+def title_of(video_id: str) -> str:
+    from django.conf import settings
+    from django.utils.module_loading import import_string
+
+    lookup = import_string(settings.YOUTUBE_TITLE_LOOKUP)
+    return str(lookup(video_id))
+
+
+def thumbnail_url(video_id: str) -> str:
+    return f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"

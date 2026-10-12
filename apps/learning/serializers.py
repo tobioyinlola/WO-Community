@@ -9,17 +9,39 @@ MAX_MARKUP = 60_000
 # --- input ---
 
 
+def _list_of_text() -> serializers.ListField:
+    return serializers.ListField(
+        child=serializers.CharField(max_length=200), required=False, max_length=12
+    )
+
+
 class CourseFieldsMixin(serializers.Serializer):
+    """What can be set on a course. Only the title is needed to start a draft."""
+
     title = serializers.CharField(max_length=160)
-    description = serializers.CharField(max_length=MAX_MARKUP, trim_whitespace=False)
-    instructor = serializers.CharField(max_length=120)
-    category = serializers.CharField(max_length=60)
-    level = serializers.ChoiceField(choices=LEVELS)
+    subtitle = serializers.CharField(max_length=180, required=False, allow_blank=True)
+    description = serializers.CharField(
+        max_length=MAX_MARKUP, required=False, trim_whitespace=False
+    )
+    instructor = serializers.CharField(max_length=120, required=False)
+    category = serializers.CharField(max_length=60, required=False)
+    level = serializers.ChoiceField(choices=LEVELS, required=False)
+    language = serializers.CharField(max_length=8, required=False)
+    learn_bullets = _list_of_text()
+    requirements = _list_of_text()
+    audience = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+    promo_video_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    enrolment_active = serializers.BooleanField(required=False)
     access = serializers.ChoiceField(choices=ACCESS, required=False)
     price_minor = serializers.IntegerField(
         min_value=1, max_value=100_000_000, required=False, allow_null=True
     )
     currency = serializers.CharField(min_length=3, max_length=3, required=False, allow_blank=True)
+    promo_price_minor = serializers.IntegerField(
+        min_value=1, max_value=100_000_000, required=False, allow_null=True
+    )
+    promo_starts_at = serializers.DateTimeField(required=False, allow_null=True)
+    promo_ends_at = serializers.DateTimeField(required=False, allow_null=True)
     open_to_visitors = serializers.BooleanField(required=False)
     certificate_enabled = serializers.BooleanField(required=False)
 
@@ -28,21 +50,8 @@ class CourseCreateSerializer(CourseFieldsMixin, StrictSerializer):
     pass
 
 
-class CourseUpdateSerializer(StrictSerializer):
+class CourseUpdateSerializer(CourseFieldsMixin, StrictSerializer):
     title = serializers.CharField(max_length=160, required=False)
-    description = serializers.CharField(
-        max_length=MAX_MARKUP, required=False, trim_whitespace=False
-    )
-    instructor = serializers.CharField(max_length=120, required=False)
-    category = serializers.CharField(max_length=60, required=False)
-    level = serializers.ChoiceField(choices=LEVELS, required=False)
-    access = serializers.ChoiceField(choices=ACCESS, required=False)
-    price_minor = serializers.IntegerField(
-        min_value=1, max_value=100_000_000, required=False, allow_null=True
-    )
-    currency = serializers.CharField(min_length=3, max_length=3, required=False, allow_blank=True)
-    open_to_visitors = serializers.BooleanField(required=False)
-    certificate_enabled = serializers.BooleanField(required=False)
 
 
 class ModuleWriteSerializer(StrictSerializer):
@@ -55,6 +64,8 @@ class LessonCreateSerializer(StrictSerializer):
     duration_seconds = serializers.IntegerField(
         min_value=1, max_value=86_400, required=False, allow_null=True
     )
+    description = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    is_preview = serializers.BooleanField(required=False)
     video_url = serializers.CharField(max_length=300, required=False)
     body = serializers.CharField(max_length=MAX_MARKUP, required=False, trim_whitespace=False)
     resource_url = serializers.CharField(max_length=300, required=False)
@@ -70,6 +81,8 @@ class LessonUpdateSerializer(StrictSerializer):
     duration_seconds = serializers.IntegerField(
         min_value=1, max_value=86_400, required=False, allow_null=True
     )
+    description = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    is_preview = serializers.BooleanField(required=False)
     video_url = serializers.CharField(max_length=300, required=False)
     body = serializers.CharField(max_length=MAX_MARKUP, required=False, trim_whitespace=False)
     resource_url = serializers.CharField(max_length=300, required=False)
@@ -97,6 +110,22 @@ class CatalogueQuerySerializer(StrictSerializer):
     level = serializers.ChoiceField(choices=LEVELS, required=False, default="")
     access = serializers.ChoiceField(choices=ACCESS, required=False, default="")
     enrolled = serializers.BooleanField(required=False, default=False)
+    language = serializers.CharField(required=False, allow_blank=True, max_length=8, default="")
+    rating_min = serializers.IntegerField(required=False, min_value=0, max_value=5, default=0)
+    duration = serializers.ChoiceField(
+        choices=("short", "medium", "long"), required=False, allow_blank=True, default=""
+    )
+    sort = serializers.ChoiceField(
+        choices=("newest", "popular", "rating"), required=False, default="newest"
+    )
+    cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=50, default=20)
+
+
+class ShelfQuerySerializer(StrictSerializer):
+    state = serializers.ChoiceField(
+        choices=("all", "in_progress", "completed", "wishlist"), required=False, default="all"
+    )
     cursor = serializers.CharField(required=False, allow_blank=True, max_length=400, default="")
     limit = serializers.IntegerField(required=False, min_value=1, max_value=50, default=20)
 
@@ -107,7 +136,9 @@ class PageQuerySerializer(StrictSerializer):
 
 
 class AdminQuerySerializer(StrictSerializer):
-    status = serializers.ChoiceField(choices=["draft", "published"], required=False, default="")
+    status = serializers.ChoiceField(
+        choices=["draft", "published", "unlisted"], required=False, default=""
+    )
     access = serializers.ChoiceField(choices=ACCESS, required=False, default="")
     q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
@@ -135,6 +166,10 @@ class RatingSerializer(StrictSerializer):
 class PriceSerializer(serializers.Serializer):
     amount_minor = serializers.IntegerField(help_text="In the smallest unit (kobo, cents)")
     currency = serializers.CharField()
+    original_minor = serializers.IntegerField(
+        allow_null=True, help_text="The usual price, while a promotion is running"
+    )
+    promo_ends_at = serializers.DateTimeField(allow_null=True)
 
 
 class RatingSummarySerializer(serializers.Serializer):
@@ -149,16 +184,23 @@ class CourseProgressSerializer(serializers.Serializer):
     total_lessons = serializers.IntegerField(required=False)
     completed_at = serializers.DateTimeField(required=False, allow_null=True)
     origin = serializers.CharField(required=False)
+    time_remaining_seconds = serializers.IntegerField(required=False)
 
 
 class CourseSummarySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     slug = serializers.CharField()
     title = serializers.CharField()
+    subtitle = serializers.CharField(allow_blank=True)
     excerpt = serializers.CharField()
     instructor = serializers.CharField()
     category = serializers.CharField()
     level = serializers.CharField()
+    language = serializers.CharField()
+    language_label = serializers.CharField()
+    learners_count = serializers.IntegerField()
+    duration_seconds = serializers.IntegerField()
+    enrolment_active = serializers.BooleanField()
     cover = ImageSerializer(allow_null=True)
     access = serializers.CharField()
     price = PriceSerializer(allow_null=True)
@@ -168,6 +210,8 @@ class CourseSummarySerializer(serializers.Serializer):
     lesson_count = serializers.IntegerField()
     status = serializers.CharField()
     progress = CourseProgressSerializer()
+    wishlisted = serializers.BooleanField()
+    access_request = serializers.CharField(allow_null=True)
 
 
 class CoursePageSerializer(serializers.Serializer):
@@ -181,6 +225,7 @@ class OutlineLessonSerializer(serializers.Serializer):
     title = serializers.CharField()
     position = serializers.IntegerField()
     duration_seconds = serializers.IntegerField(allow_null=True)
+    preview = serializers.BooleanField(help_text="Anyone signed in may watch it before enrolling")
     locked = serializers.BooleanField(help_text="True until you have access to open it")
     completed = serializers.BooleanField()
 
@@ -265,6 +310,8 @@ class LessonDetailSerializer(serializers.Serializer):
     type = serializers.CharField()
     title = serializers.CharField()
     duration_seconds = serializers.IntegerField(allow_null=True)
+    description = serializers.CharField(allow_blank=True)
+    preview = serializers.BooleanField()
     video = VideoSerializer(allow_null=True)
     body = serializers.CharField(allow_blank=True, help_text="Sanitised HTML for reading lessons")
     resource = ResourceSerializer(allow_null=True)
@@ -359,6 +406,8 @@ class AdminLessonSerializer(serializers.Serializer):
     title = serializers.CharField()
     position = serializers.IntegerField()
     duration_seconds = serializers.IntegerField(allow_null=True)
+    description = serializers.CharField(allow_blank=True)
+    is_preview = serializers.BooleanField()
     video_url = serializers.CharField(allow_blank=True)
     video_id = serializers.CharField(allow_blank=True)
     body = serializers.CharField(allow_blank=True)
@@ -374,8 +423,24 @@ class AdminModuleSerializer(serializers.Serializer):
     lessons = AdminLessonSerializer(many=True)
 
 
+class PublishCheckSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    text = serializers.CharField()
+    done = serializers.BooleanField()
+    step = serializers.IntegerField()
+
+
 class AdminCourseSerializer(CourseSummarySerializer):
     description = serializers.CharField(help_text="Sanitised HTML")
+    learn_bullets = serializers.ListField(child=serializers.CharField())
+    requirements = serializers.ListField(child=serializers.CharField())
+    audience = serializers.CharField(allow_blank=True)
+    promo_video_id = serializers.CharField(allow_blank=True)
+    promo_price_minor = serializers.IntegerField(allow_null=True)
+    promo_starts_at = serializers.DateTimeField(allow_null=True)
+    promo_ends_at = serializers.DateTimeField(allow_null=True)
+    checklist = PublishCheckSerializer(many=True)
+    pending_requests = serializers.IntegerField()
     price_minor = serializers.IntegerField(allow_null=True)
     currency = serializers.CharField(allow_blank=True)
     published_at = serializers.DateTimeField(allow_null=True)

@@ -14,7 +14,7 @@ from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.text import plain
-from apps.learning import events
+from apps.learning import events, lms
 from apps.learning.models import (
     Certificate,
     Course,
@@ -30,6 +30,8 @@ logger = structlog.get_logger(__name__)
 
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O, 1/I/L
 MAX_POSITION_SECONDS = 24 * 3600
+# Courses a member can enrol in: in the catalogue, or reachable by link only.
+OPEN_STATUSES = (Course.Status.PUBLISHED, Course.Status.UNLISTED)
 
 
 class NotFound(exceptions.NotFound):
@@ -67,11 +69,7 @@ def can_open_lessons(course: Course, viewer_id: UUID | None) -> bool:
     """Whether the viewer may see lesson content: enrolled, or a free course open to visitors."""
     if viewer_id is not None and enrolment_of(viewer_id, course.pk) is not None:
         return course.status != Course.Status.REMOVED
-    return (
-        course.status == Course.Status.PUBLISHED
-        and course.access == "free"
-        and course.open_to_visitors
-    )
+    return course.status in OPEN_STATUSES and course.access == "free" and course.open_to_visitors
 
 
 # --- enrolling ---
@@ -79,9 +77,11 @@ def can_open_lessons(course: Course, viewer_id: UUID | None) -> bool:
 
 def enrol(*, user_id: UUID, course_id: UUID) -> tuple[Enrolment, bool]:
     """Enrol in a free, published course. Returns the enrolment and whether it is new."""
-    course = Course.objects.filter(pk=course_id, status=Course.Status.PUBLISHED).first()
+    course = Course.objects.filter(pk=course_id, status__in=OPEN_STATUSES).first()
     if course is None:
         raise NotFound()
+    if not course.enrolment_active and enrolment_of(user_id, course_id) is None:
+        raise Conflict("Enrolment for this course is closed for now.")
     if course.access == "paid":
         existing = enrolment_of(user_id, course_id)
         if existing is not None:
@@ -95,6 +95,7 @@ def enrol(*, user_id: UUID, course_id: UUID) -> tuple[Enrolment, bool]:
                 defaults={"source": Enrolment.Source.FREE, "started_at": timezone.now()},
             )
             if created:
+                lms.refresh_counts(course.pk)
                 analytics.track(
                     "course_enrolled",
                     actor_id=user_id,
@@ -121,6 +122,7 @@ def grant(*, actor: Any, course_id: UUID, user_id: UUID, ip: str = "") -> tuple[
             defaults={"source": Enrolment.Source.GRANT, "started_at": timezone.now()},
         )
         if created:
+            lms.refresh_counts(course.pk)
             analytics.track(
                 "course_enrolled",
                 actor_id=user_id,
@@ -210,14 +212,34 @@ def rate(*, user_id: UUID, course_id: UUID, stars: int, feedback: str) -> Course
         locked = Course.objects.select_for_update().get(pk=course.pk)
         if enrolment_of(user_id, course.pk) is None:
             raise EntitlementRequired("Enrol in a course before rating it.")
+        done = progress_summary(user_id, locked)["percent"]
+        if done < lms.RATING_MIN_PERCENT:
+            raise Conflict(
+                f"Finish at least {lms.RATING_MIN_PERCENT} percent of the course "
+                "before reviewing it."
+            )
         rating, _ = CourseRating.objects.update_or_create(
-            course=locked, user_id=user_id, defaults={"stars": stars, "feedback": plain(feedback)}
+            course=locked,
+            user_id=user_id,
+            defaults={
+                "stars": stars,
+                "feedback": plain(feedback),
+                "hidden_at": None,
+                "hidden_by": None,
+            },
         )
-        totals = locked.ratings.aggregate(n=Count("id"), total=Sum("stars"))
-        locked.rating_count = totals["n"]
-        locked.rating_total = totals["total"] or 0
-        locked.save(update_fields=["rating_count", "rating_total", "updated_at"])
+        recount_ratings(locked)
     return rating
+
+
+def recount_ratings(course: Course) -> None:
+    """The average and the count come from reviews that are showing."""
+    totals = course.ratings.filter(hidden_at__isnull=True).aggregate(
+        n=Count("id"), total=Sum("stars")
+    )
+    course.rating_count = totals["n"]
+    course.rating_total = totals["total"] or 0
+    course.save(update_fields=["rating_count", "rating_total", "updated_at"])
 
 
 # --- certificates ---
@@ -275,6 +297,12 @@ def progress_summary(user_id: UUID, course: Course) -> dict[str, Any]:
     done = LessonProgress.objects.filter(
         enrolment=enrolment, completed_at__isnull=False, lesson__course=course
     ).count()
+    finished_ids = LessonProgress.objects.filter(
+        enrolment=enrolment, completed_at__isnull=False, lesson__course=course
+    ).values("lesson_id")
+    left = (
+        course.lessons.exclude(pk__in=finished_ids).aggregate(s=Sum("duration_seconds"))["s"] or 0
+    )
     return {
         "enrolled": True,
         "percent": int(done * 100 / total) if total else 0,
@@ -282,6 +310,7 @@ def progress_summary(user_id: UUID, course: Course) -> dict[str, Any]:
         "total_lessons": total,
         "completed_at": enrolment.completed_at,
         "origin": enrolment.source,
+        "time_remaining_seconds": int(left),
     }
 
 
