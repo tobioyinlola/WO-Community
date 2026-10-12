@@ -1377,6 +1377,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/{user_id}/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a person told us when they asked to join
+         * @description Their profile, their first startup and what has happened to the account. It holds personal details, so each read is logged.
+         */
+        get: operations["admin_members_application_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members/{user_id}/approve": {
         parameters: {
             query?: never;
@@ -6980,6 +7000,32 @@ export interface components {
             name: string;
             email: string;
         };
+        ApplicantProfile: {
+            full_name: string;
+            headline: string;
+            country: string;
+            city: string;
+            website_url: string;
+            linkedin_url: string;
+            completeness: number;
+        };
+        ApplicantStartup: {
+            name: string;
+            country: string;
+            city: string;
+            sector: string;
+            stage: string;
+            pitch: string;
+            website_url: string;
+            completeness: number;
+        };
+        /** @description What a person told us when they asked to join, for the admin deciding on them. */
+        Application: {
+            member: components["schemas"]["Member"];
+            profile: components["schemas"]["ApplicantProfile"] | null;
+            startup: components["schemas"]["ApplicantStartup"] | null;
+            timeline: components["schemas"]["TimelineEntry"][];
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -8345,6 +8391,32 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        /** @description A member in the table: the account, plus what they gave on joining. */
+        MemberRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            status: string;
+            readonly roles: string[];
+            /** Format: date-time */
+            email_verified_at: string;
+            /** Format: date-time */
+            approved_at: string;
+            approval_source: string;
+            status_reason: string;
+            /** Format: date-time */
+            status_changed_at: string;
+            /** Format: date-time */
+            last_login: string;
+            /** Format: date-time */
+            created_at: string;
+            readonly name: string;
+            readonly country: string;
+            readonly startup: string;
+            readonly sector: string;
+            readonly stage: string;
+        };
         Mentor: {
             /**
              * Format: uuid
@@ -8974,7 +9046,7 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Invitation"][];
         };
-        PaginatedMemberList: {
+        PaginatedMemberRowList: {
             /** @example 123 */
             count: number;
             /**
@@ -8987,7 +9059,7 @@ export interface components {
              * @example http://api.example.org/accounts/?offset=200&limit=100
              */
             previous?: string | null;
-            results: components["schemas"]["Member"][];
+            results: components["schemas"]["MemberRow"][];
         };
         PaginatedSegmentList: {
             /** @example 123 */
@@ -10535,6 +10607,20 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        TimelineEntry: {
+            kind: components["schemas"]["TimelineEntryKindEnum"];
+            /** Format: date-time */
+            at: string;
+            note: string;
+        };
+        /**
+         * @description * `registered` - registered
+         *     * `email_verified` - email_verified
+         *     * `decided` - decided
+         *     * `last_signed_in` - last_signed_in
+         * @enum {string}
+         */
+        TimelineEntryKindEnum: "registered" | "email_verified" | "decided" | "last_signed_in";
         TkAdminDeckTemplate: {
             slug: string;
             name: string;
@@ -16251,6 +16337,17 @@ export interface operations {
                 joined_before?: string;
                 limit?: number;
                 offset?: number;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 *     * `email` - email
+                 *     * `-email` - -email
+                 *     * `last_login` - last_login
+                 *     * `-last_login` - -last_login
+                 *     * `status` - status
+                 *     * `-status` - -status
+                 */
+                ordering?: "created_at" | "-created_at" | "email" | "-email" | "last_login" | "-last_login" | "status" | "-status";
                 q?: string;
                 role?: string;
                 /**
@@ -16273,7 +16370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedMemberList"];
+                    "application/json": components["schemas"]["PaginatedMemberRowList"];
                 };
             };
             /** @description Not authenticated */
@@ -16323,6 +16420,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Member"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_application_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
                 };
             };
             /** @description Not authenticated */

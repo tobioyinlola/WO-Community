@@ -56,6 +56,7 @@ const SharedView = lazy(() => import("./pages/launch/SharedView"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const AdminHome = lazy(() => import("./admin/AdminHome"));
 const AdminMembers = lazy(() => import("./admin/Members"));
+const AdminApprovals = lazy(() => import("./admin/Approvals"));
 const AdminInvitations = lazy(() => import("./admin/Invitations"));
 const AdminMentors = lazy(() => import("./admin/MentorApplications"));
 const AdminReports = lazy(() => import("./admin/Reports"));
@@ -66,6 +67,9 @@ const AdminEvents = lazy(() => import("./admin/Events"));
 const AdminCourses = lazy(() => import("./admin/Courses"));
 const AdminEmail = lazy(() => import("./admin/Email"));
 const AdminLists = lazy(() => import("./admin/Reference"));
+const AdminStub = lazy(() => import("./admin/Stub"));
+const AdminSettings = lazy(() => import("./admin/Settings"));
+const AdminDesign = lazy(() => import("./admin/AdminDesign"));
 const AdminSecurity = lazy(() => import("./admin/Security"));
 const NewsStory = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsStory })));
 
@@ -162,6 +166,7 @@ export function App() {
                   <Route path="admin" element={<AdminLayout />}>
                     <Route index element={<AdminHome />} />
                     <Route path="members" element={<AdminMembers />} />
+                    <Route path="approvals" element={<AdminApprovals />} />
                     <Route path="invitations" element={<AdminInvitations />} />
                     <Route path="mentors" element={<AdminMentors />} />
                     <Route path="reports" element={<AdminReports />} />
@@ -172,8 +177,10 @@ export function App() {
                     <Route path="courses" element={<AdminCourses />} />
                     <Route path="email" element={<AdminEmail />} />
                     <Route path="lists" element={<AdminLists />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                    <Route path="design" element={<AdminDesign />} />
                     <Route path="security" element={<AdminSecurity />} />
-                    <Route path="*" element={<Navigate to="/admin" replace />} />
+                    <Route path="*" element={<AdminStub />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

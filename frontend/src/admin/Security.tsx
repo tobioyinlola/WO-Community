@@ -6,7 +6,7 @@ import { FormError, useSubmit } from "../ui/forms";
 import { mfaAgeSeconds } from "./claims";
 
 /** Where an admin checks that two step sign in is on and can get a fresh set of recovery codes. */
-export default function Security() {
+export default function Security({ embedded = false }: { embedded?: boolean }) {
   useDocumentTitle("Security");
   const [code, setCode] = useState("");
   const [codes, setCodes] = useState<string[] | null>(null);
@@ -18,7 +18,7 @@ export default function Security() {
   });
   return (
     <>
-      <PageHeader eyebrow="Account" title="Security" lead="Admin accounts sign in with a password and a code from an authenticator app." />
+      {embedded ? null : <PageHeader eyebrow="Account" title="Security" lead="Admin accounts sign in with a password and a code from an authenticator app." />}
       <div className="app-stack app-stack--lg" style={{ maxWidth: 640 }}>
         <Alert tone={age === null ? "warning" : "success"} title={age === null ? "Two step sign in is not confirmed on this session" : "Two step sign in is on"}>
           {age === null ? "Sign out and back in with your code to open the console." : "You passed the second step when you signed in."}
