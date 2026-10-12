@@ -5,6 +5,7 @@ import { isStatus } from "./api/errors";
 import { AuthProvider } from "./auth/AuthProvider";
 import { GuestOnly, RequireAuth } from "./auth/guards";
 import { AppLayout } from "./layouts/AppLayout";
+import { SearchPage } from "./shell/SearchPage";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { PublicLayout } from "./layouts/PublicLayout";
 import { Design } from "./pages/Design";
@@ -156,6 +157,7 @@ export function App() {
                       <Route path="partner" element={<PartnerTab />} />
                       <Route path="sharing" element={<SharingTab />} />
                     </Route>
+                    <Route path="search" element={<SearchPage scope="member" />} />
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="me" element={<Profile />} />
                     <Route path="settings" element={<Settings />} />
@@ -178,6 +180,7 @@ export function App() {
                     <Route path="email" element={<AdminEmail />} />
                     <Route path="lists" element={<AdminLists />} />
                     <Route path="settings" element={<AdminSettings />} />
+                    <Route path="search" element={<SearchPage scope="admin" />} />
                     <Route path="design" element={<AdminDesign />} />
                     <Route path="security" element={<AdminSecurity />} />
                     <Route path="*" element={<AdminStub />} />

@@ -12,7 +12,7 @@ import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { mfaAgeSeconds } from "./claims";
 import MfaSetup from "./MfaSetup";
 import { isAdmin, permissionsFor } from "./permissions";
-import { CommandPalette } from "./shell/CommandPalette";
+import { adminLinks } from "./shell/links";
 import { flatNav, visibleNav } from "./shell/nav";
 import { isTyping, useMediaQuery, usePref } from "./shell/prefs";
 import { Shortcuts } from "./shell/Shortcuts";
@@ -43,7 +43,6 @@ export function AdminLayout() {
   const narrow = useMediaQuery("(max-width: 1023px)");
   const [collapsed, setCollapsed] = usePref("sidebar-collapsed", false);
   const [drawer, setDrawer] = useState(false);
-  const [palette, setPalette] = useState(false);
   const [help, setHelp] = useState(false);
   const [settingUp, setSettingUp] = useState(false);
   // Re-read the session whenever the token changes (after enrolling or a step up check).
@@ -51,6 +50,7 @@ export function AdminLayout() {
 
   const roles = useMemo(() => me?.roles ?? [], [me?.roles]);
   const have = useMemo(() => permissionsFor(roles), [roles]);
+  const links = useMemo(() => adminLinks(have), [have]);
   const verified = mfaAgeSeconds() !== null;
   const ready = verified && !settingUp;
 
@@ -67,11 +67,6 @@ export function AdminLayout() {
   useEffect(() => {
     if (!ready) return;
     const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setPalette((open) => !open);
-        return;
-      }
       if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.key === "[") setCollapsed((c) => !c);
       else if (event.key === "?") setHelp(true);
@@ -123,7 +118,7 @@ export function AdminLayout() {
             limited={!ready}
             narrow={narrow}
             onMenu={() => setDrawer(true)}
-            onPalette={() => setPalette(true)}
+            links={links}
             onHelp={() => setHelp(true)}
             pending={counts.registrations_awaiting_approval ?? 0}
             canSeePending={have.has("members.approve") && have.has("dashboard.view")}
@@ -136,7 +131,6 @@ export function AdminLayout() {
             </ErrorBoundary>
           </main>
         </div>
-        {ready ? <CommandPalette open={palette} onOpenChange={setPalette} permissions={have} /> : null}
         <Shortcuts open={help} onOpenChange={setHelp} />
       </div>
     </StepUpProvider>

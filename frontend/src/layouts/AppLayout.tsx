@@ -1,7 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { ROLE_LABELS, permissionsFor } from "../admin/permissions";
@@ -30,7 +30,6 @@ export function AppLayout() {
   const narrow = useMediaQuery("(max-width: 1023px)");
   const [collapsed, setCollapsed] = usePref("sidebar-collapsed", false);
   const [drawer, setDrawer] = useState(false);
-  const search = useRef<HTMLInputElement>(null);
 
   const roles = useMemo(() => me?.roles ?? [], [me?.roles]);
   const entries = useMemo(() => visibleNav(permissionsFor(roles), MEMBER_NAV), [roles]);
@@ -42,14 +41,6 @@ export function AppLayout() {
   const name = profile.data?.full_name || me?.email || "Account";
   const role = ROLE_LABELS[roles.includes("mentor") ? "mentor" : "member"] ?? "Member";
 
-  const notifications = useQuery({
-    queryKey: ["notifications", "unread"],
-    queryFn: () => unwrap(api.GET("/api/v1/notifications", { params: { query: { limit: 1 } } })),
-    enabled: !isPending,
-    refetchInterval: 60_000,
-  });
-  const unread = notifications.data?.unread_count ?? 0;
-
   useEffect(() => setDrawer(false), [location.pathname, location.search]);
 
   useEffect(() => {
@@ -57,10 +48,6 @@ export function AppLayout() {
     const onKey = (event: KeyboardEvent) => {
       if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.key === "[" && !narrow) setCollapsed((c) => !c);
-      else if (event.key === "/") {
-        event.preventDefault();
-        search.current?.focus();
-      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -106,11 +93,9 @@ export function AppLayout() {
       ) : null}
       <div className="adm-main">
         <MemberTopBar
-          ref={search}
           limited={isPending}
           narrow={narrow}
           onMenu={() => setDrawer(true)}
-          unread={unread}
           name={name}
           photo={profile.data?.photo?.thumb}
           role={role}

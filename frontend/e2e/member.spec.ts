@@ -24,7 +24,7 @@ test.describe("a signed-in member", () => {
     await expect(nav.getByText("Directory")).toBeVisible();
     await page.locator("main").click({ position: { x: 5, y: 5 } });
     await page.keyboard.press("/");
-    await expect(page.getByRole("searchbox", { name: "Search the community" })).toBeFocused();
+    await expect(page.getByRole("combobox", { name: "Search" })).toBeFocused();
   });
 
   test("every section of the sidebar opens without errors", async ({ page }) => {
@@ -127,13 +127,43 @@ test.describe("a signed-in member", () => {
     }
   });
 
-  test("searching the directory finds a member and opens their profile", async ({ page }) => {
+  test("the slash key searches, and a member is opened from the results by keyboard", async ({ page }) => {
     await signIn(page);
-    await page.getByRole("searchbox").or(page.getByPlaceholder("Search members, startups, jobs")).first().fill("Ngozi");
+    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("/");
+    const search = page.getByRole("combobox", { name: "Search" });
+    await expect(search).toBeFocused();
+    await search.pressSequentially("Ngozi");
+    const members = page.getByRole("group", { name: "Members" });
+    await expect(members.getByRole("option", { name: /Ngozi Eze/ })).toBeVisible();
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/directory\?q=Ngozi/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Ngozi Eze");
+  });
+
+  test("see all results opens the results page with filters", async ({ page }) => {
+    await signIn(page);
+    await page.getByRole("combobox", { name: "Search" }).fill("Ngozi");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/app\/search\?q=Ngozi/);
+    await expect(page.getByRole("heading", { level: 1, name: /Results for/ })).toBeVisible();
+    await page.getByRole("button", { name: /^Members/ }).click();
+    await expect(page).toHaveURL(/type=members/);
     await page.getByRole("link", { name: /Ngozi Eze/ }).first().click();
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Ngozi Eze");
+  });
+
+  test("the bell opens a popover, and View all goes to the notifications page", async ({ page }) => {
+    await signIn(page);
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    const popover = page.getByRole("dialog", { name: "Notifications" });
+    await expect(popover).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Mark all as read" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(popover).toBeHidden();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    await popover.getByRole("link", { name: "View all notifications" }).click();
+    await expect(page).toHaveURL(/\/app\/notifications/);
   });
 
   test("the profile saves with the version it was loaded from", async ({ page }) => {

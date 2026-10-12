@@ -1,6 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useState, type ReactNode } from "react";
+import { Bell, CalendarDays, Search, UserCheck } from "lucide-react";
 import { Avatar, Button } from "../components";
+import { Drawer } from "../ui/Drawer";
 import { PageHeader, useDocumentTitle } from "../ui/blocks";
 import { BarChart, type DayPoint } from "./kit/BarChart";
 import { changeBetween, Delta } from "./kit/Delta";
@@ -48,6 +50,8 @@ export default function AdminDesign() {
   useDocumentTitle("Admin design");
   const [tab, setTab] = useState("signups");
   const [selected, setSelected] = useState<Set<string>>(new Set(["2"]));
+  const [drawer, setDrawer] = useState(false);
+  const [draft, setDraft] = useState("");
   const columns: Array<ColumnDef<Row, unknown>> = [
     {
       id: "name",
@@ -121,6 +125,47 @@ export default function AdminDesign() {
           <li><span className="adm-nav__link"><span className="adm-nav__label">Not built yet</span><span className="adm-nav__soon">Soon</span></span></li>
         </ul>
       </Both>
+
+      <Both title="Notifications popover and search rows">
+        <div className="wo-popover" style={{ maxWidth: 380 }}>
+          <div className="wo-notes__head">
+            <p className="wo-notes__title">Notifications</p>
+            <span className="wo-linkbtn">Mark all as read</span>
+          </div>
+          <div className="wo-notes__tabs">
+            <span className="wo-notes__tab" aria-selected="true">Unread</span>
+            <span className="wo-notes__tab" aria-selected="false">All</span>
+          </div>
+          <ul className="wo-notes__list">
+            <li><div className="wo-notes__item" data-unread="true"><span className="wo-notes__icon"><UserCheck size={18} strokeWidth={1.5} /></span><span className="wo-notes__text"><span className="wo-notes__line">Ngozi asked for a session on 14 Oct</span><span className="wo-notes__when">5 minutes ago</span></span><span className="wo-notes__dot" /></div></li>
+            <li><div className="wo-notes__item" data-unread="false"><span className="wo-notes__icon"><CalendarDays size={18} strokeWidth={1.5} /></span><span className="wo-notes__text"><span className="wo-notes__line">Demo Day, Lagos is tomorrow</span><span className="wo-notes__when">Yesterday</span></span><span /></div></li>
+          </ul>
+          <div className="wo-notes__foot"><span className="wo-linkbtn">View all notifications</span></div>
+        </div>
+        <div className="wo-search__panel" style={{ position: "static", marginTop: 16 }}>
+          <div className="wo-search__heading"><span>Members</span></div>
+          <div className="wo-search__row" data-active="true"><Search size={18} strokeWidth={1.5} /><span className="wo-search__main"><span className="wo-search__title"><mark>Ada</mark>eze Okafor</span><span className="wo-search__sub">Fintech founder in Lagos</span></span><span className="wo-search__tag">Member</span></div>
+          <div className="wo-search__row"><Bell size={18} strokeWidth={1.5} /><span className="wo-search__main"><span className="wo-search__title"><mark>Ada</mark>ptive selling</span><span className="wo-search__sub">Sales</span></span><span className="wo-search__tag">Course</span></div>
+        </div>
+      </Both>
+
+      <section className="adm-design__section" aria-label="Right side drawer">
+        <h2 className="adm-card__title">Right side drawer</h2>
+        <p>One panel for forms and long records: contact support, a support ticket, adding a course. Esc and the close button ask first when something was typed.</p>
+        <Button variant="secondary" onClick={() => setDrawer(true)}>Open a sample drawer</Button>
+        <Drawer
+          open={drawer}
+          onOpenChange={setDrawer}
+          eyebrow="Sample"
+          title="Add a course"
+          subtitle="Step 1 of 4: the basics"
+          dirty={draft !== ""}
+          footer={<><Button variant="secondary" onClick={() => setDrawer(false)}>Back</Button><Button onClick={() => setDrawer(false)}>Next</Button></>}
+        >
+          <label className="wo-label" htmlFor="design-drawer-title">Course title</label>
+          <input id="design-drawer-title" className="wo-input" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        </Drawer>
+      </section>
     </>
   );
 }

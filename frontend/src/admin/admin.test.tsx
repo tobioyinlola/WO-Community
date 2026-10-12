@@ -3,7 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { components } from "../api/schema";
 import { ApprovalDrawer } from "./ApprovalDrawer";
@@ -11,7 +11,6 @@ import { BarChart, niceMax, type DayPoint } from "./kit/BarChart";
 import { DataTable, type Sort } from "./kit/DataTable";
 import { changeBetween, Delta } from "./kit/Delta";
 import { permissionsFor } from "./permissions";
-import { CommandPalette } from "./shell/CommandPalette";
 import { visibleNav } from "./shell/nav";
 import { Sidebar } from "./shell/Sidebar";
 
@@ -32,10 +31,6 @@ beforeAll(() => {
 afterEach(() => vi.restoreAllMocks());
 
 const ADMIN = permissionsFor(["super_admin"]);
-
-function Where() {
-  return <p data-testid="where">{useLocation().pathname + useLocation().search}</p>;
-}
 
 describe("Sidebar", () => {
   const entries = visibleNav(ADMIN);
@@ -336,47 +331,5 @@ describe("ApprovalDrawer", () => {
     expect(reject).toBeEnabled();
     await user.click(reject);
     expect(props.onReject).toHaveBeenCalledWith("Not a fit");
-  });
-});
-
-describe("CommandPalette", () => {
-  function Palette({ permissions = ADMIN }: { permissions?: Set<string> }) {
-    return (
-      <MemoryRouter>
-        <CommandPalette open onOpenChange={() => undefined} permissions={permissions} />
-        <Where />
-      </MemoryRouter>
-    );
-  }
-
-  it("lists quick actions and pages the role may use", () => {
-    render(<Palette />);
-    expect(screen.getByText("Approve the next request")).toBeInTheDocument();
-    expect(screen.getByText("All members")).toBeInTheDocument();
-  });
-
-  it("leaves out what the role cannot use", () => {
-    render(<Palette permissions={permissionsFor(["content_editor"])} />);
-    expect(screen.queryByText("Approve the next request")).not.toBeInTheDocument();
-    expect(screen.queryByText("All members")).not.toBeInTheDocument();
-    expect(screen.getByText("News and awards")).toBeInTheDocument();
-  });
-
-  it("goes to the page typed, ahead of searching members", async () => {
-    const user = userEvent.setup();
-    render(<Palette />);
-    await user.type(screen.getByPlaceholderText(/Jump to a page/), "invit");
-    expect(screen.getByText("Invite someone")).toBeInTheDocument();
-    expect(screen.getByText(/Find members matching/)).toBeInTheDocument();
-    await user.keyboard("{Enter}");
-    expect(screen.getByTestId("where")).toHaveTextContent("/admin/invitations");
-  });
-
-  it("searches members for anything it cannot match to a page", async () => {
-    const user = userEvent.setup();
-    render(<Palette />);
-    await user.type(screen.getByPlaceholderText(/Jump to a page/), "zzz");
-    await user.keyboard("{Enter}");
-    expect(screen.getByTestId("where")).toHaveTextContent("/admin/members?q=zzz");
   });
 });

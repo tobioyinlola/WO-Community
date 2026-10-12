@@ -238,12 +238,22 @@ test.describe("the admin console", () => {
     await expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
   });
 
-  test("the command palette jumps to a page", async ({ page }) => {
+  test("search finds a page by keyboard, and members and courses in their groups", async ({ page }) => {
     await signInAdmin(page);
     await page.keyboard.press("Control+k");
-    await page.getByPlaceholder(/Jump to a page/).fill("invit");
-    await page.keyboard.press("Enter");
+    const search = page.getByRole("combobox", { name: "Search" });
+    await expect(search).toBeFocused();
+    await search.pressSequentially("invit");
+    await page.getByRole("option", { name: /Invite someone/ }).click();
     await expect(page).toHaveURL(/\/admin\/invitations/);
+
+    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("/");
+    await search.pressSequentially("amaka");
+    await expect(page.getByRole("group", { name: "Members" }).getByRole("option").first()).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/admin\/search\?q=amaka/);
+    await expect(page.getByRole("heading", { level: 1, name: /Results for/ })).toBeVisible();
   });
 
   test("members can be filtered, sorted and selected for bulk actions", async ({ page }) => {

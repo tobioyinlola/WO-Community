@@ -1,13 +1,14 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useQuery } from "@tanstack/react-query";
-import { Bell, ChevronDown, CircleHelp, Clock, Menu, Monitor, Moon, Search, Sun, UserCheck } from "lucide-react";
+import { ChevronDown, CircleHelp, Clock, Menu, Monitor, Moon, Sun, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api, unwrap } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import { Avatar } from "../../components";
 import { formatTime } from "../../lib/format";
 import { useTheme, type ThemeChoice } from "../../theme/ThemeProvider";
+import { NotificationBell } from "../../shell/NotificationBell";
+import { GlobalSearch } from "../../shell/GlobalSearch";
+import type { QuickLink } from "../../shell/searchModel";
 import { ROLE_LABELS } from "../permissions";
 
 const THEMES: Array<{ value: ThemeChoice; label: string; icon: typeof Sun }> = [
@@ -96,7 +97,8 @@ interface TopBarProps {
   limited?: boolean;
   narrow: boolean;
   onMenu: () => void;
-  onPalette: () => void;
+  /** Pages and quick actions this role may use, offered by the search field. */
+  links: QuickLink[];
   onHelp: () => void;
   pending: number;
   canSeePending: boolean;
@@ -104,17 +106,10 @@ interface TopBarProps {
   role: string;
 }
 
-export function TopBar({ limited = false, narrow, onMenu, onPalette, onHelp, pending, canSeePending, name, role }: TopBarProps) {
+export function TopBar({ limited = false, narrow, onMenu, links, onHelp, pending, canSeePending, name, role }: TopBarProps) {
   const { me } = useAuth();
   // Admin accounts are not always members, and the notification centre is a member feature.
   const isMember = (me?.roles ?? []).some((r) => r === "member" || r === "mentor");
-  const unread = useQuery({
-    queryKey: ["notifications", "unread"],
-    enabled: isMember,
-    queryFn: () => unwrap(api.GET("/api/v1/notifications", { params: { query: { limit: 1 } } })),
-    refetchInterval: 60_000,
-  });
-  const count = unread.data?.unread_count ?? 0;
   if (limited) {
     return (
       <header className="adm-top">
@@ -131,11 +126,7 @@ export function TopBar({ limited = false, narrow, onMenu, onPalette, onHelp, pen
           <Menu size={22} strokeWidth={1.5} aria-hidden="true" />
         </button>
       ) : null}
-      <button type="button" className="adm-search" onClick={onPalette} aria-label="Search and jump to a page" aria-keyshortcuts="Control+K Meta+K">
-        <Search size={18} strokeWidth={1.5} aria-hidden="true" />
-        <span className="adm-search__hint">Search members, ventures, jobs, pages…</span>
-        <kbd className="adm-kbd" aria-hidden="true">Ctrl K</kbd>
-      </button>
+      <GlobalSearch scope="admin" links={links} resultsPath="/admin/search" placeholder="Search members, courses, jobs, pages" />
       <div className="adm-top__tail">
         {canSeePending ? (
           <Link to="/admin/approvals" className="adm-chip">
@@ -148,10 +139,7 @@ export function TopBar({ limited = false, narrow, onMenu, onPalette, onHelp, pen
         <button type="button" className="adm-iconbtn adm-iconbtn--ring" onClick={onHelp} aria-label="Help and shortcuts">
           <CircleHelp size={20} strokeWidth={1.5} aria-hidden="true" />
         </button>
-        <Link to="/app/notifications" className="adm-iconbtn adm-iconbtn--ring" aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"}>
-          <Bell size={20} strokeWidth={1.5} aria-hidden="true" />
-          {count > 0 ? <span className="adm-dot" aria-hidden="true" /> : null}
-        </Link>
+        <NotificationBell enabled={isMember} />
         <UserMenu name={name} role={role} onShortcuts={onHelp} />
       </div>
     </header>
