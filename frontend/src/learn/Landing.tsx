@@ -46,6 +46,41 @@ export function Announcements({ courseId }: { courseId: string }) {
 }
 
 /** A course's landing page: what it is, what is in it, what it costs, and the way in. */
+type ActionCourse = Pick<Page, "slug" | "access" | "enrolment_active" | "access_request" | "resume"> & { progress: Pick<Page["progress"], "enrolled" | "completed_at"> };
+
+/** The one button that moves a person forward on a course, whatever state they and the course are in. */
+export function CourseAction({ course, target, enrolling = false, onEnrol, onAsk }: { course: ActionCourse; target?: string; enrolling?: boolean; onEnrol: () => void; onAsk: () => void }) {
+  if (course.progress.enrolled)
+    return target ? (
+      <Link className="wo-btn wo-btn--primary wo-btn--lg" to={lectureLink(course.slug, target)}>
+        {course.progress.completed_at ? "Review the course" : course.resume ? "Continue learning" : "Start learning"}
+      </Link>
+    ) : null;
+  if (!course.enrolment_active)
+    return (
+      <Button size="lg" disabled>
+        Enrolment is closed
+      </Button>
+    );
+  if (course.access === "free")
+    return (
+      <Button size="lg" loading={enrolling} onClick={onEnrol}>
+        Enrol for free
+      </Button>
+    );
+  if (course.access_request === "pending")
+    return (
+      <Button size="lg" disabled icon={<Check size={18} strokeWidth={1.5} />}>
+        Request sent
+      </Button>
+    );
+  return (
+    <Button size="lg" onClick={onAsk}>
+      Request access
+    </Button>
+  );
+}
+
 export default function Landing() {
   const { ref = "" } = useParams();
   const [params] = useSearchParams();
@@ -114,27 +149,7 @@ export default function Landing() {
     }
   };
 
-  const cta = (() => {
-    if (enrolled)
-      return target ? (
-        <Link className="wo-btn wo-btn--primary wo-btn--lg" to={lectureLink(course.slug, target)}>
-          {course.progress.completed_at ? "Review the course" : course.resume ? "Continue learning" : "Start learning"}
-        </Link>
-      ) : null;
-    if (!course.enrolment_active) return <Button size="lg" disabled>Enrolment is closed</Button>;
-    if (course.access === "free")
-      return (
-        <Button size="lg" loading={enrol.isPending} onClick={() => enrol.mutate()}>
-          Enrol for free
-        </Button>
-      );
-    if (course.access_request === "pending") return <Button size="lg" disabled icon={<Check size={18} strokeWidth={1.5} />}>Request sent</Button>;
-    return (
-      <Button size="lg" onClick={() => setAsking(true)}>
-        Request access
-      </Button>
-    );
-  })();
+  const cta = <CourseAction course={course} target={target} enrolling={enrol.isPending} onEnrol={() => enrol.mutate()} onAsk={() => setAsking(true)} />;
 
   return (
     <>
