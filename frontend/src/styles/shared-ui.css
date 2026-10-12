@@ -206,7 +206,8 @@
   font: 600 14px/20px var(--font-body);
   cursor: pointer;
 }
-.wo-notes__tab[aria-selected="true"] {
+.wo-notes__tab[aria-selected="true"],
+.wo-notes__tab[data-active="true"] {
   background: var(--bg-brand);
   color: var(--text-on-brand);
 }

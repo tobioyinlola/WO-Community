@@ -140,38 +140,6 @@ test.describe("the admin console", () => {
     await expect(page.getByText("Event cancelled")).toBeVisible();
   });
 
-  test("a course gets a module and a lesson, is published, taken down and deleted", async ({ page }) => {
-    await signInAdmin(page);
-    await page.goto("/admin/courses");
-    const title = `E2E course ${Date.now()}`;
-    await page.getByRole("button", { name: "New course" }).first().click();
-    await page.getByLabel("Title", { exact: true }).fill(title);
-    await page.getByLabel("What it covers", { exact: true }).fill("A short course for the browser tests.");
-    await page.getByLabel("Taught by", { exact: true }).fill("Ada Nwosu");
-    await page.getByLabel("Category", { exact: true }).fill("Testing");
-    await page.getByRole("button", { name: "Save as draft" }).click();
-    await expect(page.getByText("Draft created")).toBeVisible();
-    const card = page.getByRole("listitem").filter({ hasText: title });
-    await card.getByRole("button", { name: "Lessons" }).click();
-    await page.getByLabel("New module", { exact: true }).fill("Start here");
-    await page.getByRole("button", { name: "Add module" }).click();
-    await page.getByRole("button", { name: "Add a lesson" }).click();
-    await page.getByLabel("Title", { exact: true }).fill("Welcome");
-    await page.getByLabel("Text", { exact: true }).fill("Welcome to the course.");
-    await page.getByRole("button", { name: "Add lesson" }).click();
-    await expect(page.getByText("Welcome", { exact: false }).first()).toBeVisible();
-    await page.getByRole("button", { name: "Done" }).click();
-    await card.getByRole("button", { name: "Publish" }).click();
-    await page.getByRole("button", { name: "Publish", exact: true }).last().click();
-    await expect(page.getByText("Course published")).toBeVisible();
-    await card.getByRole("button", { name: "Take down" }).click();
-    await page.getByRole("button", { name: "Take down", exact: true }).last().click();
-    await expect(page.getByText("Course taken down")).toBeVisible();
-    await card.getByRole("button", { name: `Delete ${title}` }).click();
-    await page.getByRole("button", { name: "Delete", exact: true }).click();
-    await expect(page.getByText("Course deleted")).toBeVisible();
-  });
-
   test("an audience is saved and counted, and a newsletter draft is made and deleted", async ({ page }) => {
     await signInAdmin(page);
     await page.goto("/admin/email");

@@ -92,7 +92,7 @@ export const NAV: NavEntry[] = [
     icon: GraduationCap,
     children: [
       { id: "courses", label: "Courses", to: "/admin/courses", needs: "courses.manage" },
-      { id: "enrolments", label: "Enrolments", to: "/admin/enrolments", needs: "courses.manage", soon: true },
+      { id: "enrolments", label: "Enrolment requests", to: "/admin/course-requests", needs: "courses.manage" },
     ],
   },
   {
