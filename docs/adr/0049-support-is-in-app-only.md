@@ -21,7 +21,7 @@ person's message can be lost or mis-filed.
   in the app.
 - Attachments go through the upload pipeline (type and size limits, private storage, short-lived
   download links). At most three files of 5 MB each.
-- The response-time target is a setting (`sla_hours`) and only drives a visible "overdue" flag.
+- The response-time target is a setting (`SUPPORT_SLA_HOURS`) and only drives a visible "overdue" flag.
 
 ## Consequences
 

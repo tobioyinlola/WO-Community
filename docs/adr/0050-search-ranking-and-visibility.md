@@ -18,16 +18,16 @@ mistake is most likely to leak: a hit proves that something exists, and a snippe
   headline or pitch weighted at 0.8, tolerate small typing mistakes, and sort by that score, then name.
   A minimum similarity of 0.45 keeps loose matches out; a plain substring match is also accepted.
   Jobs, events, news and courses match on title and text and sort by newest.
-- **Groups and limits.** Results come back grouped, a handful per group, and the full page for a term
-  pages within one group. A group a person cannot use is absent, not empty.
+- **Groups and limits.** Results come back grouped by type, up to ten per type by default (at most
+  twenty), and the full results page pages within one type. A group a person cannot use is absent, not empty.
 - **Administrators.** The console has its own groups (approvals, members, courses, jobs, events,
   support requests, ventures). A group appears only for a role that holds its permission
   (`permissions_for`), and its links go to the console screen already filtered to the term.
 - **Recent terms.** The latest eight terms per person and per area (member or admin) are kept in
-  `SearchRecent`, one row per term ignoring case, newest first, removable one at a time or all at once.
+  `SearchRecent`, one row per term ignoring case, newest first, and can be cleared all at once.
   A term is stored only when the person runs a search.
-- **Highlight.** The interface marks the matched text. The server returns plain text only and never
-  markup built from stored content.
+- **Highlight.** The interface marks the matched text in the browser, as text nodes. The server
+  returns plain strings and never markup built from stored content.
 
 ## Consequences
 
