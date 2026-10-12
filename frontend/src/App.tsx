@@ -51,6 +51,8 @@ const BecomeMentor = lazy(() => import("./pages/app/Mentors").then((m) => ({ def
 const Profile = lazy(() => import("./pages/app/Account"));
 const StartupForm = lazy(() => import("./pages/app/Account").then((m) => ({ default: m.StartupForm })));
 const Settings = lazy(() => import("./pages/app/Account").then((m) => ({ default: m.SettingsPage })));
+const SettingsLayout = lazy(() => import("./pages/app/SettingsLayout"));
+const MentorSettings = lazy(() => import("./mentor/MentorSettings"));
 const Notifications = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NotificationsPage })));
 const News = lazy(() => import("./pages/app/Updates").then((m) => ({ default: m.NewsPage })));
 const Ventures = lazy(() => import("./pages/launch/Ventures"));
@@ -184,7 +186,10 @@ export function App() {
                     <Route path="support/:id" element={<SupportTicketPage />} />
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="me" element={<Profile />} />
-                    <Route path="settings" element={<Settings />} />
+                    <Route path="settings" element={<SettingsLayout />}>
+                      <Route index element={<Settings />} />
+                      <Route path="mentorship" element={<MentorSettings />} />
+                    </Route>
                     <Route path="*" element={<Navigate to="/app" replace />} />
                   </Route>
                 </Route>

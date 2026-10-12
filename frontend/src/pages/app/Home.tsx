@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle2, Circle, MessageCircle, Rocket, ThumbsUp } fro
 import { Link } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
 import { ReferralCard } from "../../referrals/ReferralCard";
-import { Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
+import { Alert, Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
 import { formatDate, formatTime, humanise, timeAgo } from "../../lib/format";
 import { PageHeader, RichText, Section, Skeleton } from "../../ui/blocks";
 
@@ -37,6 +37,10 @@ export default function Home() {
   const { me } = useAuth();
   const ventures = useQuery({ queryKey: ["toolkit", "ventures"], enabled: permissionsFor(me?.roles ?? []).has("toolkit.use"), queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
 
+  const isMentor = me?.roles.includes("mentor") ?? false;
+  const mentorSetup = useQuery({ queryKey: ["me", "mentor", "settings"], enabled: isMentor, retry: false, queryFn: () => unwrap(api.GET("/api/v1/me/mentor/settings")) });
+  const needsSchedule = isMentor && mentorSetup.data !== undefined && mentorSetup.data.weekly.length === 0;
+
   // A cancelled event is not coming up. Ask for a few extra so three remain after leaving those out.
   const comingUp = (events.data?.results ?? []).filter((e) => e.status !== "cancelled").slice(0, 3);
   const first = (profile.data?.full_name ?? "").split(" ")[0];
@@ -46,6 +50,15 @@ export default function Home() {
   return (
     <>
       <PageHeader eyebrow="Home" title={first ? `Welcome back, ${first}` : "Welcome back"} lead="Here is what is happening and what to do next." />
+
+      {needsSchedule ? (
+        <Alert tone="info" title="Set up your availability">
+          You are an approved mentor, but nobody can book you yet. Choose the times you are free and what you charge, which takes a couple of minutes.{" "}
+          <Link className="wo-linkbtn" to="/app/settings/mentorship">
+            Set up your availability
+          </Link>
+        </Alert>
+      ) : null}
 
       {onboarding.data && !onboarding.data.complete ? (
         <Card variant="brand">

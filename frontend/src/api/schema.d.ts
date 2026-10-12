@@ -4419,6 +4419,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/mentor/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your weekly availability and days off */
+        get: operations["me_mentor_availability_retrieve"];
+        /**
+         * Replace your weekly availability
+         * @description Sends every weekly range (weekday 0 is Monday, HH:MM in your time zone). Days off and extra one off time are kept. Ranges must not overlap, each must fit one session, and accepting mentees needs at least one.
+         */
+        put: operations["me_mentor_availability_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block days off, or add extra time on one date
+         * @description `type` `blocked` takes `starts_on` and `ends_on` (dates in your time zone). `type` `extra` takes `date`, `start` and `end`. Existing bookings are never removed.
+         */
+        post: operations["me_mentor_exceptions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/exceptions/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a day off or extra time
+         * @description Removing extra time can leave agreed sessions outside your schedule: send `acknowledge=true` to keep them and remove it anyway.
+         */
+        delete: operations["me_mentor_exceptions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview your booking calendar as a mentee sees it
+         * @description The same slots a mentee gets, even while you are not accepting mentees, so you can check the schedule before turning it on. `accepting_new` says whether mentees can book now.
+         */
+        get: operations["me_mentor_preview_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your mentoring settings
+         * @description Everything the Mentorship section of Settings edits: the weekly schedule, days off, session lengths, buffer, notice, weekly limit, booking window, pricing, meeting provider and mentoring profile. Only approved mentors.
+         */
+        get: operations["me_mentor_settings_retrieve"];
+        /**
+         * Change your mentoring settings
+         * @description Send only what changed. Prices are in the smallest unit. While online payment is off a paid session is a request you confirm and payment is arranged directly. Accepting mentees needs at least one weekly time range.
+         */
+        put: operations["me_mentor_settings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/mentoring": {
         parameters: {
             query?: never;
@@ -4831,6 +4936,26 @@ export interface paths {
          * @description Start times (UTC) for the next `days` (default 14, at most 30), soonest first, with already booked time, the minimum notice and weeks with no sessions left removed. Empty for a paused mentor.
          */
         get: operations["mentors_availability_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mentors/{user_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Times a mentor can be booked, in your time zone
+         * @description Slots for one session length between `from` and `to` (dates, at most 31 days), computed from the weekly schedule less days off, the buffer, minimum notice, booking window, the weekly limit, existing sessions and the mentor's calendar. `tz` is an IANA zone for the local date and time of each slot. Includes the price, if any.
+         */
+        get: operations["mentors_slots_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7794,12 +7919,6 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description * `free` - free
-         *     * `paid` - paid
-         * @enum {string}
-         */
-        AccessEnum: "free" | "paid";
-        /**
          * @description Rejects fields the serializer does not declare.
          *
          *     Silently ignoring unknown input hides client bugs and makes mass
@@ -8185,6 +8304,8 @@ export interface components {
             ends_at: string;
             topic: string;
             message: string;
+            length_minutes: number;
+            price: components["schemas"]["SessionPrice"] | null;
             mentor: components["schemas"]["SessionParty"];
             mentee: components["schemas"]["SessionParty"];
             meeting: components["schemas"]["SessionMeeting"];
@@ -8604,6 +8725,12 @@ export interface components {
             /** @description False until that part of the platform exists */
             available: boolean;
         };
+        /**
+         * @description * `blocked` - blocked
+         *     * `extra` - extra
+         * @enum {string}
+         */
+        AvailabilityExceptionKindEnum: "blocked" | "extra";
         AvailabilityPreview: {
             timezone: string;
             session_minutes: number;
@@ -8663,6 +8790,15 @@ export interface components {
          */
         BodyRequest: {
             body: string;
+        };
+        BookableSlot: {
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            /** Format: date */
+            local_date: string;
+            local_time: string;
         };
         BookableTimes: {
             timezone: string;
@@ -9074,6 +9210,16 @@ export interface components {
             score: number;
             next_missing_field: string | null;
         };
+        ConflictSession: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            status: string;
+            topic: string;
+        };
         CountItem: {
             name: string;
             count: number;
@@ -9115,7 +9261,7 @@ export interface components {
             audience?: string;
             promo_video_url?: string;
             enrolment_active?: boolean;
-            access?: components["schemas"]["AccessEnum"];
+            access?: components["schemas"]["PricingModeEnum"];
             price_minor?: number | null;
             currency?: string;
             promo_price_minor?: number | null;
@@ -9515,6 +9661,50 @@ export interface components {
          * @enum {string}
          */
         EventTypeEnum: "demo_day" | "workshop" | "meetup" | "announcement";
+        Exception: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["AvailabilityExceptionKindEnum"];
+            /** Format: date */
+            starts_on: string | null;
+            /** Format: date */
+            ends_on: string | null;
+            /** Format: date-time */
+            starts_at: string | null;
+            /** Format: date-time */
+            ends_at: string | null;
+            note: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ExceptionCreateRequest: {
+            type: components["schemas"]["AvailabilityExceptionKindEnum"];
+            /**
+             * Format: date
+             * @description blocked: the first day off
+             */
+            starts_on?: string;
+            /**
+             * Format: date
+             * @description blocked: the last day off
+             */
+            ends_on?: string;
+            /** @default  */
+            note: string;
+            /**
+             * Format: date
+             * @description extra: the day
+             */
+            date?: string;
+            start?: string;
+            end?: string;
+            /** @default false */
+            acknowledge: boolean;
+        };
         Featured: {
             /** Format: uuid */
             id: string;
@@ -10351,6 +10541,67 @@ export interface components {
             weekly?: components["schemas"]["WeeklyWindowRequest"][];
             one_off?: components["schemas"]["OneOffWindowRequest"][];
         };
+        MentorSetup: {
+            timezone: string;
+            accepting_new: boolean;
+            weekly: components["schemas"]["WeeklyWindow"][];
+            exceptions: components["schemas"]["Exception"][];
+            session_lengths: number[];
+            default_length: number;
+            buffer_minutes: number;
+            min_notice_hours: number;
+            max_per_week: number;
+            booking_window_days: number;
+            pricing_mode: components["schemas"]["PricingModeEnum"];
+            default_price_minor: number | null;
+            currency: string;
+            prices: components["schemas"]["PriceRow"][];
+            /** @description False while online payment is off: paid sessions are requests the mentor confirms and payment is arranged directly. */
+            payments_enabled: boolean;
+            meeting_provider: string;
+            personal_link: string;
+            meeting_providers: string[];
+            about: string;
+            expertise: string[];
+            topics: string[];
+            languages: string[];
+            stages: string[];
+            industries: string[];
+            options: components["schemas"]["SetupOptions"];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        MentorSetupUpdateRequest: {
+            session_lengths?: number[];
+            default_length?: number;
+            buffer_minutes?: number;
+            min_notice_hours?: number;
+            max_per_week?: number;
+            booking_window_days?: number;
+            accepting_new?: boolean;
+            pricing_mode?: components["schemas"]["PricingModeEnum"];
+            default_price_minor?: number | null;
+            currency?: string;
+            prices?: components["schemas"]["PriceRowWriteRequest"][];
+            meeting_provider?: string;
+            personal_link?: string;
+            about?: string;
+            expertise?: string[];
+            topics?: string[];
+            languages?: components["schemas"]["LanguagesEnum"][];
+            stages?: string[];
+            industries?: string[];
+            timezone?: string;
+            /**
+             * @description Keep sessions already agreed even though the change leaves them outside the schedule.
+             * @default false
+             */
+            acknowledge: boolean;
+        };
         MentorTag: {
             slug: string;
             name: string;
@@ -10366,6 +10617,8 @@ export interface components {
             ends_at: string;
             topic: string;
             message: string;
+            length_minutes: number;
+            price: components["schemas"]["SessionPrice"] | null;
             mentor: components["schemas"]["SessionParty"];
             mentee: components["schemas"]["SessionParty"];
             meeting: components["schemas"]["SessionMeeting"];
@@ -11084,7 +11337,7 @@ export interface components {
             audience?: string;
             promo_video_url?: string;
             enrolment_active?: boolean;
-            access?: components["schemas"]["AccessEnum"];
+            access?: components["schemas"]["PricingModeEnum"];
             price_minor?: number | null;
             currency?: string;
             promo_price_minor?: number | null;
@@ -11512,6 +11765,26 @@ export interface components {
             /** Format: date-time */
             promo_ends_at: string | null;
         };
+        PriceRow: {
+            length_minutes: number;
+            price_minor: number;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PriceRowWriteRequest: {
+            length_minutes: number;
+            price_minor: number;
+        };
+        /**
+         * @description * `free` - free
+         *     * `paid` - paid
+         * @enum {string}
+         */
+        PricingModeEnum: "free" | "paid";
         /**
          * @description * `low` - low
          *     * `normal` - normal
@@ -12290,6 +12563,13 @@ export interface components {
          * @enum {string}
          */
         ScenarioEnum: "conservative" | "base" | "optimistic";
+        ScheduleConflict: {
+            status: number;
+            code: string;
+            title: string;
+            detail: string;
+            sessions: components["schemas"]["ConflictSession"][];
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -12483,6 +12763,13 @@ export interface components {
             photo: components["schemas"]["Image"] | null;
             slug: string | null;
         };
+        SessionPrice: {
+            /** @description In the smallest unit (kobo, cents) */
+            price_minor: number;
+            currency: string;
+            /** @description "arranged": payment is settled directly between mentor and mentee. */
+            payment: string;
+        };
         SessionProposal: {
             /** Format: date-time */
             starts_at: string;
@@ -12519,10 +12806,19 @@ export interface components {
              * @description One of the start times from `GET /mentors/{id}/availability`.
              */
             starts_at: string;
+            /** @description One of the lengths the mentor offers; their usual length when left out. */
+            length_minutes?: number;
             /** @description What you want help with. */
             topic: string;
             /** @description 20 to 1000 characters introducing yourself and your goal. */
             message: string;
+        };
+        SetupOptions: {
+            lengths: number[];
+            buffers: number[];
+            notice_hours: number[];
+            window_days: number[];
+            currencies: string[];
         };
         /**
          * @description * `deck` - deck
@@ -12593,6 +12889,21 @@ export interface components {
             startup_id: string;
             /** @default  */
             pitch_link: string;
+        };
+        SlotPrice: {
+            price_minor: number;
+            currency: string;
+            payment: string;
+        };
+        Slots: {
+            mentor_timezone: string;
+            timezone: string;
+            length_minutes: number;
+            lengths: number[];
+            accepting_new: boolean;
+            price: components["schemas"]["SlotPrice"] | null;
+            slots: components["schemas"]["BookableSlot"][];
+            sessions_left_this_week: number;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -14186,6 +14497,23 @@ export interface components {
         WebhookAck: {
             status: string;
         };
+        Weekly: {
+            timezone: string;
+            weekly: components["schemas"]["WeeklyWindow"][];
+            exceptions: components["schemas"]["Exception"][];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        WeeklyUpdateRequest: {
+            weekly: components["schemas"]["WeeklyWindowWriteRequest"][];
+            timezone?: string;
+            /** @default false */
+            acknowledge: boolean;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -14212,6 +14540,17 @@ export interface components {
             /** @description HH:MM in the mentor time zone. */
             start: string;
             /** @description HH:MM, up to 24:00. */
+            end: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        WeeklyWindowWriteRequest: {
+            weekday: number;
+            start: string;
             end: string;
         };
         Win: {
@@ -27219,6 +27558,343 @@ export interface operations {
             };
         };
     };
+    me_mentor_availability_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_mentor_availability_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeeklyUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
+    me_mentor_exceptions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExceptionCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
+    me_mentor_exceptions_destroy: {
+        parameters: {
+            query?: {
+                acknowledge?: boolean;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
+    me_mentor_preview_retrieve: {
+        parameters: {
+            query?: {
+                from?: string;
+                length?: number;
+                to?: string;
+                tz?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Slots"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_mentor_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSetup"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_mentor_settings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MentorSetupUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSetup"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
     me_mentoring_retrieve: {
         parameters: {
             query?: never;
@@ -28286,6 +28962,53 @@ export interface operations {
                 content?: never;
             };
             /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mentors_slots_retrieve: {
+        parameters: {
+            query?: {
+                from?: string;
+                length?: number;
+                to?: string;
+                tz?: string;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Slots"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
             403: {
                 headers: {
                     [name: string]: unknown;
