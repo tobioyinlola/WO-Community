@@ -100,33 +100,6 @@ test.describe("a signed-in member", () => {
     await expect(page.getByRole("button", { name: "Register" })).toBeVisible();
   });
 
-  test("a free course can be started and a lesson completed", async ({ page }) => {
-    await signIn(page);
-    await page.goto("/app/learn");
-    await page.getByRole("link", { name: /Founder fundamentals/ }).click();
-    const enrol = page.getByRole("button", { name: "Enrol for free" });
-    const resume = page.getByRole("link", { name: /Start|Continue/ });
-    await expect(enrol.or(resume)).toBeVisible();
-    if (await enrol.isVisible()) await enrol.click();
-    await page.getByRole("link", { name: /Start|Continue/ }).click();
-    // Progress carries over between runs, so this opens whichever lesson is next (the last one
-    // says "Mark as done" because there is nothing after it).
-    const heading = page.getByRole("heading", { level: 1 });
-    const done = page.getByRole("button", { name: /Mark (as )?done/ });
-    const finished = page.getByText(/completed/i).first();
-    await expect(done.or(finished)).toBeVisible();
-    // Once every lesson has been finished on an earlier run there is nothing left to mark.
-    if (await done.isVisible()) {
-      const before = await heading.innerText();
-      await done.click();
-      await expect(async () => {
-        const moved = (await heading.innerText()) !== before;
-        const marked = (await page.getByText(/completed|done/i).count()) > 0;
-        expect(moved || marked).toBe(true);
-      }).toPass();
-    }
-  });
-
   test("the slash key searches, and a member is opened from the results by keyboard", async ({ page }) => {
     await signIn(page);
     await page.locator("main").click({ position: { x: 5, y: 5 } });

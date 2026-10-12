@@ -102,7 +102,7 @@ export function memberTarget(type: string, id: string): string {
     case "mentor":
       return `/app/mentors/${id}`;
     case "course":
-      return `/app/learn/${id}`;
+      return `/app/learn/courses/${id}`;
     default:
       return "/app";
   }
@@ -139,7 +139,7 @@ export const MEMBER_LINKS: QuickLink[] = [
   { label: "Settings", to: "/app/settings", keywords: "password notifications privacy mentorship" },
   { label: "Notifications", to: "/app/notifications", keywords: "alerts unread" },
   { label: "Launch toolkit", to: "/app/launch", keywords: "venture plan forecast deck score" },
-  { label: "My learning", to: "/app/learn", keywords: "courses progress certificates" },
+  { label: "My learning", to: "/app/learn/my", keywords: "courses progress certificates" },
   { label: "Mentoring sessions", to: "/app/mentors/sessions", keywords: "booked calendar" },
   { label: "My support requests", to: "/app/support", keywords: "contact help ticket problem" },
 ];

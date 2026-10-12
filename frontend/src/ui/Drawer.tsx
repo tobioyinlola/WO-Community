@@ -14,6 +14,8 @@ interface DrawerProps {
   eyebrow?: ReactNode;
   /** `md` is a form beside the page; `lg` is a wizard or a long record. Full width on a phone. */
   size?: "md" | "lg";
+  /** `bottom` is a sheet that rises from the bottom edge, for a phone. */
+  placement?: "right" | "bottom";
   /** Buttons pinned to the bottom. */
   footer?: ReactNode;
   /** Closing then asks before throwing away what was typed. */
@@ -27,7 +29,7 @@ interface DrawerProps {
  * A panel that slides in from the right over a dimmed page. Focus is trapped inside, Esc and a click
  * outside close it, and when `dirty` is set they first ask whether to discard what was typed.
  */
-export function Drawer({ open, onOpenChange, title, subtitle, eyebrow, size = "md", footer, dirty = false, actions, children }: DrawerProps) {
+export function Drawer({ open, onOpenChange, title, subtitle, eyebrow, size = "md", placement = "right", footer, dirty = false, actions, children }: DrawerProps) {
   const [asking, setAsking] = useState(false);
   const keep = useRef<HTMLButtonElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -57,6 +59,7 @@ export function Drawer({ open, onOpenChange, title, subtitle, eyebrow, size = "m
         <Dialog.Content
           className="wo-drawer"
           data-size={size}
+          data-placement={placement}
           aria-describedby={undefined}
           onCloseAutoFocus={(event) => {
             const back = opener.current;

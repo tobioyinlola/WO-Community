@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/v1/admin/answers/{item_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_answers_hide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/answers/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_answers_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/blocked-domains": {
         parameters: {
             query?: never;
@@ -340,6 +380,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/course-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requests for access to paid courses, across all courses
+         * @description Every open request across courses, for the nav item; or one course's, for its tab.
+         */
+        get: operations["admin_course_requests_all"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/course-requests/{request_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or decline a request for access
+         * @description Approving gives the member the course and tells them. Declining tells them too. A request is decided once.
+         */
+        post: operations["admin_course_requests_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/course-requests/{request_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or decline a request for access
+         * @description Approving gives the member the course and tells them. Declining tells them too. A request is decided once.
+         */
+        post: operations["admin_course_requests_decline_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/courses": {
         parameters: {
             query?: never;
@@ -380,6 +480,27 @@ export interface paths {
         patch: operations["admin_courses_partial_update"];
         trace?: never;
     };
+    "/api/v1/admin/courses/{course_id}/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Announcements posted to a course */
+        get: operations["admin_courses_announcements_list"];
+        put?: never;
+        /**
+         * Post an announcement
+         * @description Every enrolled learner is told, in the app and by email.
+         */
+        post: operations["admin_courses_announcements_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/courses/{course_id}/cover": {
         parameters: {
             query?: never;
@@ -412,7 +533,7 @@ export interface paths {
         put?: never;
         /**
          * Publish, unpublish or duplicate a course
-         * @description Publishing needs at least one lesson. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_duplicate_create"];
         delete?: never;
@@ -453,6 +574,60 @@ export interface paths {
          */
         post: operations["admin_courses_grant_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/learners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Learners, with their name, email and how far they have got */
+        get: operations["admin_courses_learners_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/learners.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The learners as a spreadsheet */
+        get: operations["admin_courses_learners.csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/learners/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Take a learner off a course
+         * @description Their progress goes with the enrolment. Their certificate, if issued, stays.
+         */
+        delete: operations["admin_courses_learners_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -506,9 +681,26 @@ export interface paths {
         put?: never;
         /**
          * Publish, unpublish or duplicate a course
-         * @description Publishing needs at least one lesson. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_publish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Questions on a course's lectures, with answers */
+        get: operations["admin_courses_questions_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -524,6 +716,43 @@ export interface paths {
         };
         /** Ratings and written feedback */
         get: operations["admin_courses_ratings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requests for access to one course
+         * @description Every open request across courses, for the nav item; or one course's, for its tab.
+         */
+        get: operations["admin_course_requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every review, including hidden ones */
+        get: operations["admin_courses_reviews_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -560,7 +789,7 @@ export interface paths {
         put?: never;
         /**
          * Publish, unpublish or duplicate a course
-         * @description Publishing needs at least one lesson. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_unpublish_create"];
         delete?: never;
@@ -1683,6 +1912,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/modules/{module_id}/lessons/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a lecture for each pasted YouTube link
+         * @description All or nothing: a wrong link adds none and is named. Titles come from YouTube when it can be asked.
+         */
+        post: operations["admin_modules_lessons_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/modules/{module_id}/lessons/order": {
         parameters: {
             query?: never;
@@ -1834,6 +2083,66 @@ export interface paths {
          * @description Actions: pin, unpin, feature, unfeature, hide, unhide, remove. Hidden posts disappear from the feed but the author still sees them; removed posts are gone. Every action is written to the audit log.
          */
         post: operations["admin_posts_unpin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/questions/{item_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_questions_hide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/questions/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_questions_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/questions/{question_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a question as course staff
+         * @description The answer carries the staff badge and the asker is told.
+         */
+        post: operations["admin_questions_answer_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2027,6 +2336,46 @@ export interface paths {
         put?: never;
         /** Mark a report as reviewed, with no action needed */
         post: operations["admin_reports_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{item_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_reviews_hide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_reviews_restore_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2451,6 +2800,26 @@ export interface paths {
          * @description Approving creates a draft story (linked as `item_id`) for an editor to polish and publish. Rejecting needs a reason. The member is told either way.
          */
         post: operations["admin_win_submissions_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/youtube/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check a YouTube link and get its title and thumbnail
+         * @description Only YouTube video links are accepted. The title may be blank when YouTube could not be asked.
+         */
+        post: operations["admin_youtube_validate_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2940,6 +3309,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courses/{course_id}/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Announcements posted to a course */
+        get: operations["courses_announcements_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/courses/{course_id}/enrol": {
         parameters: {
             query?: never;
@@ -2980,6 +3366,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courses/{course_id}/request-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for access to a paid course
+         * @description While payments are off, an admin decides. One open request at a time.
+         */
+        post: operations["courses_request_access_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reviews of a course, newest first */
+        get: operations["courses_reviews_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/wishlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save a course for later */
+        put: operations["courses_wishlist_update"];
+        post?: never;
+        /** Take a course off your saved list */
+        delete: operations["courses_wishlist_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/courses/categories": {
         parameters: {
             query?: never;
@@ -2989,6 +3430,26 @@ export interface paths {
         };
         /** Course categories in use */
         get: operations["courses_categories_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/page/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A course landing page, by its id or its slug
+         * @description The outline and description, what you will learn, requirements, the promo video, rating distribution, related courses, and where you are in it. Lectures marked as previews are not locked.
+         */
+        get: operations["course_page"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3501,6 +3962,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/lessons/{lesson_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your private notes on a lecture */
+        get: operations["lessons_notes_list"];
+        put?: never;
+        /** Keep a note at a moment in a lecture */
+        post: operations["lessons_notes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lessons/{lesson_id}/progress": {
         parameters: {
             query?: never;
@@ -3515,6 +3994,24 @@ export interface paths {
          */
         put: operations["lessons_progress_update"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lessons/{lesson_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Questions on a lecture, with their answers */
+        get: operations["lessons_questions_list"];
+        put?: never;
+        /** Ask a question about a lecture */
+        post: operations["lessons_questions_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3717,6 +4214,23 @@ export interface paths {
         };
         /** Jobs you posted, in any state */
         get: operations["me_jobs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/learning": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your learning: all, in progress, completed, or saved */
+        get: operations["me_learning_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4222,6 +4736,23 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one of your notes */
+        delete: operations["notes_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4742,6 +5273,23 @@ export interface paths {
         get: operations["public_startup_detail"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/questions/{question_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer a question */
+        post: operations["questions_answers_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7133,6 +7681,23 @@ export interface components {
          * @enum {string}
          */
         AccessEnum: "free" | "paid";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        AccessRequestRequest: {
+            /** @default  */
+            message: string;
+        };
+        AccessRequestResult: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            /** Format: date-time */
+            created_at: string;
+        };
         AccessToken: {
             access_token: string;
             token_type: string;
@@ -7159,15 +7724,43 @@ export interface components {
             /** Format: double */
             average_hours_to_approval: number | null;
         };
+        AdminAccessRequest: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            message: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            decided_at: string | null;
+            course: components["schemas"]["AdminRequestCourse"];
+            user: components["schemas"]["AdminPerson"];
+        };
+        AdminAnswer: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            author: string;
+            is_staff: boolean;
+            hidden: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
         AdminCourse: {
             /** Format: uuid */
             id: string;
             slug: string;
             title: string;
+            subtitle: string;
             excerpt: string;
             instructor: string;
             category: string;
             level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
             cover: components["schemas"]["Image"] | null;
             access: string;
             price: components["schemas"]["Price"] | null;
@@ -7177,8 +7770,21 @@ export interface components {
             lesson_count: number;
             status: string;
             progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
             /** @description Sanitised HTML */
             description: string;
+            learn_bullets: string[];
+            requirements: string[];
+            audience: string;
+            promo_video_id: string;
+            promo_price_minor: number | null;
+            /** Format: date-time */
+            promo_starts_at: string | null;
+            /** Format: date-time */
+            promo_ends_at: string | null;
+            checklist: components["schemas"]["PublishCheck"][];
+            pending_requests: number;
             price_minor: number | null;
             currency: string;
             /** Format: date-time */
@@ -7342,6 +7948,18 @@ export interface components {
             /** Format: date */
             deadline?: string | null;
         };
+        AdminLearner: {
+            /** Format: uuid */
+            user_id: string;
+            name: string;
+            email: string;
+            origin: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            percent: number;
+        };
         AdminLesson: {
             /** Format: uuid */
             id: string;
@@ -7349,6 +7967,8 @@ export interface components {
             title: string;
             position: number;
             duration_seconds: number | null;
+            description: string;
+            is_preview: boolean;
             video_url: string;
             video_id: string;
             body: string;
@@ -7487,6 +8107,12 @@ export interface components {
             position: number;
             lessons: components["schemas"]["AdminLesson"][];
         };
+        AdminPerson: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+        };
         AdminPreview: {
             /** Format: uuid */
             id: string;
@@ -7502,6 +8128,19 @@ export interface components {
             /** @description How many posts show this card. */
             posts: number;
             blocked: boolean;
+        };
+        AdminQuestion: {
+            /** Format: uuid */
+            id: string;
+            lecture: string;
+            /** Format: uuid */
+            lesson_id: string;
+            body: string;
+            asker: string;
+            /** Format: date-time */
+            created_at: string;
+            hidden: boolean;
+            answers: components["schemas"]["AdminAnswer"][];
         };
         AdminRating: {
             /** Format: uuid */
@@ -7527,6 +8166,23 @@ export interface components {
             note: string;
             open_reports_on_target: number;
             target: components["schemas"]["ReportTarget"];
+        };
+        AdminRequestCourse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+        };
+        AdminReview: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            user_id: string;
+            reviewer: string;
+            stars: number;
+            feedback: string;
+            /** Format: date-time */
+            created_at: string;
+            hidden: boolean;
         };
         AdminSearchResult: {
             members?: components["schemas"]["AdminHit"][];
@@ -7670,6 +8326,35 @@ export interface components {
             /** Format: uuid */
             startup_id?: string;
             location?: string;
+        };
+        Announcement: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @description Sanitised HTML */
+            body: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        AnnouncementCreateRequest: {
+            title: string;
+            body: string;
+        };
+        Answer: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            author: string;
+            is_staff: boolean;
+            mine: boolean;
+            /** Format: date-time */
+            created_at: string;
         };
         Applicant: {
             /** Format: uuid */
@@ -7835,6 +8520,15 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        BodyRequest: {
+            body: string;
+        };
         BookableTimes: {
             timezone: string;
             session_minutes: number;
@@ -7915,6 +8609,15 @@ export interface components {
          */
         BulkInvitationRequest: {
             csv: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        BulkLinksRequest: {
+            urls: string[];
         };
         BulkReport: {
             created: number;
@@ -8194,21 +8897,28 @@ export interface components {
             /** Format: uuid */
             upload_id: string;
         };
-        /**
-         * @description Rejects fields the serializer does not declare.
-         *
-         *     Silently ignoring unknown input hides client bugs and makes mass
-         *     assignment mistakes easy to miss.
-         */
+        /** @description What can be set on a course. Only the title is needed to start a draft. */
         CourseCreateRequest: {
             title: string;
-            description: string;
-            instructor: string;
-            category: string;
-            level: components["schemas"]["CourseLevelEnum"];
+            subtitle?: string;
+            description?: string;
+            instructor?: string;
+            category?: string;
+            level?: components["schemas"]["CourseLevelEnum"];
+            language?: string;
+            learn_bullets?: string[];
+            requirements?: string[];
+            audience?: string;
+            promo_video_url?: string;
+            enrolment_active?: boolean;
             access?: components["schemas"]["AccessEnum"];
             price_minor?: number | null;
             currency?: string;
+            promo_price_minor?: number | null;
+            /** Format: date-time */
+            promo_starts_at?: string | null;
+            /** Format: date-time */
+            promo_ends_at?: string | null;
             open_to_visitors?: boolean;
             certificate_enabled?: boolean;
         };
@@ -8217,10 +8927,16 @@ export interface components {
             id: string;
             slug: string;
             title: string;
+            subtitle: string;
             excerpt: string;
             instructor: string;
             category: string;
             level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
             cover: components["schemas"]["Image"] | null;
             access: string;
             price: components["schemas"]["Price"] | null;
@@ -8230,6 +8946,8 @@ export interface components {
             lesson_count: number;
             status: string;
             progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
             /** @description Sanitised HTML */
             description: string;
             modules: components["schemas"]["OutlineModule"][];
@@ -8253,12 +8971,59 @@ export interface components {
          * @description * `beginner` - beginner
          *     * `intermediate` - intermediate
          *     * `advanced` - advanced
+         *     * `all` - all
          * @enum {string}
          */
-        CourseLevelEnum: "beginner" | "intermediate" | "advanced";
+        CourseLevelEnum: "beginner" | "intermediate" | "advanced" | "all";
         CoursePage: {
             results: components["schemas"]["CourseSummary"][];
             next_cursor: string | null;
+        };
+        /** @description The landing page: the outline and description plus everything that sells and explains. */
+        CoursePageDetail: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            title: string;
+            subtitle: string;
+            excerpt: string;
+            instructor: string;
+            category: string;
+            level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
+            cover: components["schemas"]["Image"] | null;
+            access: string;
+            price: components["schemas"]["Price"] | null;
+            open_to_visitors: boolean;
+            certificate_enabled: boolean;
+            rating: components["schemas"]["RatingSummary"];
+            lesson_count: number;
+            status: string;
+            progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
+            /** @description Sanitised HTML */
+            description: string;
+            modules: components["schemas"]["OutlineModule"][];
+            resume: components["schemas"]["Resume"] | null;
+            my_rating: components["schemas"]["MyRating"] | null;
+            learn_bullets: string[];
+            requirements: string[];
+            audience: string;
+            promo_video: components["schemas"]["PromoVideo"] | null;
+            rating_distribution: {
+                [key: string]: number;
+            };
+            can_review: boolean;
+            related: components["schemas"]["CourseSummary"][];
+            announcement_count: number;
+            /** Format: date-time */
+            last_updated: string;
+            section_count: number;
         };
         CourseProgress: {
             enrolled: boolean;
@@ -8268,6 +9033,7 @@ export interface components {
             /** Format: date-time */
             completed_at?: string | null;
             origin?: string;
+            time_remaining_seconds?: number;
         };
         CourseStats: {
             enrolled: number;
@@ -8282,10 +9048,16 @@ export interface components {
             id: string;
             slug: string;
             title: string;
+            subtitle: string;
             excerpt: string;
             instructor: string;
             category: string;
             level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
             cover: components["schemas"]["Image"] | null;
             access: string;
             price: components["schemas"]["Price"] | null;
@@ -8295,6 +9067,8 @@ export interface components {
             lesson_count: number;
             status: string;
             progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -9039,6 +9813,8 @@ export interface components {
             type: components["schemas"]["LessonTypeEnum"];
             title: string;
             duration_seconds?: number | null;
+            description?: string;
+            is_preview?: boolean;
             video_url?: string;
             body?: string;
             resource_url?: string;
@@ -9057,6 +9833,8 @@ export interface components {
             type: string;
             title: string;
             duration_seconds: number | null;
+            description: string;
+            preview: boolean;
             video: components["schemas"]["Video"] | null;
             /** @description Sanitised HTML for reading lessons */
             body: string;
@@ -9585,6 +10363,25 @@ export interface components {
             type: string;
             image: string | null;
         };
+        Note: {
+            /** Format: uuid */
+            id: string;
+            seconds: number;
+            body: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        NoteCreateRequest: {
+            body: string;
+            /** @default 0 */
+            seconds: number;
+        };
         NotificationItem: {
             /** Format: uuid */
             id: string;
@@ -9674,6 +10471,8 @@ export interface components {
             title: string;
             position: number;
             duration_seconds: number | null;
+            /** @description Anyone signed in may watch it before enrolling */
+            preview: boolean;
             /** @description True until you have access to open it */
             locked: boolean;
             completed: boolean;
@@ -9684,6 +10483,21 @@ export interface components {
             title: string;
             position: number;
             lessons: components["schemas"]["OutlineLesson"][];
+        };
+        PaginatedAdminAccessRequestList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminAccessRequest"][];
         };
         PaginatedAdminCourseList: {
             /** @example 123 */
@@ -9759,6 +10573,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AdminJob"][];
+        };
+        PaginatedAdminLearnerList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminLearner"][];
         };
         PaginatedAdminMentorApplicationList: {
             /** @example 123 */
@@ -10022,21 +10851,28 @@ export interface components {
         PatchedCommentWriteRequest: {
             body?: string;
         };
-        /**
-         * @description Rejects fields the serializer does not declare.
-         *
-         *     Silently ignoring unknown input hides client bugs and makes mass
-         *     assignment mistakes easy to miss.
-         */
+        /** @description What can be set on a course. Only the title is needed to start a draft. */
         PatchedCourseUpdateRequest: {
             title?: string;
+            subtitle?: string;
             description?: string;
             instructor?: string;
             category?: string;
             level?: components["schemas"]["CourseLevelEnum"];
+            language?: string;
+            learn_bullets?: string[];
+            requirements?: string[];
+            audience?: string;
+            promo_video_url?: string;
+            enrolment_active?: boolean;
             access?: components["schemas"]["AccessEnum"];
             price_minor?: number | null;
             currency?: string;
+            promo_price_minor?: number | null;
+            /** Format: date-time */
+            promo_starts_at?: string | null;
+            /** Format: date-time */
+            promo_ends_at?: string | null;
             open_to_visitors?: boolean;
             certificate_enabled?: boolean;
         };
@@ -10116,6 +10952,8 @@ export interface components {
             type?: components["schemas"]["LessonTypeEnum"];
             title?: string;
             duration_seconds?: number | null;
+            description?: string;
+            is_preview?: boolean;
             video_url?: string;
             body?: string;
             resource_url?: string;
@@ -10450,6 +11288,10 @@ export interface components {
             /** @description In the smallest unit (kobo, cents) */
             amount_minor: number;
             currency: string;
+            /** @description The usual price, while a promotion is running */
+            original_minor: number | null;
+            /** Format: date-time */
+            promo_ends_at: string | null;
         };
         /**
          * @description * `low` - low
@@ -10494,6 +11336,10 @@ export interface components {
         ProgressRequest: {
             position_seconds?: number;
             completed?: boolean;
+        };
+        PromoVideo: {
+            video_id: string;
+            embed_url: string;
         };
         /**
          * @description * `web` - web
@@ -10662,6 +11508,35 @@ export interface components {
             cover: components["schemas"]["Image"] | null;
             /** Format: date-time */
             published_at: string;
+        };
+        PublishCheck: {
+            key: string;
+            text: string;
+            done: boolean;
+            step: number;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PublishRequestRequest: {
+            /**
+             * @description Open the course by its link only, without listing it in the catalogue.
+             * @default false
+             */
+            unlisted: boolean;
+        };
+        Question: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            asker: string;
+            mine: boolean;
+            /** Format: date-time */
+            created_at: string;
+            answers: components["schemas"]["Answer"][];
         };
         QueueCounts: {
             registrations_awaiting_approval: number;
@@ -11116,6 +11991,26 @@ export interface components {
             /** Format: uuid */
             lesson_id: string;
             position_seconds: number;
+        };
+        Review: {
+            /** Format: uuid */
+            id: string;
+            stars: number;
+            feedback: string;
+            /** Format: date-time */
+            created_at: string;
+            reviewer: string;
+            mine: boolean;
+        };
+        ReviewPage: {
+            results: components["schemas"]["Review"][];
+            next_cursor: string | null;
+            /** Format: double */
+            average: number | null;
+            count: number;
+            distribution: {
+                [key: string]: number;
+            };
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -13133,6 +14028,24 @@ export interface components {
             referred: number;
             approved: number;
         };
+        WishlistState: {
+            saved: boolean;
+        };
+        YouTubeChecked: {
+            video_id: string;
+            url: string;
+            title: string;
+            thumbnail: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        YouTubeValidateRequest: {
+            url: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -13142,6 +14055,88 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_answers_hide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_answers_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_blocked_domains_list: {
         parameters: {
             query?: never;
@@ -14240,6 +15235,148 @@ export interface operations {
             };
         };
     };
+    admin_course_requests_all: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminAccessRequestList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_course_requests_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequest"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already decided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_course_requests_decline_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequest"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already decided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_list: {
         parameters: {
             query?: {
@@ -14254,8 +15391,9 @@ export interface operations {
                 /**
                  * @description * `draft` - draft
                  *     * `published` - published
+                 *     * `unlisted` - unlisted
                  */
-                status?: "draft" | "published";
+                status?: "draft" | "published" | "unlisted";
             };
             header?: never;
             path?: never;
@@ -14483,6 +15621,94 @@ export interface operations {
             };
         };
     };
+    admin_courses_announcements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_announcements_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnouncementCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_cover_update: {
         parameters: {
             query?: never;
@@ -14580,7 +15806,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -14729,6 +15959,136 @@ export interface operations {
             };
         };
     };
+    admin_courses_learners_list: {
+        parameters: {
+            query?: {
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description The initial index from which to return the results. */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminLearnerList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "admin_courses_learners.csv_retrieve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_learners_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_modules_create: {
         parameters: {
             query?: never;
@@ -14837,7 +16197,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -14885,6 +16249,48 @@ export interface operations {
             };
         };
     };
+    admin_courses_questions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestion"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_ratings_list: {
         parameters: {
             query?: never;
@@ -14902,6 +16308,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminRating"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_course_requests: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                status?: string;
+            };
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminAccessRequestList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_reviews_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReview"][];
                 };
             };
             /** @description Not authenticated */
@@ -14978,7 +16472,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -18410,6 +19908,52 @@ export interface operations {
             };
         };
     };
+    admin_modules_lessons_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkLinksRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLesson"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_modules_lessons_order_update: {
         parameters: {
             query?: never;
@@ -18777,6 +20321,134 @@ export interface operations {
                 content?: never;
             };
             /** @description No such post */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_questions_hide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_questions_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_questions_answer_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestion"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -19358,6 +21030,88 @@ export interface operations {
             };
             /** @description Already actioned */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_reviews_hide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_reviews_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20723,6 +22477,57 @@ export interface operations {
             };
         };
     };
+    admin_youtube_validate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeValidateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeChecked"];
+                };
+            };
+            /** @description Not a YouTube video link */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     analytics_events_create: {
         parameters: {
             query?: never;
@@ -21772,15 +23577,30 @@ export interface operations {
                 access?: "free" | "paid";
                 category?: string;
                 cursor?: string;
+                /**
+                 * @description * `short` - short
+                 *     * `medium` - medium
+                 *     * `long` - long
+                 */
+                duration?: "short" | "medium" | "long" | "";
                 enrolled?: boolean;
+                language?: string;
                 /**
                  * @description * `beginner` - beginner
                  *     * `intermediate` - intermediate
                  *     * `advanced` - advanced
+                 *     * `all` - all
                  */
-                level?: "beginner" | "intermediate" | "advanced";
+                level?: "beginner" | "intermediate" | "advanced" | "all";
                 limit?: number;
                 q?: string;
+                rating_min?: number;
+                /**
+                 * @description * `newest` - newest
+                 *     * `popular` - popular
+                 *     * `rating` - rating
+                 */
+                sort?: "newest" | "popular" | "rating";
             };
             header?: never;
             path?: never;
@@ -21839,6 +23659,48 @@ export interface operations {
                 };
             };
             /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_announcements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"][];
+                };
+            };
+            /** @description Not logged in */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -21964,6 +23826,188 @@ export interface operations {
             };
         };
     };
+    courses_request_access_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AccessRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessRequestResult"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Free course, already enrolled, or enrolment closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_reviews_retrieve: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPage"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_wishlist_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistState"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_wishlist_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistState"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     courses_categories_retrieve: {
         parameters: {
             query?: never;
@@ -21982,6 +24026,48 @@ export interface operations {
                 };
             };
             /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    course_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePageDetail"];
+                };
+            };
+            /** @description Not logged in */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -23555,6 +25641,94 @@ export interface operations {
             };
         };
     };
+    lessons_notes_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"][];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lessons_notes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     lessons_progress_update: {
         parameters: {
             query?: never;
@@ -23579,6 +25753,94 @@ export interface operations {
                 };
             };
             /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lessons_questions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Question"][];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lessons_questions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Question"];
+                };
+            };
+            /** @description Not logged in */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -24154,6 +26416,56 @@ export interface operations {
                 content?: never;
             };
             /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_learning_retrieve: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                /**
+                 * @description * `all` - all
+                 *     * `in_progress` - in_progress
+                 *     * `completed` - completed
+                 *     * `wishlist` - wishlist
+                 */
+                state?: "all" | "in_progress" | "completed" | "wishlist";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePage"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -25468,6 +27780,47 @@ export interface operations {
             };
         };
     };
+    notes_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     notifications_retrieve: {
         parameters: {
             query?: {
@@ -26613,6 +28966,52 @@ export interface operations {
                 };
             };
             /** @description Not listed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    questions_answers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Answer"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;
