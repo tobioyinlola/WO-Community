@@ -253,7 +253,7 @@
   padding: var(--space-2);
   border: var(--stroke-1) solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--adm-card, var(--bg-white));
+  background: var(--adm-card, var(--bg-card));
   box-shadow: var(--shadow-md);
   color: var(--text-primary);
 }

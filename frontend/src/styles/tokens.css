@@ -44,6 +44,7 @@
   --bg-raised: var(--white);
   --bg-input: var(--white);
   --bg-white: var(--white);
+  --bg-card: var(--white);
   --bg-sunken: var(--cream-300);
   --bg-brand: var(--forest-700);
   --bg-inverse: var(--forest-700);
@@ -121,6 +122,7 @@
   --bg-raised: var(--forest-700);
   --bg-input: #06302A;
   --bg-white: var(--white);
+  --bg-card: var(--bg-surface);
   --bg-sunken: var(--forest-950);
   --bg-brand: var(--forest-600);
   --bg-inverse: var(--cream-200);

@@ -209,7 +209,7 @@
   padding: var(--space-3);
   border: var(--stroke-1) solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--adm-card, var(--bg-white));
+  background: var(--adm-card, var(--bg-card));
 }
 .wo-grid__hours,
 .wo-grid__track {
@@ -291,7 +291,7 @@
   padding: var(--space-3) var(--space-5);
   border: var(--stroke-1) solid var(--border-default);
   border-radius: var(--radius-xl);
-  background: var(--bg-white);
+  background: var(--bg-card);
   box-shadow: var(--shadow-lg);
 }
 .wo-savebar__text {

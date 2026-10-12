@@ -59,7 +59,7 @@ export function Reviews({ courseId, average, count, distribution, enrolled, canR
             const total = distribution[String(n)] ?? 0;
             return (
               <li key={n} className="wo-reviews__bar">
-                <span>{n} stars</span>
+                <span>{n} {n === 1 ? "star" : "stars"}</span>
                 <span className="wo-progressbar" aria-hidden="true">
                   <span style={{ width: `${(total / biggest) * 100}%` }} />
                 </span>

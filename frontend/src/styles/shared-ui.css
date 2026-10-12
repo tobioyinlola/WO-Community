@@ -277,7 +277,7 @@
   width: 10px;
   height: 10px;
   border-radius: var(--radius-full);
-  background: var(--bg-brand);
+  background: var(--text-link);
 }
 .wo-notes__empty {
   padding: var(--space-8) var(--space-6);
@@ -326,7 +326,7 @@
   padding: 0 var(--space-1);
   display: grid;
   place-items: center;
-  border: 2px solid var(--adm-card, var(--bg-white));
+  border: 2px solid var(--adm-card, var(--bg-card));
   border-radius: var(--radius-full);
   background: var(--bg-brand);
   color: var(--text-on-brand);
@@ -501,7 +501,7 @@
   list-style: none;
   border: var(--stroke-1) solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  background: var(--adm-card, var(--bg-white));
+  background: var(--adm-card, var(--bg-card));
 }
 .wo-search__row--page {
   color: var(--text-secondary);
@@ -658,7 +658,7 @@
   list-style: none;
   border: var(--stroke-1) solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  background: var(--adm-card, var(--bg-white));
+  background: var(--adm-card, var(--bg-card));
 }
 .wo-tickets__row {
   display: grid;
@@ -728,7 +728,7 @@
   padding: var(--space-3) var(--space-4);
   border: var(--stroke-1) solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--adm-card, var(--bg-white));
+  background: var(--adm-card, var(--bg-card));
 }
 .wo-thread__item[data-support="true"] .wo-thread__card {
   background: var(--bg-brand-soft);
@@ -793,7 +793,7 @@
   flex-direction: column;
   border: var(--stroke-1) solid var(--border-default);
   border-radius: var(--radius-lg);
-  background: var(--bg-white);
+  background: var(--bg-card);
   overflow: hidden;
 }
 :root[data-theme="dark"] .wo-rich {
@@ -989,7 +989,7 @@
   padding: var(--space-3);
   border: var(--stroke-1) solid var(--border-default);
   border-radius: var(--radius-md);
-  background: var(--bg-white);
+  background: var(--bg-card);
 }
 .wo-referrer__text {
   display: flex;
@@ -1014,7 +1014,7 @@
   list-style: none;
   border: var(--stroke-1) solid var(--border-default);
   border-radius: var(--radius-md);
-  background: var(--bg-white);
+  background: var(--bg-card);
 }
 .wo-referrer-results__item {
   width: 100%;
@@ -1060,7 +1060,7 @@
   padding: var(--space-2) var(--space-3);
   border: var(--stroke-1) solid var(--border-default);
   border-radius: var(--radius-md);
-  background: var(--bg-white);
+  background: var(--bg-card);
   color: var(--text-primary);
   font: 500 13px/20px var(--font-mono);
   overflow: hidden;
