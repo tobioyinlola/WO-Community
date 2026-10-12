@@ -334,6 +334,21 @@ class CertificateSerializer(serializers.Serializer):
     signatory_title = serializers.CharField(allow_blank=True)
     signature_url = serializers.CharField(allow_null=True)
     verify_url = serializers.CharField()
+    show_on_profile = serializers.BooleanField(
+        help_text="Whether the holder lists this certificate on their profile"
+    )
+
+
+class CertificateChoiceSerializer(serializers.Serializer):
+    show_on_profile = serializers.BooleanField()
+
+
+class ProfileCertificateSerializer(serializers.Serializer):
+    number = serializers.CharField()
+    course_title = serializers.CharField()
+    issued_at = serializers.DateTimeField()
+    hours = serializers.FloatField()
+    verify_url = serializers.CharField()
 
 
 class CertificateDownloadSerializer(serializers.Serializer):

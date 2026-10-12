@@ -21,6 +21,7 @@ from apps.learning.models import (
     LessonProgress,
     WishlistItem,
 )
+from apps.profiles import selectors as profiles
 from apps.uploads import services as uploads
 
 EXCERPT = 200
@@ -366,6 +367,7 @@ def certificate_view(certificate: Certificate, *, public: bool = False) -> dict[
         "verify_url": certificates.verify_url_for(certificate.code),
     }
     if not public:
+        view["show_on_profile"] = certificate.show_on_profile
         view["id"] = certificate.pk
         view["course_slug"] = certificate.enrolment.course.slug
     return view
@@ -378,6 +380,41 @@ def my_certificates(viewer_id: UUID) -> list[dict[str, Any]]:
         .order_by("-issued_at")
     )
     return [certificate_view(c) for c in rows]
+
+
+def profile_certificates(viewer: Any, user_id: UUID) -> list[dict[str, Any]]:
+    """The certificates a member chose to show on their profile, if the viewer may see that profile.
+
+    Nothing is revealed to a viewer who cannot see the member's basics: the answer is the same "not
+    found" as for the profile itself. A withdrawn certificate is never listed.
+    """
+    if profiles.profile_for_viewer(viewer, user_id) is None:
+        raise exceptions.NotFound()
+    rows = (
+        Certificate.objects.filter(
+            enrolment__user_id=user_id, show_on_profile=True, revoked_at__isnull=True
+        )
+        .select_related("enrolment__course")
+        .order_by("-issued_at")
+    )
+    return [
+        {
+            "number": c.code,
+            "course_title": c.course_title,
+            "issued_at": c.issued_at,
+            "hours": float(c.hours),
+            "verify_url": certificates.verify_url_for(c.code),
+        }
+        for c in rows
+    ]
+
+
+def set_show_on_profile(viewer_id: UUID, certificate_id: UUID, show: bool) -> Certificate:
+    certificate = get_certificate(viewer_id, certificate_id)
+    if certificate.show_on_profile != show:
+        certificate.show_on_profile = show
+        certificate.save(update_fields=["show_on_profile", "updated_at"])
+    return certificate
 
 
 def get_certificate(viewer_id: UUID, certificate_id: UUID) -> Certificate:

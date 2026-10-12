@@ -319,3 +319,70 @@ def test_a_stored_signature_appears_on_new_certificates(
     data, _ = get_storage().objects[(PRIVATE, certificate.pdf_key)]
     assert b"/Subtype /Image" in data
     assert CertificateSettings.objects.count() == 1
+
+
+# --- listing on the profile (opt in) ---
+
+
+def listed(client, user_id):
+    return client.get(f"/api/v1/members/{user_id}/certificates")
+
+
+def test_a_certificate_is_not_on_the_profile_until_the_holder_turns_it_on(
+    certified, learner, learner_client, other_client
+):
+    assert learner_client.get(f"{CERTS}/{certified.pk}").json()["show_on_profile"] is False
+    assert listed(other_client, learner.pk).json() == []
+
+    done = learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json")
+    assert done.status_code == 200 and done.json()["show_on_profile"] is True
+    [row] = listed(other_client, learner.pk).json()
+    assert row["number"] == certified.code
+    assert row["course_title"] == "Fundraising basics"
+    assert row["verify_url"].endswith(f"/verify/{certified.code}")
+    assert "holder_name" not in row and "id" not in row  # no more than the page already says
+
+    learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": False}, format="json")
+    assert listed(other_client, learner.pk).json() == []
+
+
+def test_a_revoked_certificate_drops_off_the_profile(
+    certified, learner, learner_client, other_client
+):
+    learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json")
+    Certificate.objects.filter(pk=certified.pk).update(revoked_at=datetime.now(UTC))
+    assert listed(other_client, learner.pk).json() == []
+
+
+def test_only_the_holder_can_change_the_choice(certified, learner, learner_client, other_client):
+    response = other_client.patch(
+        f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json"
+    )
+    assert response.status_code == 404
+    bad = learner_client.patch(
+        f"{CERTS}/{certified.pk}", {"show_on_profile": "maybe"}, format="json"
+    )
+    assert bad.status_code == 400
+    certified.refresh_from_db()
+    assert certified.show_on_profile is False
+
+
+def test_a_hidden_profile_does_not_list_certificates_either(
+    certified, learner, learner_client, other_client
+):
+    from apps.profiles import services as profiles
+
+    learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json")
+    profiles.update_visibility(user_id=learner.pk, levels={"basics": "private"})
+    assert listed(other_client, learner.pk).status_code == 404
+    assert listed(learner_client, learner.pk).status_code == 200  # the owner still sees their own
+
+
+def test_listing_needs_a_signed_in_member(certified, learner, api_client):
+    assert listed(api_client, learner.pk).status_code == 401
+    assert (
+        api_client.patch(
+            f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json"
+        ).status_code
+        == 401
+    )

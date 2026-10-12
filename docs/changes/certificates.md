@@ -45,8 +45,17 @@ makes it valid again.
 
 Events: `certificate_issued`, `certificate_downloaded`, `certificate_revoked`, `certificate_reissued`.
 
-## Not built yet
+## On the member profile (opt in)
 
-Listing earned certificates on the member profile (opt in) needs the profile visibility groups to
-reach into learning, which the layer rules do not allow directly; it is left for a follow-up that
-adds a read port.
+A certificate is listed on its holder's profile only when the holder turns on **Show on my profile** on
+the certificate page (`Certificate.show_on_profile`, off by default). The profile screens belong to a
+lower layer than learning, so the profile response is left alone and the member page asks learning for the
+list: `GET /members/{id}/certificates`. It answers 404 to anyone who may not see the member's basics, lists
+only certificates that are on and not revoked, and returns the course, the date, the hours and the
+verification link, and no more than the public page already says. The holder changes the choice with
+`PATCH /certificates/{id}` (`{"show_on_profile": true}`).
+
+| Endpoint | Who |
+|---|---|
+| `PATCH /certificates/{id}` | The holder only; anyone else gets 404 |
+| `GET /members/{id}/certificates` | A signed in member who may see that profile |
