@@ -94,6 +94,7 @@ export function PublicLayout() {
               <ul className="site-footer__list">
                 <li><Link to="/login">Sign in</Link></li>
                 <li><Link to="/forgot-password">Reset password</Link></li>
+                <li><Link to="/help">Contact support</Link></li>
               </ul>
             </div>
             <div>

@@ -1,3 +1,4 @@
+import "../../styles/shared-ui.css";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronLeft, ChevronRight, Columns3, Rows3, Rows4, X } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";

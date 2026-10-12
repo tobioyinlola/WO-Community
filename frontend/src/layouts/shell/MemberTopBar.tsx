@@ -1,6 +1,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, Menu, Monitor, Moon, Sun } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSupport } from "../../support/SupportProvider";
 import { isAdmin } from "../../admin/permissions";
 import { useAuth } from "../../auth/AuthProvider";
 import { Avatar } from "../../components";
@@ -19,6 +20,7 @@ function AccountMenu({ name, photo, role }: { name: string; photo?: string | nul
   const { me, logout } = useAuth();
   const navigate = useNavigate();
   const { choice, setChoice } = useTheme();
+  const support = useSupport();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -48,6 +50,12 @@ function AccountMenu({ name, photo, role }: { name: string; photo?: string | nul
           </DropdownMenu.Item>
           <DropdownMenu.Item asChild>
             <Link to="/app/settings" className="adm-menu__item">Settings</Link>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item asChild>
+            <Link to="/app/support" className="adm-menu__item">My support requests</Link>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item className="adm-menu__item" onSelect={() => support.open()}>
+            Contact support
           </DropdownMenu.Item>
           <DropdownMenu.Label className="adm-menu__label">Theme</DropdownMenu.Label>
           <DropdownMenu.RadioGroup value={choice} onValueChange={(v) => setChoice(v as ThemeChoice)}>

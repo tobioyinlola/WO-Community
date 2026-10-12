@@ -141,5 +141,5 @@ export const MEMBER_LINKS: QuickLink[] = [
   { label: "Launch toolkit", to: "/app/launch", keywords: "venture plan forecast deck score" },
   { label: "My learning", to: "/app/learn", keywords: "courses progress certificates" },
   { label: "Mentoring sessions", to: "/app/mentors/sessions", keywords: "booked calendar" },
-  { label: "Contact support", to: "/app/support", keywords: "help ticket problem" },
+  { label: "My support requests", to: "/app/support", keywords: "contact help ticket problem" },
 ];

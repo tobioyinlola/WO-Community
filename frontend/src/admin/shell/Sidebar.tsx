@@ -26,7 +26,7 @@ interface SidebarProps {
   /** The accessible name of the navigation landmark. */
   navLabel?: string;
   /** When set, the help entry at the foot is a link (for example to email support) instead of the shortcuts button. */
-  help?: { label: string; href: string };
+  help?: { label: string; href?: string; onClick?: () => void };
 }
 
 function Badge({ leaf, counts }: { leaf: NavLeaf; counts: Counts }) {
@@ -232,10 +232,17 @@ export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHe
             )}
           </div>
           {help ? (
-            <a className="adm-nav__link adm-nav__link--help" data-rail={collapsed} href={help.href} aria-label={collapsed ? help.label : undefined} title={collapsed ? help.label : undefined}>
+            <button
+              type="button"
+              className="adm-nav__link adm-nav__link--help"
+              data-rail={collapsed}
+              onClick={help.onClick}
+              aria-label={collapsed ? help.label : undefined}
+              title={collapsed ? help.label : undefined}
+            >
               <LifeBuoy size={20} strokeWidth={1.5} aria-hidden="true" />
               {collapsed ? null : <span className="adm-nav__label">{help.label}</span>}
-            </a>
+            </button>
           ) : (
             <button type="button" className="adm-nav__link adm-nav__link--help" data-rail={collapsed} onClick={onHelp} aria-label={collapsed ? "Help and shortcuts" : undefined}>
               <CircleHelp size={20} strokeWidth={1.5} aria-hidden="true" />

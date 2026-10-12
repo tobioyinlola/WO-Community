@@ -195,7 +195,6 @@ export default function Approvals() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey || rejecting) return;
-      if (document.querySelector(".adm-palette__box")) return;
       const k = event.key.toLowerCase();
       if (k === "j") {
         event.preventDefault();

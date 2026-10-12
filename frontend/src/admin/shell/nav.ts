@@ -4,6 +4,7 @@ import {
   FileText,
   GraduationCap,
   LayoutDashboard,
+  LifeBuoy,
   Mail,
   Rocket,
   Settings,
@@ -12,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type QueueKey = "registrations_awaiting_approval" | "open_reports" | "jobs_awaiting_review" | "wins_awaiting_review";
+export type QueueKey = "registrations_awaiting_approval" | "open_reports" | "jobs_awaiting_review" | "wins_awaiting_review" | "support_unanswered";
 
 export interface NavLeaf {
   id: string;
@@ -54,6 +55,15 @@ export const NAV: NavEntry[] = [
       { id: "invitations", label: "Invitations", to: "/admin/invitations", needs: "invitations.manage" },
       { id: "mentors", label: "Mentors", to: "/admin/mentors", needs: "mentors.decide" },
       { id: "reports", label: "Moderation reports", to: "/admin/reports", needs: "reports.handle", badge: "open_reports" },
+    ],
+  },
+  {
+    id: "support",
+    label: "Support",
+    icon: LifeBuoy,
+    children: [
+      { id: "support-inbox", label: "Inbox", to: "/admin/support", needs: "support.manage", badge: "support_unanswered", end: true },
+      { id: "support-replies", label: "Saved replies", to: "/admin/support/replies", needs: "support.manage" },
     ],
   },
   {
