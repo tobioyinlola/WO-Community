@@ -9612,6 +9612,252 @@ paths:
           description: Not an active member
         '404':
           description: Not found
+  /api/v1/me/mentor/availability:
+    get:
+      operationId: me_mentor_availability_retrieve
+      summary: Your weekly availability and days off
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weekly'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
+    put:
+      operationId: me_mentor_availability_update
+      description: Sends every weekly range (weekday 0 is Monday, HH:MM in your time
+        zone). Days off and extra one off time are kept. Ranges must not overlap,
+        each must fit one session, and accepting mentees needs at least one.
+      summary: Replace your weekly availability
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyUpdateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weekly'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleConflict'
+          description: 'Agreed sessions would fall outside the schedule. They are
+            listed in `sessions`; send `acknowledge: true` to keep them and apply
+            the change anyway.'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
+  /api/v1/me/mentor/exceptions:
+    post:
+      operationId: me_mentor_exceptions_create
+      description: '`type` `blocked` takes `starts_on` and `ends_on` (dates in your
+        time zone). `type` `extra` takes `date`, `start` and `end`. Existing bookings
+        are never removed.'
+      summary: Block days off, or add extra time on one date
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExceptionCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weekly'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleConflict'
+          description: 'Agreed sessions would fall outside the schedule. They are
+            listed in `sessions`; send `acknowledge: true` to keep them and apply
+            the change anyway.'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
+  /api/v1/me/mentor/exceptions/{item_id}:
+    delete:
+      operationId: me_mentor_exceptions_destroy
+      description: 'Removing extra time can leave agreed sessions outside your schedule:
+        send `acknowledge=true` to keep them and remove it anyway.'
+      summary: Remove a day off or extra time
+      parameters:
+      - in: query
+        name: acknowledge
+        schema:
+          type: boolean
+          default: false
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weekly'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleConflict'
+          description: 'Agreed sessions would fall outside the schedule. They are
+            listed in `sessions`; send `acknowledge: true` to keep them and apply
+            the change anyway.'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
+  /api/v1/me/mentor/preview:
+    get:
+      operationId: me_mentor_preview_retrieve
+      description: The same slots a mentee gets, even while you are not accepting
+        mentees, so you can check the schedule before turning it on. `accepting_new`
+        says whether mentees can book now.
+      summary: Preview your booking calendar as a mentee sees it
+      parameters:
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: length
+        schema:
+          type: integer
+          maximum: 60
+          minimum: 30
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: tz
+        schema:
+          type: string
+          default: ''
+          maxLength: 64
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Slots'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
+  /api/v1/me/mentor/settings:
+    get:
+      operationId: me_mentor_settings_retrieve
+      description: 'Everything the Mentorship section of Settings edits: the weekly
+        schedule, days off, session lengths, buffer, notice, weekly limit, booking
+        window, pricing, meeting provider and mentoring profile. Only approved mentors.'
+      summary: Your mentoring settings
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorSetup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
+    put:
+      operationId: me_mentor_settings_update
+      description: Send only what changed. Prices are in the smallest unit. While
+        online payment is off a paid session is a request you confirm and payment
+        is arranged directly. Accepting mentees needs at least one weekly time range.
+      summary: Change your mentoring settings
+      tags:
+      - mentorship
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorSetupUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorSetup'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleConflict'
+          description: 'Agreed sessions would fall outside the schedule. They are
+            listed in `sessions`; send `acknowledge: true` to keep them and apply
+            the change anyway.'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
+        '404':
+          description: Not found
   /api/v1/me/mentoring:
     get:
       operationId: me_mentoring_retrieve
@@ -10428,6 +10674,61 @@ paths:
           description: Not authenticated
         '403':
           description: Not an active member
+        '404':
+          description: Not found
+  /api/v1/mentors/{user_id}/slots:
+    get:
+      operationId: mentors_slots_retrieve
+      description: Slots for one session length between `from` and `to` (dates, at
+        most 31 days), computed from the weekly schedule less days off, the buffer,
+        minimum notice, booking window, the weekly limit, existing sessions and the
+        mentor's calendar. `tz` is an IANA zone for the local date and time of each
+        slot. Includes the price, if any.
+      summary: Times a mentor can be booked, in your time zone
+      parameters:
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: length
+        schema:
+          type: integer
+          maximum: 60
+          minimum: 30
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: tz
+        schema:
+          type: string
+          default: ''
+          maxLength: 64
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - mentorship
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Slots'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved mentor
         '404':
           description: Not found
   /api/v1/mentors/recommended:
@@ -16812,14 +17113,6 @@ paths:
           description: ''
 components:
   schemas:
-    AccessEnum:
-      enum:
-      - free
-      - paid
-      type: string
-      description: |-
-        * `free` - free
-        * `paid` - paid
     AccessRequestRequest:
       type: object
       description: |-
@@ -17837,6 +18130,12 @@ components:
           type: string
         message:
           type: string
+        length_minutes:
+          type: integer
+        price:
+          allOf:
+          - $ref: '#/components/schemas/SessionPrice'
+          nullable: true
         mentor:
           $ref: '#/components/schemas/SessionParty'
         mentee:
@@ -17886,12 +18185,14 @@ components:
       - feedback
       - id
       - late_cancel
+      - length_minutes
       - meeting
       - mentee
       - mentee_email
       - mentor
       - mentor_email
       - message
+      - price
       - proposal
       - reason
       - reschedule_count
@@ -18878,6 +19179,14 @@ components:
           description: False until that part of the platform exists
       required:
       - available
+    AvailabilityExceptionKindEnum:
+      enum:
+      - blocked
+      - extra
+      type: string
+      description: |-
+        * `blocked` - blocked
+        * `extra` - extra
     AvailabilityPreview:
       type: object
       properties:
@@ -19012,6 +19321,25 @@ components:
           maxLength: 2000
       required:
       - body
+    BookableSlot:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        local_date:
+          type: string
+          format: date
+        local_time:
+          type: string
+      required:
+      - ends_at
+      - local_date
+      - local_time
+      - starts_at
     BookableTimes:
       type: object
       properties:
@@ -19903,6 +20231,28 @@ components:
       required:
       - next_missing_field
       - score
+    ConflictSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+        topic:
+          type: string
+      required:
+      - ends_at
+      - id
+      - starts_at
+      - status
+      - topic
     CountItem:
       type: object
       properties:
@@ -20014,7 +20364,7 @@ components:
         enrolment_active:
           type: boolean
         access:
-          $ref: '#/components/schemas/AccessEnum'
+          $ref: '#/components/schemas/PricingModeEnum'
         price_minor:
           type: integer
           maximum: 100000000
@@ -20997,6 +21347,79 @@ components:
         * `workshop` - workshop
         * `meetup` - meetup
         * `announcement` - announcement
+    Exception:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/AvailabilityExceptionKindEnum'
+        starts_on:
+          type: string
+          format: date
+          nullable: true
+        ends_on:
+          type: string
+          format: date
+          nullable: true
+        starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+      required:
+      - ends_at
+      - ends_on
+      - id
+      - note
+      - starts_at
+      - starts_on
+      - type
+    ExceptionCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        type:
+          $ref: '#/components/schemas/AvailabilityExceptionKindEnum'
+        starts_on:
+          type: string
+          format: date
+          description: 'blocked: the first day off'
+        ends_on:
+          type: string
+          format: date
+          description: 'blocked: the last day off'
+        note:
+          type: string
+          default: ''
+          maxLength: 120
+        date:
+          type: string
+          format: date
+          description: 'extra: the day'
+        start:
+          type: string
+          minLength: 1
+          pattern: ^\d{2}:\d{2}$
+        end:
+          type: string
+          minLength: 1
+          pattern: ^\d{2}:\d{2}$
+        acknowledge:
+          type: boolean
+          default: false
+      required:
+      - type
     Featured:
       type: object
       properties:
@@ -22867,6 +23290,200 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OneOffWindowRequest'
+    MentorSetup:
+      type: object
+      properties:
+        timezone:
+          type: string
+        accepting_new:
+          type: boolean
+        weekly:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyWindow'
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exception'
+        session_lengths:
+          type: array
+          items:
+            type: integer
+        default_length:
+          type: integer
+        buffer_minutes:
+          type: integer
+        min_notice_hours:
+          type: integer
+        max_per_week:
+          type: integer
+        booking_window_days:
+          type: integer
+        pricing_mode:
+          $ref: '#/components/schemas/PricingModeEnum'
+        default_price_minor:
+          type: integer
+          nullable: true
+        currency:
+          type: string
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceRow'
+        payments_enabled:
+          type: boolean
+          description: 'False while online payment is off: paid sessions are requests
+            the mentor confirms and payment is arranged directly.'
+        meeting_provider:
+          type: string
+        personal_link:
+          type: string
+        meeting_providers:
+          type: array
+          items:
+            type: string
+        about:
+          type: string
+        expertise:
+          type: array
+          items:
+            type: string
+        topics:
+          type: array
+          items:
+            type: string
+        languages:
+          type: array
+          items:
+            type: string
+        stages:
+          type: array
+          items:
+            type: string
+        industries:
+          type: array
+          items:
+            type: string
+        options:
+          $ref: '#/components/schemas/SetupOptions'
+      required:
+      - about
+      - accepting_new
+      - booking_window_days
+      - buffer_minutes
+      - currency
+      - default_length
+      - default_price_minor
+      - exceptions
+      - expertise
+      - industries
+      - languages
+      - max_per_week
+      - meeting_provider
+      - meeting_providers
+      - min_notice_hours
+      - options
+      - payments_enabled
+      - personal_link
+      - prices
+      - pricing_mode
+      - session_lengths
+      - stages
+      - timezone
+      - topics
+      - weekly
+    MentorSetupUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        session_lengths:
+          type: array
+          items:
+            type: integer
+          maxItems: 3
+        default_length:
+          type: integer
+        buffer_minutes:
+          type: integer
+        min_notice_hours:
+          type: integer
+        max_per_week:
+          type: integer
+          maximum: 20
+          minimum: 1
+        booking_window_days:
+          type: integer
+        accepting_new:
+          type: boolean
+        pricing_mode:
+          $ref: '#/components/schemas/PricingModeEnum'
+        default_price_minor:
+          type: integer
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceRowWriteRequest'
+        meeting_provider:
+          type: string
+          maxLength: 12
+        personal_link:
+          type: string
+          maxLength: 500
+        about:
+          type: string
+          maxLength: 1000
+        expertise:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 8
+        topics:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 10
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguagesEnum'
+          maxItems: 5
+        stages:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 4
+        industries:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 5
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        acknowledge:
+          type: boolean
+          default: false
+          description: Keep sessions already agreed even though the change leaves
+            them outside the schedule.
     MentorTag:
       type: object
       properties:
@@ -22897,6 +23514,12 @@ components:
           type: string
         message:
           type: string
+        length_minutes:
+          type: integer
+        price:
+          allOf:
+          - $ref: '#/components/schemas/SessionPrice'
+          nullable: true
         mentor:
           $ref: '#/components/schemas/SessionParty'
         mentee:
@@ -22942,10 +23565,12 @@ components:
       - feedback
       - id
       - late_cancel
+      - length_minutes
       - meeting
       - mentee
       - mentor
       - message
+      - price
       - proposal
       - reason
       - reschedule_count
@@ -24283,7 +24908,7 @@ components:
         enrolment_active:
           type: boolean
         access:
-          $ref: '#/components/schemas/AccessEnum'
+          $ref: '#/components/schemas/PricingModeEnum'
         price_minor:
           type: integer
           maximum: 100000000
@@ -25155,6 +25780,39 @@ components:
       - currency
       - original_minor
       - promo_ends_at
+    PriceRow:
+      type: object
+      properties:
+        length_minutes:
+          type: integer
+        price_minor:
+          type: integer
+      required:
+      - length_minutes
+      - price_minor
+    PriceRowWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        length_minutes:
+          type: integer
+        price_minor:
+          type: integer
+      required:
+      - length_minutes
+      - price_minor
+    PricingModeEnum:
+      enum:
+      - free
+      - paid
+      type: string
+      description: |-
+        * `free` - free
+        * `paid` - paid
     PriorityEnum:
       enum:
       - low
@@ -26808,6 +27466,27 @@ components:
         * `conservative` - conservative
         * `base` - base
         * `optimistic` - optimistic
+    ScheduleConflict:
+      type: object
+      properties:
+        status:
+          type: integer
+        code:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictSession'
+      required:
+      - code
+      - detail
+      - sessions
+      - status
+      - title
     ScheduleRequest:
       type: object
       description: |-
@@ -27205,6 +27884,22 @@ components:
       - name
       - photo
       - slug
+    SessionPrice:
+      type: object
+      properties:
+        price_minor:
+          type: integer
+          description: In the smallest unit (kobo, cents)
+        currency:
+          type: string
+        payment:
+          type: string
+          description: '"arranged": payment is settled directly between mentor and
+            mentee.'
+      required:
+      - currency
+      - payment
+      - price_minor
     SessionProposal:
       type: object
       properties:
@@ -27258,6 +27953,12 @@ components:
           type: string
           format: date-time
           description: One of the start times from `GET /mentors/{id}/availability`.
+        length_minutes:
+          type: integer
+          maximum: 60
+          minimum: 30
+          description: One of the lengths the mentor offers; their usual length when
+            left out.
         topic:
           type: string
           minLength: 1
@@ -27273,6 +27974,35 @@ components:
       - message
       - starts_at
       - topic
+    SetupOptions:
+      type: object
+      properties:
+        lengths:
+          type: array
+          items:
+            type: integer
+        buffers:
+          type: array
+          items:
+            type: integer
+        notice_hours:
+          type: array
+          items:
+            type: integer
+        window_days:
+          type: array
+          items:
+            type: integer
+        currencies:
+          type: array
+          items:
+            type: string
+      required:
+      - buffers
+      - currencies
+      - lengths
+      - notice_hours
+      - window_days
     ShareSubjectTypeEnum:
       enum:
       - deck
@@ -27429,6 +28159,53 @@ components:
           maxLength: 300
       required:
       - startup_id
+    SlotPrice:
+      type: object
+      properties:
+        price_minor:
+          type: integer
+        currency:
+          type: string
+        payment:
+          type: string
+      required:
+      - currency
+      - payment
+      - price_minor
+    Slots:
+      type: object
+      properties:
+        mentor_timezone:
+          type: string
+        timezone:
+          type: string
+        length_minutes:
+          type: integer
+        lengths:
+          type: array
+          items:
+            type: integer
+        accepting_new:
+          type: boolean
+        price:
+          allOf:
+          - $ref: '#/components/schemas/SlotPrice'
+          nullable: true
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookableSlot'
+        sessions_left_this_week:
+          type: integer
+      required:
+      - accepting_new
+      - length_minutes
+      - lengths
+      - mentor_timezone
+      - price
+      - sessions_left_this_week
+      - slots
+      - timezone
     SlotsRequest:
       type: object
       description: |-
@@ -31028,6 +31805,44 @@ components:
           type: string
       required:
       - status
+    Weekly:
+      type: object
+      properties:
+        timezone:
+          type: string
+        weekly:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyWindow'
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exception'
+      required:
+      - exceptions
+      - timezone
+      - weekly
+    WeeklyUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        weekly:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyWindowWriteRequest'
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        acknowledge:
+          type: boolean
+          default: false
+      required:
+      - weekly
     WeeklyWindow:
       type: object
       description: |-
@@ -31076,6 +31891,30 @@ components:
           minLength: 1
           description: HH:MM, up to 24:00.
           maxLength: 5
+      required:
+      - end
+      - start
+      - weekday
+    WeeklyWindowWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        weekday:
+          type: integer
+          maximum: 6
+          minimum: 0
+        start:
+          type: string
+          minLength: 1
+          pattern: ^\d{2}:\d{2}$
+        end:
+          type: string
+          minLength: 1
+          pattern: ^\d{2}:\d{2}$
       required:
       - end
       - start

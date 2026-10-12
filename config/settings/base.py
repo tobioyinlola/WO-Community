@@ -191,6 +191,8 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "CategoryEnum": "apps.feed.models.CATEGORIES",
+        "PricingModeEnum": "apps.mentorship.models.PRICING_MODES",
+        "AvailabilityExceptionKindEnum": "apps.mentorship.models.EXCEPTION_KINDS",
         "CertificateStatusEnum": "apps.learning.models.CERTIFICATE_STATUSES",
         "ReferralKindEnum": "apps.accounts.referrals.SOURCES",
         "SupportCategoryEnum": "apps.support.domain.CATEGORIES",

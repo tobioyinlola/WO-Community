@@ -78,6 +78,11 @@ def _post_link(payload: dict[str, Any]) -> str:
     return f"/posts/{payload['post_id']}"
 
 
+def _arranged(p: dict[str, Any]) -> str:
+    """Paid sessions are settled between the two while online payment is off, and say so."""
+    return ". Payment arranged directly" if p.get("payment") == "arranged" else ""
+
+
 TYPES: dict[str, Spec] = {
     "comment": Spec(
         "comments",
@@ -213,14 +218,14 @@ TYPES: dict[str, Spec] = {
     ),
     "session_requested": Spec(
         "mentorship",
-        lambda who, p: f"{who} asked you for a mentoring session",
+        lambda who, p: f"{who} asked you for a mentoring session{_arranged(p)}",
         _session_link,
         email=True,
         rate_limited_email=True,
     ),
     "session_confirmed": Spec(
         "mentorship",
-        lambda who, p: f"{who} confirmed your mentoring session",
+        lambda who, p: f"{who} confirmed your mentoring session{_arranged(p)}",
         _session_link,
         email=True,
     ),

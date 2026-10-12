@@ -10,15 +10,61 @@ from django.utils import timezone
 
 from apps.mentorship.models import (
     ACTIVE_SESSION_STATUSES,
+    AvailabilityException,
     AvailabilitySlot,
     CalendarBusy,
     MentorProfile,
     MentorSession,
+    MentorSettings,
 )
 
 Interval = tuple[datetime, datetime]
 # Sessions that use up a place in the week: waiting, agreed, held, or missed by the founder.
 COUNTED_STATUSES = (*ACTIVE_SESSION_STATUSES, "completed", "no_show")
+
+
+def preferences(profile: MentorProfile) -> MentorSettings:
+    """The mentor's booking preferences. A mentor who never opened Settings gets the old behaviour:
+    their one session length, no buffer, and the platform's notice and horizon."""
+    row = MentorSettings.objects.filter(user_id=profile.user_id).first()
+    if row is not None:
+        return row
+    return MentorSettings(
+        user_id=profile.user_id,
+        session_lengths=[profile.session_minutes],
+        buffer_minutes=0,
+        min_notice_hours=settings.MENTORSHIP_MIN_NOTICE_HOURS,
+        booking_window_days=settings.MENTORSHIP_HORIZON_DAYS,
+    )
+
+
+def offered_lengths(profile: MentorProfile) -> list[int]:
+    lengths = sorted({int(n) for n in preferences(profile).session_lengths})
+    return lengths or [profile.session_minutes]
+
+
+def default_length(profile: MentorProfile) -> int:
+    lengths = offered_lengths(profile)
+    return profile.session_minutes if profile.session_minutes in lengths else lengths[0]
+
+
+def blocked_intervals(profile: MentorProfile, start: datetime, end: datetime) -> list[Interval]:
+    """Days off, as UTC intervals from local midnight to the next local midnight."""
+    zone = ZoneInfo(profile.timezone)
+    rows = AvailabilityException.objects.filter(
+        mentor_id=profile.user_id,
+        ends_on__gte=(start.astimezone(zone) - timedelta(days=1)).date(),
+        starts_on__lte=(end.astimezone(zone) + timedelta(days=1)).date(),
+    )
+    return [
+        (
+            datetime.combine(row.starts_on, time(0, 0), tzinfo=zone).astimezone(UTC),
+            datetime.combine(row.ends_on + timedelta(days=1), time(0, 0), tzinfo=zone).astimezone(
+                UTC
+            ),
+        )
+        for row in rows
+    ]
 
 
 def booked_intervals(mentor_id: UUID, start: datetime, end: datetime) -> list[Interval]:
@@ -121,32 +167,41 @@ def windows(profile: MentorProfile, start: datetime, end: datetime) -> list[Inte
         if slot.kind == AvailabilitySlot.Kind.ONE_OFF and slot.starts_at and slot.ends_at:
             found.append((slot.starts_at, slot.ends_at))
     clipped = [(max(a, start), min(b, end)) for a, b in found if b > start and a < end]
-    return _merge([(a, b) for a, b in clipped if b > a])
+    merged = _merge([(a, b) for a, b in clipped if b > a])
+    return _subtract(merged, blocked_intervals(profile, start, end))
 
 
 def free_windows(profile: MentorProfile, start: datetime, end: datetime) -> list[Interval]:
-    busy = booked_intervals(profile.user_id, start, end) + external_busy(
-        profile.user_id, start, end
+    """Open windows minus what is taken, with the buffer kept clear around anything taken."""
+    pad = timedelta(minutes=preferences(profile).buffer_minutes)
+    wide_start, wide_end = start - pad, end + pad
+    busy = booked_intervals(profile.user_id, wide_start, wide_end) + external_busy(
+        profile.user_id, wide_start, wide_end
     )
-    return _subtract(windows(profile, start, end), busy)
+    return _subtract(windows(profile, start, end), [(a - pad, b + pad) for a, b in busy])
 
 
 def _starts(
-    profile: MentorProfile, begin: datetime, finish: datetime, earliest: datetime
+    profile: MentorProfile,
+    begin: datetime,
+    finish: datetime,
+    earliest: datetime,
+    length_minutes: int | None = None,
 ) -> list[datetime]:
     """Start times from free windows between two instants, none before ``earliest``.
 
     Steps run from the start of each whole free window, not from where the search begins, so
     the same times are offered however far ahead the question is asked.
     """
-    length = timedelta(minutes=profile.session_minutes)
+    length = timedelta(minutes=length_minutes or default_length(profile))
+    step = length + timedelta(minutes=preferences(profile).buffer_minutes)
     starts: list[datetime] = []
     for window_start, window_end in free_windows(profile, begin, finish):
         cursor = window_start
         while cursor + length <= window_end:
             if cursor >= earliest:
                 starts.append(cursor)
-            cursor += length
+            cursor += step
     return starts
 
 
@@ -168,18 +223,23 @@ def _within_capacity(
 
 
 def bookable_starts(
-    profile: MentorProfile, *, days: int, now: datetime | None = None
+    profile: MentorProfile,
+    *,
+    days: int,
+    now: datetime | None = None,
+    length_minutes: int | None = None,
 ) -> list[datetime]:
-    """Start times a session of the mentor length could begin, soonest first.
+    """Start times a session could begin, soonest first.
 
-    Starts begin at each free window start and step by the session length, so a 09:00 to 12:00
-    window with 45 minute sessions offers 09:00, 09:45, 10:30 and 11:15. Nothing earlier than the
-    minimum notice is offered.
+    Starts begin at each free window start and step by the session length plus the buffer, so a
+    09:00 to 12:00 window with 45 minute sessions offers 09:00, 09:45, 10:30 and 11:15. Nothing is
+    offered before the mentor's minimum notice or beyond their booking window.
     """
     now = now or timezone.now()
-    earliest = now + timedelta(hours=settings.MENTORSHIP_MIN_NOTICE_HOURS)
-    latest = now + timedelta(days=min(days, settings.MENTORSHIP_HORIZON_DAYS))
-    starts = _starts(profile, earliest - timedelta(days=1), latest, earliest)
+    prefs = preferences(profile)
+    earliest = now + timedelta(hours=prefs.min_notice_hours)
+    latest = now + timedelta(days=min(days, prefs.booking_window_days))
+    starts = _starts(profile, earliest - timedelta(days=1), latest, earliest, length_minutes)
     return _within_capacity(profile, starts, None)
 
 
@@ -189,17 +249,19 @@ def is_bookable(
     *,
     now: datetime | None = None,
     exclude: UUID | None = None,
+    length_minutes: int | None = None,
 ) -> bool:
     """Whether ``start`` is one of the times that would be offered.
 
     ``exclude`` is a session being moved: its own place in the week is not held against it.
     """
     now = now or timezone.now()
-    earliest = now + timedelta(hours=settings.MENTORSHIP_MIN_NOTICE_HOURS)
-    if start < earliest or start > now + timedelta(days=settings.MENTORSHIP_HORIZON_DAYS):
+    prefs = preferences(profile)
+    earliest = now + timedelta(hours=prefs.min_notice_hours)
+    if start < earliest or start > now + timedelta(days=prefs.booking_window_days):
         return False
     margin = timedelta(days=1)
-    offered = _starts(profile, start - margin, start + margin, earliest)
+    offered = _starts(profile, start - margin, start + margin, earliest, length_minutes)
     return start in offered and bool(_within_capacity(profile, [start], exclude))
 
 
