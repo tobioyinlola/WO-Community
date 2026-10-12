@@ -11,6 +11,7 @@ from apps.events.models import Event
 from apps.jobs.models import Job
 from apps.learning.models import Course
 from apps.profiles.models import FounderProfile
+from apps.support.models import SupportTicket
 from apps.toolkit.ventures.models import Venture
 
 
@@ -97,6 +98,25 @@ def _events(query: str, limit: int) -> list[dict[str, Any]]:
     ]
 
 
+def _tickets(query: str, limit: int) -> list[dict[str, Any]]:
+    term = query.strip().lstrip("#")
+    match = Q(subject__icontains=term) | Q(name__icontains=term) | Q(email__icontains=term)
+    digits = term.upper().removeprefix("SUP-")
+    if digits.isdigit():
+        match |= Q(number=int(digits))
+    return [
+        {
+            "type": "ticket",
+            "id": t.pk,
+            "title": f"{t.reference}: {t.subject}",
+            "subtitle": f"{t.name}, {t.status.replace('_', ' ')}",
+            "status": t.status,
+            "url": f"/admin/support?ticket={t.pk}",
+        }
+        for t in SupportTicket.objects.filter(match).order_by("-last_activity_at")[:limit]
+    ]
+
+
 def _ventures(query: str, limit: int) -> list[dict[str, Any]]:
     rows = Venture.objects.filter(deleted_at__isnull=True, name__icontains=query)
     return [
@@ -119,6 +139,7 @@ GROUPS: dict[str, tuple[str, Callable[[str, int], list[dict[str, Any]]]]] = {
     "courses": ("courses.manage", _courses),
     "jobs": ("jobs.moderate", _jobs),
     "events": ("events.manage", _events),
+    "tickets": ("support.manage", _tickets),
     "ventures": ("toolkit.manage", _ventures),
 }
 

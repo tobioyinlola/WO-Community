@@ -102,3 +102,25 @@ def test_an_admin_without_a_second_step_is_refused(make_user, client_for):
 
 def test_signing_in_is_required(api_client):
     assert api_client.get(SEARCH, {"q": "ada"}).status_code == 401
+
+
+def test_support_tickets_are_found_by_number_subject_or_name(admin, make_user):
+    from apps.support import services
+
+    member = person(make_user, "kemi@example.com", "Kemi Adeyemi", email_verified_at=timezone.now())
+    ticket = services.create_ticket(
+        member=member,
+        name="Kemi Adeyemi",
+        email="kemi@example.com",
+        category="account",
+        subject="Cannot sign in on my phone",
+        message="The page says my password is wrong but I reset it today.",
+    )
+    for term in ("phone", "Kemi", ticket.reference, f"#{ticket.number}"):
+        hits = admin.get(SEARCH, {"q": term}).json()["tickets"]
+        assert [h["id"] for h in hits] == [str(ticket.pk)], term
+    assert hits[0]["url"] == f"/admin/support?ticket={ticket.pk}"
+
+
+def test_an_editor_does_not_see_tickets(editor, data):
+    assert "tickets" not in editor.get(SEARCH, {"q": "ada"}).json()

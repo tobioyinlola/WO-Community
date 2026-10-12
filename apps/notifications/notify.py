@@ -34,6 +34,8 @@ class Spec:
     link: Callable[[dict[str, Any]], str]  # frontend path
     email: bool = False
     rate_limited_email: bool = False  # members can trigger these for each other
+    # Extra words for the email (for example the reply itself), from the payload.
+    body: Callable[[dict[str, Any]], str] | None = None
 
 
 def _outcome_title(payload: dict[str, Any]) -> str:
@@ -279,6 +281,31 @@ TYPES: dict[str, Spec] = {
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),
     "report_outcome": Spec("moderation", lambda who, p: _outcome_title(p), lambda p: "/home"),
+    # Support: members are told in the app and by email; admins only in the app.
+    "ticket_reply": Spec(
+        "support",
+        lambda who, p: f"Support replied to {p.get('reference', 'your request')}",
+        lambda p: f"/support/{p['ticket_id']}",
+        email=True,
+        body=lambda p: str(p.get("excerpt", "")),
+    ),
+    "ticket_resolved": Spec(
+        "support",
+        lambda who, p: f"Support marked {p.get('reference', 'your request')} as resolved",
+        lambda p: f"/support/{p['ticket_id']}",
+        email=True,
+        body=lambda p: str(p.get("excerpt", "")),
+    ),
+    "ticket_new": Spec(
+        "support",
+        lambda who, p: f"New support request {p.get('reference', '')}".strip(),
+        lambda p: f"/admin/support?ticket={p['ticket_id']}",
+    ),
+    "ticket_member_reply": Spec(
+        "support",
+        lambda who, p: f"{p.get('reference', 'A request')} has a new reply from the member",
+        lambda p: f"/admin/support?ticket={p['ticket_id']}",
+    ),
 }
 
 
@@ -352,10 +379,12 @@ def _email(
     actor_id = _actor_id(payload)
     who = actor_names(user_id, [actor_id]).get(actor_id, "Someone") if actor_id else "Someone"
     title = spec.title(who, payload)
+    extra = spec.body(payload) if spec.body else ""
+    lead = f"{extra}\n\n" if extra else ""
     emails.send_notice(
         contact.email,
         title,
-        f"{title}.\n\n{settings.FRONTEND_BASE_URL}{spec.link(payload)}",
+        f"{title}.\n\n{lead}{settings.FRONTEND_BASE_URL}{spec.link(payload)}",
         category=f"notification_{type_}",
     )
     if notification is not None:

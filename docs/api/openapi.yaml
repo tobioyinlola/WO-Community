@@ -4970,6 +4970,492 @@ paths:
           description: No such startup
         '409':
           description: Only listed startups can be featured
+  /api/v1/admin/support/agents:
+    get:
+      operationId: admin_support_agents_list
+      summary: People a request can be assigned to
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Person'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/attachments/{attachment_id}/download:
+    get:
+      operationId: admin_support_attachments_download_retrieve
+      summary: A short lived link to a file on a request
+      parameters:
+      - in: path
+        name: attachment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentLink'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/canned-replies:
+    get:
+      operationId: admin_support_canned_replies_list
+      summary: Saved replies
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CannedReplyOut'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_support_canned_replies_create
+      summary: Save a reply
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CannedReplyRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CannedReplyOut'
+          description: ''
+        '400':
+          description: Invalid
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/canned-replies/{reply_id}:
+    put:
+      operationId: admin_support_canned_replies_update
+      summary: Change a saved reply
+      parameters:
+      - in: path
+        name: reply_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CannedReplyRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CannedReplyOut'
+          description: ''
+        '400':
+          description: Invalid
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_support_canned_replies_destroy
+      summary: Delete a saved reply
+      parameters:
+      - in: path
+        name: reply_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/stats:
+    get:
+      operationId: admin_support_stats_retrieve
+      summary: Numbers for the top of the inbox
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stats'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/tickets:
+    get:
+      operationId: admin_support_tickets_list
+      description: '`status=open` means everything not resolved. `assignee` is `me`,
+        `unassigned` or a person''s id. `q` matches the ticket number (SUP-1042),
+        subject, name and email.'
+      summary: The support inbox
+      parameters:
+      - in: query
+        name: assignee
+        schema:
+          type: string
+          default: ''
+          maxLength: 40
+      - in: query
+        name: category
+        schema:
+          enum:
+          - account
+          - approval
+          - profile
+          - learning
+          - mentorship
+          - jobs_events
+          - payments
+          - problem
+          - other
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `account` - account
+          * `approval` - approval
+          * `profile` - profile
+          * `learning` - learning
+          * `mentorship` - mentorship
+          * `jobs_events` - jobs_events
+          * `payments` - payments
+          * `problem` - problem
+          * `other` - other
+      - in: query
+        name: created_after
+        schema:
+          type: string
+          format: date
+          nullable: true
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date
+          nullable: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - number
+          - -number
+          - created_at
+          - -created_at
+          - last_activity_at
+          - -last_activity_at
+          - status
+          - -status
+          - category
+          - -category
+          type: string
+          default: -last_activity_at
+          minLength: 1
+        description: |-
+          * `number` - number
+          * `-number` - -number
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+          * `last_activity_at` - last_activity_at
+          * `-last_activity_at` - -last_activity_at
+          * `status` - status
+          * `-status` - -status
+          * `category` - category
+          * `-category` - -category
+      - in: query
+        name: priority
+        schema:
+          enum:
+          - low
+          - normal
+          - high
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `low` - low
+          * `normal` - normal
+          * `high` - high
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - open
+          - in_progress
+          - awaiting_member
+          - resolved
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `open` - open
+          * `in_progress` - in_progress
+          * `awaiting_member` - awaiting_member
+          * `resolved` - resolved
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminTicketRowList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/tickets/{ticket_id}:
+    get:
+      operationId: admin_support_ticket_read
+      summary: One request with its whole conversation, internal notes included
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicketDetail'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    patch:
+      operationId: admin_support_tickets_partial_update
+      summary: Change status, assignee, priority or category
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTicketUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicketDetail'
+          description: ''
+        '400':
+          description: Invalid
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/tickets/{ticket_id}/messages:
+    post:
+      operationId: admin_support_tickets_messages_create
+      description: 'A reply moves the request to `status` (default: awaiting the member)
+        and tells the member. An internal note changes nothing and is never shown
+        to the member.'
+      summary: Reply to the member, or leave an internal note
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminMessageRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+        '400':
+          description: Invalid
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/tickets/{ticket_id}/reopen:
+    post:
+      operationId: admin_support_tickets_reopen_create
+      summary: Reopen a resolved request
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicketDetail'
+          description: ''
+        '409':
+          description: Not resolved
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/support/tickets/{ticket_id}/resolve:
+    post:
+      operationId: admin_support_tickets_resolve_create
+      description: Records who resolved it and when, and tells the member.
+      summary: Resolve a request
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTicketDetail'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/win-submissions:
     get:
       operationId: admin_win_submissions_list
@@ -10637,6 +11123,262 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/support/attachments/{attachment_id}/download:
+    get:
+      operationId: support_attachments_download_retrieve
+      summary: A short lived link to a file attached to one of your requests
+      parameters:
+      - in: path
+        name: attachment_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentLink'
+          description: ''
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
+  /api/v1/support/contact:
+    post:
+      operationId: support_contact_create
+      description: Meant for sign in problems. We answer by email. A hidden field
+        named `website` must stay empty.
+      summary: Ask for help without signing in
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicContactRequest'
+        required: true
+      responses:
+        '202':
+          description: Received
+        '400':
+          description: Invalid request
+        '429':
+          description: Too many requests
+  /api/v1/support/tickets:
+    get:
+      operationId: support_tickets_list
+      summary: Your support requests
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: status
+        schema:
+          enum:
+          - open
+          - in_progress
+          - awaiting_member
+          - resolved
+          - ''
+          type: string
+        description: |-
+          * `open` - open
+          * `in_progress` - in_progress
+          * `awaiting_member` - awaiting_member
+          * `resolved` - resolved
+      tags:
+      - support
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTicketList'
+          description: ''
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
+    post:
+      operationId: support_tickets_create
+      description: Attach up to three files (PDF or image, 5 MB each) by passing the
+        ids of ready `support_attachment` uploads.
+      summary: Send a support request
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        description: Send the same value when retrying, so a double click opens one
+          request.
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+          description: ''
+        '400':
+          description: Invalid request
+        '429':
+          description: Too many requests
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
+  /api/v1/support/tickets/{ticket_id}:
+    get:
+      operationId: support_tickets_retrieve
+      description: Internal notes are never included.
+      summary: One of your requests, with its conversation
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+          description: ''
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
+  /api/v1/support/tickets/{ticket_id}/feedback:
+    post:
+      operationId: support_tickets_feedback_create
+      summary: Say whether the help was useful
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+          description: ''
+        '409':
+          description: Not resolved yet
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
+  /api/v1/support/tickets/{ticket_id}/messages:
+    post:
+      operationId: support_tickets_messages_create
+      summary: Reply on one of your requests
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+        '400':
+          description: Invalid message
+        '409':
+          description: 'The request is resolved: reopen it first'
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
+  /api/v1/support/tickets/{ticket_id}/reopen:
+    post:
+      operationId: support_tickets_reopen_create
+      description: Allowed for 14 days after it was resolved.
+      summary: Reopen a resolved request
+      parameters:
+      - in: path
+        name: ticket_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - support
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+          description: ''
+        '409':
+          description: Not resolved, or too long ago
+        '401':
+          description: Not logged in
+        '404':
+          description: No such request (or it is not yours)
   /api/v1/toolkit/admin/deck-templates:
     get:
       operationId: toolkit_admin_deck_templates_list
@@ -15448,6 +16190,50 @@ components:
       - starts_at
       - status
       - topic
+    AdminMessageRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        internal:
+          type: boolean
+          default: false
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AdminMessageStatusEnum'
+          default: awaiting_member
+          description: |-
+            Where the request goes after this reply. Ignored for an internal note.
+
+            * `in_progress` - in_progress
+            * `awaiting_member` - awaiting_member
+            * `resolved` - resolved
+        attachments:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ready `support_attachment` uploads, at most 3.
+          maxItems: 3
+      required:
+      - body
+    AdminMessageStatusEnum:
+      enum:
+      - in_progress
+      - awaiting_member
+      - resolved
+      type: string
+      description: |-
+        * `in_progress` - in_progress
+        * `awaiting_member` - awaiting_member
+        * `resolved` - resolved
     AdminModule:
       type: object
       properties:
@@ -15600,6 +16386,202 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminHit'
+    AdminTicketDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+        number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        subject:
+          type: string
+          maxLength: 120
+        category:
+          type: string
+          maxLength: 20
+        category_label:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          maxLength: 16
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_activity_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_reopen:
+          type: boolean
+          readOnly: true
+        satisfaction:
+          type: string
+          maxLength: 4
+        satisfaction_comment:
+          type: string
+          maxLength: 500
+        priority:
+          type: string
+        member:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        assignee:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        first_response_at:
+          type: string
+          format: date-time
+        is_overdue:
+          type: boolean
+          readOnly: true
+        reopened_count:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        messages:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        previous_tickets:
+          type: integer
+          readOnly: true
+        member_joined_at:
+          readOnly: true
+      required:
+      - assignee
+      - can_reopen
+      - category
+      - category_label
+      - created_at
+      - first_response_at
+      - id
+      - is_overdue
+      - last_activity_at
+      - member
+      - member_joined_at
+      - messages
+      - number
+      - previous_tickets
+      - priority
+      - reference
+      - status_label
+      - subject
+    AdminTicketRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+        number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        subject:
+          type: string
+          maxLength: 120
+        category:
+          type: string
+          maxLength: 20
+        category_label:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          maxLength: 16
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_activity_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_reopen:
+          type: boolean
+          readOnly: true
+        satisfaction:
+          type: string
+          maxLength: 4
+        satisfaction_comment:
+          type: string
+          maxLength: 500
+        priority:
+          type: string
+        member:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        assignee:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
+        first_response_at:
+          type: string
+          format: date-time
+        is_overdue:
+          type: boolean
+          readOnly: true
+        reopened_count:
+          type: integer
+          maximum: 32767
+          minimum: 0
+      required:
+      - assignee
+      - can_reopen
+      - category
+      - category_label
+      - created_at
+      - first_response_at
+      - id
+      - is_overdue
+      - last_activity_at
+      - member
+      - number
+      - priority
+      - reference
+      - status_label
+      - subject
+    AdminTicketUpdateStatusEnum:
+      enum:
+      - open
+      - in_progress
+      - awaiting_member
+      - resolved
+      type: string
+      description: |-
+        * `open` - open
+        * `in_progress` - in_progress
+        * `awaiting_member` - awaiting_member
+        * `resolved` - resolved
     AdminWin:
       type: object
       properties:
@@ -15904,6 +16886,38 @@ components:
       description: |-
         * `url` - url
         * `email` - email
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        filename:
+          type: string
+          maxLength: 255
+        size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        content_type:
+          type: string
+          maxLength: 100
+      required:
+      - content_type
+      - filename
+      - id
+      - size
+    AttachmentLink:
+      type: object
+      properties:
+        url:
+          type: string
+        expires_in:
+          type: integer
+      required:
+      - expires_in
+      - url
     Attendee:
       type: object
       properties:
@@ -16526,6 +17540,54 @@ components:
           format: date-time
       required:
       - scheduled_at
+    CannedReplyOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 80
+        body:
+          type: string
+        category:
+          type: string
+          maxLength: 20
+        active:
+          type: boolean
+      required:
+      - body
+      - id
+      - title
+    CannedReplyRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title:
+          type: string
+          minLength: 2
+          maxLength: 80
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        category:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/CategoryA2eEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        active:
+          type: boolean
+          default: true
+      required:
+      - body
+      - title
     Categories:
       type: object
       properties:
@@ -16535,7 +17597,29 @@ components:
             type: string
       required:
       - categories
-    CategoryEnum:
+    CategoryA2eEnum:
+      enum:
+      - account
+      - approval
+      - profile
+      - learning
+      - mentorship
+      - jobs_events
+      - payments
+      - problem
+      - other
+      type: string
+      description: |-
+        * `account` - account
+        * `approval` - approval
+        * `profile` - profile
+        * `learning` - learning
+        * `mentorship` - mentorship
+        * `jobs_events` - jobs_events
+        * `payments` - payments
+        * `problem` - problem
+        * `other` - other
+    CategoryA64Enum:
       enum:
       - update
       - question
@@ -16808,6 +17892,31 @@ components:
       required:
       - code
       - name
+    Counts:
+      type: object
+      properties:
+        open:
+          type: integer
+        in_progress:
+          type: integer
+        awaiting_member:
+          type: integer
+        resolved:
+          type: integer
+        resolved_this_week:
+          type: integer
+        working:
+          type: integer
+        total:
+          type: integer
+      required:
+      - awaiting_member
+      - in_progress
+      - open
+      - resolved
+      - resolved_this_week
+      - total
+      - working
     CourseCoverRequest:
       type: object
       description: |-
@@ -17716,6 +18825,22 @@ components:
       - outcome
       - stars
       - updated_at
+    FeedbackRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        satisfaction:
+          $ref: '#/components/schemas/SatisfactionEnum'
+        comment:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - satisfaction
     FollowRequest:
       type: object
       description: |-
@@ -19676,10 +20801,53 @@ components:
     Message:
       type: object
       properties:
-        detail:
+        id:
           type: string
+          format: uuid
+          readOnly: true
+        author:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        body:
+          type: string
+        is_internal:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
       required:
-      - detail
+      - attachments
+      - author
+      - body
+      - created_at
+      - id
+    MessageCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        attachments:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ready `support_attachment` uploads, at most 3.
+          maxItems: 3
+      required:
+      - message
     MetricInfo:
       type: object
       properties:
@@ -20335,6 +21503,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminReport'
+    PaginatedAdminTicketRowList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminTicketRow'
     PaginatedAdminWinList:
       type: object
       required:
@@ -20473,6 +21664,47 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Segment'
+    PaginatedTicketList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+    PatchedAdminTicketUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        status:
+          $ref: '#/components/schemas/AdminTicketUpdateStatusEnum'
+        assignee:
+          type: string
+          format: uuid
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        category:
+          $ref: '#/components/schemas/CategoryA2eEnum'
     PatchedApplicationUpdateRequest:
       type: object
       description: |-
@@ -20832,7 +22064,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/CategoryA64Enum'
         body:
           type: string
           minLength: 1
@@ -21126,23 +22358,20 @@ components:
         id:
           type: string
           format: uuid
+          nullable: true
         name:
           type: string
-        headline:
+        email:
           type: string
-        photo:
-          allOf:
-          - $ref: '#/components/schemas/Image'
-          nullable: true
-        slug:
-          type: string
+        avatar:
+          type: object
+          additionalProperties: {}
           nullable: true
       required:
-      - headline
+      - avatar
+      - email
       - id
       - name
-      - photo
-      - slug
     PhotoSetRequest:
       type: object
       description: |-
@@ -21285,7 +22514,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         category:
-          $ref: '#/components/schemas/CategoryEnum'
+          $ref: '#/components/schemas/CategoryA64Enum'
         body:
           type: string
           minLength: 1
@@ -21445,6 +22674,16 @@ components:
       required:
       - amount_minor
       - currency
+    PriorityEnum:
+      enum:
+      - low
+      - normal
+      - high
+      type: string
+      description: |-
+        * `low` - low
+        * `normal` - normal
+        * `high` - high
     Profile:
       type: object
       description: Output shape. Every field is optional because hidden groups are
@@ -21534,6 +22773,40 @@ components:
       description: |-
         * `web` - web
         * `mobile` - mobile
+    PublicContactRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        subject:
+          type: string
+          minLength: 5
+          maxLength: 120
+        message:
+          type: string
+          minLength: 20
+          maxLength: 4000
+        website:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - email
+      - message
+      - name
+      - subject
     PublicCourse:
       type: object
       properties:
@@ -21957,11 +23230,17 @@ components:
           type: integer
         wins_awaiting_review:
           type: integer
+        support_unanswered:
+          type: integer
+        support_overdue:
+          type: integer
       required:
       - jobs_awaiting_review
       - open_reports
       - registrations_awaiting_approval
       - registrations_unverified
+      - support_overdue
+      - support_unanswered
       - wins_awaiting_review
     Range:
       type: object
@@ -22732,6 +24011,14 @@ components:
       description: |-
         * `member` - member
         * `mentor` - mentor
+    SatisfactionEnum:
+      enum:
+      - up
+      - down
+      type: string
+      description: |-
+        * `up` - up
+        * `down` - down
     SaveResult:
       type: object
       properties:
@@ -23637,6 +24924,23 @@ components:
       - logo
       - name
       - slug
+    Stats:
+      type: object
+      properties:
+        counts:
+          $ref: '#/components/schemas/Counts'
+        median_first_response_seconds:
+          type: integer
+          nullable: true
+        overdue:
+          type: integer
+        sla_hours:
+          type: integer
+      required:
+      - counts
+      - median_first_response_seconds
+      - overdue
+      - sla_hours
     Status:
       type: object
       properties:
@@ -23785,6 +25089,160 @@ components:
       required:
       - blocks
       - name
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+        number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        subject:
+          type: string
+          maxLength: 120
+        category:
+          type: string
+          maxLength: 20
+        category_label:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          maxLength: 16
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_activity_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_reopen:
+          type: boolean
+          readOnly: true
+        satisfaction:
+          type: string
+          maxLength: 4
+        satisfaction_comment:
+          type: string
+          maxLength: 500
+      required:
+      - can_reopen
+      - category
+      - category_label
+      - created_at
+      - id
+      - last_activity_at
+      - number
+      - reference
+      - status_label
+      - subject
+    TicketCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryA2eEnum'
+        subject:
+          type: string
+          minLength: 5
+          maxLength: 120
+        message:
+          type: string
+          minLength: 20
+          maxLength: 4000
+        attachments:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ready `support_attachment` uploads, at most 3.
+          maxItems: 3
+      required:
+      - category
+      - message
+      - subject
+    TicketDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+        number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        subject:
+          type: string
+          maxLength: 120
+        category:
+          type: string
+          maxLength: 20
+        category_label:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          maxLength: 16
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_activity_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        can_reopen:
+          type: boolean
+          readOnly: true
+        satisfaction:
+          type: string
+          maxLength: 4
+        satisfaction_comment:
+          type: string
+          maxLength: 500
+        messages:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+      required:
+      - can_reopen
+      - category
+      - category_label
+      - created_at
+      - id
+      - last_activity_at
+      - messages
+      - number
+      - reference
+      - status_label
+      - subject
     TimelineEntry:
       type: object
       properties:
@@ -26549,6 +28007,7 @@ components:
       - campaign_image
       - course_cover
       - course_file
+      - support_attachment
       type: string
       description: |-
         * `profile_photo` - Profile Photo
@@ -26558,6 +28017,7 @@ components:
         * `campaign_image` - Campaign Image
         * `course_cover` - Course Cover
         * `course_file` - Course File
+        * `support_attachment` - Support Attachment
     UploadRequestPurposeEnum:
       enum:
       - profile_photo
@@ -26567,6 +28027,7 @@ components:
       - campaign_image
       - course_cover
       - course_file
+      - support_attachment
       type: string
       description: |-
         * `profile_photo` - profile_photo
@@ -26576,6 +28037,7 @@ components:
         * `campaign_image` - campaign_image
         * `course_cover` - course_cover
         * `course_file` - course_file
+        * `support_attachment` - support_attachment
     UploadRequestRequest:
       type: object
       description: |-

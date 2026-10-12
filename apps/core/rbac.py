@@ -38,6 +38,7 @@ _COMMUNITY_ADMIN = _EDITOR | {
     "reports.handle",
     "feed.moderate",
     "dashboard.view",
+    "support.manage",
 }
 _SUPER_ADMIN = _COMMUNITY_ADMIN | {
     "roles.manage",

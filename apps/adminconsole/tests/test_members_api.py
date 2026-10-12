@@ -183,6 +183,8 @@ def test_queue_counts_split_verified_and_unverified(as_admin, make_user, pending
         "open_reports": 0,
         "jobs_awaiting_review": 0,
         "wins_awaiting_review": 0,
+        "support_unanswered": 0,
+        "support_overdue": 0,
     }
 
 

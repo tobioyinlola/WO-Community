@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.campaigns",
     "apps.learning",
     "apps.mentorship",
+    "apps.support",
     "apps.toolkit.ventures",
     "apps.toolkit.jobs",
     "apps.toolkit.ai",
@@ -171,6 +172,8 @@ REST_FRAMEWORK = {
         "public_search": "60/min",
         "uploads": "30/hour",
         "analytics": "120/min",
+        "support_contact": "5/hour",
+        "support_write": "30/hour",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -385,6 +388,11 @@ UPLOAD_DOCUMENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
 }
 UPLOAD_DOCUMENT_MAX_BYTES = 25 * 1024 * 1024
+# What a member may attach to a support request.
+SUPPORT_ATTACHMENT_TYPES = ("application/pdf", "image/jpeg", "image/png", "image/webp")
+SUPPORT_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024
+# A request nobody has answered after this many hours shows under "Needs attention".
+SUPPORT_SLA_HOURS = env.int("SUPPORT_SLA_HOURS", default=24)
 UPLOAD_DOCUMENT_MAX_UNPACKED_BYTES = 200 * 1024 * 1024  # a zip bomb guard for Office files
 DOCUMENT_LINK_TTL_SECONDS = 300
 UPLOAD_PRESIGN_TTL_SECONDS = 900

@@ -38,6 +38,8 @@ class EmailMessage:
     stream: str = TRANSACTIONAL
     headers: dict[str, str] = field(default_factory=dict)
     reply_to: str = ""
+    # Never set a Reply-To, not even the account wide one, for mail nobody should answer by email.
+    no_reply: bool = False
     # Lets a provider recognise a repeat of the same message and send it only once.
     idempotency_key: str = ""
     tags: dict[str, str] = field(default_factory=dict)
