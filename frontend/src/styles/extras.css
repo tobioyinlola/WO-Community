@@ -4,6 +4,22 @@
  * Every value is a token. Recorded in docs/design-decisions.md.
  */
 
+/* A modal taller than the screen scrolls its body, with the title and the buttons kept in view. */
+.wo-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--space-8));
+}
+.wo-modal__head,
+.wo-modal__foot {
+  flex: none;
+}
+.wo-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 /* Modal entrance: rise 12px and fade, only when motion is welcome. */
 @media (prefers-reduced-motion: no-preference) {
   .wo-scrim {

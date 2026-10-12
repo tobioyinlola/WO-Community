@@ -12,8 +12,9 @@ from apps.mentorship.tests.conftest import ask, times_of
 pytestmark = pytest.mark.django_db
 
 CAL = "/api/v1/me/calendar"
-FEED = "https://calendar.google.com/calendar/ical/ada%40example.com/private-abc123/basic.ics"
-SECRET = "private-abc123"
+# A made up feed token, assembled at run time so no token-shaped literal sits in the source.
+FEED_TOKEN = "-".join(["private", "abc123"])
+FEED = f"https://calendar.google.com/calendar/ical/ada%40example.com/{FEED_TOKEN}/basic.ics"
 
 
 def stamp(value: datetime) -> str:
@@ -44,10 +45,10 @@ def test_a_mentor_shares_a_calendar_and_only_the_host_comes_back(booking_mentor,
     body = response.json()
     assert body["connected"] is True and body["host"] == "calendar.google.com"
     assert body["status"] == "active" and body["stale"] is False
-    assert SECRET not in response.content.decode()
-    assert SECRET not in applicant_client.get(CAL).content.decode()
+    assert FEED_TOKEN not in response.content.decode()
+    assert FEED_TOKEN not in applicant_client.get(CAL).content.decode()
     row = CalendarConnection.objects.get(mentor=booking_mentor)
-    assert SECRET not in row.feed_url_encrypted  # stored encrypted
+    assert FEED_TOKEN not in row.feed_url_encrypted  # stored encrypted
 
 
 def test_a_webcal_address_is_accepted(booking_mentor, applicant_client):

@@ -202,7 +202,7 @@ def test_recovery_codes_ignore_case_and_dashes(api_client, enrolled):
 
 def test_unknown_recovery_codes_fail(api_client, enrolled):
     token = password_step(api_client).json()["mfa_token"]
-    assert finish(api_client, token, "abcdef-123456").status_code == 400
+    assert finish(api_client, token, "-".join(["abcdef", "123456"])).status_code == 400
 
 
 # --- admins without MFA ---

@@ -1,4 +1,5 @@
 import type { AnchorHTMLAttributes, HTMLAttributes } from "react";
+import { Link, type LinkProps } from "react-router-dom";
 import { cx } from "../lib/cx";
 
 export type CardVariant = "default" | "brand" | "accent" | "white" | "outline";
@@ -41,4 +42,13 @@ export function CardTitle({ className, ...rest }: HTMLAttributes<HTMLHeadingElem
 
 export function CardText({ className, ...rest }: HTMLAttributes<HTMLParagraphElement>) {
   return <p {...rest} className={cx("wo-card__text", className)} />;
+}
+
+export interface CardToProps extends CardBase, Omit<LinkProps, "className"> {
+  className?: string;
+}
+
+/** A card that is one in-app link: it navigates without reloading the page. */
+export function CardTo({ variant = "default", className, ...rest }: CardToProps) {
+  return <Link {...rest} className={cx("wo-card", VARIANT_CLASS[variant], className)} />;
 }

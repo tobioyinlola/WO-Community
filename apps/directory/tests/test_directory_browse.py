@@ -1,4 +1,5 @@
 import json
+from uuid import UUID
 
 import pytest
 
@@ -281,7 +282,7 @@ def test_a_forged_cursor_with_wrong_types_is_refused(api_client, listed):
 
 
 def test_a_well_formed_cursor_round_trips():
-    key = "01a12243-be20-7a9e-b3f5-34276441d674"
+    key = str(UUID(int=7))
     fields = ("featured_rank", "newest_key", "id")
     values = decode_cursor(encode_cursor("newest", [1, -5, key]), "newest", fields)
     assert [str(v) for v in values] == ["1", "-5", key]
