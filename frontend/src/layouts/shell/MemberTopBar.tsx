@@ -1,10 +1,12 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Bell, ChevronDown, Menu, Monitor, Moon, Search, Sun } from "lucide-react";
-import { forwardRef, useState, type FormEvent } from "react";
+import { ChevronDown, Menu, Monitor, Moon, Sun } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { isAdmin } from "../../admin/permissions";
 import { useAuth } from "../../auth/AuthProvider";
 import { Avatar } from "../../components";
+import { GlobalSearch } from "../../shell/GlobalSearch";
+import { MEMBER_LINKS } from "../../shell/searchModel";
+import { NotificationBell } from "../../shell/NotificationBell";
 import { useTheme, type ThemeChoice } from "../../theme/ThemeProvider";
 
 const THEMES: Array<{ value: ThemeChoice; label: string; icon: typeof Sun }> = [
@@ -79,24 +81,12 @@ interface MemberTopBarProps {
   limited: boolean;
   narrow: boolean;
   onMenu: () => void;
-  unread: number;
   name: string;
   photo?: string | null;
   role: string;
 }
 
-/** The search box is a real form field, so it can be typed in without opening anything first. */
-export const MemberTopBar = forwardRef<HTMLInputElement, MemberTopBarProps>(function MemberTopBar(
-  { limited, narrow, onMenu, unread, name, photo, role },
-  searchRef,
-) {
-  const navigate = useNavigate();
-  const [term, setTerm] = useState("");
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const q = term.trim();
-    if (q) navigate(`/app/directory?q=${encodeURIComponent(q)}`);
-  };
+export function MemberTopBar({ limited, narrow, onMenu, name, photo, role }: MemberTopBarProps) {
   return (
     <header className="adm-top">
       {narrow && !limited ? (
@@ -104,31 +94,11 @@ export const MemberTopBar = forwardRef<HTMLInputElement, MemberTopBarProps>(func
           <Menu size={22} strokeWidth={1.5} aria-hidden="true" />
         </button>
       ) : null}
-      {limited ? null : (
-        <form className="adm-search adm-search--field" role="search" onSubmit={submit}>
-          <label className="wo-visually-hidden" htmlFor="app-search">Search the community</label>
-          <Search size={18} strokeWidth={1.5} aria-hidden="true" />
-          <input
-            id="app-search"
-            ref={searchRef}
-            type="search"
-            placeholder="Search members, startups, jobs"
-            value={term}
-            aria-keyshortcuts="/"
-            onChange={(event) => setTerm(event.target.value)}
-          />
-          <kbd className="adm-kbd" aria-hidden="true">/</kbd>
-        </form>
-      )}
+      {limited ? null : <GlobalSearch scope="member" links={MEMBER_LINKS} resultsPath="/app/search" placeholder="Search members, startups, courses" />}
       <div className="adm-top__tail">
-        {limited ? null : (
-          <Link to="/app/notifications" className="adm-iconbtn adm-iconbtn--ring" aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}>
-            <Bell size={20} strokeWidth={1.5} aria-hidden="true" />
-            {unread > 0 ? <span className="adm-dot" aria-hidden="true" /> : null}
-          </Link>
-        )}
+        {limited ? null : <NotificationBell />}
         <AccountMenu name={name} photo={photo} role={role} />
       </div>
     </header>
   );
-});
+}

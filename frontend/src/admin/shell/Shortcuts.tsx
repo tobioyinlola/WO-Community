@@ -5,7 +5,7 @@ const GROUPS: Array<{ title: string; rows: Array<{ keys: string[]; what: string 
   {
     title: "Anywhere",
     rows: [
-      { keys: ["Ctrl", "K"], what: "Open search and quick actions (Cmd K on a Mac)" },
+      { keys: ["Ctrl", "K"], what: "Go to search (Cmd K on a Mac); the slash key does the same" },
       { keys: ["["], what: "Collapse or expand the sidebar" },
       { keys: ["?"], what: "Show this list" },
       { keys: ["Esc"], what: "Close a panel or dialog" },

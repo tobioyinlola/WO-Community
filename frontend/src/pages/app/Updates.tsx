@@ -9,6 +9,7 @@ import type { components } from "../../api/schema";
 import { useAuth } from "../../auth/AuthProvider";
 import { Alert, Avatar, Badge, Button, Card, CardText, CardTitle, CardTo, Tabs, Textarea } from "../../components";
 import { formatDate, humanise, timeAgo } from "../../lib/format";
+import { localLink } from "../../lib/links";
 import { textToHtml } from "../../lib/html";
 import { EmptyState, Loaded, LoadMore, PageHeader, RichText, SkeletonCards, SkeletonRows } from "../../ui/blocks";
 import { FormError, useSubmit } from "../../ui/forms";
@@ -16,14 +17,6 @@ import { FormError, useSubmit } from "../../ui/forms";
 type Notification = components["schemas"]["NotificationItem"];
 type Item = components["schemas"]["EditorialItem"];
 type Reaction = components["schemas"]["ReactionKindEnum"];
-
-/** Notification links are paths in the API's own naming; map them onto this app's screens. */
-function localLink(link: string): string {
-  if (!link) return "/app/notifications";
-  if (link.startsWith("/app/")) return link;
-  const path = link.replace(/^https?:\/\/[^/]+/, "");
-  return path.startsWith("/app") ? path : `/app${path.startsWith("/") ? path : `/${path}`}`;
-}
 
 export function NotificationsPage() {
   const client = useQueryClient();

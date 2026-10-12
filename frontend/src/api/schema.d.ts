@@ -1976,6 +1976,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the console
+         * @description Members (pending ones too), approvals, courses, jobs, events, ventures and support tickets. A group is left out when the role does not hold its permission.
+         */
+        get: operations["admin_search_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/segments": {
         parameters: {
             query?: never;
@@ -3948,6 +3968,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many notifications you have not read
+         * @description For the bell. Poll every 30 to 60 seconds with the last `ETag` in `If-None-Match`; an unchanged count answers 304 with no body.
+         */
+        get: operations["notifications_unread_count_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ping": {
         parameters: {
             query?: never;
@@ -4492,6 +4532,28 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search/recents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your recent searches */
+        get: operations["search_recents_retrieve"];
+        put?: never;
+        /**
+         * Remember a search
+         * @description Keeps the latest eight terms. A term already there moves to the top.
+         */
+        post: operations["search_recents_create"];
+        /** Clear your recent searches */
+        delete: operations["search_recents_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6745,6 +6807,16 @@ export interface components {
             /** Format: date-time */
             edited_at: string | null;
         };
+        AdminHit: {
+            type: string;
+            /** Format: uuid */
+            id: string;
+            title: string;
+            subtitle: string;
+            status: string;
+            /** @description Path in the console */
+            url: string;
+        };
         AdminItem: {
             /** Format: uuid */
             id: string;
@@ -6995,6 +7067,15 @@ export interface components {
             note: string;
             open_reports_on_target: number;
             target: components["schemas"]["ReportTarget"];
+        };
+        AdminSearchResult: {
+            members?: components["schemas"]["AdminHit"][];
+            approvals?: components["schemas"]["AdminHit"][];
+            courses?: components["schemas"]["AdminHit"][];
+            jobs?: components["schemas"]["AdminHit"][];
+            events?: components["schemas"]["AdminHit"][];
+            ventures?: components["schemas"]["AdminHit"][];
+            tickets?: components["schemas"]["AdminHit"][];
         };
         AdminWin: {
             /** Format: uuid */
@@ -9972,6 +10053,9 @@ export interface components {
         ReasonRequest: {
             reason: string;
         };
+        Recents: {
+            terms: string[];
+        };
         RecommendedMentor: {
             /**
              * Format: uuid
@@ -10081,6 +10165,17 @@ export interface components {
         RejectedEvent: {
             index: number;
             reason: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        RememberRequest: {
+            term: string;
+            /** @default member */
+            scope: components["schemas"]["ScopeEnum"];
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -10299,6 +10394,12 @@ export interface components {
             /** Format: date-time */
             publish_at: string;
         };
+        /**
+         * @description * `member` - member
+         *     * `admin` - admin
+         * @enum {string}
+         */
+        ScopeEnum: "member" | "admin";
         SearchHit: {
             type: string;
             /** Format: uuid */
@@ -11949,6 +12050,9 @@ export interface components {
          */
         TractionReplaceRequest: {
             metrics: components["schemas"]["TractionItemRequest"][];
+        };
+        UnreadCount: {
+            unread_count: number;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -18250,6 +18354,57 @@ export interface operations {
             };
         };
     };
+    admin_search_retrieve: {
+        parameters: {
+            query: {
+                limit?: number;
+                q: string;
+                types?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSearchResult"];
+                };
+            };
+            /** @description Invalid query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many searches */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_segments_list: {
         parameters: {
             query?: {
@@ -23667,6 +23822,48 @@ export interface operations {
             };
         };
     };
+    notifications_unread_count_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCount"];
+                };
+            };
+            /** @description Nothing changed */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ping_retrieve: {
         parameters: {
             query?: never;
@@ -24818,6 +25015,106 @@ export interface operations {
             };
             /** @description Too many searches */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search_recents_retrieve: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `member` - member
+                 *     * `admin` - admin
+                 */
+                scope?: "member" | "admin";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recents"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search_recents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RememberRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recents"];
+                };
+            };
+            /** @description Invalid term */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search_recents_destroy: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `member` - member
+                 *     * `admin` - admin
+                 */
+                scope?: "member" | "admin";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
