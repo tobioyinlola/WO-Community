@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import "../styles/learn.css";
 
 /** The average as five stars, partly filled, with the number said in words for a screen reader. */
@@ -37,12 +37,13 @@ export function Stars({ value, count, size = 16, showNumber = true }: { value: n
 /** Choose 1 to 5 stars. A radio group, so the arrow keys move between them. */
 export function RatingInput({ value, onChange, label = "Your rating", disabled = false }: { value: number; onChange: (stars: number) => void; label?: string; disabled?: boolean }) {
   const [hover, setHover] = useState(0);
+  const name = useId();
   const lit = hover || value;
   return (
     <div className="wo-rate" role="radiogroup" aria-label={label}>
       {[1, 2, 3, 4, 5].map((n) => (
         <label key={n} className="wo-rate__star" data-on={n <= lit} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)}>
-          <input type="radio" name="stars" className="wo-visually-hidden" value={n} checked={value === n} disabled={disabled} onChange={() => onChange(n)} aria-label={`${n} ${n === 1 ? "star" : "stars"}`} />
+          <input type="radio" name={name} className="wo-visually-hidden" value={n} checked={value === n} disabled={disabled} onChange={() => onChange(n)} aria-label={`${n} ${n === 1 ? "star" : "stars"}`} />
           <Star size={26} strokeWidth={1.5} fill={n <= lit ? "currentColor" : "none"} aria-hidden="true" />
         </label>
       ))}
