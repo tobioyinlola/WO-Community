@@ -12,6 +12,7 @@ from apps.adminconsole import (
     job_views,
     mentor_views,
     reference_views,
+    referral_views,
     search_views,
     support_views,
     views,
@@ -31,6 +32,19 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path(
+        "admin/referrals/summary",
+        referral_views.ReferralSummaryView.as_view(),
+        name="admin-referrals-summary",
+    ),
+    path(
+        "admin/referrals/top", referral_views.TopReferrersView.as_view(), name="admin-referrals-top"
+    ),
+    path(
+        "admin/members/<uuid:user_id>/referral",
+        referral_views.MemberReferralView.as_view(),
+        name="admin-member-referral",
+    ),
     path(
         "admin/support/tickets",
         support_views.AdminTicketsView.as_view(),

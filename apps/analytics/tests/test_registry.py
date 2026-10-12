@@ -71,6 +71,8 @@ REQUIRED_EVENTS = {
         "invitation_registered",
         "report_actioned",
     ],
+    "Referrals": ["referral_captured"],
+    "Support": ["support_ticket_created", "support_ticket_resolved"],
 }
 
 # Only things the browser alone can see may be reported by the browser.

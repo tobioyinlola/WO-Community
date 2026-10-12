@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from apps.accounts import referrals
 from apps.accounts import selectors as accounts
 from apps.editorial import reporting as editorial_reporting
 from apps.editorial import selectors as editorial
@@ -75,18 +76,54 @@ def application_of(user: Any) -> dict[str, Any]:
             else None
         ),
         "timeline": timeline,
+        "referral": {
+            "kind": user.referral_source,
+            "kind_label": referrals.SOURCE_LABELS.get(user.referral_source, ""),
+            "detail": user.referral_detail,
+            "referrer": _referrer_card(user.referred_by_id),
+            "code_used": user.referral_code_used,
+        },
     }
 
 
-def applicant_summaries(user_ids: list[Any]) -> dict[Any, dict[str, str]]:
-    """Name, country and first startup for a page of members, in two queries."""
+def _referrer_card(user_id: Any) -> dict[str, Any] | None:
+    """Who brought someone in: their id and the name on their profile, else their email's start."""
+    from apps.accounts.models import User
+    from apps.profiles.models import FounderProfile
+
+    if user_id is None:
+        return None
+    user = User.objects.filter(pk=user_id).first()
+    if user is None:
+        return None
+    name = (
+        FounderProfile.objects.filter(user_id=user_id).values_list("full_name", flat=True).first()
+    )
+    return {"id": user.pk, "name": name or user.email.split("@")[0]}
+
+
+def applicant_summaries(user_ids: list[Any]) -> dict[Any, dict[str, Any]]:
+    """Name, country, first startup and referrer for a page of members, in a few queries."""
+    from apps.accounts.models import User
     from apps.profiles.models import FounderProfile
     from apps.startups.models import Startup
 
-    out: dict[Any, dict[str, str]] = {
-        uid: {"name": "", "country": "", "startup": "", "sector": "", "stage": ""}
+    out: dict[Any, dict[str, Any]] = {
+        uid: {"name": "", "country": "", "startup": "", "sector": "", "stage": "", "referrer": None}
         for uid in user_ids
     }
+    referred = dict(
+        User.objects.filter(pk__in=user_ids, referred_by__isnull=False).values_list(
+            "pk", "referred_by_id"
+        )
+    )
+    referrer_ids = set(referred.values())
+    names = dict(
+        FounderProfile.objects.filter(user_id__in=referrer_ids).values_list("user_id", "full_name")
+    )
+    emails = dict(User.objects.filter(pk__in=referrer_ids).values_list("pk", "email"))
+    for uid, by in referred.items():
+        out[uid]["referrer"] = {"id": by, "name": names.get(by) or emails.get(by, "").split("@")[0]}
     for uid, name, country in FounderProfile.objects.filter(user_id__in=user_ids).values_list(
         "user_id", "full_name", "country"
     ):
