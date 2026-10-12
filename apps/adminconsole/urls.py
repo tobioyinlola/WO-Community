@@ -343,6 +343,11 @@ urlpatterns = [
     path("admin/members", views.MemberListView.as_view(), name="admin-members"),
     path("admin/members/<uuid:user_id>", views.MemberDetailView.as_view(), name="admin-member"),
     path(
+        "admin/members/<uuid:user_id>/application",
+        views.MemberApplicationView.as_view(),
+        name="admin-member-application",
+    ),
+    path(
         "admin/members/<uuid:user_id>/approve",
         views.ApproveView.as_view(),
         name="admin-member-approve",

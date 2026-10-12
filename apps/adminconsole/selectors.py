@@ -1,5 +1,7 @@
 """Figures the console shows that come from several modules."""
 
+from typing import Any
+
 from apps.accounts import selectors as accounts
 from apps.editorial import reporting as editorial_reporting
 from apps.editorial import selectors as editorial
@@ -14,4 +16,60 @@ def queue_counts() -> dict[str, int]:
         "open_reports": moderation.open_report_count() + editorial_reporting.open_count(),
         "jobs_awaiting_review": jobs.pending_count(),
         "wins_awaiting_review": editorial.pending_wins(),
+    }
+
+
+def application_of(user: Any) -> dict[str, Any]:
+    """The profile and first startup a person gave on joining, and what has happened since."""
+    from apps.profiles.models import FounderProfile
+    from apps.startups.models import Startup
+
+    profile = FounderProfile.objects.filter(user_id=user.pk).first()
+    startup = (
+        Startup.objects.filter(owner_id=user.pk)
+        .select_related("sector", "stage")
+        .order_by("created_at")
+        .first()
+    )
+    timeline: list[dict[str, Any]] = [{"kind": "registered", "at": user.created_at, "note": ""}]
+    if user.email_verified_at:
+        timeline.append({"kind": "email_verified", "at": user.email_verified_at, "note": ""})
+    decided = user.approved_at or (user.status_changed_at if user.status != "pending" else None)
+    if decided:
+        note = user.status_reason or (
+            f"Approved by {user.approval_source}" if user.approval_source else ""
+        )
+        timeline.append({"kind": "decided", "at": decided, "note": note})
+    if user.last_login:
+        timeline.append({"kind": "last_signed_in", "at": user.last_login, "note": ""})
+    return {
+        "member": user,
+        "profile": (
+            {
+                "full_name": profile.full_name,
+                "headline": profile.headline,
+                "country": profile.country,
+                "city": profile.city,
+                "website_url": profile.website_url,
+                "linkedin_url": profile.linkedin_url,
+                "completeness": profile.completeness_score,
+            }
+            if profile
+            else None
+        ),
+        "startup": (
+            {
+                "name": startup.name,
+                "country": startup.country,
+                "city": startup.city,
+                "sector": startup.sector.name,
+                "stage": startup.stage.name,
+                "pitch": startup.pitch,
+                "website_url": startup.website_url,
+                "completeness": startup.completeness_score,
+            }
+            if startup
+            else None
+        ),
+        "timeline": sorted(timeline, key=lambda e: e["at"]),
     }

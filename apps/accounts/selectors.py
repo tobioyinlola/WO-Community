@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 from typing import Any
 
-from django.db.models import Count, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Count, F, OuterRef, Q, QuerySet, Subquery
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -31,8 +31,9 @@ def list_members(
     email_verified: bool | None = None,
     joined_after: date | None = None,
     joined_before: date | None = None,
+    ordering: str = "-created_at",
 ) -> QuerySet[User]:
-    """Members matching an allow-listed set of filters, newest first."""
+    """Members matching an allow-listed set of filters, newest first unless told otherwise."""
     queryset = _base()
     if q:
         queryset = queryset.filter(Q(email__icontains=q))
@@ -48,7 +49,30 @@ def list_members(
         queryset = queryset.filter(created_at__date__gte=joined_after)
     if joined_before:
         queryset = queryset.filter(created_at__date__lte=joined_before)
-    return queryset.order_by("-created_at", "-id")
+    return queryset.order_by(*_ordering(ordering))
+
+
+MEMBER_ORDERINGS = (
+    "created_at",
+    "-created_at",
+    "email",
+    "-email",
+    "last_login",
+    "-last_login",
+    "status",
+    "-status",
+)
+
+
+def _ordering(name: str) -> tuple[Any, ...]:
+    """The sort for a name from the allow-list. People who never signed in sort last either way."""
+    if name not in MEMBER_ORDERINGS:
+        name = "-created_at"
+    field = name.lstrip("-")
+    expression = (
+        F(field).desc(nulls_last=True) if name.startswith("-") else F(field).asc(nulls_last=True)
+    )
+    return (expression, "-id")
 
 
 def get_member(user_id: Any) -> User | None:

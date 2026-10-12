@@ -11,11 +11,13 @@ from rest_framework.views import APIView
 from apps.accounts import selectors, services
 from apps.adminconsole import selectors as queues
 from apps.adminconsole.serializers import (
+    ApplicationSerializer,
     MemberQuerySerializer,
     MemberSerializer,
     QueueCountsSerializer,
     ReasonSerializer,
 )
+from apps.audit import services as audit
 from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
 
@@ -68,6 +70,30 @@ class MemberDetailView(APIView):
         if member is None:
             raise exceptions.NotFound()
         return Response(MemberSerializer(member).data)
+
+
+class MemberApplicationView(APIView):
+    policy = policies.admin_permission("members.view")
+
+    @extend_schema(
+        summary="What a person told us when they asked to join",
+        description="Their profile, their first startup and what has happened to the account. "
+        "It holds personal details, so each read is logged.",
+        responses={200: ApplicationSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request, user_id: UUID) -> Response:
+        member = selectors.get_member(user_id)
+        if member is None:
+            raise exceptions.NotFound()
+        audit.record(
+            actor=_actor(request),
+            action="members.application_viewed",
+            target_type="user",
+            target_id=member.pk,
+            ip=_ip(request),
+        )
+        return Response(ApplicationSerializer(queues.application_of(member)).data)
 
 
 class ApproveView(APIView):

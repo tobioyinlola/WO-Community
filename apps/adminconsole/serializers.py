@@ -3,7 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.accounts import services
-from apps.accounts.selectors import INVITATION_STATUSES, STATUSES
+from apps.accounts.selectors import INVITATION_STATUSES, MEMBER_ORDERINGS, STATUSES
 from apps.core.serializers import StrictSerializer
 
 
@@ -16,6 +16,9 @@ class MemberQuerySerializer(StrictSerializer):
     email_verified = serializers.BooleanField(required=False, allow_null=True, default=None)
     joined_after = serializers.DateField(required=False, default=None)
     joined_before = serializers.DateField(required=False, default=None)
+    ordering = serializers.ChoiceField(
+        choices=MEMBER_ORDERINGS, required=False, default="-created_at"
+    )
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
     offset = serializers.IntegerField(required=False, min_value=0)
 
@@ -96,3 +99,41 @@ class QueueCountsSerializer(serializers.Serializer):
     open_reports = serializers.IntegerField()
     jobs_awaiting_review = serializers.IntegerField()
     wins_awaiting_review = serializers.IntegerField()
+
+
+class ApplicantProfileSerializer(serializers.Serializer):
+    full_name = serializers.CharField()
+    headline = serializers.CharField()
+    country = serializers.CharField()
+    city = serializers.CharField()
+    website_url = serializers.CharField()
+    linkedin_url = serializers.CharField()
+    completeness = serializers.IntegerField()
+
+
+class ApplicantStartupSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    country = serializers.CharField()
+    city = serializers.CharField()
+    sector = serializers.CharField()
+    stage = serializers.CharField()
+    pitch = serializers.CharField()
+    website_url = serializers.CharField()
+    completeness = serializers.IntegerField()
+
+
+class TimelineEntrySerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(
+        choices=["registered", "email_verified", "decided", "last_signed_in"]
+    )
+    at = serializers.DateTimeField()
+    note = serializers.CharField(allow_blank=True)
+
+
+class ApplicationSerializer(serializers.Serializer):
+    """What a person told us when they asked to join, for the admin deciding on them."""
+
+    member = MemberSerializer()
+    profile = ApplicantProfileSerializer(allow_null=True)
+    startup = ApplicantStartupSerializer(allow_null=True)
+    timeline = TimelineEntrySerializer(many=True)

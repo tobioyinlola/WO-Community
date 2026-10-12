@@ -3185,6 +3185,30 @@ paths:
           type: integer
           minimum: 0
       - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          - email
+          - -email
+          - last_login
+          - -last_login
+          - status
+          - -status
+          type: string
+          default: -created_at
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+          * `email` - email
+          * `-email` - -email
+          * `last_login` - last_login
+          * `-last_login` - -last_login
+          * `status` - status
+          * `-status` - -status
+      - in: query
         name: q
         schema:
           type: string
@@ -3255,6 +3279,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Member'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Member not found
+        '409':
+          description: The account is not in a state that allows this
+  /api/v1/admin/members/{user_id}/application:
+    get:
+      operationId: admin_members_application_retrieve
+      description: Their profile, their first startup and what has happened to the
+        account. It holds personal details, so each read is logged.
+      summary: What a person told us when they asked to join
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
           description: ''
         '401':
           description: Not authenticated
@@ -15278,6 +15334,83 @@ components:
       - email
       - id
       - name
+    ApplicantProfile:
+      type: object
+      properties:
+        full_name:
+          type: string
+        headline:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        website_url:
+          type: string
+        linkedin_url:
+          type: string
+        completeness:
+          type: integer
+      required:
+      - city
+      - completeness
+      - country
+      - full_name
+      - headline
+      - linkedin_url
+      - website_url
+    ApplicantStartup:
+      type: object
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        sector:
+          type: string
+        stage:
+          type: string
+        pitch:
+          type: string
+        website_url:
+          type: string
+        completeness:
+          type: integer
+      required:
+      - city
+      - completeness
+      - country
+      - name
+      - pitch
+      - sector
+      - stage
+      - website_url
+    Application:
+      type: object
+      description: What a person told us when they asked to join, for the admin deciding
+        on them.
+      properties:
+        member:
+          $ref: '#/components/schemas/Member'
+        profile:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantProfile'
+          nullable: true
+        startup:
+          allOf:
+          - $ref: '#/components/schemas/ApplicantStartup'
+          nullable: true
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+      required:
+      - member
+      - profile
+      - startup
+      - timeline
     ApplicationCreateRequest:
       type: object
       description: |-
@@ -22923,6 +23056,32 @@ components:
       required:
       - blocks
       - name
+    TimelineEntry:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/TimelineEntryKindEnum'
+        at:
+          type: string
+          format: date-time
+        note:
+          type: string
+      required:
+      - at
+      - kind
+      - note
+    TimelineEntryKindEnum:
+      enum:
+      - registered
+      - email_verified
+      - decided
+      - last_signed_in
+      type: string
+      description: |-
+        * `registered` - registered
+        * `email_verified` - email_verified
+        * `decided` - decided
+        * `last_signed_in` - last_signed_in
     TkAdminDeckTemplate:
       type: object
       properties:
