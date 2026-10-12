@@ -41,6 +41,7 @@ from apps.learning.models import Certificate, Course, Enrolment, Lesson  # noqa:
 from apps.mentorship import setup as mentor_setup  # noqa: E402
 from apps.mentorship.models import MentorProfile  # noqa: E402
 from apps.notifications import notify  # noqa: E402
+from apps.profiles.selectors import full_name_of  # noqa: E402
 from apps.support import services as support  # noqa: E402
 from apps.support.models import SupportTicket  # noqa: E402
 
@@ -241,7 +242,7 @@ def seed_tickets(admin: User) -> None:
         member = person(email)
         ticket = support.create_ticket(
             member=member,
-            name="",
+            name=full_name_of(member.pk),
             email=member.email,
             category=category,
             subject=subject,
