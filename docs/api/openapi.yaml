@@ -5936,6 +5936,158 @@ paths:
           description: Not an active member, or not enrolled
         '404':
           description: Not found
+  /api/v1/directory/members:
+    get:
+      operationId: directory_people
+      description: Page by page. Filter by country and skill. Members who hide their
+        basics from members do not appear.
+      summary: Browse members with filters
+      parameters:
+      - in: query
+        name: country
+        schema:
+          type: string
+          default: ''
+          maxLength: 2
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          maximum: 48
+          minimum: 1
+          default: 12
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: skill
+        schema:
+          type: string
+          default: ''
+          maxLength: 80
+      - in: query
+        name: sort
+        schema:
+          enum:
+          - newest
+          - name
+          type: string
+          default: newest
+          minLength: 1
+        description: |-
+          * `newest` - newest
+          * `name` - name
+      tags:
+      - member area
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrowsePeoplePage'
+          description: ''
+        '400':
+          description: Invalid filter
+        '401':
+          description: Not logged in
+        '403':
+          description: Not an active member
+  /api/v1/directory/startups:
+    get:
+      operationId: directory_startups
+      description: Page by page, featured first. Filter by country, city, sector,
+        stage and whether the startup has open jobs. Each card shows only what its
+        owner shares with members.
+      summary: Browse startups with filters
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: country
+        schema:
+          type: string
+          default: ''
+          maxLength: 2
+      - in: query
+        name: hiring
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          maximum: 48
+          minimum: 1
+          default: 12
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: sector
+        schema:
+          type: string
+          default: ''
+          maxLength: 80
+      - in: query
+        name: sort
+        schema:
+          enum:
+          - newest
+          - name
+          type: string
+          default: newest
+          minLength: 1
+        description: |-
+          * `newest` - newest
+          * `name` - name
+      - in: query
+        name: stage
+        schema:
+          type: string
+          default: ''
+          maxLength: 80
+      tags:
+      - member area
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrowseStartupPage'
+          description: ''
+        '400':
+          description: Invalid filter
+        '401':
+          description: Not logged in
+        '403':
+          description: Not an active member
   /api/v1/editorial:
     get:
       operationId: editorial_list
@@ -6470,6 +6622,38 @@ paths:
           description: Not found, or not published
         '409':
           description: Already started
+  /api/v1/feed/activity:
+    get:
+      operationId: feed_activity
+      description: What the community just did on posts you can open, newest first.
+      summary: Recent comments and reactions
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+          default: 8
+      tags:
+      - feed
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedActivity'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not visible to you
   /api/v1/follows:
     post:
       operationId: follows_create
@@ -15715,6 +15899,187 @@ components:
       - sessions_left_this_week
       - times
       - timezone
+    BrowseJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+      required:
+      - id
+      - title
+    BrowseNamed:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    BrowsePeoplePage:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        pages:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BrowsePerson'
+      required:
+      - count
+      - page
+      - page_size
+      - pages
+      - results
+    BrowsePerson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        city:
+          type: string
+        country:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/BrowseNamed'
+      required:
+      - city
+      - country
+      - headline
+      - id
+      - name
+      - photo
+      - skills
+      - slug
+    BrowseStartup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        pitch:
+          type: string
+        logo:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        sector:
+          allOf:
+          - $ref: '#/components/schemas/BrowseNamed'
+          nullable: true
+        stage:
+          allOf:
+          - $ref: '#/components/schemas/BrowseNamed'
+          nullable: true
+        country:
+          type: string
+        city:
+          type: string
+        year_founded:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        website_url:
+          type: string
+        pitch_deck_url:
+          type: string
+        featured:
+          type: boolean
+        traction:
+          type: array
+          items:
+            $ref: '#/components/schemas/BrowseTraction'
+        open_jobs_count:
+          type: integer
+        open_jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/BrowseJob'
+      required:
+      - city
+      - country
+      - description
+      - featured
+      - id
+      - logo
+      - name
+      - open_jobs
+      - open_jobs_count
+      - pitch
+      - pitch_deck_url
+      - sector
+      - slug
+      - stage
+      - traction
+      - website_url
+      - year_founded
+    BrowseStartupPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        pages:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BrowseStartup'
+      required:
+      - count
+      - page
+      - page_size
+      - pages
+      - results
+    BrowseTraction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        value:
+          nullable: true
+        as_of_date:
+          type: string
+          format: date
+      required:
+      - as_of_date
+      - id
+      - kind
+      - value
     BulkInvitationRequest:
       type: object
       description: |-
@@ -17080,6 +17445,49 @@ components:
       required:
       - next_cursor
       - results
+    FeedActivity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/FeedActivityKindEnum'
+        detail:
+          type: string
+          description: The comment text, or the reaction
+        actor:
+          $ref: '#/components/schemas/Author'
+        post_id:
+          type: string
+          format: uuid
+        post_author:
+          type: string
+        post_excerpt:
+          type: string
+        mine:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - actor
+      - created_at
+      - detail
+      - id
+      - kind
+      - mine
+      - post_author
+      - post_excerpt
+      - post_id
+    FeedActivityKindEnum:
+      enum:
+      - comment
+      - reaction
+      type: string
+      description: |-
+        * `comment` - comment
+        * `reaction` - reaction
     FeedbackItem:
       type: object
       properties:
@@ -20347,6 +20755,9 @@ components:
         website_url:
           type: string
           maxLength: 300
+        pitch_deck_url:
+          type: string
+          maxLength: 300
         directory_opt_in:
           type: boolean
     PatchedTkAdminPlanSectionWriteRequest:
@@ -22771,6 +23182,8 @@ components:
           type: string
         website_url:
           type: string
+        pitch_deck_url:
+          type: string
         team:
           type: array
           items:
@@ -22879,6 +23292,9 @@ components:
           type: string
           maxLength: 5000
         website_url:
+          type: string
+          maxLength: 300
+        pitch_deck_url:
           type: string
           maxLength: 300
       required:

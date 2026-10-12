@@ -81,7 +81,10 @@ def _groups(startup: Startup, audience: Audience) -> dict[str, dict[str, Any]]:
             "year_founded": startup.year_founded,
         },
         "description": {"description": startup.description},
-        "website": {"website_url": startup.website_url},
+        "website": {
+            "website_url": startup.website_url,
+            "pitch_deck_url": startup.pitch_deck_url,
+        },
         "team": {"team": _team(startup, audience)},
     }
 

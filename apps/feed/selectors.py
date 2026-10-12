@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
+from django.utils.html import strip_tags
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
@@ -223,3 +224,69 @@ def active_author_ids(since: Any) -> Any:
         )
     )
     return posters | commenters
+
+
+def activity(viewer: Any, *, limit: int) -> list[dict[str, Any]]:
+    """The latest comments and reactions on posts the viewer may open, newest first."""
+    posts = visible_posts(viewer)
+    active = accounts.active_user_ids()
+    comment_rows = list(
+        Comment.objects.filter(
+            deleted_at__isnull=True,
+            hidden_at__isnull=True,
+            author_id__in=active,
+            post_id__in=posts.values("pk"),
+        )
+        .select_related("post")
+        .order_by("-created_at", "-id")[:limit]
+    )
+    reaction_rows = list(
+        Reaction.objects.filter(user_id__in=active, target_type=Reaction.Target.POST)
+        .filter(target_id__in=posts.values("pk"))
+        .order_by("-created_at", "-id")[:limit]
+    )
+    reacted_posts = {p.pk: p for p in posts.filter(pk__in=[r.target_id for r in reaction_rows])}
+    items: list[dict[str, Any]] = []
+    for comment in comment_rows:
+        items.append(
+            {
+                "id": comment.pk,
+                "kind": "comment",
+                "actor_id": comment.author_id,
+                "post": comment.post,
+                "detail": strip_tags(comment.body)[:160],
+                "created_at": comment.created_at,
+            }
+        )
+    for reaction in reaction_rows:
+        post = reacted_posts.get(reaction.target_id)
+        if post is not None:
+            items.append(
+                {
+                    "id": reaction.pk,
+                    "kind": "reaction",
+                    "actor_id": reaction.user_id,
+                    "post": post,
+                    "detail": reaction.kind,
+                    "created_at": reaction.created_at,
+                }
+            )
+    items.sort(key=lambda item: (item["created_at"], str(item["id"])), reverse=True)
+    items = items[:limit]
+    cards = profiles.cards_for(
+        viewer, list({i["actor_id"] for i in items} | {i["post"].author_id for i in items})
+    )
+    return [
+        {
+            "id": i["id"],
+            "kind": i["kind"],
+            "detail": i["detail"],
+            "actor": cards[i["actor_id"]],
+            "post_id": i["post"].pk,
+            "post_author": cards[i["post"].author_id]["name"],
+            "post_excerpt": i["post"].body_text[:120],
+            "mine": i["actor_id"] == viewer.pk,
+            "created_at": i["created_at"],
+        }
+        for i in items
+    ]

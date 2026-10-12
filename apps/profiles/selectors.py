@@ -204,6 +204,12 @@ def full_name_of(user_id: UUID) -> str:
     )
 
 
+def location_of(user_id: UUID) -> tuple[str, str]:
+    """The country and city the member gave on their own profile (for their own documents)."""
+    row = FounderProfile.objects.filter(user_id=user_id).values_list("country", "city").first()
+    return (row[0] or "", row[1] or "") if row else ("", "")
+
+
 def ids_by_name(text: str) -> Any:
     """Members whose own profile name contains the text. A search aid only: callers must not
     reveal the match, since shown names still obey visibility."""

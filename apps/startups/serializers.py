@@ -47,6 +47,9 @@ class _StartupFields(StrictSerializer):
     def validate_website_url(self, value: str) -> str:
         return clean_url(value)
 
+    def validate_pitch_deck_url(self, value: str) -> str:
+        return clean_url(value)
+
 
 class StartupCreateSerializer(_StartupFields):
     name = serializers.CharField(max_length=120)
@@ -60,6 +63,7 @@ class StartupCreateSerializer(_StartupFields):
         max_length=domain.MAX_DESCRIPTION, required=False, allow_blank=True
     )
     website_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    pitch_deck_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
 
 
 class StartupUpdateSerializer(_StartupFields):
@@ -76,6 +80,7 @@ class StartupUpdateSerializer(_StartupFields):
         max_length=domain.MAX_DESCRIPTION, required=False, allow_blank=True
     )
     website_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    pitch_deck_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
     directory_opt_in = serializers.BooleanField(required=False)
 
 
@@ -200,6 +205,7 @@ class StartupSerializer(serializers.Serializer):
     year_founded = serializers.IntegerField(required=False, allow_null=True)
     description = serializers.CharField(required=False)
     website_url = serializers.CharField(required=False)
+    pitch_deck_url = serializers.CharField(required=False)
     team = TeamMemberSerializer(many=True, required=False)
     owner_id = serializers.UUIDField(required=False)
     directory_opt_in = serializers.BooleanField(required=False)

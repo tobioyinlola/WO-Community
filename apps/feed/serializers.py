@@ -309,3 +309,19 @@ class BlockedDomainSerializer(serializers.Serializer):
     domain = serializers.CharField()
     reason = serializers.CharField(allow_blank=True)
     created_at = serializers.DateTimeField()
+
+
+class FeedActivityQuerySerializer(StrictSerializer):
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=30, default=8)
+
+
+class FeedActivitySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=["comment", "reaction"])
+    detail = serializers.CharField(allow_blank=True, help_text="The comment text, or the reaction")
+    actor = AuthorSerializer()
+    post_id = serializers.UUIDField()
+    post_author = serializers.CharField()
+    post_excerpt = serializers.CharField(allow_blank=True)
+    mine = serializers.BooleanField()
+    created_at = serializers.DateTimeField()

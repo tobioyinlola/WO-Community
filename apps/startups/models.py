@@ -20,6 +20,7 @@ class Startup(BaseModel):
     pitch = models.CharField(max_length=160)
     description = models.TextField(blank=True)
     website_url = models.CharField(max_length=300, blank=True)
+    pitch_deck_url = models.CharField(max_length=300, blank=True)
     # Storage key of the logo; set by the upload flow, never by the startup API.
     logo_key = models.CharField(max_length=200, blank=True)
     directory_opt_in = models.BooleanField(default=False)
