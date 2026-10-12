@@ -2,7 +2,12 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useState, type ReactNode } from "react";
 import { Bell, CalendarDays, Search, UserCheck } from "lucide-react";
 import { Avatar, Button } from "../components";
+import { CertificateSheet } from "../learn/CertificateSheet";
+import { WeekGrid } from "../mentor/WeeklyEditor";
+import { Accordion } from "../ui/Accordion";
 import { Drawer } from "../ui/Drawer";
+import { ProgressRing } from "../ui/ProgressRing";
+import { RatingInput, Stars } from "../ui/Rating";
 import { PageHeader, useDocumentTitle } from "../ui/blocks";
 import { BarChart, type DayPoint } from "./kit/BarChart";
 import { changeBetween, Delta } from "./kit/Delta";
@@ -52,6 +57,7 @@ export default function AdminDesign() {
   const [selected, setSelected] = useState<Set<string>>(new Set(["2"]));
   const [drawer, setDrawer] = useState(false);
   const [draft, setDraft] = useState("");
+  const [stars, setStars] = useState(4);
   const columns: Array<ColumnDef<Row, unknown>> = [
     {
       id: "name",
@@ -146,6 +152,61 @@ export default function AdminDesign() {
           <div className="wo-search__heading"><span>Members</span></div>
           <div className="wo-search__row" data-active="true"><Search size={18} strokeWidth={1.5} /><span className="wo-search__main"><span className="wo-search__title"><mark>Ada</mark>eze Okafor</span><span className="wo-search__sub">Fintech founder in Lagos</span></span><span className="wo-search__tag">Member</span></div>
           <div className="wo-search__row"><Bell size={18} strokeWidth={1.5} /><span className="wo-search__main"><span className="wo-search__title"><mark>Ada</mark>ptive selling</span><span className="wo-search__sub">Sales</span></span><span className="wo-search__tag">Course</span></div>
+        </div>
+      </Both>
+
+      <Both title="Learning">
+        <div className="app-stack">
+          <div className="app-cluster">
+            <Stars value={4.6} count={128} />
+            <Stars value={null} />
+            <RatingInput value={stars} onChange={setStars} label="Your rating (sample)" />
+          </div>
+          <div className="app-cluster">
+            <ProgressRing percent={0} label="Not started" />
+            <ProgressRing percent={42} label="Course progress" />
+            <ProgressRing percent={100} label="Completed" />
+          </div>
+          <ol className="wo-steps" aria-label="Wizard steps (sample)">
+            {["Basics", "Lectures", "Price", "Review"].map((name, i) => (
+              <li key={name} aria-current={i === 1 ? "step" : undefined} data-done={i < 1}>
+                <span className="wo-steps__n">{i + 1}</span>
+                <span className="wo-steps__t">{name}</span>
+              </li>
+            ))}
+          </ol>
+          <Accordion
+            defaultOpen={["one"]}
+            items={[
+              { id: "one", title: "Getting started", meta: "3 lectures · 12 min", content: <p>Why this matters, the first steps and common mistakes.</p> },
+              { id: "two", title: "Putting it to work", meta: "2 lectures · 8 min", content: <p>Apply it to your own company.</p> },
+            ]}
+          />
+        </div>
+      </Both>
+
+      <Both title="Certificate and weekly schedule">
+        <div className="app-stack">
+          <CertificateSheet
+            holder="Amaka Obi"
+            course="Fundraising for African startups"
+            issuedAt="2026-10-10T09:00:00Z"
+            number="WO-C-2026-000341"
+            hours={4.5}
+            titleText="Certificate of completion"
+            signatoryName="Onyeka Obi"
+            signatoryTitle="Founder, WO Community"
+            verifyUrl="https://app.example/verify/WO-C-2026-000341"
+          />
+          <WeekGrid
+            week={[
+              { on: false, ranges: [] },
+              ...[1, 2, 3].map(() => ({ on: true, ranges: [{ start: "10:00", end: "13:00" }] })),
+              { on: true, ranges: [{ start: "09:00", end: "12:00" }, { start: "14:00", end: "17:00" }] },
+              { on: false, ranges: [] },
+              { on: false, ranges: [] },
+            ]}
+          />
         </div>
       </Both>
 
