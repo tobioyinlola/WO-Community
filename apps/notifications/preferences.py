@@ -22,6 +22,7 @@ DEFAULTS: dict[str, dict[str, bool]] = {
     "moderation": {"email": True, "in_app": True},
     "jobs": {"email": True, "in_app": True},
     "learning": {"email": True, "in_app": True},
+    "support": {"email": True, "in_app": True},
     "event_reminders": {"email": True, "in_app": True},
     "newsletter": {"email": False, "in_app": False},
 }

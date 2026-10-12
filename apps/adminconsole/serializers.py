@@ -127,6 +127,8 @@ class QueueCountsSerializer(serializers.Serializer):
     open_reports = serializers.IntegerField()
     jobs_awaiting_review = serializers.IntegerField()
     wins_awaiting_review = serializers.IntegerField()
+    support_unanswered = serializers.IntegerField()
+    support_overdue = serializers.IntegerField()
 
 
 class ApplicantProfileSerializer(serializers.Serializer):

@@ -198,3 +198,51 @@ def test_download_links_are_short_lived_attachments(editor_client, run_outbox):
     )
     assert url.startswith("https://private.test/") and f"expires_in={ttl}" in url
     assert ttl == 300
+
+
+# --- support attachments: open to every member, a PDF or an image, kept as it arrived ---
+
+ATTACH = {"purpose": "support_attachment"}
+
+
+def png() -> bytes:
+    from apps.uploads.tests.helpers import image_bytes
+
+    return image_bytes("PNG")
+
+
+def test_any_member_may_attach_a_pdf_or_an_image_and_it_is_kept_privately(
+    member_client, run_outbox
+):
+    for data, kind in ((pdf_bytes(), PDF), (png(), "image/png")):
+        upload = run(member_client, run_outbox, data, kind, **ATTACH)
+        assert upload.status == "ready"
+        assert upload.base_key.startswith("private/support_attachment/")
+        assert FakeStorage.objects[(PRIVATE, upload.base_key)] == (data, kind)
+
+
+def test_an_attachment_cannot_be_an_office_file_or_over_five_megabytes(member_client, settings):
+    docx = office_bytes()
+    assert start(member_client, docx, DOCX, **ATTACH).status_code == 400
+    big = {"size": settings.SUPPORT_ATTACHMENT_MAX_BYTES + 1}
+    assert start(member_client, pdf_bytes(), **ATTACH, **big).status_code == 400
+
+
+def test_an_image_that_is_not_one_is_rejected(member_client, run_outbox):
+    upload = run(member_client, run_outbox, b"not an image at all", "image/png", **ATTACH)
+    assert upload.status == "rejected" and upload.reject_reason == "type_mismatch"
+
+
+def test_a_corrupt_image_with_a_valid_header_is_rejected(member_client, run_outbox):
+    broken = png()[:60]
+    upload = run(member_client, run_outbox, broken, "image/png", **ATTACH)
+    assert upload.status == "rejected" and upload.reject_reason == "corrupt"
+
+
+def test_an_attachment_with_a_virus_is_rejected(member_client, run_outbox):
+    upload = run(member_client, run_outbox, EICAR, PDF, **ATTACH)
+    assert upload.status == "rejected" and upload.reject_reason == "malware_detected"
+
+
+def test_attachments_need_a_signed_in_member(api_client):
+    assert api_client.post(UPLOADS, ATTACH).status_code == 401

@@ -18,7 +18,15 @@ from apps.notifications import services
 logger = structlog.get_logger(__name__)
 
 
-def _send(to: str, subject: str, body: str, *, category: str, stream: str = TRANSACTIONAL) -> None:
+def _send(
+    to: str,
+    subject: str,
+    body: str,
+    *,
+    category: str,
+    stream: str = TRANSACTIONAL,
+    no_reply: bool = False,
+) -> None:
     """Send one email.
 
     Marketing mail skips suppressed addresses. The idempotency key comes from
@@ -38,6 +46,7 @@ def _send(to: str, subject: str, body: str, *, category: str, stream: str = TRAN
         stream=stream,
         idempotency_key=key,
         tags={"category": category},
+        no_reply=no_reply,
     )
     try:
         get_email_adapter().send(message)
@@ -174,4 +183,11 @@ def send_notice(to: str, subject: str, body: str, *, category: str) -> None:
         "\n\nYou can change which emails you get at "
         f"{settings.FRONTEND_BASE_URL}/settings/notifications"
     )
-    _send(to, subject, body + footer, category=category)
+    # Support mail is answered inside the app, so it never invites a reply by email.
+    no_reply = category.startswith("notification_ticket_")
+    _send(to, subject, body + footer, category=category, no_reply=no_reply)
+
+
+def send_support_mail(to: str, subject: str, body: str) -> None:
+    """Mail for someone who asked for help without an account. It has no link and no Reply-To."""
+    _send(to, subject, body, category="notification_ticket_public", no_reply=True)

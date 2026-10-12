@@ -13,6 +13,7 @@ from apps.adminconsole import (
     mentor_views,
     reference_views,
     search_views,
+    support_views,
     views,
 )
 
@@ -30,6 +31,56 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path(
+        "admin/support/tickets",
+        support_views.AdminTicketsView.as_view(),
+        name="admin-support-tickets",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>",
+        support_views.AdminTicketView.as_view(),
+        name="admin-support-ticket",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>/messages",
+        support_views.AdminTicketMessagesView.as_view(),
+        name="admin-support-ticket-messages",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>/resolve",
+        support_views.AdminTicketResolveView.as_view(),
+        name="admin-support-ticket-resolve",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>/reopen",
+        support_views.AdminTicketReopenView.as_view(),
+        name="admin-support-ticket-reopen",
+    ),
+    path(
+        "admin/support/stats",
+        support_views.AdminSupportStatsView.as_view(),
+        name="admin-support-stats",
+    ),
+    path(
+        "admin/support/agents",
+        support_views.AdminSupportAgentsView.as_view(),
+        name="admin-support-agents",
+    ),
+    path(
+        "admin/support/canned-replies",
+        support_views.AdminCannedRepliesView.as_view(),
+        name="admin-support-canned",
+    ),
+    path(
+        "admin/support/canned-replies/<uuid:reply_id>",
+        support_views.AdminCannedReplyView.as_view(),
+        name="admin-support-canned-one",
+    ),
+    path(
+        "admin/support/attachments/<uuid:attachment_id>/download",
+        support_views.AdminAttachmentDownloadView.as_view(),
+        name="admin-support-attachment",
+    ),
     path("admin/search", search_views.AdminSearchView.as_view(), name="admin-search"),
     path("admin/courses", course_views.AdminCoursesView.as_view(), name="admin-courses"),
     path(

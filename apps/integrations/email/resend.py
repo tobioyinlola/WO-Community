@@ -85,7 +85,7 @@ class ResendEmailAdapter(EmailAdapter):
         }
         if message.html_body:
             payload["html"] = message.html_body
-        reply_to = message.reply_to or settings.EMAIL_REPLY_TO
+        reply_to = "" if message.no_reply else message.reply_to or settings.EMAIL_REPLY_TO
         if reply_to:
             payload["reply_to"] = reply_to
         if message.headers:

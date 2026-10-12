@@ -130,6 +130,9 @@ EVENTS: dict[str, Spec] = {
     "invitation_sent": Spec(props={"role": enum("member", "mentor"), "bulk": flag()}),
     "invitation_registered": Spec(props={"role": enum("member", "mentor")}),
     "report_actioned": Spec(props={"outcome": enum("reviewed", "actioned")}),
+    # Support
+    "support_ticket_created": Spec(props={"category": slug()}),
+    "support_ticket_resolved": Spec(props={"category": slug(), "hours": number(high=100_000)}),
 }
 
 
