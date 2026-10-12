@@ -1,0 +1,6 @@
+{
+  "type": "object",
+  "properties": {"ok": {"type": "boolean"}, "echo": {"type": "string"}},
+  "required": ["ok", "echo"],
+  "additionalProperties": false
+}

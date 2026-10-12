@@ -1,0 +1,177 @@
+"""Plain text transactional emails for account events."""
+
+import hashlib
+from datetime import datetime
+
+import structlog
+from django.conf import settings
+
+from apps.integrations.email import (
+    MARKETING,
+    TRANSACTIONAL,
+    EmailMessage,
+    EmailRejected,
+    get_email_adapter,
+)
+from apps.notifications import services
+
+logger = structlog.get_logger(__name__)
+
+
+def _send(to: str, subject: str, body: str, *, category: str, stream: str = TRANSACTIONAL) -> None:
+    """Send one email.
+
+    Marketing mail skips suppressed addresses. The idempotency key comes from
+    the content, so a retry after a timeout cannot deliver the same message
+    twice, and an identical message repeated within a day (for example a
+    "you already have an account" notice someone keeps triggering) is sent once.
+    A message the provider will never accept is dropped, since retrying cannot help.
+    """
+    if stream == MARKETING and services.is_suppressed(to):
+        logger.info("email_skipped_suppressed", category=category)
+        return
+    key = hashlib.sha256(f"{to}\n{subject}\n{body}".encode()).hexdigest()
+    message = EmailMessage(
+        to=to,
+        subject=subject,
+        text_body=body,
+        stream=stream,
+        idempotency_key=key,
+        tags={"category": category},
+    )
+    try:
+        get_email_adapter().send(message)
+    except EmailRejected as exc:
+        logger.warning(
+            "email_rejected",
+            category=category,
+            code=exc.code,
+            email_hash=services.hash_email(to)[:12],
+        )
+
+
+def send_verification(to: str, token: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={token}"
+    _send(
+        to,
+        "Confirm your email address",
+        "Welcome to WO Community.\n\n"
+        f"Confirm your email address to continue:\n{link}\n\n"
+        "The link expires in 24 hours. If you did not register, you can ignore this message.",
+        category="verification",
+    )
+
+
+def send_already_registered(to: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/login"
+    reset = f"{settings.FRONTEND_BASE_URL}/forgot-password"
+    _send(
+        to,
+        "You already have a WO Community account",
+        "Someone tried to register with this address, but an account already exists.\n\n"
+        f"Log in: {link}\nForgot your password: {reset}\n\n"
+        "If this was not you, no action is needed.",
+        category="already_registered",
+    )
+
+
+def send_invitation(to: str, token: str, message: str, expires_at: datetime) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/register?invitation={token}"
+    lines = ["You have been invited to join WO Community, the community for founders.", ""]
+    if message:
+        lines += ["A note from the team:", message, ""]
+    lines += [
+        "Create your account here:",
+        link,
+        "",
+        f"This invitation is for this email address only and expires on {expires_at:%d %B %Y}.",
+    ]
+    _send(to, "You are invited to join WO Community", "\n".join(lines), category="invitation")
+
+
+def send_approved(to: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/login"
+    _send(
+        to,
+        "Your WO Community account is approved",
+        f"Welcome aboard. Your account has been approved and you can now log in:\n{link}",
+        category="approved",
+    )
+
+
+def send_rejected(to: str, reason: str) -> None:
+    _send(
+        to,
+        "Your WO Community registration",
+        "We could not approve your registration at this time.\n\n"
+        f"Reason: {reason}\n\n"
+        "If you think this is a mistake, reply to this email and our team will look again.",
+        category="rejected",
+    )
+
+
+def send_suspended(to: str, reason: str) -> None:
+    _send(
+        to,
+        "Your WO Community account has been suspended",
+        "Your account has been suspended, so you cannot log in or take part for now.\n\n"
+        f"Reason: {reason}\n\n"
+        "Anything already agreed with other members, such as mentoring sessions, has been "
+        "cancelled. If you think this is a mistake, reply to this email and our team will "
+        "look again.",
+        category="suspended",
+    )
+
+
+def send_reinstated(to: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/login"
+    _send(
+        to,
+        "Your WO Community account is active again",
+        f"Your account has been reinstated and you can log in again:\n{link}",
+        category="reinstated",
+    )
+
+
+def send_removed(to: str, reason: str) -> None:
+    _send(
+        to,
+        "Your WO Community account has been removed",
+        "Your account has been removed from WO Community and your public pages are down.\n\n"
+        f"Reason: {reason}\n\n"
+        "If you think this is a mistake, reply to this email and our team will look again.",
+        category="removed",
+    )
+
+
+def send_attendee_list(to: str, title: str, csv_text: str) -> None:
+    """The attendee list of an event, as CSV text in the message, for its organiser."""
+    _send(
+        to,
+        f"Attendees: {title}",
+        f'The attendee list for "{title}", as sent by the WO Community team.\n\n'
+        "It holds names and email addresses of members who registered. Keep it only as long as "
+        "you need it for the event, and do not use it for anything else.\n\n"
+        f"{csv_text}",
+        category="attendee_list",
+    )
+
+
+def send_password_reset(to: str, token: str) -> None:
+    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={token}"
+    _send(
+        to,
+        "Reset your password",
+        f"Use this link to choose a new password:\n{link}\n\n"
+        "The link expires in 1 hour. If you did not ask for this, you can ignore this message.",
+        category="password_reset",
+    )
+
+
+def send_notice(to: str, subject: str, body: str, *, category: str) -> None:
+    """A notification delivered by email, with a pointer to the preferences that control it."""
+    footer = (
+        "\n\nYou can change which emails you get at "
+        f"{settings.FRONTEND_BASE_URL}/settings/notifications"
+    )
+    _send(to, subject, body + footer, category=category)

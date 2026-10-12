@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "elements": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "maxLength": 16},
+          "type": {"enum": ["heading", "text", "bullets"]},
+          "text": {"type": "string", "maxLength": 700},
+          "items": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 220}}
+        },
+        "required": ["id", "type"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["elements"],
+  "additionalProperties": false
+}
