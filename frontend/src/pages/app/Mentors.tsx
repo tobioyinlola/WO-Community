@@ -1,3 +1,4 @@
+import { BookingCalendar, dayLabel, priceText, type PickedSlot } from "../../mentor/BookingCalendar";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, Globe, Star, Video } from "lucide-react";
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { messageOf } from "../../api/errors";
 import type { components } from "../../api/schema";
 import { Alert, Avatar, Badge, Button, Card, CardText, CardTitle, CardTo, Input, Modal, Select, Tabs, Textarea } from "../../components";
 import { DownloadButton } from "../../ui/DownloadButton";
-import { formatDate, formatDateTime, formatTime, humanise, plural } from "../../lib/format";
+import { formatDate, formatDateTime, humanise, plural } from "../../lib/format";
 import { EmptyState, LoadMore, Loaded, PageHeader, SkeletonCards, SkeletonRows } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
@@ -91,23 +92,14 @@ export default function MentorsPage() {
   );
 }
 
-function groupByDay(times: string[]): Array<[string, string[]]> {
-  const groups = new Map<string, string[]>();
-  for (const t of times) {
-    const key = formatDate(t);
-    groups.set(key, [...(groups.get(key) ?? []), t]);
-  }
-  return [...groups.entries()];
-}
-
-function BookDialog({ mentor, start, onClose }: { mentor: Mentor; start: string; onClose: () => void }) {
+function BookDialog({ mentor, slot, onClose }: { mentor: Mentor; slot: PickedSlot; onClose: () => void }) {
   const client = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [message, setMessage] = useState("");
   const submit = useSubmit(async () => {
-    await unwrap(api.POST("/api/v1/sessions", { body: { mentor_id: mentor.id, starts_at: start, topic: topic.trim(), message: message.trim() } }));
+    await unwrap(api.POST("/api/v1/sessions", { body: { mentor_id: mentor.id, starts_at: slot.starts_at, length_minutes: slot.length, topic: topic.trim(), message: message.trim() } }));
     await client.invalidateQueries({ queryKey: ["sessions"] });
     await client.invalidateQueries({ queryKey: ["mentors"] });
     toast.show(`Request sent to ${mentor.name}`);
@@ -128,7 +120,10 @@ function BookDialog({ mentor, start, onClose }: { mentor: Mentor; start: string;
       }
     >
       <div className="app-stack">
-        <p className="body" style={{ margin: 0 }}>{formatDateTime(start)} with {mentor.name}, {mentor.session_minutes} minutes.</p>
+        <p className="body" style={{ margin: 0 }}>
+          {dayLabel(slot.local_date)} at {slot.local_time} ({slot.timezone.replace(/_/g, " ")}) with {mentor.name}, {slot.length} minutes. {priceText(slot.price)}.
+        </p>
+        {slot.price?.payment === "arranged" ? <Alert tone="info" title="Payment arranged directly">The mentor confirms your request and you settle the fee with them. Nothing is charged here.</Alert> : null}
         <FormError error={submit.error} />
         <Input label="What do you want help with?" value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={120} error={errorsFrom(submit.error).fields.topic} />
         <Textarea label="Tell them about you and what you hope to cover" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} error={errorsFrom(submit.error).fields.message ?? errorsFrom(submit.error).fields.starts_at} />
@@ -139,9 +134,8 @@ function BookDialog({ mentor, start, onClose }: { mentor: Mentor; start: string;
 
 export function MentorDetail() {
   const { id = "" } = useParams();
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<PickedSlot | null>(null);
   const mentor = useQuery({ queryKey: ["mentors", "one", id], queryFn: () => unwrap(api.GET("/api/v1/mentors/{user_id}", { params: { path: { user_id: id } } })) });
-  const times = useQuery({ queryKey: ["mentors", "times", id], queryFn: () => unwrap(api.GET("/api/v1/mentors/{user_id}/availability", { params: { path: { user_id: id } } })) });
   return (
     <Loaded query={mentor} skeleton={<SkeletonRows />}>
       {(m) => (
@@ -175,29 +169,11 @@ export function MentorDetail() {
               <Card>
                 <h2 className="h4" style={{ margin: "0 0 var(--space-4)" }}>Book a time</h2>
                 {m.paused ? <Alert tone="info" title="Not taking requests right now" /> : null}
-                <Loaded query={times} skeleton={<SkeletonRows count={2} />} isEmpty={(t) => t.times.length === 0} empty={<p className="body app-muted">No times are free in the next weeks.</p>}>
-                  {(t) => (
-                    <div className="app-stack">
-                      <p className="caption app-muted" style={{ margin: 0 }}>Times shown in your own time zone. {t.sessions_left_this_week} left this week.</p>
-                      {groupByDay(t.times).slice(0, 7).map(([day, slots]) => (
-                        <div key={day}>
-                          <p className="label" style={{ margin: "0 0 var(--space-2)" }}>{day}</p>
-                          <div className="app-cluster" role="group" aria-label={`Times on ${day}`}>
-                            {slots.map((s) => (
-                              <button key={s} type="button" className="wo-btn wo-btn--secondary wo-btn--sm" onClick={() => setPicked(s)}>
-                                {formatTime(s)}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Loaded>
+                {m.paused ? null : <BookingCalendar mentorId={id} onPick={setPicked} />}
               </Card>
             </aside>
           </div>
-          {picked ? <BookDialog mentor={m} start={picked} onClose={() => setPicked(null)} /> : null}
+          {picked ? <BookDialog mentor={m} slot={picked} onClose={() => setPicked(null)} /> : null}
         </>
       )}
     </Loaded>
@@ -254,6 +230,7 @@ function SessionCard({ session }: { session: Session }) {
           <CardTitle>{session.topic || "Mentoring session"}</CardTitle>
           <p className="body" style={{ margin: 0 }}>with {other.name}</p>
           <p className="body-sm app-muted" style={{ margin: "var(--space-1) 0 0" }}>{formatDateTime(session.starts_at)}</p>
+          <p className="caption app-muted" style={{ margin: 0 }}>{session.length_minutes} minutes · {priceText(session.price)}{session.price?.payment === "arranged" ? " · Payment arranged directly" : ""}</p>
           {session.proposal ? (
             <Alert tone="info" title={session.proposal.by_me ? "You suggested a new time" : "A new time was suggested"}>
               {formatDateTime(session.proposal.starts_at)}
