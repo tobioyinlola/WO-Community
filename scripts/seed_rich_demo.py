@@ -44,7 +44,7 @@ from apps.feed.models import Post  # noqa: E402
 from apps.jobs import services as jobs  # noqa: E402
 from apps.jobs.models import JobSettings  # noqa: E402
 from apps.learning import authoring as learning  # noqa: E402
-from apps.learning import learn  # noqa: E402
+from apps.learning import learn, lms  # noqa: E402
 from apps.learning.models import (
     Course,  # noqa: E402
     Lesson,  # noqa: E402
@@ -942,7 +942,10 @@ def add_content(admin: User, people: dict) -> None:
                     data={"type": "video", "title": lesson_title, "video_url": YT + video_id},
                 )
                 ids.append(lesson.pk)
-        learning.publish(actor=admin, course_id=course.pk)
+        # Demo courses go live without thumbnails (their cards have a fallback), so they skip the
+        # checklist that real courses must pass.
+        Course.objects.filter(pk=course.pk).update(status="published", published_at=timezone.now())
+        lms.refresh_counts(course.pk)
         lesson_ids.append([course.pk, ids])
 
     for email, course_index, finished in ENROLMENTS:

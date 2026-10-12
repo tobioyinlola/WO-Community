@@ -103,6 +103,9 @@ EVENTS: dict[str, Spec] = {
     "course_completed": Spec(props={"course_id": slug()}),
     "course_checkout_started": Spec(props={"course_id": slug()}),
     "course_purchased": Spec(props={"course_id": slug()}),
+    "course_published": Spec(
+        props={"course_id": slug(), "visibility": enum("published", "unlisted")}
+    ),
     # Mentorship
     "mentor_application_submitted": Spec(),
     "mentor_application_approved": Spec(),

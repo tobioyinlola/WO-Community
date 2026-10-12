@@ -4,7 +4,7 @@ from django.db.models import Q
 
 from apps.core.models import BaseModel
 
-LEVELS = ("beginner", "intermediate", "advanced")
+LEVELS = ("beginner", "intermediate", "advanced", "all")
 ACCESS = ("free", "paid")
 LESSON_TYPES = ("video", "reading", "resource")
 
@@ -13,6 +13,8 @@ class Course(BaseModel):
     class Status(models.TextChoices):
         DRAFT = "draft"
         PUBLISHED = "published"
+        # Reachable by its link and open for enrolment, but not listed in the catalogue.
+        UNLISTED = "unlisted"
         REMOVED = "removed"
 
     slug = models.SlugField(max_length=90, unique=True)
@@ -37,13 +39,28 @@ class Course(BaseModel):
     edited_at = models.DateTimeField(null=True, blank=True)
     rating_count = models.PositiveIntegerField(default=0)
     rating_total = models.PositiveIntegerField(default=0)
+    subtitle = models.CharField(max_length=180, blank=True)
+    language = models.CharField(max_length=8, default="en")
+    # Short lists shown on the landing page. Each entry is a plain sentence.
+    learn_bullets = models.JSONField(default=list, blank=True)
+    requirements = models.JSONField(default=list, blank=True)
+    audience = models.TextField(blank=True)
+    promo_video_id = models.CharField(max_length=20, blank=True)
+    # Off while a course is being reworked: nobody new can enrol, and those enrolled keep going.
+    enrolment_active = models.BooleanField(default=True)
+    # Kept up to date by the services, so the catalogue never has to count.
+    learners_count = models.PositiveIntegerField(default=0)
+    total_duration_seconds = models.PositiveIntegerField(default=0)
+    promo_price_minor = models.PositiveIntegerField(null=True, blank=True)
+    promo_starts_at = models.DateTimeField(null=True, blank=True)
+    promo_ends_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
             models.CheckConstraint(condition=Q(level__in=LEVELS), name="course_level_valid"),
             models.CheckConstraint(condition=Q(access__in=ACCESS), name="course_access_valid"),
             models.CheckConstraint(
-                condition=Q(status__in=["draft", "published", "removed"]),
+                condition=Q(status__in=["draft", "published", "unlisted", "removed"]),
                 name="course_status_valid",
             ),
             models.CheckConstraint(
@@ -94,6 +111,9 @@ class Lesson(BaseModel):
     file_key = models.CharField(max_length=200, blank=True, db_default="")
     file_size = models.PositiveIntegerField(null=True, blank=True)
     file_content_type = models.CharField(max_length=100, blank=True, db_default="")
+    # A short note shown under the video, and whether anyone may watch it before enrolling.
+    description = models.TextField(blank=True, db_default="")
+    is_preview = models.BooleanField(default=False, db_default=False)
 
     class Meta:
         ordering = ["module__position", "position"]
@@ -152,6 +172,11 @@ class CourseRating(BaseModel):
     )
     stars = models.PositiveSmallIntegerField()
     feedback = models.CharField(max_length=1000, blank=True)
+    # Set by an admin who takes a review down; hidden reviews stay out of the average.
+    hidden_at = models.DateTimeField(null=True, blank=True)
+    hidden_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
     class Meta:
         constraints = [
@@ -169,3 +194,100 @@ class Certificate(BaseModel):
     holder_name = models.CharField(max_length=160)
     course_title = models.CharField(max_length=160)
     issued_at = models.DateTimeField()
+
+
+class EnrolmentRequest(BaseModel):
+    """A member asking for a paid course while payments are off; an admin decides."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending"
+        APPROVED = "approved"
+        REJECTED = "rejected"
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="requests")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="course_requests"
+    )
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.PENDING)
+    message = models.CharField(max_length=500, blank=True)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            # One open request per member and course; a decided one can be followed by another.
+            models.UniqueConstraint(
+                fields=["course", "user"],
+                condition=Q(status="pending"),
+                name="request_one_pending",
+            ),
+            models.CheckConstraint(
+                condition=Q(status__in=["pending", "approved", "rejected"]),
+                name="request_status_valid",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["course", "status", "-created_at"], name="request_queue_idx")
+        ]
+
+
+class WishlistItem(BaseModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="course_wishlist"
+    )
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="wishlisted")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["user", "course"], name="wishlist_unique")]
+
+
+class LectureQuestion(BaseModel):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="questions")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="questions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lecture_questions"
+    )
+    body = models.CharField(max_length=2000)
+    hidden_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["lesson", "-created_at"], name="question_lesson_idx")]
+
+
+class LectureAnswer(BaseModel):
+    question = models.ForeignKey(LectureQuestion, on_delete=models.CASCADE, related_name="answers")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lecture_answers"
+    )
+    body = models.CharField(max_length=2000)
+    # Shown with a badge: the answer came from the course's staff.
+    is_staff = models.BooleanField(default=False)
+    hidden_at = models.DateTimeField(null=True, blank=True)
+
+
+class LectureNote(BaseModel):
+    """A private note a learner keeps against a moment in a lecture."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lecture_notes"
+    )
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="notes")
+    seconds = models.PositiveIntegerField(default=0)
+    body = models.CharField(max_length=2000)
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "lesson", "seconds"], name="note_lesson_idx")]
+
+
+class CourseAnnouncement(BaseModel):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="announcements")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    title = models.CharField(max_length=160)
+    body = models.TextField()  # sanitised HTML
+
+    class Meta:
+        ordering = ["-created_at"]

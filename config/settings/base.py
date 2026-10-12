@@ -175,6 +175,7 @@ REST_FRAMEWORK = {
         "analytics": "120/min",
         "support_contact": "5/hour",
         "referrer_search": "30/hour",
+        "course_request": "20/hour",
         "support_write": "30/hour",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
@@ -446,6 +447,8 @@ SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
 FEED_POSTS_PER_DAY = env.int("FEED_POSTS_PER_DAY", default=20)
 FEED_COMMENTS_PER_DAY = env.int("FEED_COMMENTS_PER_DAY", default=200)
 FEED_MAX_IMAGES = 10
+# Looks up the title of a YouTube video for an admin adding lectures. Tests use a fake.
+YOUTUBE_TITLE_LOOKUP = env.str("YOUTUBE_TITLE_LOOKUP", default="apps.integrations.youtube.oembed_title")
 LINK_PREVIEW_FETCHER = env.str(
     "LINK_PREVIEW_FETCHER", default="apps.integrations.linkpreview.fetcher.WebFetcher"
 )

@@ -36,6 +36,8 @@ from apps.feed import services as feed  # noqa: E402
 from apps.jobs import services as jobs  # noqa: E402
 from apps.jobs.models import JobSettings  # noqa: E402
 from apps.learning import authoring as learning  # noqa: E402
+from apps.learning import lms  # noqa: E402
+from apps.learning.models import Course  # noqa: E402
 from apps.mentorship import availability  # noqa: E402
 from apps.mentorship.models import MentorProfile  # noqa: E402
 from apps.profiles import services as profiles  # noqa: E402
@@ -408,7 +410,10 @@ def main() -> None:
                     "body": f"<p>{lesson_title}. Lesson text for {title}.</p>",
                 },
             )
-        learning.publish(actor=admin, course_id=course.pk)
+        # Demo courses go live without thumbnails (their cards have a fallback), so they skip the
+        # checklist that real courses must pass.
+        Course.objects.filter(pk=course.pk).update(status="published", published_at=timezone.now())
+        lms.refresh_counts(course.pk)
 
     counts = directory.reconcile()
     print(f"Directory: {counts}")

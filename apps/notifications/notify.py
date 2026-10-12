@@ -190,7 +190,7 @@ TYPES: dict[str, Spec] = {
     "course_granted": Spec(
         "learning",
         lambda who, p: f"You now have access to \"{p.get('title', 'a course')}\"",
-        lambda p: f"/courses/{p['course_id']}",
+        lambda p: f"/learn/courses/{p['course_id']}",
         email=True,
     ),
     "mentor_application_received": Spec(
@@ -281,6 +281,29 @@ TYPES: dict[str, Spec] = {
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),
     "report_outcome": Spec("moderation", lambda who, p: _outcome_title(p), lambda p: "/home"),
+    # Learning: asking for access, answers, announcements.
+    "course_request": Spec(
+        "learning",
+        lambda who, p: f"New access request for \"{p.get('title', 'a course')}\"",
+        lambda p: f"/admin/courses?course={p['course_id']}&tab=requests",
+    ),
+    "course_request_declined": Spec(
+        "learning",
+        lambda who, p: f"Your request for \"{p.get('title', 'a course')}\" was not approved",
+        lambda p: f"/learn/courses/{p['course_id']}",
+        email=True,
+    ),
+    "lecture_answer": Spec(
+        "learning",
+        lambda who, p: f"{who} answered your question in \"{p.get('title', 'a course')}\"",
+        lambda p: f"/learn/courses/{p['course_id']}/lecture/{p['lesson_id']}?tab=qa",
+    ),
+    "course_announcement": Spec(
+        "learning",
+        lambda who, p: f"New in \"{p.get('title', 'your course')}\": {p.get('announcement', '')}",
+        lambda p: f"/learn/courses/{p['course_id']}?tab=announcements",
+        email=True,
+    ),
     # Support: members are told in the app and by email; admins only in the app.
     "ticket_reply": Spec(
         "support",
