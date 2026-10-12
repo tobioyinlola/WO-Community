@@ -91,6 +91,17 @@ def views(
             "ends_at": row.ends_at,
             "topic": row.topic,
             "message": row.message,
+            "length_minutes": row.length_minutes
+            or round((row.ends_at - row.starts_at).total_seconds() / 60),
+            "price": (
+                {
+                    "price_minor": row.price_minor,
+                    "currency": row.currency,
+                    "payment": row.payment_mode,
+                }
+                if row.price_minor
+                else None
+            ),
             "mentor": _party(cards[row.mentor_id]),
             "mentee": _party(cards[row.mentee_id]),
             "meeting": _meeting_view(row, show_link=admin or is_mentor or is_mentee),

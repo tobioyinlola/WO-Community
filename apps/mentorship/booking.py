@@ -22,7 +22,7 @@ from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core import ratelimit
 from apps.core.text import clean_url
-from apps.mentorship import cache, domain, events, scheduling
+from apps.mentorship import cache, domain, events, scheduling, setup
 from apps.mentorship.applications import Conflict, Forbidden, NotFound
 from apps.mentorship.models import ACTIVE_SESSION_STATUSES, MentorProfile, MentorSession
 
@@ -73,7 +73,13 @@ def _profile(mentor_id: UUID, *, lock: bool = False) -> MentorProfile | None:
 
 
 def request(
-    *, user_id: UUID, mentor_id: UUID, starts_at: datetime, topic: str, message: str
+    *,
+    user_id: UUID,
+    mentor_id: UUID,
+    starts_at: datetime,
+    topic: str,
+    message: str,
+    length_minutes: int | None = None,
 ) -> MentorSession:
     """Ask a mentor for one of their bookable times."""
     topic = domain.text("topic", topic, limit=120, minimum=3)
@@ -100,9 +106,13 @@ def request(
                 )
             if waiting.filter(mentor_id=mentor_id).exists():
                 raise Conflict("You already have a request waiting with this mentor.")
-            if not scheduling.is_bookable(profile, starts_at, now=now):
+            length = length_minutes or scheduling.default_length(profile)
+            if length not in scheduling.offered_lengths(profile):
+                raise domain.invalid("length_minutes", "This mentor does not offer that length.")
+            if not scheduling.is_bookable(profile, starts_at, now=now, length_minutes=length):
                 raise Conflict("That time is no longer available. Choose another.")
-            ends_at = starts_at + timedelta(minutes=profile.session_minutes)
+            ends_at = starts_at + timedelta(minutes=length)
+            price = setup.quote(profile, length)
             session = MentorSession.objects.create(
                 mentor_id=mentor_id,
                 mentee_id=user_id,
@@ -111,6 +121,10 @@ def request(
                 time_span=(starts_at, ends_at),
                 topic=topic,
                 message=message,
+                length_minutes=length,
+                price_minor=price["price_minor"],
+                currency=price["currency"],
+                payment_mode=price["payment"],
             )
             domain_events.publish(events.SessionRequested(session_id=str(session.pk)))
             analytics.track("mentorship_requested", actor_id=user_id)
@@ -138,8 +152,15 @@ def accept(*, user_id: UUID, session_id: UUID) -> MentorSession:
             raise Forbidden("You are not an active mentor.")
         session.status = Status.CONFIRMED
         session.responded_at = session.confirmed_at = now
-        session.meeting_provider = profile.meeting_provider or settings.MEETING_DEFAULT_PROVIDER
-        session.meeting_state = MentorSession.MeetingState.PENDING
+        link = scheduling.preferences(profile).personal_link
+        if profile.meeting_provider == "personal" and link:
+            # The mentor's own room: no meeting to create, the link is the meeting.
+            session.meeting_provider = "manual"
+            session.meeting_url = link
+            session.meeting_state = MentorSession.MeetingState.READY
+        else:
+            session.meeting_provider = profile.meeting_provider or settings.MEETING_DEFAULT_PROVIDER
+            session.meeting_state = MentorSession.MeetingState.PENDING
         session.save()
         domain_events.publish(events.SessionConfirmed(session_id=str(session.pk)))
         hours = _hours_since(session.created_at, now)
@@ -304,10 +325,13 @@ def propose_reschedule(
             raise Conflict("The mentor is no longer available.")
         if starts_at == session.starts_at:
             raise domain.invalid("starts_at", "Choose a different time.")
-        if not scheduling.is_bookable(profile, starts_at, now=now, exclude=session.pk):
+        length = session.length_minutes or scheduling.default_length(profile)
+        if not scheduling.is_bookable(
+            profile, starts_at, now=now, exclude=session.pk, length_minutes=length
+        ):
             raise Conflict("That time is not available. Choose one of the mentor's times.")
         session.proposed_starts_at = starts_at
-        session.proposed_ends_at = starts_at + timedelta(minutes=profile.session_minutes)
+        session.proposed_ends_at = starts_at + timedelta(minutes=length)
         session.proposed_by_id = user_id
         session.proposed_note = cleaned
         session.save()
@@ -337,7 +361,11 @@ def accept_reschedule(*, user_id: UUID, session_id: UUID) -> MentorSession:
             profile = _profile(session.mentor_id)
             start = session.proposed_starts_at
             if profile is None or not scheduling.is_bookable(
-                profile, start, now=now, exclude=session.pk
+                profile,
+                start,
+                now=now,
+                exclude=session.pk,
+                length_minutes=session.length_minutes or None,
             ):
                 raise Conflict("That time is no longer available. Suggest another.")
             assert session.proposed_ends_at is not None  # nosec B101
