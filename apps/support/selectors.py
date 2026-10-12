@@ -104,7 +104,7 @@ def admin_tickets(
     rows = SupportTicket.objects.select_related(
         "member", "member__founder_profile", "assignee", "assignee__founder_profile"
     )
-    if status == "open":  # the working tabs: everything not resolved
+    if status == "working":  # everything not resolved
         rows = rows.exclude(status="resolved")
     elif status:
         rows = rows.filter(status=status)

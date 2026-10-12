@@ -4985,7 +4985,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Person'
+                  $ref: '#/components/schemas/SupportPerson'
           description: ''
         '401':
           description: Not authenticated
@@ -5155,8 +5155,8 @@ paths:
   /api/v1/admin/support/tickets:
     get:
       operationId: admin_support_tickets_list
-      description: '`status=open` means everything not resolved. `assignee` is `me`,
-        `unassigned` or a person''s id. `q` matches the ticket number (SUP-1042),
+      description: '`status=working` means everything not resolved. `assignee` is
+        `me`, `unassigned` or a person''s id. `q` matches the ticket number (SUP-1042),
         subject, name and email.'
       summary: The support inbox
       parameters:
@@ -5169,29 +5169,9 @@ paths:
       - in: query
         name: category
         schema:
-          enum:
-          - account
-          - approval
-          - profile
-          - learning
-          - mentorship
-          - jobs_events
-          - payments
-          - problem
-          - other
-          - ''
           type: string
           default: ''
-        description: |-
-          * `account` - account
-          * `approval` - approval
-          * `profile` - profile
-          * `learning` - learning
-          * `mentorship` - mentorship
-          * `jobs_events` - jobs_events
-          * `payments` - payments
-          * `problem` - problem
-          * `other` - other
+          maxLength: 20
       - in: query
         name: created_after
         schema:
@@ -5266,19 +5246,9 @@ paths:
       - in: query
         name: status
         schema:
-          enum:
-          - open
-          - in_progress
-          - awaiting_member
-          - resolved
-          - ''
           type: string
           default: ''
-        description: |-
-          * `open` - open
-          * `in_progress` - in_progress
-          * `awaiting_member` - awaiting_member
-          * `resolved` - resolved
+          maxLength: 20
       tags:
       - admin
       security:
@@ -5387,7 +5357,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
+                $ref: '#/components/schemas/SupportMessage'
           description: ''
         '400':
           description: Invalid
@@ -11340,7 +11310,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
+                $ref: '#/components/schemas/SupportMessage'
           description: ''
         '400':
           description: Invalid message
@@ -16397,20 +16367,19 @@ components:
           type: string
         number:
           type: integer
-          maximum: 2147483647
-          minimum: 0
+          readOnly: true
         subject:
           type: string
-          maxLength: 120
+          readOnly: true
         category:
           type: string
-          maxLength: 20
+          readOnly: true
         category_label:
           type: string
           readOnly: true
         status:
           type: string
-          maxLength: 16
+          readOnly: true
         status_label:
           type: string
           readOnly: true
@@ -16421,19 +16390,21 @@ components:
         last_activity_at:
           type: string
           format: date-time
+          readOnly: true
         resolved_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
         can_reopen:
           type: boolean
           readOnly: true
         satisfaction:
           type: string
-          maxLength: 4
+          readOnly: true
         satisfaction_comment:
           type: string
-          maxLength: 500
+          readOnly: true
         priority:
           type: string
         member:
@@ -16453,8 +16424,7 @@ components:
           readOnly: true
         reopened_count:
           type: integer
-          maximum: 32767
-          minimum: 0
+          readOnly: true
         messages:
           type: array
           items:
@@ -16465,6 +16435,9 @@ components:
           type: integer
           readOnly: true
         member_joined_at:
+          type: string
+          format: date-time
+          nullable: true
           readOnly: true
       required:
       - assignee
@@ -16483,6 +16456,11 @@ components:
       - previous_tickets
       - priority
       - reference
+      - reopened_count
+      - resolved_at
+      - satisfaction
+      - satisfaction_comment
+      - status
       - status_label
       - subject
     AdminTicketRow:
@@ -16496,20 +16474,19 @@ components:
           type: string
         number:
           type: integer
-          maximum: 2147483647
-          minimum: 0
+          readOnly: true
         subject:
           type: string
-          maxLength: 120
+          readOnly: true
         category:
           type: string
-          maxLength: 20
+          readOnly: true
         category_label:
           type: string
           readOnly: true
         status:
           type: string
-          maxLength: 16
+          readOnly: true
         status_label:
           type: string
           readOnly: true
@@ -16520,19 +16497,21 @@ components:
         last_activity_at:
           type: string
           format: date-time
+          readOnly: true
         resolved_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
         can_reopen:
           type: boolean
           readOnly: true
         satisfaction:
           type: string
-          maxLength: 4
+          readOnly: true
         satisfaction_comment:
           type: string
-          maxLength: 500
+          readOnly: true
         priority:
           type: string
         member:
@@ -16552,8 +16531,7 @@ components:
           readOnly: true
         reopened_count:
           type: integer
-          maximum: 32767
-          minimum: 0
+          readOnly: true
       required:
       - assignee
       - can_reopen
@@ -16568,6 +16546,11 @@ components:
       - number
       - priority
       - reference
+      - reopened_count
+      - resolved_at
+      - satisfaction
+      - satisfaction_comment
+      - status
       - status_label
       - subject
     AdminTicketUpdateStatusEnum:
@@ -16895,14 +16878,13 @@ components:
           readOnly: true
         filename:
           type: string
-          maxLength: 255
+          readOnly: true
         size:
           type: integer
-          maximum: 2147483647
-          minimum: 0
+          readOnly: true
         content_type:
           type: string
-          maxLength: 100
+          readOnly: true
       required:
       - content_type
       - filename
@@ -17549,16 +17531,20 @@ components:
           readOnly: true
         title:
           type: string
-          maxLength: 80
+          readOnly: true
         body:
           type: string
+          readOnly: true
         category:
           type: string
-          maxLength: 20
+          readOnly: true
         active:
           type: boolean
+          readOnly: true
       required:
+      - active
       - body
+      - category
       - id
       - title
     CannedReplyRequest:
@@ -17578,10 +17564,9 @@ components:
           minLength: 1
           maxLength: 4000
         category:
+          type: string
           default: ''
-          oneOf:
-          - $ref: '#/components/schemas/CategoryA2eEnum'
-          - $ref: '#/components/schemas/BlankEnum'
+          maxLength: 20
         active:
           type: boolean
           default: true
@@ -17597,29 +17582,7 @@ components:
             type: string
       required:
       - categories
-    CategoryA2eEnum:
-      enum:
-      - account
-      - approval
-      - profile
-      - learning
-      - mentorship
-      - jobs_events
-      - payments
-      - problem
-      - other
-      type: string
-      description: |-
-        * `account` - account
-        * `approval` - approval
-        * `profile` - profile
-        * `learning` - learning
-        * `mentorship` - mentorship
-        * `jobs_events` - jobs_events
-        * `payments` - payments
-        * `problem` - problem
-        * `other` - other
-    CategoryA64Enum:
+    CategoryEnum:
       enum:
       - update
       - question
@@ -20801,32 +20764,10 @@ components:
     Message:
       type: object
       properties:
-        id:
+        detail:
           type: string
-          format: uuid
-          readOnly: true
-        author:
-          type: object
-          additionalProperties: {}
-          readOnly: true
-        body:
-          type: string
-        is_internal:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        attachments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Attachment'
       required:
-      - attachments
-      - author
-      - body
-      - created_at
-      - id
+      - detail
     MessageCreateRequest:
       type: object
       description: |-
@@ -21704,7 +21645,7 @@ components:
         priority:
           $ref: '#/components/schemas/PriorityEnum'
         category:
-          $ref: '#/components/schemas/CategoryA2eEnum'
+          $ref: '#/components/schemas/SupportCategoryEnum'
     PatchedApplicationUpdateRequest:
       type: object
       description: |-
@@ -22064,7 +22005,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         category:
-          $ref: '#/components/schemas/CategoryA64Enum'
+          $ref: '#/components/schemas/CategoryEnum'
         body:
           type: string
           minLength: 1
@@ -22358,20 +22299,23 @@ components:
         id:
           type: string
           format: uuid
-          nullable: true
         name:
           type: string
-        email:
+        headline:
           type: string
-        avatar:
-          type: object
-          additionalProperties: {}
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
           nullable: true
       required:
-      - avatar
-      - email
+      - headline
       - id
       - name
+      - photo
+      - slug
     PhotoSetRequest:
       type: object
       description: |-
@@ -22514,7 +22458,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         category:
-          $ref: '#/components/schemas/CategoryA64Enum'
+          $ref: '#/components/schemas/CategoryEnum'
         body:
           type: string
           minLength: 1
@@ -24978,6 +24922,80 @@ components:
       - reasons
       - score
       - slug
+    SupportCategoryEnum:
+      enum:
+      - account
+      - approval
+      - profile
+      - learning
+      - mentorship
+      - jobs_events
+      - payments
+      - problem
+      - other
+      type: string
+      description: |-
+        * `account` - account
+        * `approval` - approval
+        * `profile` - profile
+        * `learning` - learning
+        * `mentorship` - mentorship
+        * `jobs_events` - jobs_events
+        * `payments` - payments
+        * `problem` - problem
+        * `other` - other
+    SupportMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        author:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        is_internal:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+      required:
+      - attachments
+      - author
+      - body
+      - created_at
+      - id
+      - is_internal
+    SupportPerson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        email:
+          type: string
+        avatar:
+          type: object
+          additionalProperties: {}
+          nullable: true
+      required:
+      - avatar
+      - email
+      - id
+      - name
     TagsEnum:
       enum:
       - profile_complete
@@ -25100,20 +25118,19 @@ components:
           type: string
         number:
           type: integer
-          maximum: 2147483647
-          minimum: 0
+          readOnly: true
         subject:
           type: string
-          maxLength: 120
+          readOnly: true
         category:
           type: string
-          maxLength: 20
+          readOnly: true
         category_label:
           type: string
           readOnly: true
         status:
           type: string
-          maxLength: 16
+          readOnly: true
         status_label:
           type: string
           readOnly: true
@@ -25124,19 +25141,21 @@ components:
         last_activity_at:
           type: string
           format: date-time
+          readOnly: true
         resolved_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
         can_reopen:
           type: boolean
           readOnly: true
         satisfaction:
           type: string
-          maxLength: 4
+          readOnly: true
         satisfaction_comment:
           type: string
-          maxLength: 500
+          readOnly: true
       required:
       - can_reopen
       - category
@@ -25146,6 +25165,10 @@ components:
       - last_activity_at
       - number
       - reference
+      - resolved_at
+      - satisfaction
+      - satisfaction_comment
+      - status
       - status_label
       - subject
     TicketCreateRequest:
@@ -25157,7 +25180,7 @@ components:
         assignment mistakes easy to miss.
       properties:
         category:
-          $ref: '#/components/schemas/CategoryA2eEnum'
+          $ref: '#/components/schemas/SupportCategoryEnum'
         subject:
           type: string
           minLength: 5
@@ -25188,20 +25211,19 @@ components:
           type: string
         number:
           type: integer
-          maximum: 2147483647
-          minimum: 0
+          readOnly: true
         subject:
           type: string
-          maxLength: 120
+          readOnly: true
         category:
           type: string
-          maxLength: 20
+          readOnly: true
         category_label:
           type: string
           readOnly: true
         status:
           type: string
-          maxLength: 16
+          readOnly: true
         status_label:
           type: string
           readOnly: true
@@ -25212,19 +25234,21 @@ components:
         last_activity_at:
           type: string
           format: date-time
+          readOnly: true
         resolved_at:
           type: string
           format: date-time
+          readOnly: true
           nullable: true
         can_reopen:
           type: boolean
           readOnly: true
         satisfaction:
           type: string
-          maxLength: 4
+          readOnly: true
         satisfaction_comment:
           type: string
-          maxLength: 500
+          readOnly: true
         messages:
           type: array
           items:
@@ -25241,6 +25265,10 @@ components:
       - messages
       - number
       - reference
+      - resolved_at
+      - satisfaction
+      - satisfaction_comment
+      - status
       - status_label
       - subject
     TimelineEntry:

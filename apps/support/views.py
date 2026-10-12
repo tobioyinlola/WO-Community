@@ -18,8 +18,8 @@ from apps.support.serializers import (
     AttachmentLinkSerializer,
     FeedbackSerializer,
     MessageCreateSerializer,
-    MessageSerializer,
     PublicContactSerializer,
+    SupportMessageSerializer,
     TicketCreateSerializer,
     TicketDetailSerializer,
     TicketSerializer,
@@ -140,7 +140,7 @@ class TicketMessagesView(APIView):
         summary="Reply on one of your requests",
         request=MessageCreateSerializer,
         responses={
-            201: MessageSerializer,
+            201: SupportMessageSerializer,
             400: OpenApiResponse(description="Invalid message"),
             409: OpenApiResponse(description="The request is resolved: reopen it first"),
             **ERRORS,
@@ -156,7 +156,7 @@ class TicketMessagesView(APIView):
             message=data.validated_data["message"],
             upload_ids=data.validated_data["attachments"],
         )
-        return Response(MessageSerializer(row).data, status=status.HTTP_201_CREATED)
+        return Response(SupportMessageSerializer(row).data, status=status.HTTP_201_CREATED)
 
 
 class TicketReopenView(APIView):
