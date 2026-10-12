@@ -2738,6 +2738,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/directory/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse members with filters
+         * @description Page by page. Filter by country and skill. Members who hide their basics from members do not appear.
+         */
+        get: operations["directory_people"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/directory/startups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse startups with filters
+         * @description Page by page, featured first. Filter by country, city, sector, stage and whether the startup has open jobs. Each card shows only what its owner shares with members.
+         */
+        get: operations["directory_startups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/editorial": {
         parameters: {
             query?: never;
@@ -2950,6 +2990,26 @@ export interface paths {
          * @description Idempotent. Not possible once the event has started.
          */
         delete: operations["events_register_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feed/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent comments and reactions
+         * @description What the community just did on posts you can open, newest first.
+         */
+        get: operations["feed_activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -7145,6 +7205,72 @@ export interface components {
             times: string[];
             sessions_left_this_week: number;
         };
+        BrowseJob: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+        };
+        BrowseNamed: {
+            slug: string;
+            name: string;
+        };
+        BrowsePeoplePage: {
+            count: number;
+            page: number;
+            page_size: number;
+            pages: number;
+            results: components["schemas"]["BrowsePerson"][];
+        };
+        BrowsePerson: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            headline: string;
+            photo: {
+                [key: string]: unknown;
+            } | null;
+            city: string;
+            country: string;
+            skills: components["schemas"]["BrowseNamed"][];
+        };
+        BrowseStartup: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            pitch: string;
+            logo: {
+                [key: string]: unknown;
+            } | null;
+            sector: components["schemas"]["BrowseNamed"] | null;
+            stage: components["schemas"]["BrowseNamed"] | null;
+            country: string;
+            city: string;
+            year_founded: number | null;
+            description: string;
+            website_url: string;
+            pitch_deck_url: string;
+            featured: boolean;
+            traction: components["schemas"]["BrowseTraction"][];
+            open_jobs_count: number;
+            open_jobs: components["schemas"]["BrowseJob"][];
+        };
+        BrowseStartupPage: {
+            count: number;
+            page: number;
+            page_size: number;
+            pages: number;
+            results: components["schemas"]["BrowseStartup"][];
+        };
+        BrowseTraction: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            value: unknown;
+            /** Format: date */
+            as_of_date: string;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -7755,6 +7881,27 @@ export interface components {
             pinned?: components["schemas"]["Post"][];
             next_cursor: string | null;
         };
+        FeedActivity: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["FeedActivityKindEnum"];
+            /** @description The comment text, or the reaction */
+            detail: string;
+            actor: components["schemas"]["Author"];
+            /** Format: uuid */
+            post_id: string;
+            post_author: string;
+            post_excerpt: string;
+            mine: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description * `comment` - comment
+         *     * `reaction` - reaction
+         * @enum {string}
+         */
+        FeedActivityKindEnum: "comment" | "reaction";
         FeedbackItem: {
             stars: number | null;
             comment: string;
@@ -9296,6 +9443,7 @@ export interface components {
             year_founded?: number | null;
             description?: string;
             website_url?: string;
+            pitch_deck_url?: string;
             directory_opt_in?: boolean;
         };
         /**
@@ -10465,6 +10613,7 @@ export interface components {
             year_founded?: number | null;
             description?: string;
             website_url?: string;
+            pitch_deck_url?: string;
             team?: components["schemas"]["TeamMember"][];
             /** Format: uuid */
             owner_id?: string;
@@ -10502,6 +10651,7 @@ export interface components {
             year_founded?: number;
             description?: string;
             website_url?: string;
+            pitch_deck_url?: string;
         };
         StartupDetail: {
             slug: string;
@@ -20074,6 +20224,111 @@ export interface operations {
             };
         };
     };
+    directory_people: {
+        parameters: {
+            query?: {
+                country?: string;
+                page?: number;
+                page_size?: number;
+                q?: string;
+                skill?: string;
+                /**
+                 * @description * `newest` - newest
+                 *     * `name` - name
+                 */
+                sort?: "newest" | "name";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowsePeoplePage"];
+                };
+            };
+            /** @description Invalid filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    directory_startups: {
+        parameters: {
+            query?: {
+                city?: string;
+                country?: string;
+                hiring?: boolean;
+                page?: number;
+                page_size?: number;
+                q?: string;
+                sector?: string;
+                /**
+                 * @description * `newest` - newest
+                 *     * `name` - name
+                 */
+                sort?: "newest" | "name";
+                stage?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowseStartupPage"];
+                };
+            };
+            /** @description Invalid filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     editorial_list: {
         parameters: {
             query?: {
@@ -20756,6 +21011,48 @@ export interface operations {
             };
             /** @description Already started */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    feed_activity: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedActivity"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -207,6 +207,49 @@ function Rate({ courseId, current }: { courseId: string; current: components["sc
   );
 }
 
+/** Every module and lesson of the course, with the current one marked, beside the lesson. */
+function LessonOutline({ courseId, currentId }: { courseId: string; currentId: string }) {
+  const query = useQuery({
+    queryKey: ["courses", "one", courseId],
+    queryFn: () => unwrap(api.GET("/api/v1/courses/{course_id}", { params: { path: { course_id: courseId } } })),
+  });
+  if (!query.data) return null;
+  const course = query.data;
+  return (
+    <nav className="app-outline" aria-label="Course outline">
+      <h2 className="h4" style={{ margin: "0 0 var(--space-1)" }}>Course outline</h2>
+      <p className="caption app-muted" style={{ margin: "0 0 var(--space-4)" }}>
+        {course.progress.enrolled ? `${course.progress.percent}% complete` : plural(course.lesson_count, "lesson")}
+      </p>
+      {course.modules.map((module, index) => (
+        <section key={module.id} aria-label={module.title}>
+          <h3 className="app-outline__module">{index + 1}. {module.title}</h3>
+          <ol className="app-outline__lessons">
+            {module.lessons.map((lesson) => {
+              const Icon = lesson.locked ? Lock : lesson.completed ? CheckCircle2 : lesson.type === "video" ? PlayCircle : Circle;
+              const row = (
+                <>
+                  <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
+                  <span>{lesson.title}</span>
+                </>
+              );
+              return (
+                <li key={lesson.id}>
+                  {lesson.locked ? (
+                    <span className="app-outline__item" style={{ opacity: "var(--opacity-disabled)" }}>{row}</span>
+                  ) : (
+                    <Link className="app-outline__item" to={`/app/learn/lesson/${lesson.id}`} aria-current={lesson.id === currentId ? "step" : undefined}>{row}</Link>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ))}
+    </nav>
+  );
+}
+
 export function LessonPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -235,7 +278,8 @@ export function LessonPage() {
       {(lesson) => (
         <>
           <PageHeader eyebrow={lesson.module.title} title={lesson.title} lead={lesson.course.title} />
-          <div className="wo-container--narrow app-stack app-stack--lg" style={{ maxWidth: 820 }}>
+          <div className="app-lesson">
+          <div className="app-stack app-stack--lg" style={{ minWidth: 0 }}>
             {lesson.video ? (
               <div className="wo-frame" style={{ aspectRatio: "16 / 9" }}>
                 <iframe
@@ -265,6 +309,8 @@ export function LessonPage() {
                 </Button>
               </div>
             </div>
+          </div>
+          <LessonOutline courseId={lesson.course.id} currentId={id} />
           </div>
         </>
       )}

@@ -84,6 +84,7 @@ export function PublicLayout() {
               <span className="wo-eyebrow">Community</span>
               <ul className="site-footer__list">
                 <li><Link to="/explore">Explore</Link></li>
+                <li><Link to="/explore">Public directory</Link></li>
                 <li><Link to="/news">News</Link></li>
                 <li><Link to="/register">Request access</Link></li>
               </ul>
