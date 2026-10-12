@@ -33,10 +33,13 @@ const JobDetail = lazy(() => import("./pages/app/Jobs").then((m) => ({ default: 
 const NewJob = lazy(() => import("./pages/app/Jobs").then((m) => ({ default: m.NewJob })));
 const Events = lazy(() => import("./pages/app/Events"));
 const EventDetail = lazy(() => import("./pages/app/Events").then((m) => ({ default: m.EventDetail })));
-const Learn = lazy(() => import("./pages/app/Learn"));
-const CourseDetail = lazy(() => import("./pages/app/Learn").then((m) => ({ default: m.CourseDetail })));
-const LessonPage = lazy(() => import("./pages/app/Learn").then((m) => ({ default: m.LessonPage })));
-const Certificates = lazy(() => import("./pages/app/Learn").then((m) => ({ default: m.Certificates })));
+const Learn = lazy(() => import("./learn/Catalog"));
+const CourseLanding = lazy(() => import("./learn/Landing"));
+const LecturePlayer = lazy(() => import("./learn/Player"));
+const MyLearning = lazy(() => import("./learn/MyLearning"));
+const Certificates = lazy(() => import("./learn/MyLearning").then((m) => ({ default: m.Certificates })));
+const CourseRedirect = lazy(() => import("./learn/Redirects").then((m) => ({ default: m.CourseRedirect })));
+const LessonRedirect = lazy(() => import("./learn/Redirects").then((m) => ({ default: m.LessonRedirect })));
 const Mentors = lazy(() => import("./pages/app/Mentors"));
 const MentorDetail = lazy(() => import("./pages/app/Mentors").then((m) => ({ default: m.MentorDetail })));
 const SessionsPage = lazy(() => import("./pages/app/Mentors").then((m) => ({ default: m.SessionsPage })));
@@ -144,9 +147,12 @@ export function App() {
                     <Route path="events" element={<Events />} />
                     <Route path="events/:id" element={<EventDetail />} />
                     <Route path="learn" element={<Learn />} />
+                    <Route path="learn/my" element={<MyLearning />} />
                     <Route path="learn/certificates" element={<Certificates />} />
-                    <Route path="learn/lesson/:id" element={<LessonPage />} />
-                    <Route path="learn/:id" element={<CourseDetail />} />
+                    <Route path="learn/courses/:ref" element={<CourseLanding />} />
+                    <Route path="learn/courses/:ref/lecture/:lessonId" element={<LecturePlayer />} />
+                    <Route path="learn/lesson/:id" element={<LessonRedirect />} />
+                    <Route path="learn/:id" element={<CourseRedirect />} />
                     <Route path="mentors" element={<Mentors />} />
                     <Route path="mentors/sessions" element={<SessionsPage />} />
                     <Route path="mentors/become" element={<BecomeMentor />} />

@@ -41,6 +41,23 @@
     border-radius: 0;
   }
 }
+/* A sheet from the bottom edge. */
+.wo-drawer[data-placement="bottom"] {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  max-height: 86dvh;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  animation-name: wo-sheet-in;
+}
+@keyframes wo-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
 @keyframes wo-drawer-in {
   from {
     opacity: 0;
