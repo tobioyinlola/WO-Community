@@ -13,6 +13,20 @@ test.describe("a signed-in member", () => {
     expect(problems).toEqual([]);
   });
 
+  test("the sidebar collapses to a rail and the slash key goes to search", async ({ page }) => {
+    await signIn(page);
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav.getByText("Directory")).toBeVisible();
+    await page.getByRole("button", { name: "Collapse sidebar" }).click();
+    await expect(nav.getByText("Directory")).toBeHidden();
+    await expect(nav.getByRole("link", { name: "Directory" })).toBeVisible();
+    await page.getByRole("button", { name: "Expand sidebar" }).click();
+    await expect(nav.getByText("Directory")).toBeVisible();
+    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("/");
+    await expect(page.getByRole("searchbox", { name: "Search the community" })).toBeFocused();
+  });
+
   test("every section of the sidebar opens without errors", async ({ page }) => {
     const problems = watchConsole(page);
     await signIn(page);

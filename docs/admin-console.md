@@ -24,6 +24,16 @@ Everything floats on the cream canvas: nothing touches the edge of the window.
 Pages not built yet appear in the sidebar with a "Soon" tag and open an honest placeholder page
 (`Stub.tsx`) instead of being hidden, so the map of the console is complete.
 
+## The member area uses the same frame
+
+`/app` is built the same way (`layouts/AppLayout.tsx`): the same floating sidebar with its rail and
+drawer, the same top bar and the same styles (`admin.css`, plus `member-shell.css` for the search
+field and the Back button). The sidebar is the console's `Sidebar` given a different map
+(`layouts/shell/memberNav.ts`), logo target and a "Contact support" link. The top bar
+(`layouts/shell/MemberTopBar.tsx`) has a real search field (press `/` to reach it), notifications and
+an account menu with the theme choice. The `[` key and the collapsed or open choice are shared with the
+console, since both are the same sidebar. There is no command palette in the member area.
+
 ## Pages
 
 | Route | What it does |

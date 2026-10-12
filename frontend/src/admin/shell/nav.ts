@@ -139,10 +139,10 @@ export const NAV: NavEntry[] = [
 ];
 
 /** The entries a role may see, with empty groups left out. */
-export function visibleNav(have: Set<string>): NavEntry[] {
+export function visibleNav(have: Set<string>, nav: NavEntry[] = NAV): NavEntry[] {
   const allowed = (leaf: NavLeaf) => !leaf.needs || have.has(leaf.needs);
   const out: NavEntry[] = [];
-  for (const entry of NAV) {
+  for (const entry of nav) {
     if (isGroup(entry)) {
       const children = entry.children.filter(allowed);
       if (children.length > 0) out.push({ ...entry, children });

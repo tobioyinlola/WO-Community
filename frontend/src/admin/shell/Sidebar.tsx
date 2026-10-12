@@ -1,6 +1,6 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { ChevronDown, CircleHelp, PanelLeftClose, PanelLeftOpen, X, type LucideIcon } from "lucide-react";
+import { ChevronDown, CircleHelp, LifeBuoy, PanelLeftClose, PanelLeftOpen, X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, Logo } from "../../components";
@@ -21,6 +21,12 @@ interface SidebarProps {
   /** Inside the mobile drawer the toggle closes the drawer instead of collapsing the rail. */
   inDrawer?: boolean;
   person: { id?: string; name: string; role: string };
+  /** Where the logo goes, and what it is called. The console is the default. */
+  home?: { to: string; label: string };
+  /** The accessible name of the navigation landmark. */
+  navLabel?: string;
+  /** When set, the help entry at the foot is a link (for example to email support) instead of the shortcuts button. */
+  help?: { label: string; href: string };
 }
 
 function Badge({ leaf, counts }: { leaf: NavLeaf; counts: Counts }) {
@@ -168,7 +174,7 @@ function Group({
   );
 }
 
-export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHelp, inDrawer = false, person }: SidebarProps) {
+export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHelp, inDrawer = false, person, home = { to: "/admin", label: "WO Community admin, dashboard" }, navLabel = "Admin sections", help }: SidebarProps) {
   const location = useLocation();
   const [openGroups, setOpenGroups] = usePref<string[]>("open-groups", []);
 
@@ -187,7 +193,7 @@ export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHe
     <Tooltip.Provider delayDuration={150}>
       <div className="adm-side__inner" data-collapsed={collapsed}>
         <div className="adm-side__head">
-          <Link to="/admin" className="adm-side__logo" aria-label="WO Community admin, dashboard" onClick={onNavigate}>
+          <Link to={home.to} className="adm-side__logo" aria-label={home.label} onClick={onNavigate}>
             <Logo kind={collapsed ? "mark" : "full"} height={collapsed ? 32 : 36} />
           </Link>
           <button
@@ -203,7 +209,7 @@ export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHe
           </button>
         </div>
 
-        <nav className="adm-side__nav" aria-label="Admin sections">
+        <nav className="adm-side__nav" aria-label={navLabel}>
           <ul className="adm-nav__list">
             {entries.map((entry) => {
               if (!isGroup(entry)) return <Leaf key={entry.id} leaf={entry} icon={entry.icon} counts={counts} collapsed={collapsed} onNavigate={onNavigate} />;
@@ -225,10 +231,17 @@ export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHe
               </div>
             )}
           </div>
-          <button type="button" className="adm-nav__link adm-nav__link--help" data-rail={collapsed} onClick={onHelp} aria-label={collapsed ? "Help and shortcuts" : undefined}>
-            <CircleHelp size={20} strokeWidth={1.5} aria-hidden="true" />
-            {collapsed ? null : <span className="adm-nav__label">Help and shortcuts</span>}
-          </button>
+          {help ? (
+            <a className="adm-nav__link adm-nav__link--help" data-rail={collapsed} href={help.href} aria-label={collapsed ? help.label : undefined} title={collapsed ? help.label : undefined}>
+              <LifeBuoy size={20} strokeWidth={1.5} aria-hidden="true" />
+              {collapsed ? null : <span className="adm-nav__label">{help.label}</span>}
+            </a>
+          ) : (
+            <button type="button" className="adm-nav__link adm-nav__link--help" data-rail={collapsed} onClick={onHelp} aria-label={collapsed ? "Help and shortcuts" : undefined}>
+              <CircleHelp size={20} strokeWidth={1.5} aria-hidden="true" />
+              {collapsed ? null : <span className="adm-nav__label">Help and shortcuts</span>}
+            </button>
+          )}
         </div>
       </div>
     </Tooltip.Provider>
