@@ -271,3 +271,31 @@ def test_old_notifications_are_purged(me, actor):
 
 def test_notification_types_are_the_ones_the_preferences_know():
     assert {spec.preference for spec in notify.TYPES.values()} <= set(preferences.DEFAULTS)
+
+
+# --- the unread count the bell polls ---
+
+COUNT = "/api/v1/notifications/unread-count"
+
+
+def test_the_unread_count_follows_reading_and_answers_304_when_unchanged(client, me, actor):
+    send(me, actor, key="a")
+    send(me, actor, key="b")
+    first = client.get(COUNT)
+    assert first.status_code == 200 and first.json() == {"unread_count": 2}
+    assert client.get(COUNT, HTTP_IF_NONE_MATCH=first["ETag"]).status_code == 304
+    client.post(READ, {"all": True}, format="json")
+    after = client.get(COUNT, HTTP_IF_NONE_MATCH=first["ETag"])
+    assert after.status_code == 200 and after.json() == {"unread_count": 0}
+
+
+def test_the_unread_count_is_only_your_own(client, me, actor, make_user, client_for):
+    send(me, actor, key="a")
+    other = client_for(active(make_user, "other@example.com"))
+    assert other.get(COUNT).json() == {"unread_count": 0}
+
+
+def test_the_unread_count_needs_a_signed_in_active_member(api_client, make_user, client_for):
+    assert api_client.get(COUNT).status_code == 401
+    pending = make_user(roles=(), status="pending", email="p@example.com")
+    assert client_for(pending).get(COUNT).status_code == 403

@@ -12,6 +12,7 @@ from apps.adminconsole import (
     job_views,
     mentor_views,
     reference_views,
+    search_views,
     views,
 )
 
@@ -29,6 +30,7 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path("admin/search", search_views.AdminSearchView.as_view(), name="admin-search"),
     path("admin/courses", course_views.AdminCoursesView.as_view(), name="admin-courses"),
     path(
         "admin/courses/<uuid:course_id>",

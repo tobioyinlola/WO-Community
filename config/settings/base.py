@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.startups",
     "apps.directory",
     "apps.memberarea",
+    "apps.globalsearch",
     "apps.feed",
     "apps.jobs",
     "apps.editorial",

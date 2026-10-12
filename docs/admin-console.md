@@ -14,8 +14,7 @@ Everything floats on the cream canvas: nothing touches the edge of the window.
   itself. In the rail each group is one icon with a flyout beside it that lists its pages (it opens on
   hover, focus or click), single items get a tooltip, and a waiting count becomes a dot. Below 1024px
   it becomes a drawer with a scrim, a focus trap and Esc to close.
-- **Top bar** (`shell/TopBar.tsx`): a pill-shaped card that stays in view. A search field opens the
-  command palette, then a chip with the number of requests waiting for approval, the local time with
+- **Top bar** (`shell/TopBar.tsx`): a pill-shaped card that stays in view. A search field (see Search below), then a chip with the number of requests waiting for approval, the local time with
   its zone, help, notifications and the account menu (theme, keyboard shortcuts, sign out).
 - **Page header**: the shared `PageHeader` restyled in `admin.css`: a small eyebrow, a sentence case
   40px title, a one line subtitle and a toolbar of pill controls on the right.
@@ -32,7 +31,7 @@ field and the Back button). The sidebar is the console's `Sidebar` given a diffe
 (`layouts/shell/memberNav.ts`), logo target and a "Contact support" link. The top bar
 (`layouts/shell/MemberTopBar.tsx`) has a real search field (press `/` to reach it), notifications and
 an account menu with the theme choice. The `[` key and the collapsed or open choice are shared with the
-console, since both are the same sidebar. There is no command palette in the member area.
+console, since both are the same sidebar. It has the same search and bell as the console.
 
 ## Pages
 
@@ -49,7 +48,7 @@ console, since both are the same sidebar. There is no command palette in the mem
 
 | Keys | Does |
 |---|---|
-| `Ctrl K` or `Cmd K` | Open the command palette: pages, quick actions, member search |
+| `/` or `Ctrl K` (`Cmd K`) | Go to the search field from anywhere that is not a place to type |
 | `[` | Collapse or expand the sidebar |
 | `?` | List the shortcuts |
 | `J` and `K` | Next and previous request (in Approvals) |
@@ -71,7 +70,7 @@ All in `src/admin`, built on the design tokens and the existing design system co
   `SavedViews`, `undo`.
 - `ApprovalDrawer.tsx`, `Settings.tsx`, `AdminDesign.tsx`, and the pages above.
 
-Menus, dialogs and tooltips use Radix primitives, the palette uses cmdk, and icons are Lucide at 1.5px.
+Menus, dialogs, popovers and tooltips use Radix primitives, and icons are Lucide at 1.5px.
 
 ### Tokens
 
@@ -81,6 +80,20 @@ white in the light theme and the surface colour in the dark one. The active navi
 primary button are `--bg-brand`; the highlighted figure card shows its number in `--text-highlight`.
 The stylesheets are `styles/admin.css` (frame), `admin-kit.css` (cards, figures, chart) and
 `admin-table.css` (tables, drawer, settings).
+
+## Search and the bell
+
+The search field (`shell/GlobalSearch.tsx`) is shared by the member area and the console. After two
+letters it lists matches in groups, with the matched words marked, from `GET /search` (members) or
+`GET /admin/search` (the console, where a group appears only for roles holding its permission). Arrow
+keys move, Enter opens, Tab jumps to the next group, Esc closes and gives focus back. With nothing
+typed it offers the last eight searches (`/search/recents`) and a few pages. "See all results" opens
+`/app/search?q=` or `/admin/search?q=` with a filter for each kind.
+
+The bell (`shell/NotificationBell.tsx`) polls `GET /notifications/unread-count` every 45 seconds (the
+server answers 304 when nothing changed) and opens a popover with the latest unread items. Choosing one
+marks it read and goes to it. The right side `Drawer` (`ui/Drawer.tsx`) is the one panel for forms and
+long records.
 
 ## Undo
 
