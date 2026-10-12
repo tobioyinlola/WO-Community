@@ -13,6 +13,7 @@ import { BarChart, type DayPoint } from "./kit/BarChart";
 import { changeBetween, Delta } from "./kit/Delta";
 import { KpiCard } from "./kit/KpiCard";
 import { Segmented } from "./kit/Segmented";
+import { ReferralSection } from "./ReferralSection";
 import { permissionsFor } from "./permissions";
 import { useStepUp } from "./StepUp";
 
@@ -273,6 +274,8 @@ export default function Overview() {
           </Loaded>
         </div>
       </section>
+
+      {have.has("dashboard.view") ? <ReferralSection /> : null}
 
       <div className="adm-twocol">
         <AttentionCard items={attention} loading={loading} />

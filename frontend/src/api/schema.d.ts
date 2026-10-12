@@ -1414,6 +1414,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/{user_id}/referral": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correct how someone says they heard of us
+         * @description An admin can change the source, the detail and the referring member. A member cannot be their own referrer.
+         */
+        patch: operations["admin_members_referral_partial_update"];
+        trace?: never;
+    };
     "/api/v1/admin/members/{user_id}/reinstate": {
         parameters: {
             query?: never;
@@ -1895,6 +1915,43 @@ export interface paths {
          * @description Send every entry's id exactly once, in the order wanted.
          */
         put: operations["admin_reference_order_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/referrals/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Referrals this month against last month
+         * @description Sign ups, how many named a member, and where people say they heard of us.
+         */
+        get: operations["admin_referrals_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/referrals/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Members with the most approved referrals */
+        get: operations["admin_referrals_top_list"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -3877,6 +3934,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your referral link and the members who joined through you
+         * @description Shows only people who have been approved, and only what each of them allows you to see.
+         */
+        get: operations["me_referrals_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/saved-jobs": {
         parameters: {
             query?: never;
@@ -3981,6 +4058,46 @@ export interface paths {
          * @description Fields the member keeps private are never included. If they hide even the basics, the profile answers 404.
          */
         get: operations["members_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/referrer-by-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who a referral link belongs to
+         * @description For the sign up form after someone opens a link. `found` is false for a code that belongs to nobody active. A member who keeps their name from visitors is found, without a name. Throttled by address.
+         */
+        get: operations["members_referrer_by_code_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/search-referrer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find the member who told you about us
+         * @description For the sign up form. Needs at least three characters and answers with at most five people: members whose name is public, found by name or by their email address typed in full. Throttled by address.
+         */
+        get: operations["members_search_referrer_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7569,6 +7686,13 @@ export interface components {
             linkedin_url: string;
             completeness: number;
         };
+        ApplicantReferral: {
+            kind: string;
+            kind_label: string;
+            detail: string;
+            referrer: components["schemas"]["Referrer"] | null;
+            code_used: string;
+        };
         ApplicantStartup: {
             name: string;
             country: string;
@@ -7585,6 +7709,7 @@ export interface components {
             profile: components["schemas"]["ApplicantProfile"] | null;
             startup: components["schemas"]["ApplicantStartup"] | null;
             timeline: components["schemas"]["TimelineEntry"][];
+            referral: components["schemas"]["ApplicantReferral"];
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -8598,6 +8723,7 @@ export interface components {
             startup: components["schemas"]["SignupStartupRequest"];
             /** Format: uuid */
             anonymous_id?: string | null;
+            referral?: components["schemas"]["ReferralInputRequest"];
             /** @default  */
             invitation_token: string;
         };
@@ -9116,6 +9242,10 @@ export interface components {
             readonly startup: string;
             readonly sector: string;
             readonly stage: string;
+            readonly referral_source: string;
+            readonly referral_label: string;
+            readonly referral_detail: string;
+            readonly referrer: components["schemas"]["Referrer"] | null;
         };
         Mentor: {
             /**
@@ -9399,6 +9529,14 @@ export interface components {
         MyRating: {
             stars: number;
             feedback: string;
+        };
+        MyReferrals: {
+            code: string;
+            /** @description The link to share. It opens the sign up page. */
+            url: string;
+            approved_count: number;
+            waiting_count: number;
+            members: components["schemas"]["ReferralEntry"][];
         };
         Named: {
             slug: string;
@@ -10028,6 +10166,18 @@ export interface components {
             name?: string;
             active?: boolean;
             sort_order?: number;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PatchedReferralEditRequest: {
+            kind?: components["schemas"]["ReferralKindEnum"] | components["schemas"]["BlankEnum"];
+            detail?: string;
+            /** Format: uuid */
+            referred_by?: string | null;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -10674,6 +10824,73 @@ export interface components {
         ReferenceOrderRequest: {
             ids: string[];
         };
+        ReferralEntry: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            startup: string;
+            /** Format: date-time */
+            joined_at: string;
+        };
+        /** @description How the person heard of us. Every part is optional; a wrong entry never blocks sign up. */
+        ReferralInputRequest: {
+            kind?: components["schemas"]["ReferralKindEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Which platform, event or organisation; or a member's name when they could not be found in the search. */
+            detail?: string;
+            /**
+             * Format: uuid
+             * @description The member who brought them, chosen from the search. Only with source `member`.
+             */
+            referred_by?: string | null;
+            /** @description The code in the referral link they opened, if any. */
+            code?: string;
+        };
+        /**
+         * @description * `member` - member
+         *     * `social` - social
+         *     * `event` - event
+         *     * `partner` - partner
+         *     * `search` - search
+         *     * `newsletter` - newsletter
+         *     * `other` - other
+         * @enum {string}
+         */
+        ReferralKindEnum: "member" | "social" | "event" | "partner" | "search" | "newsletter" | "other";
+        ReferralSummary: {
+            this_month: components["schemas"]["Window"];
+            last_month: components["schemas"]["Window"];
+            /** @description Percent of this month's sign ups that were referred */
+            referred_share: number;
+            sources: components["schemas"]["SourceCount"][];
+        };
+        Referrer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        ReferrerByCode: {
+            found: boolean;
+            /** Format: uuid */
+            id: string | null;
+            name: string;
+            startup: string;
+            photo: {
+                [key: string]: unknown;
+            } | null;
+        };
+        ReferrerCandidate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            headline: string;
+            photo: {
+                [key: string]: unknown;
+            } | null;
+            startup: string;
+        };
+        ReferrerSearch: {
+            results: components["schemas"]["ReferrerCandidate"][];
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -10698,6 +10915,7 @@ export interface components {
             startup: components["schemas"]["SignupStartupRequest"];
             /** Format: uuid */
             anonymous_id?: string | null;
+            referral?: components["schemas"]["ReferralInputRequest"];
             /** @default  */
             invitation_token: string;
         };
@@ -11252,6 +11470,11 @@ export interface components {
          */
         SlotsRequest: {
             slots: components["schemas"]["SlotInputRequest"][];
+        };
+        SourceCount: {
+            kind: string;
+            kind_label: string;
+            count: number;
         };
         /** @description Output shape. Fields of hidden groups are absent, not blank. */
         Startup: {
@@ -12651,6 +12874,12 @@ export interface components {
         TokenRequest: {
             token: string;
         };
+        TopReferrer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            approved: number;
+        };
         Topic: {
             topic: string;
             mentors?: number;
@@ -12898,6 +13127,11 @@ export interface components {
         WinReviewRequest: {
             /** @default  */
             reason: string;
+        };
+        Window: {
+            signups: number;
+            referred: number;
+            approved: number;
         };
     };
     responses: never;
@@ -17257,6 +17491,8 @@ export interface operations {
                  */
                 ordering?: "created_at" | "-created_at" | "email" | "-email" | "last_login" | "-last_login" | "status" | "-status";
                 q?: string;
+                referral_source?: string;
+                referred_by?: string | null;
                 role?: string;
                 /**
                  * @description * `pending` - pending
@@ -17451,6 +17687,59 @@ export interface operations {
             };
             /** @description The account is not in a state that allows this */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_referral_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReferralEditRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicantReferral"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18794,6 +19083,74 @@ export interface operations {
             };
             /** @description Name or slug taken, entry in use, or the list changed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_referrals_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralSummary"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_referrals_top_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopReferrer"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24402,6 +24759,39 @@ export interface operations {
             };
         };
     };
+    me_referrals_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReferrals"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     me_saved_jobs_retrieve: {
         parameters: {
             query?: {
@@ -24663,6 +25053,77 @@ export interface operations {
             };
             /** @description No such profile, or not visible to you */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    members_referrer_by_code_retrieve: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferrerByCode"];
+                };
+            };
+            /** @description Missing or too long */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many lookups */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    members_search_referrer_retrieve: {
+        parameters: {
+            query: {
+                /** @description 3 to 100 characters */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferrerSearch"];
+                };
+            };
+            /** @description Invalid query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many searches */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -252,6 +252,7 @@ describe("ApprovalDrawer", () => {
             profile: { full_name: "Ife Bello", headline: "", country: "NG", city: "Lagos", website_url: "", linkedin_url: "", completeness: 70 },
             startup: { name: "Kuda Foods", country: "NG", city: "Lagos", sector: "Agritech", stage: "Seed", pitch: "Fresh produce in a day.", website_url: "", completeness: 55 },
             timeline: [{ kind: "registered", at: "2026-10-11T07:00:00Z", note: "" }],
+            referral: { kind: "member", kind_label: "A WO Community member", detail: "", referrer: { id: "r1", name: "Amaka Obi" }, code_used: "" },
           });
         }
         if (url.pathname.endsWith("/reference/countries")) return json([{ code: "NG", name: "Nigeria" }]);
@@ -288,6 +289,13 @@ describe("ApprovalDrawer", () => {
     expect(await within(dialog).findByText("Kuda Foods")).toBeInTheDocument();
     expect(await within(dialog).findByText("Nigeria")).toBeInTheDocument();
     expect(within(dialog).getByText("Fresh produce in a day.")).toBeInTheDocument();
+  });
+
+  it("says how they heard of us, with the member who brought them, and offers to edit it", async () => {
+    setup();
+    const dialog = screen.getByRole("dialog");
+    expect(await within(dialog).findByText(/A WO Community member: Amaka Obi/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
   it("keeps focus inside while open and closes on Escape", async () => {

@@ -7,6 +7,7 @@ import { GuestOnly, RequireAuth } from "./auth/guards";
 import { AppLayout } from "./layouts/AppLayout";
 import { SearchPage } from "./shell/SearchPage";
 import { HelpPage } from "./pages/support/Help";
+import { JoinRedirect } from "./referrals/Join";
 import { MySupportPage } from "./pages/support/MySupport";
 import { SupportTicketPage } from "./pages/support/Ticket";
 import { AuthLayout } from "./layouts/AuthLayout";
@@ -118,6 +119,7 @@ export function App() {
                   <Route path="design" element={<Design />} />
                 </Route>
                 <Route path="share/:token" element={<SharedView />} />
+                <Route path="join" element={<JoinRedirect />} />
                 <Route element={<GuestOnly />}>
                   <Route element={<AuthLayout />}>
                     <Route path="login" element={<Login />} />

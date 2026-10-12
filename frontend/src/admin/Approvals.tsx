@@ -253,6 +253,22 @@ export default function Approvals() {
         cell: ({ row }) => (row.original.country ? (countryName.get(row.original.country) ?? row.original.country) : <span className="app-faint">Not given</span>),
       },
       {
+        id: "referral",
+        header: "Heard of us",
+        meta: { label: "Heard of us" } satisfies ColumnMeta,
+        cell: ({ row }) =>
+          row.original.referrer ? (
+            <span className="adm-who__text">
+              <span className="adm-who__name">{row.original.referrer.name}</span>
+              <span className="adm-who__id" style={{ fontFamily: "var(--font-body)" }}>{row.original.referral_label}</span>
+            </span>
+          ) : row.original.referral_label ? (
+            row.original.referral_label
+          ) : (
+            <span className="app-faint">Did not say</span>
+          ),
+      },
+      {
         id: "submitted",
         header: "Asked to join",
         meta: { label: "Asked to join" } satisfies ColumnMeta,
