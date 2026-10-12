@@ -1,6 +1,6 @@
 import { api } from "./client";
 
-export type UploadPurpose = "support_attachment";
+export type UploadPurpose = "support_attachment" | "course_cover";
 
 export interface Uploaded {
   id: string;

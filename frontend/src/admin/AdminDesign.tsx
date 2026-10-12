@@ -133,8 +133,8 @@ export default function AdminDesign() {
             <span className="wo-linkbtn">Mark all as read</span>
           </div>
           <div className="wo-notes__tabs">
-            <span className="wo-notes__tab" aria-selected="true">Unread</span>
-            <span className="wo-notes__tab" aria-selected="false">All</span>
+            <span className="wo-notes__tab" data-active="true">Unread</span>
+            <span className="wo-notes__tab">All</span>
           </div>
           <ul className="wo-notes__list">
             <li><div className="wo-notes__item" data-unread="true"><span className="wo-notes__icon"><UserCheck size={18} strokeWidth={1.5} /></span><span className="wo-notes__text"><span className="wo-notes__line">Ngozi asked for a session on 14 Oct</span><span className="wo-notes__when">5 minutes ago</span></span><span className="wo-notes__dot" /></div></li>

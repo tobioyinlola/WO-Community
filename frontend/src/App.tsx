@@ -73,6 +73,8 @@ const AdminWins = lazy(() => import("./admin/Queues").then((m) => ({ default: m.
 const AdminNews = lazy(() => import("./admin/News"));
 const AdminEvents = lazy(() => import("./admin/Events"));
 const AdminCourses = lazy(() => import("./admin/Courses"));
+const AdminCourseManage = lazy(() => import("./admin/CourseManage"));
+const AdminCourseRequests = lazy(() => import("./admin/CourseRequests"));
 const AdminEmail = lazy(() => import("./admin/Email"));
 const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
@@ -193,6 +195,8 @@ export function App() {
                     <Route path="news" element={<AdminNews />} />
                     <Route path="events" element={<AdminEvents />} />
                     <Route path="courses" element={<AdminCourses />} />
+                    <Route path="courses/:id" element={<AdminCourseManage />} />
+                    <Route path="course-requests" element={<AdminCourseRequests />} />
                     <Route path="email" element={<AdminEmail />} />
                     <Route path="lists" element={<AdminLists />} />
                     <Route path="settings" element={<AdminSettings />} />
