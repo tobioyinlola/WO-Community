@@ -430,6 +430,11 @@ def main() -> None:
         )
     certificates.issue(Enrolment.objects.get(user=amaka, course=finished).pk)
 
+    # Referrals, more courses, support requests, notifications and mentor pricing.
+    import seed_change_requests
+
+    seed_change_requests.main()
+
     counts = directory.reconcile()
     print(f"Directory: {counts}")
     print(f"Seeded {len(MEMBERS)} members, {len(MENTORS)} mentors and an admin.")
