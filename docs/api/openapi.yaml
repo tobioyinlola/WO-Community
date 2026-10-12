@@ -3215,6 +3215,18 @@ paths:
           default: ''
           maxLength: 100
       - in: query
+        name: referral_source
+        schema:
+          type: string
+          default: ''
+          maxLength: 12
+      - in: query
+        name: referred_by
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
         name: role
         schema:
           type: string
@@ -3350,6 +3362,42 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/members/{user_id}/referral:
+    patch:
+      operationId: admin_members_referral_partial_update
+      description: An admin can change the source, the detail and the referring member.
+        A member cannot be their own referrer.
+      summary: Correct how someone says they heard of us
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReferralEditRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicantReferral'
+          description: ''
+        '400':
+          description: Invalid
+        '404':
+          description: Member not found
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/members/{user_id}/reinstate:
     post:
       operationId: admin_members_reinstate_create
@@ -4347,6 +4395,56 @@ paths:
           description: Unknown list or entry
         '409':
           description: Name or slug taken, entry in use, or the list changed
+  /api/v1/admin/referrals/summary:
+    get:
+      operationId: admin_referrals_summary_retrieve
+      description: Sign ups, how many named a member, and where people say they heard
+        of us.
+      summary: Referrals this month against last month
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralSummary'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/referrals/top:
+    get:
+      operationId: admin_referrals_top_list
+      summary: Members with the most approved referrals
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 10
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopReferrer'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/reports:
     get:
       operationId: admin_reports_list
@@ -8517,6 +8615,27 @@ paths:
           description: The profile changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/me/referrals:
+    get:
+      operationId: me_referrals_retrieve
+      description: Shows only people who have been approved, and only what each of
+        them allows you to see.
+      summary: Your referral link and the members who joined through you
+      tags:
+      - referrals
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyReferrals'
+          description: ''
+        '401':
+          description: Not logged in
+        '403':
+          description: Not an active member
   /api/v1/me/saved-jobs:
     get:
       operationId: me_saved_jobs_retrieve
@@ -8700,6 +8819,59 @@ paths:
           description: Not an approved member
         '404':
           description: No such profile, or not visible to you
+  /api/v1/members/referrer-by-code:
+    get:
+      operationId: members_referrer_by_code_retrieve
+      description: For the sign up form after someone opens a link. `found` is false
+        for a code that belongs to nobody active. A member who keeps their name from
+        visitors is found, without a name. Throttled by address.
+      summary: Who a referral link belongs to
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+        required: true
+      tags:
+      - referrals
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferrerByCode'
+          description: ''
+        '400':
+          description: Missing or too long
+        '429':
+          description: Too many lookups
+  /api/v1/members/search-referrer:
+    get:
+      operationId: members_search_referrer_retrieve
+      description: 'For the sign up form. Needs at least three characters and answers
+        with at most five people: members whose name is public, found by name or by
+        their email address typed in full. Throttled by address.'
+      summary: Find the member who told you about us
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: 3 to 100 characters
+        required: true
+      tags:
+      - referrals
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferrerSearch'
+          description: ''
+        '400':
+          description: Invalid query
+        '429':
+          description: Too many searches
   /api/v1/mentor-applications:
     post:
       operationId: mentor_applications_create
@@ -16718,6 +16890,27 @@ components:
       - headline
       - linkedin_url
       - website_url
+    ApplicantReferral:
+      type: object
+      properties:
+        kind:
+          type: string
+        kind_label:
+          type: string
+        detail:
+          type: string
+        referrer:
+          allOf:
+          - $ref: '#/components/schemas/Referrer'
+          nullable: true
+        code_used:
+          type: string
+      required:
+      - code_used
+      - detail
+      - kind
+      - kind_label
+      - referrer
     ApplicantStartup:
       type: object
       properties:
@@ -16765,9 +16958,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TimelineEntry'
+        referral:
+          $ref: '#/components/schemas/ApplicantReferral'
       required:
       - member
       - profile
+      - referral
       - startup
       - timeline
     ApplicationCreateRequest:
@@ -19119,6 +19315,8 @@ components:
           type: string
           format: uuid
           nullable: true
+        referral:
+          $ref: '#/components/schemas/ReferralInputRequest'
         invitation_token:
           type: string
           default: ''
@@ -20210,6 +20408,20 @@ components:
         stage:
           type: string
           readOnly: true
+        referral_source:
+          type: string
+          readOnly: true
+        referral_label:
+          type: string
+          readOnly: true
+        referral_detail:
+          type: string
+          readOnly: true
+        referrer:
+          allOf:
+          - $ref: '#/components/schemas/Referrer'
+          nullable: true
+          readOnly: true
       required:
       - approval_source
       - approved_at
@@ -20220,6 +20432,10 @@ components:
       - id
       - last_login
       - name
+      - referral_detail
+      - referral_label
+      - referral_source
+      - referrer
       - roles
       - sector
       - stage
@@ -20903,6 +21119,28 @@ components:
       required:
       - feedback
       - stars
+    MyReferrals:
+      type: object
+      properties:
+        code:
+          type: string
+        url:
+          type: string
+          description: The link to share. It opens the sign up page.
+        approved_count:
+          type: integer
+        waiting_count:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferralEntry'
+      required:
+      - approved_count
+      - code
+      - members
+      - url
+      - waiting_count
     Named:
       type: object
       properties:
@@ -22086,6 +22324,25 @@ components:
           type: integer
           maximum: 10000
           minimum: 0
+    PatchedReferralEditRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          oneOf:
+          - $ref: '#/components/schemas/ReferralKindEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        detail:
+          type: string
+          maxLength: 200
+        referred_by:
+          type: string
+          format: uuid
+          nullable: true
     PatchedSegmentUpdateRequest:
       type: object
       description: |-
@@ -23502,6 +23759,150 @@ components:
           maxItems: 500
       required:
       - ids
+    ReferralEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        startup:
+          type: string
+        joined_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - joined_at
+      - name
+      - startup
+    ReferralInputRequest:
+      type: object
+      description: How the person heard of us. Every part is optional; a wrong entry
+        never blocks sign up.
+      properties:
+        kind:
+          oneOf:
+          - $ref: '#/components/schemas/ReferralKindEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        detail:
+          type: string
+          description: Which platform, event or organisation; or a member's name when
+            they could not be found in the search.
+          maxLength: 200
+        referred_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: The member who brought them, chosen from the search. Only with
+            source `member`.
+        code:
+          type: string
+          description: The code in the referral link they opened, if any.
+          maxLength: 12
+    ReferralKindEnum:
+      enum:
+      - member
+      - social
+      - event
+      - partner
+      - search
+      - newsletter
+      - other
+      type: string
+      description: |-
+        * `member` - member
+        * `social` - social
+        * `event` - event
+        * `partner` - partner
+        * `search` - search
+        * `newsletter` - newsletter
+        * `other` - other
+    ReferralSummary:
+      type: object
+      properties:
+        this_month:
+          $ref: '#/components/schemas/Window'
+        last_month:
+          $ref: '#/components/schemas/Window'
+        referred_share:
+          type: integer
+          description: Percent of this month's sign ups that were referred
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceCount'
+      required:
+      - last_month
+      - referred_share
+      - sources
+      - this_month
+    Referrer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
+    ReferrerByCode:
+      type: object
+      properties:
+        found:
+          type: boolean
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        startup:
+          type: string
+        photo:
+          type: object
+          additionalProperties: {}
+          nullable: true
+      required:
+      - found
+      - id
+      - name
+      - photo
+      - startup
+    ReferrerCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        startup:
+          type: string
+      required:
+      - headline
+      - id
+      - name
+      - photo
+      - startup
+    ReferrerSearch:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferrerCandidate'
+      required:
+      - results
     RegisterRequest:
       type: object
       description: |-
@@ -23541,6 +23942,8 @@ components:
           type: string
           format: uuid
           nullable: true
+        referral:
+          $ref: '#/components/schemas/ReferralInputRequest'
         invitation_token:
           type: string
           default: ''
@@ -24620,6 +25023,19 @@ components:
           maxItems: 20
       required:
       - slots
+    SourceCount:
+      type: object
+      properties:
+        kind:
+          type: string
+        kind_label:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - kind
+      - kind_label
     Startup:
       type: object
       description: Output shape. Fields of hidden groups are absent, not blank.
@@ -27821,6 +28237,20 @@ components:
           maxLength: 200
       required:
       - token
+    TopReferrer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        approved:
+          type: integer
+      required:
+      - approved
+      - id
+      - name
     Topic:
       type: object
       properties:
@@ -28320,6 +28750,19 @@ components:
           type: string
           default: ''
           maxLength: 500
+    Window:
+      type: object
+      properties:
+        signups:
+          type: integer
+        referred:
+          type: integer
+        approved:
+          type: integer
+      required:
+      - approved
+      - referred
+      - signups
   securitySchemes:
     bearerAuth:
       type: http

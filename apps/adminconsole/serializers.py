@@ -1,8 +1,9 @@
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.accounts import services
+from apps.accounts import referrals, services
 from apps.accounts.selectors import INVITATION_STATUSES, MEMBER_ORDERINGS, STATUSES
 from apps.core.serializers import StrictSerializer
 
@@ -16,11 +17,20 @@ class MemberQuerySerializer(StrictSerializer):
     email_verified = serializers.BooleanField(required=False, allow_null=True, default=None)
     joined_after = serializers.DateField(required=False, default=None)
     joined_before = serializers.DateField(required=False, default=None)
+    referral_source = serializers.CharField(
+        required=False, allow_blank=True, max_length=12, default=""
+    )
+    referred_by = serializers.UUIDField(required=False, allow_null=True, default=None)
     ordering = serializers.ChoiceField(
         choices=MEMBER_ORDERINGS, required=False, default="-created_at"
     )
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
     offset = serializers.IntegerField(required=False, min_value=0)
+
+    def validate_referral_source(self, value: str) -> str:
+        if value and value != "none" and value not in referrals.SOURCES:
+            raise serializers.ValidationError("Choose one of the listed sources, or none.")
+        return value
 
 
 class ReasonSerializer(StrictSerializer):
@@ -44,6 +54,11 @@ class MemberSerializer(serializers.Serializer):
         return sorted(obj.role_names())  # type: ignore[attr-defined]
 
 
+class ReferrerSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+
+
 class MemberRowSerializer(MemberSerializer):
     """A member in the table: the account, plus what they gave on joining."""
 
@@ -52,8 +67,12 @@ class MemberRowSerializer(MemberSerializer):
     startup = serializers.SerializerMethodField()
     sector = serializers.SerializerMethodField()
     stage = serializers.SerializerMethodField()
+    referral_source = serializers.SerializerMethodField()
+    referral_label = serializers.SerializerMethodField()
+    referral_detail = serializers.SerializerMethodField()
+    referrer = serializers.SerializerMethodField()
 
-    def _summary(self, obj: Any) -> dict[str, str]:
+    def _summary(self, obj: Any) -> dict[str, Any]:
         return self.context.get("summaries", {}).get(obj.pk, {})
 
     def get_name(self, obj: Any) -> str:
@@ -70,6 +89,20 @@ class MemberRowSerializer(MemberSerializer):
 
     def get_stage(self, obj: Any) -> str:
         return self._summary(obj).get("stage", "")
+
+    def get_referral_source(self, obj: Any) -> str:
+        return str(obj.referral_source)
+
+    def get_referral_label(self, obj: Any) -> str:
+        return referrals.SOURCE_LABELS.get(obj.referral_source, "")
+
+    def get_referral_detail(self, obj: Any) -> str:
+        return str(obj.referral_detail)
+
+    @extend_schema_field(ReferrerSerializer(allow_null=True))
+    def get_referrer(self, obj: Any) -> dict[str, Any] | None:
+        who = self._summary(obj).get("referrer")
+        return who or None
 
 
 class InvitationQuerySerializer(StrictSerializer):
@@ -160,6 +193,14 @@ class TimelineEntrySerializer(serializers.Serializer):
     note = serializers.CharField(allow_blank=True)
 
 
+class ApplicantReferralSerializer(serializers.Serializer):
+    kind = serializers.CharField(allow_blank=True)
+    kind_label = serializers.CharField(allow_blank=True)
+    detail = serializers.CharField(allow_blank=True)
+    referrer = ReferrerSerializer(allow_null=True)
+    code_used = serializers.CharField(allow_blank=True)
+
+
 class ApplicationSerializer(serializers.Serializer):
     """What a person told us when they asked to join, for the admin deciding on them."""
 
@@ -167,3 +208,4 @@ class ApplicationSerializer(serializers.Serializer):
     profile = ApplicantProfileSerializer(allow_null=True)
     startup = ApplicantStartupSerializer(allow_null=True)
     timeline = TimelineEntrySerializer(many=True)
+    referral = ApplicantReferralSerializer()

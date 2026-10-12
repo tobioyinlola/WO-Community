@@ -17,7 +17,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
-from apps.accounts import events, invitations, mfa, sessions, tokens
+from apps.accounts import events, invitations, mfa, referrals, sessions, tokens
 from apps.accounts.exceptions import InvalidToken
 from apps.accounts.models import (
     BLOCKED_STATUSES,
@@ -118,6 +118,7 @@ def register(
     invitation_token: str = "",
     signup: dict[str, Any] | None = None,
     anonymous_id: UUID | None = None,
+    referral: dict[str, Any] | None = None,
 ) -> bool:
     """Create an account. Returns True when an invitation approved it on the spot.
 
@@ -146,6 +147,7 @@ def register(
             else:
                 user = User.objects.create_user(address, password)
             record_consents(user, consents, ip)
+            referrals.capture(user, referral)
             if anonymous_id is not None:
                 analytics.identify(anonymous_id, user.pk)  # joins the funnel to the member
             if signup:

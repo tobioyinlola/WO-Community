@@ -31,6 +31,8 @@ def list_members(
     email_verified: bool | None = None,
     joined_after: date | None = None,
     joined_before: date | None = None,
+    referral_source: str = "",
+    referred_by: Any = None,
     ordering: str = "-created_at",
 ) -> QuerySet[User]:
     """Members matching an allow-listed set of filters, newest first unless told otherwise."""
@@ -49,6 +51,12 @@ def list_members(
         queryset = queryset.filter(created_at__date__gte=joined_after)
     if joined_before:
         queryset = queryset.filter(created_at__date__lte=joined_before)
+    if referral_source == "none":
+        queryset = queryset.filter(referral_source="")
+    elif referral_source:
+        queryset = queryset.filter(referral_source=referral_source)
+    if referred_by:
+        queryset = queryset.filter(referred_by_id=referred_by)
     return queryset.order_by(*_ordering(ordering))
 
 

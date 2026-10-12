@@ -117,6 +117,7 @@ class RegisterView(PublicAuthView):
             ip=client_ip(request),
             invitation_token=data["invitation_token"],
             anonymous_id=data["anonymous_id"],
+            referral=data["referral"],
             signup={
                 "profile": data["profile"],
                 "startup": data["startup"],
@@ -251,6 +252,7 @@ class GoogleSignInView(PublicAuthView):
                 },
                 "anonymous_id": registration["anonymous_id"],
                 "invitation_token": registration["invitation_token"],
+                "referral": registration["referral"],
             }
         try:
             outcome = social.sign_in_with_google(

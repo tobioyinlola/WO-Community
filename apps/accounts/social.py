@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 from rest_framework import exceptions
 
-from apps.accounts import events, invitations, services, sessions
+from apps.accounts import events, invitations, referrals, services, sessions
 from apps.accounts.models import BLOCKED_STATUSES, SocialIdentity, User
 from apps.analytics import services as analytics
 from apps.audit import services as audit
@@ -122,6 +122,7 @@ def _register(identity: VerifiedIdentity, registration: dict[str, Any], ip: str)
         user = User.objects.create_user(address, None, email_verified_at=timezone.now())
     SocialIdentity.objects.create(user=user, provider=PROVIDER, subject=identity.subject)
     services.record_consents(user, registration["consents"], ip)
+    referrals.capture(user, registration.get("referral"))
     anonymous_id = registration.get("anonymous_id")
     if anonymous_id is not None:
         analytics.identify(anonymous_id, user.pk)

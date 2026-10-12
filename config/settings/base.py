@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.directory",
     "apps.memberarea",
     "apps.globalsearch",
+    "apps.referrals",
     "apps.feed",
     "apps.jobs",
     "apps.editorial",
@@ -173,6 +174,7 @@ REST_FRAMEWORK = {
         "uploads": "30/hour",
         "analytics": "120/min",
         "support_contact": "5/hour",
+        "referrer_search": "30/hour",
         "support_write": "30/hour",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
@@ -188,6 +190,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "CategoryEnum": "apps.feed.models.CATEGORIES",
+        "ReferralKindEnum": "apps.accounts.referrals.SOURCES",
         "SupportCategoryEnum": "apps.support.domain.CATEGORIES",
         "ChangeSetStatusEnum": "apps.toolkit.partner.models.CHANGE_STATUSES",
         "PrototypeKindEnum": "apps.toolkit.prototypes.spec.KINDS",
