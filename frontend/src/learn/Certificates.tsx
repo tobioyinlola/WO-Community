@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Award, Download, Eye, Share2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { messageOf } from "../api/errors";
 import type { components } from "../api/schema";
-import { Alert, Button, Card, CardText, CardTitle } from "../components";
+import { Alert, Button, Card, CardText, CardTitle, Switch } from "../components";
 import { formatDate } from "../lib/format";
 import { EmptyState, ErrorState, Loaded, PageHeader, SkeletonRows, useDocumentTitle } from "../ui/blocks";
 import { useToast } from "../ui/Toast";
@@ -155,6 +155,16 @@ export default function CertificatePage() {
   const certificate = query.data;
   useDocumentTitle(certificate ? `Certificate: ${certificate.course_title}` : "Certificate");
   const actions = useCertificateActions(certificate ?? { id, verify_url: "", course_title: "" });
+  const client = useQueryClient();
+  const toast = useToast();
+  const listing = useMutation({
+    mutationFn: (show: boolean) => unwrap(api.PATCH("/api/v1/certificates/{certificate_id}", { params: { path: { certificate_id: id } }, body: { show_on_profile: show } })),
+    onSuccess: async (saved) => {
+      toast.show(saved.show_on_profile ? "Shown on your profile" : "Hidden from your profile");
+      await Promise.all([client.invalidateQueries({ queryKey: ["certificate", id] }), client.invalidateQueries({ queryKey: ["certificates"] })]);
+    },
+    onError: (error) => toast.show(messageOf(error)),
+  });
   if (query.isPending) return <SkeletonRows />;
   if (query.isError || !certificate) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   const revoked = certificate.status === "revoked";
@@ -199,6 +209,14 @@ export default function CertificatePage() {
               </Button>
             )}
           </div>
+          {revoked ? null : (
+            <div className="app-stack" style={{ gap: "var(--space-1)" }}>
+              <Switch label="Show on my profile" checked={certificate.show_on_profile} disabled={listing.isPending} onChange={(e) => listing.mutate(e.target.checked)} />
+              <p className="caption app-muted" style={{ margin: 0 }}>
+                Members who can see your profile will see the course, the date and a link to verify it.
+              </p>
+            </div>
+          )}
           <p className="body-sm app-muted" style={{ margin: 0 }}>
             Anyone with the link can confirm it is real. They see your name, the course and the date, and nothing else.
           </p>

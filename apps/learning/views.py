@@ -17,6 +17,7 @@ from apps.learning.models import Course
 from apps.learning.serializers import (
     CatalogueQuerySerializer,
     CategoriesSerializer,
+    CertificateChoiceSerializer,
     CertificateDownloadSerializer,
     CertificateSerializer,
     CourseDetailSerializer,
@@ -26,6 +27,7 @@ from apps.learning.serializers import (
     LessonFileSerializer,
     LessonProgressResultSerializer,
     PageQuerySerializer,
+    ProfileCertificateSerializer,
     ProgressSerializer,
     PublicCoursePageSerializer,
     PublicCourseSerializer,
@@ -280,6 +282,44 @@ class CertificateView(APIView):
         certificate = selectors.get_certificate(_uid(request), certificate_id)
         return _private(
             Response(CertificateSerializer(selectors.certificate_view(certificate)).data)
+        )
+
+    @extend_schema(
+        summary="Choose whether a certificate is listed on your profile",
+        description="Off until you turn it on. A listed certificate shows the course, the date and "
+        "a link to the verification page to members who may see your profile.",
+        request=CertificateChoiceSerializer,
+        responses={200: CertificateSerializer, **ERRORS},
+        tags=["learning"],
+    )
+    def patch(self, request: Request, certificate_id: UUID) -> Response:
+        data = CertificateChoiceSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        certificate = selectors.set_show_on_profile(
+            _uid(request), certificate_id, data.validated_data["show_on_profile"]
+        )
+        return _private(
+            Response(CertificateSerializer(selectors.certificate_view(certificate)).data)
+        )
+
+
+class MemberCertificatesView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Certificates a member lists on their profile",
+        description="Only certificates the member chose to show, and only if you may see their "
+        "profile. A withdrawn certificate is never listed.",
+        responses={200: ProfileCertificateSerializer(many=True), **ERRORS},
+        tags=["learning"],
+    )
+    def get(self, request: Request, user_id: UUID) -> Response:
+        return _private(
+            Response(
+                ProfileCertificateSerializer(
+                    selectors.profile_certificates(request.user, user_id), many=True
+                ).data
+            )
         )
 
 

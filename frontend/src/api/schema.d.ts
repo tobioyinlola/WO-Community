@@ -3272,7 +3272,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Choose whether a certificate is listed on your profile
+         * @description Off until you turn it on. A listed certificate shows the course, the date and a link to the verification page to members who may see your profile.
+         */
+        patch: operations["certificates_partial_update"];
         trace?: never;
     };
     "/api/v1/certificates/{certificate_id}/download": {
@@ -4795,6 +4799,26 @@ export interface paths {
          * @description Fields the member keeps private are never included. If they hide even the basics, the profile answers 404.
          */
         get: operations["members_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/{user_id}/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Certificates a member lists on their profile
+         * @description Only certificates the member chose to show, and only if you may see their profile. A withdrawn certificate is never listed.
+         */
+        get: operations["members_certificates_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9052,6 +9076,8 @@ export interface components {
             signatory_title: string;
             signature_url: string | null;
             verify_url: string;
+            /** @description Whether the holder lists this certificate on their profile */
+            show_on_profile: boolean;
         };
         CertificateDownload: {
             /** @description A short lived address that downloads the PDF */
@@ -11305,6 +11331,9 @@ export interface components {
             /** Format: uuid */
             segment_id?: string | null;
         };
+        PatchedCertificateChoiceRequest: {
+            show_on_profile?: boolean;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -11814,6 +11843,15 @@ export interface components {
                 [key: string]: string;
             };
             completeness?: components["schemas"]["ProfileCompleteness"];
+        };
+        ProfileCertificate: {
+            number: string;
+            course_title: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: double */
+            hours: number;
+            verify_url: string;
         };
         ProfileCompleteness: {
             score: number;
@@ -24137,6 +24175,52 @@ export interface operations {
             };
         };
     };
+    certificates_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCertificateChoiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Certificate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     certificates_download_retrieve: {
         parameters: {
             query?: never;
@@ -28605,6 +28689,48 @@ export interface operations {
                 content?: never;
             };
             /** @description No such profile, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    members_certificates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileCertificate"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;

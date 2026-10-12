@@ -55,6 +55,47 @@ test.describe("certificates", () => {
     expect(result.violations.map((v) => `${v.id} ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
   });
 
+  test("a certificate is listed on the profile only when the holder turns it on", async ({ page, browser }, info) => {
+    await signIn(page);
+    const number = await numberOf(page);
+    await page.getByRole("link", { name: "View" }).first().click();
+    const choice = page.getByRole("switch", { name: "Show on my profile" });
+    await expect(choice).not.toBeChecked();
+
+    const other = await publicPage(browser, info.project.use.baseURL);
+    const look = async () => {
+      await other.page.goto("/app/directory");
+      await other.page.getByText("Members", { exact: true }).click();
+      await other.page.getByPlaceholder("A name, a company, a skill").fill("Amaka");
+      await other.page.getByRole("button", { name: "Search", exact: true }).click();
+      await other.page.getByRole("link", { name: /Amaka Obi/ }).first().click();
+      await expect(other.page.getByRole("heading", { level: 1, name: "Amaka Obi" })).toBeVisible();
+    };
+    try {
+      await signIn(other.page, "tunde@demo.test");
+      await look();
+      await expect(other.page.getByRole("heading", { name: "Certificates" })).toHaveCount(0);
+
+      await choice.click();
+      await expect(choice).toBeChecked();
+      await expect(page.getByText("Shown on your profile")).toBeVisible();
+      await look();
+      const section = other.page.locator("aside").filter({ has: other.page.getByRole("heading", { name: "Certificates" }) });
+      await expect(section).toContainText(COURSE);
+      await expect(section.getByRole("link", { name: `Verify ${number}` })).toBeVisible();
+      const result = await new AxeBuilder({ page: other.page }).withTags(TAGS).analyze();
+      expect(result.violations.map((v) => `${v.id} ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
+
+      await choice.click();
+      await expect(choice).not.toBeChecked();
+      await expect(page.getByText("Hidden from your profile")).toBeVisible();
+      await look();
+      await expect(other.page.getByRole("heading", { name: "Certificates" })).toHaveCount(0);
+    } finally {
+      await other.close();
+    }
+  });
+
   test("anyone can verify a certificate, and an unknown number says so", async ({ page, browser }, info) => {
     await signIn(page);
     const number = await numberOf(page);

@@ -52,6 +52,11 @@ urlpatterns = [
     path("me/certificates", views.CertificatesView.as_view(), name="my-certificates"),
     path("certificates/<uuid:certificate_id>", views.CertificateView.as_view(), name="certificate"),
     path(
+        "members/<uuid:user_id>/certificates",
+        views.MemberCertificatesView.as_view(),
+        name="member-certificates",
+    ),
+    path(
         "certificates/<uuid:certificate_id>/download",
         views.CertificateDownloadView.as_view(),
         name="certificate-download",

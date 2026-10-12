@@ -6977,6 +6977,40 @@ paths:
           description: Not an active member, or not enrolled
         '404':
           description: Not found
+    patch:
+      operationId: certificates_partial_update
+      description: Off until you turn it on. A listed certificate shows the course,
+        the date and a link to the verification page to members who may see your profile.
+      summary: Choose whether a certificate is listed on your profile
+      parameters:
+      - in: path
+        name: certificate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCertificateChoiceRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/certificates/{certificate_id}/download:
     get:
       operationId: certificates_download_retrieve
@@ -10354,6 +10388,38 @@ paths:
           description: Not an approved member
         '404':
           description: No such profile, or not visible to you
+  /api/v1/members/{user_id}/certificates:
+    get:
+      operationId: members_certificates_list
+      description: Only certificates the member chose to show, and only if you may
+        see their profile. A withdrawn certificate is never listed.
+      summary: Certificates a member lists on their profile
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProfileCertificate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/members/referrer-by-code:
     get:
       operationId: members_referrer_by_code_retrieve
@@ -19905,6 +19971,9 @@ components:
           nullable: true
         verify_url:
           type: string
+        show_on_profile:
+          type: boolean
+          description: Whether the holder lists this certificate on their profile
       required:
       - course_slug
       - course_title
@@ -19913,6 +19982,7 @@ components:
       - id
       - issued_at
       - number
+      - show_on_profile
       - signatory_name
       - signatory_title
       - signature_url
@@ -24831,6 +24901,11 @@ components:
           type: string
           format: uuid
           nullable: true
+    PatchedCertificateChoiceRequest:
+      type: object
+      properties:
+        show_on_profile:
+          type: boolean
     PatchedCommentUpdateRequest:
       type: object
       description: |-
@@ -25879,6 +25954,27 @@ components:
       - badges
       - slug
       - user_id
+    ProfileCertificate:
+      type: object
+      properties:
+        number:
+          type: string
+        course_title:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        hours:
+          type: number
+          format: double
+        verify_url:
+          type: string
+      required:
+      - course_title
+      - hours
+      - issued_at
+      - number
+      - verify_url
     ProfileCompleteness:
       type: object
       properties:

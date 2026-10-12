@@ -7,7 +7,7 @@ import { messageOf } from "../../api/errors";
 import { useCountries, useSectors, useSkills, useStages, withPlaceholder } from "../../api/reference";
 import type { components } from "../../api/schema";
 import { Alert, Avatar, Badge, Button, Card, CardText, CardTitle, CardTo, Checkbox, Input, Select, Tabs } from "../../components";
-import { humanise } from "../../lib/format";
+import { formatDate, humanise } from "../../lib/format";
 import { EmptyState, Loaded, PageHeader, Pagination, SkeletonCards, SkeletonRows } from "../../ui/blocks";
 
 type Hit = components["schemas"]["SearchHit"];
@@ -319,6 +319,7 @@ export function MemberPage() {
     },
   });
   const country = (code?: string) => countries.data?.find((c) => c.value === code)?.label ?? code;
+  const certificates = useQuery({ queryKey: ["members", id, "certificates"], queryFn: () => unwrap(api.GET("/api/v1/members/{user_id}/certificates", { params: { path: { user_id: id } } })) });
 
   return (
     <Loaded query={query} skeleton={<SkeletonRows />}>
@@ -347,6 +348,21 @@ export function MemberPage() {
                 <Card>
                   <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Open to</h2>
                   <ul className="site-bullets">{p.open_to.map((o) => <li key={o}><span className="wo-plus" aria-hidden="true" /><span className="body">{humanise(o)}</span></li>)}</ul>
+                </Card>
+              ) : null}
+              {certificates.data && certificates.data.length > 0 ? (
+                <Card>
+                  <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Certificates</h2>
+                  <ul className="app-stack" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {certificates.data.map((c) => (
+                      <li key={c.number}>
+                        <p className="body" style={{ margin: 0 }}>{c.course_title}</p>
+                        <p className="caption app-muted" style={{ margin: 0 }}>
+                          {formatDate(c.issued_at)} · <Link className="app-link" to={`/verify/${c.number}`}>Verify {c.number}</Link>
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
                 </Card>
               ) : null}
               {p.badges.map((b) => <Badge key={b} variant="success" dot>{humanise(b)}</Badge>)}

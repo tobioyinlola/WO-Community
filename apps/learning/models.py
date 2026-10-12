@@ -206,6 +206,8 @@ class Certificate(BaseModel):
     # The template this certificate was drawn with (title, signatory, signature, version), copied
     # when it was issued so later changes to the settings never alter it. A reissue takes a new one.
     template = models.JSONField(default=dict, blank=True)
+    # The holder's choice to list this certificate on their profile. Off until they turn it on.
+    show_on_profile = models.BooleanField(default=False)
 
     @property
     def is_valid(self) -> bool:
