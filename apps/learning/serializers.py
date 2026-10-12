@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.core.serializers import ImageSerializer, StrictSerializer
-from apps.learning.models import ACCESS, LESSON_TYPES, LEVELS
+from apps.learning.models import ACCESS, CERTIFICATE_STATUSES, LESSON_TYPES, LEVELS
 
 MAX_MARKUP = 60_000
 
@@ -322,19 +322,34 @@ class LessonDetailSerializer(serializers.Serializer):
 
 class CertificateSerializer(serializers.Serializer):
     id = serializers.UUIDField()
-    code = serializers.CharField()
+    course_slug = serializers.CharField()
+    number = serializers.CharField(help_text="For example WO-C-2026-000341")
     holder_name = serializers.CharField()
     course_title = serializers.CharField()
     issued_at = serializers.DateTimeField()
+    hours = serializers.FloatField(help_text="The length of the course, in hours")
+    status = serializers.ChoiceField(choices=CERTIFICATE_STATUSES)
+    title_text = serializers.CharField()
+    signatory_name = serializers.CharField(allow_blank=True)
+    signatory_title = serializers.CharField(allow_blank=True)
+    signature_url = serializers.CharField(allow_null=True)
     verify_url = serializers.CharField()
+
+
+class CertificateDownloadSerializer(serializers.Serializer):
+    url = serializers.CharField(help_text="A short lived address that downloads the PDF")
+    expires_in = serializers.IntegerField(help_text="Seconds the address works for")
+    filename = serializers.CharField()
 
 
 class VerifiedCertificateSerializer(serializers.Serializer):
     valid = serializers.BooleanField()
-    code = serializers.CharField()
-    holder_name = serializers.CharField()
-    course_title = serializers.CharField()
-    issued_at = serializers.DateTimeField()
+    status = serializers.ChoiceField(choices=CERTIFICATE_STATUSES)
+    number = serializers.CharField()
+    holder_name = serializers.CharField(allow_blank=True)
+    course_title = serializers.CharField(allow_blank=True)
+    issued_at = serializers.DateTimeField(allow_null=True)
+    hours = serializers.FloatField(allow_null=True)
     verify_url = serializers.CharField()
 
 
@@ -476,3 +491,55 @@ class AdminRatingSerializer(serializers.Serializer):
     stars = serializers.IntegerField()
     feedback = serializers.CharField(allow_blank=True)
     created_at = serializers.DateTimeField()
+
+
+class CertificateSettingsWriteSerializer(StrictSerializer):
+    title_text = serializers.CharField(max_length=60, required=False)
+    signatory_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    signatory_title = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    signature_upload_id = serializers.UUIDField(
+        required=False, help_text="A ready `cert_signature` upload."
+    )
+    remove_signature = serializers.BooleanField(required=False)
+
+
+class CertificatePreviewSerializer(CertificateSettingsWriteSerializer):
+    holder_name = serializers.CharField(max_length=160, required=False)
+
+
+class CertificateSettingsSerializer(serializers.Serializer):
+    title_text = serializers.CharField()
+    signatory_name = serializers.CharField(allow_blank=True)
+    signatory_title = serializers.CharField(allow_blank=True)
+    signature_url = serializers.CharField(allow_null=True)
+    version = serializers.IntegerField()
+    updated_at = serializers.DateTimeField()
+
+
+class AdminCertificateSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    number = serializers.CharField()
+    holder_name = serializers.CharField()
+    email = serializers.CharField()
+    course_title = serializers.CharField()
+    issued_at = serializers.DateTimeField()
+    hours = serializers.FloatField()
+    status = serializers.ChoiceField(choices=CERTIFICATE_STATUSES)
+    revoked_at = serializers.DateTimeField(allow_null=True)
+    revoked_reason = serializers.CharField(allow_blank=True)
+    template_version = serializers.IntegerField(allow_null=True)
+
+
+class AdminCertificatesQuerySerializer(StrictSerializer):
+    q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
+    status = serializers.ChoiceField(choices=CERTIFICATE_STATUSES, required=False, default="")
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
+    offset = serializers.IntegerField(required=False, min_value=0)
+
+
+class RevokeSerializer(StrictSerializer):
+    reason = serializers.CharField(min_length=1, max_length=300, trim_whitespace=True)
+
+
+class ReissueSerializer(StrictSerializer):
+    holder_name = serializers.CharField(max_length=160, required=False, trim_whitespace=True)

@@ -93,6 +93,8 @@ export const NAV: NavEntry[] = [
     children: [
       { id: "courses", label: "Courses", to: "/admin/courses", needs: "courses.manage" },
       { id: "enrolments", label: "Enrolment requests", to: "/admin/course-requests", needs: "courses.manage" },
+      { id: "certificates", label: "Certificates", to: "/admin/certificates", needs: "courses.manage" },
+      { id: "certificate-template", label: "Certificate template", to: "/admin/learning/certificate-template", needs: "courses.manage" },
     ],
   },
   {

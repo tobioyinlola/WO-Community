@@ -37,7 +37,11 @@ const Learn = lazy(() => import("./learn/Catalog"));
 const CourseLanding = lazy(() => import("./learn/Landing"));
 const LecturePlayer = lazy(() => import("./learn/Player"));
 const MyLearning = lazy(() => import("./learn/MyLearning"));
-const Certificates = lazy(() => import("./learn/MyLearning").then((m) => ({ default: m.Certificates })));
+const Certificates = lazy(() => import("./learn/Certificates").then((m) => ({ default: m.Certificates })));
+const CertificatePage = lazy(() => import("./learn/Certificates"));
+const VerifyCertificate = lazy(() => import("./pages/public/VerifyCertificate"));
+const AdminCertificateTemplate = lazy(() => import("./admin/CertificateTemplate"));
+const AdminCertificates = lazy(() => import("./admin/AdminCertificates"));
 const CourseRedirect = lazy(() => import("./learn/Redirects").then((m) => ({ default: m.CourseRedirect })));
 const LessonRedirect = lazy(() => import("./learn/Redirects").then((m) => ({ default: m.LessonRedirect })));
 const Mentors = lazy(() => import("./pages/app/Mentors"));
@@ -121,6 +125,7 @@ export function App() {
                   <Route path="news/:slug" element={<NewsItem />} />
                   <Route path="legal/:doc" element={<Legal />} />
                   <Route path="help" element={<HelpPage />} />
+                  <Route path="verify/:code" element={<VerifyCertificate />} />
                   <Route path="design" element={<Design />} />
                 </Route>
                 <Route path="share/:token" element={<SharedView />} />
@@ -151,6 +156,7 @@ export function App() {
                     <Route path="learn" element={<Learn />} />
                     <Route path="learn/my" element={<MyLearning />} />
                     <Route path="learn/certificates" element={<Certificates />} />
+                    <Route path="learn/certificates/:id" element={<CertificatePage />} />
                     <Route path="learn/courses/:ref" element={<CourseLanding />} />
                     <Route path="learn/courses/:ref/lecture/:lessonId" element={<LecturePlayer />} />
                     <Route path="learn/lesson/:id" element={<LessonRedirect />} />
@@ -197,6 +203,8 @@ export function App() {
                     <Route path="courses" element={<AdminCourses />} />
                     <Route path="courses/:id" element={<AdminCourseManage />} />
                     <Route path="course-requests" element={<AdminCourseRequests />} />
+                    <Route path="certificates" element={<AdminCertificates />} />
+                    <Route path="learning/certificate-template" element={<AdminCertificateTemplate />} />
                     <Route path="email" element={<AdminEmail />} />
                     <Route path="lists" element={<AdminLists />} />
                     <Route path="settings" element={<AdminSettings />} />

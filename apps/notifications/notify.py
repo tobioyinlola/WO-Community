@@ -184,7 +184,7 @@ TYPES: dict[str, Spec] = {
     "certificate_ready": Spec(
         "learning",
         lambda who, p: f"Your certificate for \"{p.get('title', 'your course')}\" is ready",
-        lambda p: f"/certificates/{p['certificate_id']}",
+        lambda p: f"/learn/certificates/{p['certificate_id']}",
         email=True,
     ),
     "course_granted": Spec(

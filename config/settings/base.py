@@ -191,6 +191,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "CategoryEnum": "apps.feed.models.CATEGORIES",
+        "CertificateStatusEnum": "apps.learning.models.CERTIFICATE_STATUSES",
         "ReferralKindEnum": "apps.accounts.referrals.SOURCES",
         "SupportCategoryEnum": "apps.support.domain.CATEGORIES",
         "ChangeSetStatusEnum": "apps.toolkit.partner.models.CHANGE_STATUSES",
@@ -448,7 +449,9 @@ FEED_POSTS_PER_DAY = env.int("FEED_POSTS_PER_DAY", default=20)
 FEED_COMMENTS_PER_DAY = env.int("FEED_COMMENTS_PER_DAY", default=200)
 FEED_MAX_IMAGES = 10
 # Looks up the title of a YouTube video for an admin adding lectures. Tests use a fake.
-YOUTUBE_TITLE_LOOKUP = env.str("YOUTUBE_TITLE_LOOKUP", default="apps.integrations.youtube.oembed_title")
+YOUTUBE_TITLE_LOOKUP = env.str(
+    "YOUTUBE_TITLE_LOOKUP", default="apps.integrations.youtube.oembed_title"
+)
 LINK_PREVIEW_FETCHER = env.str(
     "LINK_PREVIEW_FETCHER", default="apps.integrations.linkpreview.fetcher.WebFetcher"
 )

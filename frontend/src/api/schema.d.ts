@@ -320,6 +320,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/certificate-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What appears on every new certificate */
+        get: operations["admin_certificate_settings_retrieve"];
+        /**
+         * Change the certificate template
+         * @description Applies to certificates issued from now on. Certificates already issued keep the template they were drawn with until an administrator reissues them.
+         */
+        put: operations["admin_certificate_settings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificate-settings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw the certificate with sample details and the settings being edited
+         * @description Nothing is saved. The body can carry unsaved edits of the template.
+         */
+        post: operations["admin_certificate_settings_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Issued certificates, newest first */
+        get: operations["admin_certificates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificates/{certificate_id}/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw a certificate again with the template as it is now
+         * @description The number stays the same. The name can be corrected at the same time. The member is told. Reissuing a revoked certificate makes it valid again.
+         */
+        post: operations["admin_certificates_reissue_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificates/{certificate_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a certificate
+         * @description The public page then shows it as revoked and the member can no longer download it. A reason is required and goes in the audit log.
+         */
+        post: operations["admin_certificates_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/comments/{comment_id}/hide": {
         parameters: {
             query?: never;
@@ -3177,15 +3275,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/certificates/{certificate_id}/pdf": {
+    "/api/v1/certificates/{certificate_id}/download": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Download your certificate as a PDF */
-        get: operations["certificates_pdf_retrieve"];
+        /**
+         * A short lived link to download your certificate as a PDF
+         * @description The file is kept privately and the link stops working after a few minutes, so ask again when you need it. A revoked certificate cannot be downloaded.
+         */
+        get: operations["certificates_download_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4142,6 +4243,23 @@ export interface paths {
          * @description Normally it is read every 15 minutes. At most once a minute.
          */
         post: operations["me_calendar_sync_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your certificates */
+        get: operations["me_certificates_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7746,6 +7864,23 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        AdminCertificate: {
+            /** Format: uuid */
+            id: string;
+            number: string;
+            holder_name: string;
+            email: string;
+            course_title: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: double */
+            hours: number;
+            status: components["schemas"]["CertificateStatusEnum"];
+            /** Format: date-time */
+            revoked_at: string | null;
+            revoked_reason: string;
+            template_version: number | null;
+        };
         AdminCourse: {
             /** Format: uuid */
             id: string;
@@ -8763,13 +8898,82 @@ export interface components {
         Certificate: {
             /** Format: uuid */
             id: string;
-            code: string;
+            course_slug: string;
+            /** @description For example WO-C-2026-000341 */
+            number: string;
             holder_name: string;
             course_title: string;
             /** Format: date-time */
             issued_at: string;
+            /**
+             * Format: double
+             * @description The length of the course, in hours
+             */
+            hours: number;
+            status: components["schemas"]["CertificateStatusEnum"];
+            title_text: string;
+            signatory_name: string;
+            signatory_title: string;
+            signature_url: string | null;
             verify_url: string;
         };
+        CertificateDownload: {
+            /** @description A short lived address that downloads the PDF */
+            url: string;
+            /** @description Seconds the address works for */
+            expires_in: number;
+            filename: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CertificatePreviewRequest: {
+            title_text?: string;
+            signatory_name?: string;
+            signatory_title?: string;
+            /**
+             * Format: uuid
+             * @description A ready `cert_signature` upload.
+             */
+            signature_upload_id?: string;
+            remove_signature?: boolean;
+            holder_name?: string;
+        };
+        CertificateSettings: {
+            title_text: string;
+            signatory_name: string;
+            signatory_title: string;
+            signature_url: string | null;
+            version: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CertificateSettingsWriteRequest: {
+            title_text?: string;
+            signatory_name?: string;
+            signatory_title?: string;
+            /**
+             * Format: uuid
+             * @description A ready `cert_signature` upload.
+             */
+            signature_upload_id?: string;
+            remove_signature?: boolean;
+        };
+        /**
+         * @description * `valid` - valid
+         *     * `revoked` - revoked
+         * @enum {string}
+         */
+        CertificateStatusEnum: "valid" | "revoked";
         /**
          * @description * `proposed` - proposed
          *     * `applied` - applied
@@ -10499,6 +10703,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AdminAccessRequest"][];
         };
+        PaginatedAdminCertificateList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminCertificate"][];
+        };
         PaginatedAdminCourseList: {
             /** @example 123 */
             count: number;
@@ -11805,6 +12024,15 @@ export interface components {
             registered_count: number;
             spots_left: number | null;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ReissueRequest: {
+            holder_name?: string;
+        };
         RejectedEvent: {
             index: number;
             reason: string;
@@ -12020,6 +12248,15 @@ export interface components {
          */
         ReviewRequest: {
             /** @default  */
+            reason: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        RevokeRequest: {
             reason: string;
         };
         /**
@@ -13879,10 +14116,11 @@ export interface components {
          *     * `campaign_image` - Campaign Image
          *     * `course_cover` - Course Cover
          *     * `course_file` - Course File
+         *     * `cert_signature` - Cert Signature
          *     * `support_attachment` - Support Attachment
          * @enum {string}
          */
-        UploadPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "support_attachment";
+        UploadPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "cert_signature" | "support_attachment";
         /**
          * @description * `profile_photo` - profile_photo
          *     * `startup_logo` - startup_logo
@@ -13891,10 +14129,11 @@ export interface components {
          *     * `campaign_image` - campaign_image
          *     * `course_cover` - course_cover
          *     * `course_file` - course_file
+         *     * `cert_signature` - cert_signature
          *     * `support_attachment` - support_attachment
          * @enum {string}
          */
-        UploadRequestPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "support_attachment";
+        UploadRequestPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "cert_signature" | "support_attachment";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -13920,11 +14159,14 @@ export interface components {
         UploadStatusEnum: "pending" | "processing" | "ready" | "rejected" | "expired" | "discarded";
         VerifiedCertificate: {
             valid: boolean;
-            code: string;
+            status: components["schemas"]["CertificateStatusEnum"];
+            number: string;
             holder_name: string;
             course_title: string;
             /** Format: date-time */
-            issued_at: string;
+            issued_at: string | null;
+            /** Format: double */
+            hours: number | null;
             verify_url: string;
         };
         Video: {
@@ -15089,6 +15331,281 @@ export interface operations {
                 content?: never;
             };
             /** @description Not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificate_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateSettings"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificate_settings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CertificateSettingsWriteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateSettings"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificate_settings_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CertificatePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificates_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `valid` - valid
+                 *     * `revoked` - revoked
+                 */
+                status?: "valid" | "revoked";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminCertificateList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificates_reissue_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReissueRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificates_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already revoked */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -23281,7 +23798,7 @@ export interface operations {
             };
         };
     };
-    certificates_pdf_retrieve: {
+    certificates_download_retrieve: {
         parameters: {
             query?: never;
             header?: never;
@@ -23292,12 +23809,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description PDF */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CertificateDownload"];
+                };
             };
             /** @description Not authenticated */
             401: {
@@ -23315,6 +23833,13 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Revoked */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26241,6 +26766,46 @@ export interface operations {
             };
             /** @description Too many attempts */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_certificates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Certificate"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

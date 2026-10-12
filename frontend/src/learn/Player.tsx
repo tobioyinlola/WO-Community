@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Award, CheckCircle2, Circle, ListVideo, Lock, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, ListVideo, Lock, PlayCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, unwrap } from "../api/client";
@@ -13,6 +13,7 @@ import { Drawer } from "../ui/Drawer";
 import { ProgressRing } from "../ui/ProgressRing";
 import { ErrorState, RichText, SkeletonRows, useDocumentTitle } from "../ui/blocks";
 import { useToast } from "../ui/Toast";
+import { CompletionCard } from "./Certificates";
 import { Announcements, lectureLink } from "./Landing";
 import { Notes, Questions } from "./PlayerTabs";
 import { Reviews } from "./Reviews";
@@ -231,13 +232,7 @@ export default function Player() {
             </div>
           ) : null}
 
-          {finished ? (
-            <Alert tone="success" title="You finished the course">
-              <Link className="wo-linkbtn" to="/app/learn/certificates">
-                <Award size={16} strokeWidth={1.5} aria-hidden="true" /> View your certificate
-              </Link>
-            </Alert>
-          ) : null}
+          {finished && course ? <CompletionCard courseSlug={course.slug} /> : null}
           {complete.isError ? (
             <Alert tone="danger" title="We could not save your progress">
               {messageOf(complete.error)}

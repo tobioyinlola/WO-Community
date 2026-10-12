@@ -952,3 +952,279 @@ a.wo-curriculum__row[data-done="true"] svg {
 .wo-qa__item[data-hidden="true"] {
   opacity: 0.7;
 }
+
+/* ---------- The certificate ---------- */
+.wo-certwrap {
+  margin: 0;
+  container-type: inline-size;
+}
+.wo-cert {
+  /* One unit is 1% of the sheet's width, so everything scales with it like the printed page. */
+  --cert-cream: var(--cream-200);
+  --cert-ink: var(--forest-700);
+  --cert-soft: var(--forest-500);
+  --cert-label: var(--gold-700);
+  position: relative;
+  aspect-ratio: 297 / 210;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--cert-cream);
+  color: var(--cert-ink);
+  font-family: var(--font-body);
+  box-shadow: var(--shadow-sm, none);
+}
+.wo-cert :where(p, dl, dd) {
+  margin: 0;
+}
+.wo-cert__frame {
+  position: absolute;
+  inset: 3.37cqw;
+  border: 1px solid var(--cert-ink);
+  border-radius: 2.4cqw;
+}
+.wo-cert__art {
+  position: absolute;
+  left: 76cqw;
+  top: -10cqw;
+  right: -5cqw;
+  height: 61cqw;
+  border-radius: 10.7cqw;
+  background: var(--cert-ink);
+}
+.wo-cert__art > span {
+  position: absolute;
+  display: block;
+}
+.wo-cert__ring {
+  left: 3.65cqw;
+  top: 19.95cqw;
+  width: 16.9cqw;
+  height: 16.9cqw;
+  box-sizing: border-box;
+  border: 2.1cqw solid var(--gold-500);
+  border-radius: 50%;
+}
+.wo-cert__eye {
+  left: 11.05cqw;
+  top: 26.35cqw;
+  width: 3.1cqw;
+  height: 3.1cqw;
+  border-radius: 50%;
+  background: var(--cert-cream);
+}
+.wo-cert__capsule {
+  left: 3.3cqw;
+  top: 46.2cqw;
+  width: 11.4cqw;
+  height: 4.75cqw;
+  border-radius: 99cqw;
+  background: var(--tint-periwinkle);
+}
+.wo-cert__dot {
+  left: 14.95cqw;
+  top: 50.25cqw;
+  width: 5.7cqw;
+  height: 5.7cqw;
+  border-radius: 50%;
+  background: var(--tint-peach);
+}
+.wo-cert__top {
+  position: absolute;
+  left: 7.13cqw;
+  right: 27.6cqw;
+  top: 6.6cqw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.wo-cert__top .wo-wordmark,
+.wo-cert__top img {
+  font-size: 2.1cqw;
+  height: 4cqw;
+}
+.wo-cert__eyebrow {
+  color: var(--cert-label);
+  font: 700 1.07cqw / 1.2 var(--font-body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.wo-cert__body {
+  position: absolute;
+  left: 7.13cqw;
+  top: 21cqw;
+  width: 60cqw;
+  display: flex;
+  flex-direction: column;
+}
+.wo-cert__small {
+  color: var(--cert-soft);
+  font: 400 1.54cqw / 1.5 var(--font-body);
+}
+.wo-cert__name {
+  display: inline-block;
+  align-self: flex-start;
+  max-width: 100%;
+  margin: 0.4cqw 0 2.6cqw;
+  padding-bottom: 0.6cqw;
+  border-bottom: 0.36cqw solid var(--cert-ink);
+  font: 800 5.2cqw / 1.1 var(--font-display);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.wo-cert__course {
+  margin: 1cqw 0 0;
+  font: 700 2.85cqw / 1.25 var(--font-body);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wo-cert__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4cqw 4.3cqw;
+  margin-top: 6cqw;
+}
+.wo-cert__facts dt {
+  color: var(--cert-label);
+  font: 700 0.9cqw / 1.2 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.wo-cert__facts dd {
+  margin-top: 0.7cqw;
+  font: 700 1.54cqw / 1.2 var(--font-body);
+}
+.wo-cert__mono {
+  font: 500 1.3cqw / 1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+.wo-cert__sign {
+  position: absolute;
+  left: 7.13cqw;
+  bottom: 9.2cqw;
+  display: flex;
+  flex-direction: column;
+  width: 20.2cqw;
+  color: var(--cert-soft);
+  font: 400 1.13cqw / 1.35 var(--font-body);
+}
+.wo-cert__sign strong {
+  color: var(--cert-ink);
+  font-size: 1.3cqw;
+  font-weight: 700;
+}
+.wo-cert__signature {
+  display: block;
+  height: 5.2cqw;
+  max-width: 17.8cqw;
+  object-fit: contain;
+  object-position: left bottom;
+  margin-bottom: 0.4cqw;
+}
+.wo-cert__line {
+  display: block;
+  height: 1px;
+  margin-bottom: 0.7cqw;
+  background: var(--cert-ink);
+}
+.wo-cert__verify {
+  position: absolute;
+  right: 7.13cqw;
+  bottom: 8cqw;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.9cqw;
+  color: var(--cert-soft);
+  font: 400 0.9cqw / 1.2 var(--font-body);
+}
+.wo-cert__qr {
+  color: var(--cert-ink);
+}
+.wo-cert__qr,
+.wo-cert__qrgap {
+  display: block;
+  width: 7.4cqw;
+  height: 7.4cqw;
+}
+.wo-cert__footer {
+  position: absolute;
+  left: 7.13cqw;
+  bottom: 4.6cqw;
+  color: var(--cert-soft);
+  font: 400 1cqw / 1.2 var(--font-body);
+}
+.wo-certpage {
+  display: grid;
+  gap: var(--space-6);
+}
+.wo-certpage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.wo-certgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: var(--space-6);
+  align-items: start;
+}
+@media (max-width: 1023px) {
+  .wo-certgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Verifying a certificate ---------- */
+.wo-verify {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-10) 0;
+}
+.wo-verify__eyebrow {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 700 12px/16px var(--font-body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.wo-verify__card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--bg-white);
+}
+.wo-verify__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font: 800 22px/28px var(--font-display);
+}
+.wo-verify__card[data-state="valid"] .wo-verify__status {
+  color: var(--success-text);
+}
+.wo-verify__card[data-state="revoked"] .wo-verify__status,
+.wo-verify__card[data-state="unknown"] .wo-verify__status {
+  color: var(--danger-text);
+}
+.wo-verify__facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+.wo-verify__facts dt {
+  color: var(--text-secondary);
+}
+.wo-verify__facts dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
