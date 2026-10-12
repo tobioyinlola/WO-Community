@@ -44,9 +44,10 @@ from apps.feed.models import Post  # noqa: E402
 from apps.jobs import services as jobs  # noqa: E402
 from apps.jobs.models import JobSettings  # noqa: E402
 from apps.learning import authoring as learning  # noqa: E402
-from apps.learning import learn, lms  # noqa: E402
+from apps.learning import certificates, learn, lms  # noqa: E402
 from apps.learning.models import (
     Course,  # noqa: E402
+    Enrolment,  # noqa: E402
     Lesson,  # noqa: E402
 )
 from apps.profiles import services as profiles  # noqa: E402
@@ -959,6 +960,16 @@ def add_content(admin: User, people: dict) -> None:
             learn.update_progress(
                 user_id=user.pk, lesson_id=lesson.pk, position_seconds=None, completed=True
             )
+
+    # Finished courses get their certificates now rather than waiting for the worker, and the template
+    # has a signatory so the sheet looks complete.
+    template = certificates.current_settings()
+    if not template.signatory_name:
+        template.signatory_name = "Onyeka Obi"
+        template.signatory_title = "Founder, WO Community"
+        template.save(update_fields=["signatory_name", "signatory_title", "updated_at"])
+    for done in Enrolment.objects.filter(completed_at__isnull=False):
+        certificates.issue(done.pk)
 
     print(f"Directory: {directory.reconcile()}")
     print(

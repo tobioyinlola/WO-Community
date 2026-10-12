@@ -1,7 +1,6 @@
 from typing import Any, cast
 from uuid import UUID
 
-from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
@@ -10,14 +9,15 @@ from rest_framework.throttling import ScopedRateThrottle, SimpleRateThrottle, Us
 from rest_framework.views import APIView
 
 from apps.accounts.authentication import OptionalJWTAuthentication
+from apps.analytics import services as analytics
 from apps.core import policies
 from apps.core.public import PublicView
-from apps.learning import learn, selectors
+from apps.learning import certificates, learn, selectors
 from apps.learning.models import Course
-from apps.learning.pdf import render_certificate
 from apps.learning.serializers import (
     CatalogueQuerySerializer,
     CategoriesSerializer,
+    CertificateDownloadSerializer,
     CertificateSerializer,
     CourseDetailSerializer,
     CoursePageSerializer,
@@ -283,30 +283,35 @@ class CertificateView(APIView):
         )
 
 
-class CertificatePdfView(APIView):
+class CertificateDownloadView(APIView):
     policy = policies.active_member
 
     @extend_schema(
-        summary="Download your certificate as a PDF",
-        responses={(200, "application/pdf"): OpenApiResponse(description="PDF"), **ERRORS},
+        summary="A short lived link to download your certificate as a PDF",
+        description="The file is kept privately and the link stops working after a few minutes, "
+        "so ask again when you need it. A revoked certificate cannot be downloaded.",
+        responses={
+            200: CertificateDownloadSerializer,
+            409: OpenApiResponse(description="Revoked"),
+            **ERRORS,
+        },
         tags=["learning"],
     )
-    def get(self, request: Request, certificate_id: UUID) -> HttpResponse:
+    def get(self, request: Request, certificate_id: UUID) -> Response:
         certificate = selectors.get_certificate(_uid(request), certificate_id)
-        view = selectors.certificate_view(certificate)
-        pdf = render_certificate(
-            holder=certificate.holder_name,
-            course=certificate.course_title,
-            issued_at=certificate.issued_at,
-            code=certificate.code,
-            verify_url=view["verify_url"],
+        url, ttl, filename = certificates.download_link(certificate)
+        analytics.track(
+            "certificate_downloaded",
+            actor_id=_uid(request),
+            properties={"course_id": certificate.enrolment.course.slug},
         )
-        response = HttpResponse(pdf, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'attachment; filename="certificate-{certificate.code}.pdf"'
+        return _private(
+            Response(
+                CertificateDownloadSerializer(
+                    {"url": url, "expires_in": ttl, "filename": filename}
+                ).data
+            )
         )
-        response["Cache-Control"] = "private, no-store"
-        return response
 
 
 # --- public ---

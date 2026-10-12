@@ -2,6 +2,7 @@ from django.urls import path, re_path
 
 from apps.adminconsole import (
     campaign_views,
+    certificate_views,
     course_views,
     dashboard_views,
     editorial_views,
@@ -33,6 +34,31 @@ POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remov
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path(
+        "admin/certificate-settings",
+        certificate_views.CertificateSettingsView.as_view(),
+        name="admin-certificate-settings",
+    ),
+    path(
+        "admin/certificate-settings/preview",
+        certificate_views.CertificatePreviewView.as_view(),
+        name="admin-certificate-preview",
+    ),
+    path(
+        "admin/certificates",
+        certificate_views.AdminCertificatesView.as_view(),
+        name="admin-certificates",
+    ),
+    path(
+        "admin/certificates/<uuid:certificate_id>/revoke",
+        certificate_views.RevokeCertificateView.as_view(),
+        name="admin-certificate-revoke",
+    ),
+    path(
+        "admin/certificates/<uuid:certificate_id>/reissue",
+        certificate_views.ReissueCertificateView.as_view(),
+        name="admin-certificate-reissue",
+    ),
     path(
         "admin/course-requests",
         lms_views.AccessRequestsView.as_view(),

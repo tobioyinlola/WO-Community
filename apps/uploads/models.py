@@ -12,6 +12,7 @@ class UploadPurpose(models.TextChoices):
     CAMPAIGN_IMAGE = "campaign_image"
     COURSE_COVER = "course_cover"
     COURSE_FILE = "course_file"  # a document, not an image
+    CERT_SIGNATURE = "cert_signature"  # an image of a signature, shown on certificates
     SUPPORT_ATTACHMENT = "support_attachment"  # a PDF or an image kept as it arrived, privately
 
 

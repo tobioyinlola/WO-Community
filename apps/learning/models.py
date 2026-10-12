@@ -6,6 +6,7 @@ from apps.core.models import BaseModel
 
 LEVELS = ("beginner", "intermediate", "advanced", "all")
 ACCESS = ("free", "paid")
+CERTIFICATE_STATUSES = ("valid", "revoked")
 LESSON_TYPES = ("video", "reading", "resource")
 
 
@@ -189,11 +190,41 @@ class Certificate(BaseModel):
     enrolment = models.OneToOneField(
         Enrolment, on_delete=models.CASCADE, related_name="certificate"
     )
+    # The certificate number, `WO-C-2026-000341` for new ones. Older certificates keep the shorter
+    # code they were given, and both are looked up the same way.
     code = models.CharField(max_length=16, unique=True)
     # Kept as written on the day, so a later name change never alters an issued certificate.
     holder_name = models.CharField(max_length=160)
     course_title = models.CharField(max_length=160)
     issued_at = models.DateTimeField()
+    # Whole hours and tenths of the course at the time, from the lecture durations.
+    hours = models.DecimalField(max_digits=5, decimal_places=1, default=0)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoked_reason = models.CharField(max_length=300, blank=True)
+    # The rendered PDF in the private bucket. Empty until the job has run, then made on demand.
+    pdf_key = models.CharField(max_length=200, blank=True)
+    # The template this certificate was drawn with (title, signatory, signature, version), copied
+    # when it was issued so later changes to the settings never alter it. A reissue takes a new one.
+    template = models.JSONField(default=dict, blank=True)
+
+    @property
+    def is_valid(self) -> bool:
+        return self.revoked_at is None
+
+
+class CertificateSettings(BaseModel):
+    """What appears on every new certificate. One row; changes apply to new certificates only."""
+
+    title_text = models.CharField(max_length=60, default="Certificate of completion")
+    signatory_name = models.CharField(max_length=120, default="")
+    signatory_title = models.CharField(max_length=120, default="")
+    # The base key of a processed `certificate_signature` image in the media bucket. Optional.
+    signature_key = models.CharField(max_length=200, blank=True)
+    # Raised whenever the template changes, and stamped on each certificate when it is drawn.
+    version = models.PositiveIntegerField(default=1)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
 
 
 class EnrolmentRequest(BaseModel):

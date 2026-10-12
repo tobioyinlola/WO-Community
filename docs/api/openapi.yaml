@@ -712,6 +712,202 @@ paths:
           description: Not found
         '409':
           description: Not in a state that allows this
+  /api/v1/admin/certificate-settings:
+    get:
+      operationId: admin_certificate_settings_retrieve
+      summary: What appears on every new certificate
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateSettings'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    put:
+      operationId: admin_certificate_settings_update
+      description: Applies to certificates issued from now on. Certificates already
+        issued keep the template they were drawn with until an administrator reissues
+        them.
+      summary: Change the certificate template
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificateSettingsWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateSettings'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/certificate-settings/preview:
+    post:
+      operationId: admin_certificate_settings_preview_create
+      description: Nothing is saved. The body can carry unsaved edits of the template.
+      summary: Draw the certificate with sample details and the settings being edited
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CertificatePreviewRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: PDF
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/certificates:
+    get:
+      operationId: admin_certificates_list
+      summary: Issued certificates, newest first
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - valid
+          - revoked
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `valid` - valid
+          * `revoked` - revoked
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminCertificateList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/certificates/{certificate_id}/reissue:
+    post:
+      operationId: admin_certificates_reissue_create
+      description: The number stays the same. The name can be corrected at the same
+        time. The member is told. Reissuing a revoked certificate makes it valid again.
+      summary: Draw a certificate again with the template as it is now
+      parameters:
+      - in: path
+        name: certificate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReissueRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCertificate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/certificates/{certificate_id}/revoke:
+    post:
+      operationId: admin_certificates_revoke_create
+      description: The public page then shows it as revoked and the member can no
+        longer download it. A reason is required and goes in the audit log.
+      summary: Revoke a certificate
+      parameters:
+      - in: path
+        name: certificate_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCertificate'
+          description: ''
+        '409':
+          description: Already revoked
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/comments/{comment_id}/hide:
     post:
       operationId: admin_comments_hide_create
@@ -6781,10 +6977,12 @@ paths:
           description: Not an active member, or not enrolled
         '404':
           description: Not found
-  /api/v1/certificates/{certificate_id}/pdf:
+  /api/v1/certificates/{certificate_id}/download:
     get:
-      operationId: certificates_pdf_retrieve
-      summary: Download your certificate as a PDF
+      operationId: certificates_download_retrieve
+      description: The file is kept privately and the link stops working after a few
+        minutes, so ask again when you need it. A revoked certificate cannot be downloaded.
+      summary: A short lived link to download your certificate as a PDF
       parameters:
       - in: path
         name: certificate_id
@@ -6798,7 +6996,13 @@ paths:
       - bearerAuth: []
       responses:
         '200':
-          description: PDF
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificateDownload'
+          description: ''
+        '409':
+          description: Revoked
         '401':
           description: Not authenticated
         '403':
@@ -9066,6 +9270,29 @@ paths:
           description: No calendar is shared
         '429':
           description: Too many attempts
+  /api/v1/me/certificates:
+    get:
+      operationId: me_certificates_list
+      summary: Your certificates
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Certificate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
   /api/v1/me/courses:
     get:
       operationId: me_courses_retrieve
@@ -16744,6 +16971,49 @@ components:
       - hidden
       - id
       - is_staff
+    AdminCertificate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        holder_name:
+          type: string
+        email:
+          type: string
+        course_title:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        hours:
+          type: number
+          format: double
+        status:
+          $ref: '#/components/schemas/CertificateStatusEnum'
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_reason:
+          type: string
+        template_version:
+          type: integer
+          nullable: true
+      required:
+      - course_title
+      - email
+      - holder_name
+      - hours
+      - id
+      - issued_at
+      - number
+      - revoked_at
+      - revoked_reason
+      - status
+      - template_version
     AdminCourse:
       type: object
       properties:
@@ -19278,8 +19548,11 @@ components:
         id:
           type: string
           format: uuid
-        code:
+        course_slug:
           type: string
+        number:
+          type: string
+          description: For example WO-C-2026-000341
         holder_name:
           type: string
         course_title:
@@ -19287,15 +19560,136 @@ components:
         issued_at:
           type: string
           format: date-time
+        hours:
+          type: number
+          format: double
+          description: The length of the course, in hours
+        status:
+          $ref: '#/components/schemas/CertificateStatusEnum'
+        title_text:
+          type: string
+        signatory_name:
+          type: string
+        signatory_title:
+          type: string
+        signature_url:
+          type: string
+          nullable: true
         verify_url:
           type: string
       required:
-      - code
+      - course_slug
       - course_title
       - holder_name
+      - hours
       - id
       - issued_at
+      - number
+      - signatory_name
+      - signatory_title
+      - signature_url
+      - status
+      - title_text
       - verify_url
+    CertificateDownload:
+      type: object
+      properties:
+        url:
+          type: string
+          description: A short lived address that downloads the PDF
+        expires_in:
+          type: integer
+          description: Seconds the address works for
+        filename:
+          type: string
+      required:
+      - expires_in
+      - filename
+      - url
+    CertificatePreviewRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title_text:
+          type: string
+          minLength: 1
+          maxLength: 60
+        signatory_name:
+          type: string
+          maxLength: 120
+        signatory_title:
+          type: string
+          maxLength: 120
+        signature_upload_id:
+          type: string
+          format: uuid
+          description: A ready `cert_signature` upload.
+        remove_signature:
+          type: boolean
+        holder_name:
+          type: string
+          minLength: 1
+          maxLength: 160
+    CertificateSettings:
+      type: object
+      properties:
+        title_text:
+          type: string
+        signatory_name:
+          type: string
+        signatory_title:
+          type: string
+        signature_url:
+          type: string
+          nullable: true
+        version:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - signatory_name
+      - signatory_title
+      - signature_url
+      - title_text
+      - updated_at
+      - version
+    CertificateSettingsWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        title_text:
+          type: string
+          minLength: 1
+          maxLength: 60
+        signatory_name:
+          type: string
+          maxLength: 120
+        signatory_title:
+          type: string
+          maxLength: 120
+        signature_upload_id:
+          type: string
+          format: uuid
+          description: A ready `cert_signature` upload.
+        remove_signature:
+          type: boolean
+    CertificateStatusEnum:
+      enum:
+      - valid
+      - revoked
+      type: string
+      description: |-
+        * `valid` - valid
+        * `revoked` - revoked
     ChangeSetStatusEnum:
       enum:
       - proposed
@@ -23238,6 +23632,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminAccessRequest'
+    PaginatedAdminCertificateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCertificate'
     PaginatedAdminCourseList:
       type: object
       required:
@@ -25912,6 +26329,18 @@ components:
       - registered
       - registered_count
       - spots_left
+    ReissueRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        holder_name:
+          type: string
+          minLength: 1
+          maxLength: 160
     RejectedEvent:
       type: object
       properties:
@@ -26318,6 +26747,20 @@ components:
           type: string
           default: ''
           maxLength: 500
+    RevokeRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - reason
     RoleEnum:
       enum:
       - mentor
@@ -30443,6 +30886,7 @@ components:
       - campaign_image
       - course_cover
       - course_file
+      - cert_signature
       - support_attachment
       type: string
       description: |-
@@ -30453,6 +30897,7 @@ components:
         * `campaign_image` - Campaign Image
         * `course_cover` - Course Cover
         * `course_file` - Course File
+        * `cert_signature` - Cert Signature
         * `support_attachment` - Support Attachment
     UploadRequestPurposeEnum:
       enum:
@@ -30463,6 +30908,7 @@ components:
       - campaign_image
       - course_cover
       - course_file
+      - cert_signature
       - support_attachment
       type: string
       description: |-
@@ -30473,6 +30919,7 @@ components:
         * `campaign_image` - campaign_image
         * `course_cover` - course_cover
         * `course_file` - course_file
+        * `cert_signature` - cert_signature
         * `support_attachment` - support_attachment
     UploadRequestRequest:
       type: object
@@ -30520,7 +30967,9 @@ components:
       properties:
         valid:
           type: boolean
-        code:
+        status:
+          $ref: '#/components/schemas/CertificateStatusEnum'
+        number:
           type: string
         holder_name:
           type: string
@@ -30529,13 +30978,20 @@ components:
         issued_at:
           type: string
           format: date-time
+          nullable: true
+        hours:
+          type: number
+          format: double
+          nullable: true
         verify_url:
           type: string
       required:
-      - code
       - course_title
       - holder_name
+      - hours
       - issued_at
+      - number
+      - status
       - valid
       - verify_url
     Video:

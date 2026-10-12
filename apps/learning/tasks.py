@@ -4,7 +4,7 @@ import structlog
 from celery import shared_task
 
 from apps.core.models import OutboxEvent
-from apps.learning import learn
+from apps.learning import certificates
 from apps.learning.models import Course
 from apps.notifications import notify
 
@@ -18,7 +18,7 @@ def issue_certificate(event_id: str) -> None:
     if event is None:
         logger.warning("outbox_event_missing", event_id=event_id)
         return
-    learn.issue_certificate(UUID(event.payload["enrolment_id"]))
+    certificates.issue(UUID(event.payload["enrolment_id"]))
 
 
 @shared_task(name="learning.notify_granted")

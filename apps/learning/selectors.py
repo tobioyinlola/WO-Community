@@ -10,7 +10,7 @@ from rest_framework import exceptions
 
 from apps.core.keyset import paginate
 from apps.integrations import youtube
-from apps.learning import learn, lms
+from apps.learning import certificates, learn, lms
 from apps.learning.models import (
     Certificate,
     Course,
@@ -351,20 +351,32 @@ def lesson_detail(viewer_id: UUID | None, lesson_id: UUID) -> dict[str, Any]:
 
 
 def certificate_view(certificate: Certificate, *, public: bool = False) -> dict[str, Any]:
+    template = certificate.template or {}
     view: dict[str, Any] = {
-        "code": certificate.code,
+        "number": certificate.code,
         "holder_name": certificate.holder_name,
         "course_title": certificate.course_title,
         "issued_at": certificate.issued_at,
-        "verify_url": f"{settings.FRONTEND_BASE_URL}/verify/{certificate.code}",
+        "hours": float(certificate.hours),
+        "status": "valid" if certificate.is_valid else "revoked",
+        "title_text": template.get("title_text") or "Certificate of completion",
+        "signatory_name": template.get("signatory_name", ""),
+        "signatory_title": template.get("signatory_title", ""),
+        "signature_url": certificates.signature_url(template.get("signature_key", "")),
+        "verify_url": certificates.verify_url_for(certificate.code),
     }
     if not public:
         view["id"] = certificate.pk
+        view["course_slug"] = certificate.enrolment.course.slug
     return view
 
 
 def my_certificates(viewer_id: UUID) -> list[dict[str, Any]]:
-    rows = Certificate.objects.filter(enrolment__user_id=viewer_id).order_by("-issued_at")
+    rows = (
+        Certificate.objects.filter(enrolment__user_id=viewer_id)
+        .select_related("enrolment__course")
+        .order_by("-issued_at")
+    )
     return [certificate_view(c) for c in rows]
 
 
@@ -378,10 +390,25 @@ def get_certificate(viewer_id: UUID, certificate_id: UUID) -> Certificate:
 
 
 def verify(code: str) -> dict[str, Any]:
+    """What anyone may learn from a certificate number: if it is valid, and to whom and for what."""
     certificate = Certificate.objects.filter(code=code.upper().strip()).first()
     if certificate is None:
         raise exceptions.NotFound()
-    return {"valid": True, **certificate_view(certificate, public=True)}
+    if not certificate.is_valid:
+        # A revoked certificate says so and nothing more about the person.
+        return {
+            "valid": False,
+            "status": "revoked",
+            "number": certificate.code,
+            "holder_name": "",
+            "course_title": "",
+            "issued_at": None,
+            "hours": None,
+            "verify_url": certificates.verify_url_for(certificate.code),
+        }
+    view = certificate_view(certificate, public=True)
+    keep = ("number", "holder_name", "course_title", "issued_at", "hours", "status", "verify_url")
+    return {"valid": True, **{k: view[k] for k in keep}}
 
 
 # --- public catalogue ---

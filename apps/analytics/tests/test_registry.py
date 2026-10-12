@@ -41,6 +41,10 @@ REQUIRED_EVENTS = {
         "course_checkout_started",
         "course_purchased",
         "course_published",
+        "certificate_issued",
+        "certificate_downloaded",
+        "certificate_revoked",
+        "certificate_reissued",
     ],
     "mentorship": [
         "mentor_application_submitted",

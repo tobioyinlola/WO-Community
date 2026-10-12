@@ -1,6 +1,5 @@
 """The member's side of the learning hub: enrolling, progress, ratings and certificates."""
 
-import secrets
 from typing import Any
 from uuid import UUID
 
@@ -16,19 +15,15 @@ from apps.core import events as domain_events
 from apps.core.text import plain
 from apps.learning import events, lms
 from apps.learning.models import (
-    Certificate,
     Course,
     CourseRating,
     Enrolment,
     Lesson,
     LessonProgress,
 )
-from apps.notifications import notify
-from apps.profiles import selectors as profiles
 
 logger = structlog.get_logger(__name__)
 
-CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O, 1/I/L
 MAX_POSITION_SECONDS = 24 * 3600
 # Courses a member can enrol in: in the catalogue, or reachable by link only.
 OPEN_STATUSES = (Course.Status.PUBLISHED, Course.Status.UNLISTED)
@@ -240,52 +235,6 @@ def recount_ratings(course: Course) -> None:
     course.rating_count = totals["n"]
     course.rating_total = totals["total"] or 0
     course.save(update_fields=["rating_count", "rating_total", "updated_at"])
-
-
-# --- certificates ---
-
-
-def _new_code() -> str:
-    return "".join(secrets.choice(CODE_ALPHABET) for _ in range(12))
-
-
-def issue_certificate(enrolment_id: UUID) -> Certificate | None:
-    """Create the certificate for a completed course. Safe to run twice."""
-    enrolment = (
-        Enrolment.objects.select_related("course")
-        .filter(pk=enrolment_id, completed_at__isnull=False)
-        .first()
-    )
-    if enrolment is None or not enrolment.course.certificate_enabled:
-        return None
-    existing = Certificate.objects.filter(enrolment=enrolment).first()
-    if existing is not None:
-        return existing
-    holder = profiles.full_name_of(enrolment.user_id) or "WO Community member"
-    for _ in range(5):  # a clash on the random code is astronomically unlikely, but handled
-        try:
-            with transaction.atomic():
-                certificate = Certificate.objects.create(
-                    enrolment=enrolment,
-                    code=_new_code(),
-                    holder_name=plain(holder)[:160],
-                    course_title=enrolment.course.title,
-                    issued_at=timezone.now(),
-                )
-            break
-        except IntegrityError:
-            existing = Certificate.objects.filter(enrolment=enrolment).first()
-            if existing is not None:
-                return existing
-    else:
-        raise RuntimeError("could not allocate a certificate code")
-    notify.notify(
-        enrolment.user_id,
-        "certificate_ready",
-        {"certificate_id": str(certificate.pk), "title": certificate.course_title},
-        dedupe_key=f"certificate:{certificate.pk}",
-    )
-    return certificate
 
 
 def progress_summary(user_id: UUID, course: Course) -> dict[str, Any]:
