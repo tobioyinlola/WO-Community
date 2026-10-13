@@ -1,0 +1,8 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": { "builder": "DOCKERFILE", "dockerfilePath": "Dockerfile" },
+  "deploy": {
+    "startCommand": "celery -A config worker -B -l info --concurrency 2 -Q critical,default,email,media,exports,analytics,ai",
+    "restartPolicyType": "ALWAYS"
+  }
+}
