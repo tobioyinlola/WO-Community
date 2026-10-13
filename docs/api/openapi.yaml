@@ -34729,11 +34729,16 @@ components:
           type: object
           additionalProperties:
             type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
         expires_in:
           type: integer
       required:
       - expires_in
       - form_data
+      - headers
       - method
       - url
     UploadPurposeEnum:

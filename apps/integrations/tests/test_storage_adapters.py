@@ -157,3 +157,29 @@ def test_a_custom_endpoint_uses_path_style_for_minio(settings):
         bucket=QUARANTINE, key="k", content_type="image/png", max_size=10, expires_in=60
     )
     assert form.url == "http://localhost:9000/wo-quarantine"
+
+
+def test_r2_uploads_use_a_signed_put_with_the_exact_type_and_size(settings):
+    settings.STORAGE_ENDPOINT_URL = "https://abc123.r2.cloudflarestorage.com"
+    settings.STORAGE_REGION = "auto"
+    settings.STORAGE_ACCESS_KEY_ID = "r2-key"
+    settings.STORAGE_SECRET_ACCESS_KEY = "r2-secret"  # noqa: S105
+    settings.STORAGE_UPLOAD_METHOD = "put"
+    signed = S3Storage().presign_post(
+        bucket=QUARANTINE, key="k", content_type="image/png", max_size=1234, expires_in=60
+    )
+    assert signed.method == "PUT"
+    assert signed.fields == {}
+    assert signed.headers == {"Content-Type": "image/png"}
+    assert signed.url.startswith("https://abc123.r2.cloudflarestorage.com/wo-quarantine/k?")
+    assert "content-length" in signed.url.lower() and "content-type" in signed.url.lower()
+    assert "X-Amz-Expires=60" in signed.url
+
+
+def test_the_default_upload_is_a_form_post(settings):
+    settings.STORAGE_ACCESS_KEY_ID = "k"
+    settings.STORAGE_SECRET_ACCESS_KEY = "s"  # noqa: S105
+    form = S3Storage().presign_post(
+        bucket=QUARANTINE, key="k", content_type="image/png", max_size=10, expires_in=60
+    )
+    assert form.method == "POST" and form.fields["key"] == "k"

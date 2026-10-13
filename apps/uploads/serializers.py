@@ -19,6 +19,7 @@ class UploadFormSerializer(serializers.Serializer):
     url = serializers.CharField()
     method = serializers.CharField()
     form_data = serializers.DictField(child=serializers.CharField())
+    headers = serializers.DictField(child=serializers.CharField())
     expires_in = serializers.IntegerField()
 
 
@@ -60,8 +61,9 @@ def created_body(upload: Upload, post: Any) -> dict[str, Any]:
         "upload": upload,
         "form": {
             "url": post.url,
-            "method": "POST",
+            "method": post.method,
             "form_data": post.fields,
+            "headers": post.headers,
             "expires_in": post.expires_in,
         },
         "max_size": settings.UPLOAD_MAX_BYTES,
