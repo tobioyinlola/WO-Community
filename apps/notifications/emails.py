@@ -1,7 +1,13 @@
-"""Plain text transactional emails for account events."""
+"""Transactional emails for account events and notifications.
+
+Every message is multipart: the branded HTML and a plain text alternative built from the same
+words (see ``mailtemplates``). The wording comes from the edited template if an admin changed it,
+else from the built in copy.
+"""
 
 import hashlib
 from datetime import datetime
+from typing import Any
 
 import structlog
 from django.conf import settings
@@ -13,7 +19,8 @@ from apps.integrations.email import (
     EmailRejected,
     get_email_adapter,
 )
-from apps.notifications import services
+from apps.notifications import mailtemplates as mt
+from apps.notifications import services, templatestore
 
 logger = structlog.get_logger(__name__)
 
@@ -26,6 +33,8 @@ def _send(
     category: str,
     stream: str = TRANSACTIONAL,
     no_reply: bool = False,
+    html: str = "",
+    headers: dict[str, str] | None = None,
 ) -> None:
     """Send one email.
 
@@ -43,7 +52,9 @@ def _send(
         to=to,
         subject=subject,
         text_body=body,
+        html_body=html,
         stream=stream,
+        headers=headers or {},
         idempotency_key=key,
         tags={"category": category},
         no_reply=no_reply,
@@ -59,96 +70,129 @@ def _send(
         )
 
 
-def send_verification(to: str, token: str) -> None:
-    link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={token}"
+def preferences_url() -> str:
+    return f"{settings.FRONTEND_BASE_URL}/settings/notifications"
+
+
+def render_template(
+    key: str, values: dict[str, Any], *, with_preferences: bool = True
+) -> mt.Rendered:
+    """The email for a template, in the wording currently in force."""
+    return mt.render(
+        key,
+        values,
+        copy=templatestore.effective_copy(key),
+        preferences_url=preferences_url() if with_preferences else "",
+    )
+
+
+def send_templated(
+    to: str,
+    key: str,
+    values: dict[str, Any],
+    *,
+    category: str,
+    no_reply: bool = False,
+    with_preferences: bool = False,
+) -> None:
+    rendered = render_template(key, values, with_preferences=with_preferences)
     _send(
         to,
-        "Confirm your email address",
-        "Welcome to WO Community.\n\n"
-        f"Confirm your email address to continue:\n{link}\n\n"
-        "The link expires in 24 hours. If you did not register, you can ignore this message.",
+        rendered.subject,
+        rendered.text,
+        category=category,
+        no_reply=no_reply,
+        html=rendered.html,
+    )
+
+
+def _app(path: str) -> str:
+    return f"{settings.FRONTEND_BASE_URL}{path}"
+
+
+def send_verification(to: str, token: str) -> None:
+    send_templated(
+        to,
+        "verification",
+        {"verify_url": _app(f"/verify-email?token={token}")},
         category="verification",
     )
 
 
 def send_already_registered(to: str) -> None:
-    link = f"{settings.FRONTEND_BASE_URL}/login"
-    reset = f"{settings.FRONTEND_BASE_URL}/forgot-password"
-    _send(
+    send_templated(
         to,
-        "You already have a WO Community account",
-        "Someone tried to register with this address, but an account already exists.\n\n"
-        f"Log in: {link}\nForgot your password: {reset}\n\n"
-        "If this was not you, no action is needed.",
+        "notice",
+        {
+            "title": "You already have a WO Community account",
+            "detail": "Someone tried to register with this address, but an account already "
+            f"exists. If you forgot your password, you can reset it at {_app('/forgot-password')}. "
+            "If this was not you, no action is needed.",
+            "link_url": _app("/login"),
+        },
         category="already_registered",
     )
 
 
 def send_invitation(to: str, token: str, message: str, expires_at: datetime) -> None:
-    link = f"{settings.FRONTEND_BASE_URL}/register?invitation={token}"
-    lines = ["You have been invited to join WO Community, the community for founders.", ""]
-    if message:
-        lines += ["A note from the team:", message, ""]
-    lines += [
-        "Create your account here:",
-        link,
-        "",
-        f"This invitation is for this email address only and expires on {expires_at:%d %B %Y}.",
-    ]
-    _send(to, "You are invited to join WO Community", "\n".join(lines), category="invitation")
+    send_templated(
+        to,
+        "invitation",
+        {
+            "note": message,
+            "register_url": _app(f"/register?invitation={token}"),
+            "expires_on": f"{expires_at:%d %B %Y}".lstrip("0"),
+        },
+        category="invitation",
+    )
 
 
 def send_approved(to: str) -> None:
-    link = f"{settings.FRONTEND_BASE_URL}/login"
-    _send(
-        to,
-        "Your WO Community account is approved",
-        f"Welcome aboard. Your account has been approved and you can now log in:\n{link}",
-        category="approved",
-    )
+    send_templated(to, "account_approved", {"login_url": _app("/login")}, category="approved")
 
 
 def send_rejected(to: str, reason: str) -> None:
-    _send(
-        to,
-        "Your WO Community registration",
-        "We could not approve your registration at this time.\n\n"
-        f"Reason: {reason}\n\n"
-        "If you think this is a mistake, reply to this email and our team will look again.",
-        category="rejected",
-    )
+    send_templated(to, "account_not_approved", {"reason": reason}, category="rejected")
 
 
 def send_suspended(to: str, reason: str) -> None:
-    _send(
+    send_templated(
         to,
-        "Your WO Community account has been suspended",
-        "Your account has been suspended, so you cannot log in or take part for now.\n\n"
-        f"Reason: {reason}\n\n"
-        "Anything already agreed with other members, such as mentoring sessions, has been "
-        "cancelled. If you think this is a mistake, reply to this email and our team will "
-        "look again.",
+        "notice",
+        {
+            "title": "Your WO Community account has been suspended",
+            "detail": f"Reason: {reason}. You cannot sign in or take part for now, and anything "
+            "already agreed with other members, such as mentoring sessions, has been cancelled. "
+            "If you think this is a mistake, reply to this email and our team will look again.",
+            "link_url": _app("/login"),
+        },
         category="suspended",
     )
 
 
 def send_reinstated(to: str) -> None:
-    link = f"{settings.FRONTEND_BASE_URL}/login"
-    _send(
+    send_templated(
         to,
-        "Your WO Community account is active again",
-        f"Your account has been reinstated and you can log in again:\n{link}",
+        "notice",
+        {
+            "title": "Your WO Community account is active again",
+            "detail": "Your account has been reinstated and you can sign in again.",
+            "link_url": _app("/login"),
+        },
         category="reinstated",
     )
 
 
 def send_removed(to: str, reason: str) -> None:
-    _send(
+    send_templated(
         to,
-        "Your WO Community account has been removed",
-        "Your account has been removed from WO Community and your public pages are down.\n\n"
-        f"Reason: {reason}\n\n"
-        "If you think this is a mistake, reply to this email and our team will look again.",
+        "notice",
+        {
+            "title": "Your WO Community account has been removed",
+            "detail": f"Reason: {reason}. Your public pages are down. If you think this is a "
+            "mistake, reply to this email and our team will look again.",
+            "link_url": _app("/login"),
+        },
         category="removed",
     )
 
@@ -167,24 +211,48 @@ def send_attendee_list(to: str, title: str, csv_text: str) -> None:
 
 
 def send_password_reset(to: str, token: str) -> None:
-    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={token}"
-    _send(
+    send_templated(
         to,
-        "Reset your password",
-        f"Use this link to choose a new password:\n{link}\n\n"
-        "The link expires in 1 hour. If you did not ask for this, you can ignore this message.",
+        "password_reset",
+        {"reset_url": _app(f"/reset-password?token={token}")},
         category="password_reset",
     )
 
 
-def send_notice(to: str, subject: str, body: str, *, category: str) -> None:
-    """A notification delivered by email, with a pointer to the preferences that control it."""
-    footer = (
-        "\n\nYou can change which emails you get at "
-        f"{settings.FRONTEND_BASE_URL}/settings/notifications"
-    )
+def send_notice(
+    to: str,
+    subject: str,
+    body: str,
+    *,
+    category: str,
+    template: str = "",
+    values: dict[str, Any] | None = None,
+    link: str = "",
+) -> None:
+    """A notification delivered by email, with a pointer to the preferences that control it.
+
+    With a ``template`` and its ``values`` the matching template is used; if those do not fit it,
+    or none is given, the generic notice carries the same words.
+    """
     # Support mail is answered inside the app, so it never invites a reply by email.
     no_reply = category.startswith("notification_ticket_")
+    if link:
+        attempts = [
+            (template, values or {}),
+            ("notice", {"title": subject, "detail": body, "link_url": link}),
+        ]
+        for key, data in attempts:
+            if not key:
+                continue
+            try:
+                send_templated(
+                    to, key, data, category=category, no_reply=no_reply, with_preferences=True
+                )
+            except mt.TemplateError as exc:
+                logger.warning("email_template_failed", key=key, reason=str(exc))
+                continue
+            return
+    footer = f"\n\nYou can change which emails you get at {preferences_url()}"
     _send(to, subject, body + footer, category=category, no_reply=no_reply)
 
 

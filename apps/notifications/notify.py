@@ -136,6 +136,7 @@ TYPES: dict[str, Spec] = {
         "jobs",
         lambda who, p: f"Your job \"{p.get('title', '')}\" is now live",
         lambda p: f"/jobs/{p['job_id']}",
+        email=True,
     ),
     "job_rejected": Spec(
         "jobs",
@@ -398,6 +399,49 @@ def notify(
     return created
 
 
+def mail_template_for(
+    type_: str, title: str, extra: str, link: str, payload: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    """The email template that suits a notification, with its values; the generic one otherwise."""
+    when = "in 1 hour" if payload.get("when") == "1h" else "in 24 hours"
+    match type_:
+        case "job_approved":
+            return "job_approved", {"job_title": payload.get("title"), "job_url": link}
+        case "job_rejected":
+            return "job_rejected", {
+                "job_title": payload.get("title"),
+                "reason": payload.get("reason"),
+                "job_url": link,
+            }
+        case "mentor_application_decision":
+            approved = str(payload.get("decision", "")) == "approved"
+            return "mentor_decision", {
+                "outcome": "approved" if approved else "not approved",
+                "note": extra,
+                "url": link,
+            }
+        case "ticket_reply" | "ticket_resolved":
+            return "ticket_reply", {
+                "reference": payload.get("reference"),
+                "excerpt": extra,
+                "ticket_url": link,
+            }
+        case "course_granted":
+            return "course_access", {"course_title": payload.get("title"), "course_url": link}
+        case "certificate_ready":
+            return "certificate_issued", {
+                "course_title": payload.get("title"),
+                "certificate_url": link,
+            }
+        case "event_reminder":
+            return "event_reminder", {
+                "event_title": payload.get("title"),
+                "when": when,
+                "event_url": link,
+            }
+    return "notice", {"title": title, "detail": extra, "link_url": link}
+
+
 def _email(
     user_id: UUID,
     type_: str,
@@ -418,11 +462,16 @@ def _email(
     title = spec.title(who, payload)
     extra = spec.body(payload) if spec.body else ""
     lead = f"{extra}\n\n" if extra else ""
+    link = f"{settings.FRONTEND_BASE_URL}{spec.link(payload)}"
+    template, values = mail_template_for(type_, title, extra, link, payload)
     emails.send_notice(
         contact.email,
         title,
-        f"{title}.\n\n{lead}{settings.FRONTEND_BASE_URL}{spec.link(payload)}",
+        f"{title}.\n\n{lead}{link}",
         category=f"notification_{type_}",
+        template=template,
+        values=values,
+        link=link,
     )
     if notification is not None:
         notification.channels_sent = [*notification.channels_sent, "email"]
