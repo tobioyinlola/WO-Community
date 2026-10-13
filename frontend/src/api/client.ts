@@ -4,7 +4,11 @@ import { ApiError, type Problem } from "./errors";
 import { getAccessToken, mayHaveSession, setAccessToken } from "./session";
 
 /** Empty means "same origin": the dev server proxies /api, and production serves both together. */
-export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+/**
+ * Where the API lives. Production builds must set VITE_API_URL (see vite.config.ts); in
+ * development it is empty and requests go to the same origin, where Vite forwards /api.
+ */
+export const API_BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? "").replace(/\/+$/, "");
 
 const REFRESH_PATH = "/api/v1/auth/refresh";
 // The API refuses cookie based calls (refresh, log out) that do not carry this header, so a page
