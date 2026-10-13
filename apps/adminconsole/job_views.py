@@ -16,7 +16,10 @@ from apps.jobs.serializers import (
     AdminJobCreateSerializer,
     AdminJobQuerySerializer,
     AdminJobSerializer,
+    BulkApproveResultSerializer,
+    BulkApproveSerializer,
     JobSettingsSerializer,
+    JobTabCountsSerializer,
     JobUpdateSerializer,
     ReviewSerializer,
 )
@@ -81,6 +84,43 @@ class AdminJobsView(APIView):
         return _one(request, job, 201)
 
 
+class AdminJobStatsView(APIView):
+    policy = MODERATE
+
+    @extend_schema(
+        summary="How many jobs each tab holds",
+        description="Active, pending review, rejected, and closed or expired, under the same "
+        "search and filters as the list (the tab itself is ignored).",
+        parameters=[AdminJobQuerySerializer],
+        responses={200: JobTabCountsSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> Response:
+        params = AdminJobQuerySerializer(data=request.query_params.dict())
+        params.is_valid(raise_exception=True)
+        skip = ("limit", "offset", "tab", "status")
+        filters = {k: v for k, v in params.validated_data.items() if k not in skip}
+        return Response(JobTabCountsSerializer(selectors.tab_counts(**filters)).data)
+
+
+class AdminJobBulkApproveView(APIView):
+    policy = MODERATE
+
+    @extend_schema(
+        summary="Approve several pending jobs",
+        request=BulkApproveSerializer,
+        responses={200: BulkApproveResultSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = BulkApproveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = services.bulk_approve(
+            actor=_actor(request), ids=serializer.validated_data["ids"], ip=_ip(request)
+        )
+        return Response(BulkApproveResultSerializer(result).data)
+
+
 class AdminJobView(APIView):
     policy = MODERATE
 
@@ -123,7 +163,8 @@ class ReviewJobView(APIView):
     @extend_schema(
         summary="Review a job",
         description="Decisions: approve and reject (pending jobs; rejecting needs a reason, "
-        "which the poster is told), unpublish (live jobs) and remove (any). Audited.",
+        "which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, "
+        "expired or removed jobs). Audited, and the poster is told.",
         request=ReviewSerializer,
         responses={
             200: AdminJobSerializer,

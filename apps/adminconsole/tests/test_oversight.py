@@ -7,8 +7,6 @@ from psycopg.types.range import Range
 from apps.accounts.models import Invitation, UserRole
 from apps.audit.models import AuditLog
 from apps.feed import services as feed
-from apps.jobs import services as jobs
-from apps.jobs.models import JobSettings
 from apps.mentorship.models import MentorSession
 from apps.profiles.models import FounderProfile
 from apps.profiles.services import get_or_create_profile
@@ -97,91 +95,6 @@ def test_feed_stats_count_the_week(mod, ada):
     make_post(ada)
     stats = mod.get(f"{ADMIN}/posts/stats").json()
     assert stats["posts"] == 1 and stats["posts_last_7_days"] == 1 and stats["hidden"] == 0
-
-
-# --- job applications ---
-
-
-@pytest.fixture
-def job(ada):
-    board = JobSettings.load()
-    board.require_approval = False
-    board.save()
-    return jobs.create_job(
-        user_id=ada.pk,
-        data={
-            "title": "Backend engineer",
-            "type": "full_time",
-            "organisation": "Acme",
-            "location": "Lagos",
-            "remote": True,
-            "description": "<p>Join us and build with us from day one.</p>",
-            "apply_method": "email",
-            "apply_target": "jobs@example.com",
-        },
-    )
-
-
-def test_a_member_applies_once_and_sees_the_status(client_for, kofi, job):
-    me = client_for(kofi)
-    url = f"/api/v1/jobs/{job.pk}/apply"
-    assert me.get(url).status_code == 404
-    body = {"note": "I have built payment systems for years.", "link": "https://cv.example.com/k"}
-    created = me.post(url, body, format="json")
-    assert created.status_code == 201 and created.json()["status"] == "submitted"
-    assert me.post(url, body, format="json").status_code == 409
-    assert me.get(url).json()["note"].startswith("I have built")
-
-
-def test_applying_needs_a_note_a_real_link_and_someone_elses_job(client_for, ada, kofi, job):
-    url = f"/api/v1/jobs/{job.pk}/apply"
-    assert client_for(kofi).post(url, {"note": "  "}, format="json").status_code == 400
-    bad = client_for(kofi).post(url, {"note": "Hi", "link": "javascript:x"}, format="json")
-    assert bad.status_code == 400
-    assert client_for(ada).post(url, {"note": "Mine"}, format="json").status_code == 403
-
-
-def test_a_withdrawn_application_cannot_be_decided(client_for, ada, kofi, job):
-    me = client_for(kofi)
-    application = me.post(f"/api/v1/jobs/{job.pk}/apply", {"note": "Hi"}, format="json").json()
-    me.post(f"/api/v1/job-applications/{application['id']}/withdraw")
-    decided = client_for(ada).post(
-        f"/api/v1/job-applications/{application['id']}/decide",
-        {"status": "hired"},
-        format="json",
-    )
-    assert decided.status_code == 409
-
-
-def test_the_poster_sees_and_decides_applications(client_for, ada, kofi, job, make_user):
-    application = client_for(kofi).post(
-        f"/api/v1/jobs/{job.pk}/apply", {"note": "Pick me"}, format="json"
-    )
-    poster = client_for(ada)
-    listed = poster.get(f"/api/v1/jobs/{job.pk}/applications").json()
-    assert [a["applicant"]["name"] for a in listed] == ["Kofi Mentor"]
-    decide = f"/api/v1/job-applications/{application.json()['id']}/decide"
-    done = poster.post(decide, {"status": "shortlisted", "note": "Strong"}, format="json")
-    assert done.status_code == 200 and done.json()["status"] == "shortlisted"
-    stranger = client_for(active(make_user, "stranger@example.com", "Stranger"))
-    assert stranger.get(f"/api/v1/jobs/{job.pk}/applications").status_code == 404
-    assert stranger.post(decide, {"status": "hired"}, format="json").status_code == 404
-
-
-def test_admins_list_filter_and_decide_applications(mod, client_for, kofi, job):
-    client_for(kofi).post(f"/api/v1/jobs/{job.pk}/apply", {"note": "Hello"}, format="json")
-    page = mod.get(f"{ADMIN}/job-applications").json()
-    assert page["count"] == 1 and page["results"][0]["job_title"] == "Backend engineer"
-    assert mod.get(f"{ADMIN}/job-applications", {"status": "hired"}).json()["count"] == 0
-    assert mod.get(f"{ADMIN}/job-applications", {"q": "kofi"}).json()["count"] == 1
-    row = page["results"][0]
-    mod.post(f"/api/v1/job-applications/{row['id']}/decide", {"status": "hired"}, format="json")
-    assert mod.get(f"{ADMIN}/job-applications/stats").json()["hired"] == 1
-    assert AuditLog.objects.filter(action="job_application.hired").exists()
-
-
-def test_members_cannot_use_the_admin_applications_list(client_for, kofi):
-    assert client_for(kofi).get(f"{ADMIN}/job-applications").status_code == 403
 
 
 # --- matches and sessions ---

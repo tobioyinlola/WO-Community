@@ -22,8 +22,12 @@ class JobFieldsMixin(serializers.Serializer):
         max_length=MAX_MARKUP, required=False, allow_blank=True, trim_whitespace=False
     )
     compensation = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    apply_method = serializers.ChoiceField(choices=APPLY_METHODS)
-    apply_target = serializers.CharField(max_length=300)
+    # Applications are handled by the employer, never here: give a link, an email address or both.
+    apply_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    apply_email = serializers.CharField(max_length=254, required=False, allow_blank=True)
+    # The older single-route form, still accepted.
+    apply_method = serializers.ChoiceField(choices=APPLY_METHODS, required=False)
+    apply_target = serializers.CharField(max_length=300, required=False)
     deadline = serializers.DateField(required=False, allow_null=True)
 
 
@@ -45,6 +49,8 @@ class JobUpdateSerializer(StrictSerializer):
         max_length=MAX_MARKUP, required=False, allow_blank=True, trim_whitespace=False
     )
     compensation = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    apply_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
+    apply_email = serializers.CharField(max_length=254, required=False, allow_blank=True)
     apply_method = serializers.ChoiceField(choices=APPLY_METHODS, required=False)
     apply_target = serializers.CharField(max_length=300, required=False)
     deadline = serializers.DateField(required=False, allow_null=True)
@@ -118,8 +124,13 @@ class StartupRefSerializer(serializers.Serializer):
 
 
 class ApplySerializer(serializers.Serializer):
-    method = serializers.CharField()
+    method = serializers.CharField(help_text="The first route: url or email")
     target = serializers.CharField(required=False)
+    url = serializers.CharField(allow_blank=True, help_text="An https link, or empty")
+    email = serializers.CharField(
+        allow_blank=True, help_text="Where to send an application; empty for the public"
+    )
+    host = serializers.CharField(allow_blank=True, help_text="The site the link leads to")
 
 
 class JobSerializer(serializers.Serializer):
@@ -219,6 +230,17 @@ class AdminJobQuerySerializer(StrictSerializer):
         required=False,
         default="",
     )
+    tab = serializers.ChoiceField(
+        choices=["active", "pending", "rejected", "closed"],
+        required=False,
+        default="",
+        help_text="Active (live), pending review, rejected, or closed, expired or removed.",
+    )
+    poster_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    company = serializers.CharField(required=False, allow_blank=True, max_length=120, default="")
+    type = serializers.ChoiceField(choices=JOB_TYPES, required=False, default="")
+    date_from = serializers.DateField(required=False, allow_null=True, default=None)
+    date_to = serializers.DateField(required=False, allow_null=True, default=None)
     origin = serializers.ChoiceField(choices=["member", "admin"], required=False, default="")
     q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
@@ -226,7 +248,23 @@ class AdminJobQuerySerializer(StrictSerializer):
 
 
 class AdminJobCreateSerializer(JobCreateSerializer):
-    """Same fields; the service insists on an external link for admin jobs."""
+    """Same fields. An admin's job goes live at once."""
+
+
+class JobTabCountsSerializer(serializers.Serializer):
+    active = serializers.IntegerField()
+    pending = serializers.IntegerField()
+    rejected = serializers.IntegerField()
+    closed = serializers.IntegerField()
+
+
+class BulkApproveSerializer(StrictSerializer):
+    ids = serializers.ListField(child=serializers.UUIDField(), min_length=1, max_length=100)
+
+
+class BulkApproveResultSerializer(serializers.Serializer):
+    approved = serializers.IntegerField()
+    skipped = serializers.IntegerField()
 
 
 class ReviewSerializer(StrictSerializer):

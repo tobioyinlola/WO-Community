@@ -1583,43 +1583,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/job-applications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * All job applications
-         * @description Newest first. Filter by `status`, `job_id` and text (job, organisation, applicant name or email).
-         */
-        get: operations["admin_job_applications_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/job-applications/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Applications by status */
-        get: operations["admin_job_applications_stats_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/jobs": {
         parameters: {
             query?: never;
@@ -1673,7 +1636,7 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_approve_create"];
         delete?: never;
@@ -1693,7 +1656,7 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_reject_create"];
         delete?: never;
@@ -1713,9 +1676,29 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_remove_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/{job_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review a job
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
+         */
+        post: operations["admin_jobs_reopen_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1733,9 +1716,26 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_unpublish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/bulk-approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve several pending jobs */
+        post: operations["admin_jobs_bulk_approve_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1756,6 +1756,26 @@ export interface paths {
          * @description `require_approval`: member jobs wait for an admin (true) or go live at once. `default_duration_days`: how long a job without a deadline stays up.
          */
         put: operations["admin_jobs_settings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many jobs each tab holds
+         * @description Active, pending review, rejected, and closed or expired, under the same search and filters as the list (the tab itself is ignored).
+         */
+        get: operations["admin_jobs_stats_retrieve"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -4206,43 +4226,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/job-applications/{application_id}/decide": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Move an application along
-         * @description The poster of the job, or an admin. Reviewing, shortlisted, rejected, hired.
-         */
-        post: operations["job_applications_decide_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/job-applications/{application_id}/withdraw": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Withdraw your application */
-        post: operations["job_applications_withdraw_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/jobs": {
         parameters: {
             query?: never;
@@ -4289,44 +4272,6 @@ export interface paths {
          * @description Send only what changes, with the ETag in If-Match. Pending and published jobs only; renew a closed or expired job first.
          */
         patch: operations["jobs_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/jobs/{job_id}/applications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Applications to your job
-         * @description Only the member who posted the job, or an admin who moderates jobs.
-         */
-        get: operations["jobs_applications_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/jobs/{job_id}/apply": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Your application to a job */
-        get: operations["jobs_apply_retrieve"];
-        put?: never;
-        /** Apply to a job through the community */
-        post: operations["jobs_apply_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/jobs/{job_id}/close": {
@@ -8583,7 +8528,7 @@ export interface components {
             /** Format: date-time */
             reviewed_at: string | null;
         };
-        /** @description Same fields; the service insists on an external link for admin jobs. */
+        /** @description Same fields. An admin's job goes live at once. */
         AdminJobCreateRequest: {
             title: string;
             type: components["schemas"]["JobTypeEnum"];
@@ -8595,8 +8540,10 @@ export interface components {
             description: string;
             requirements?: string;
             compensation?: string;
-            apply_method: components["schemas"]["ApplyMethodEnum"];
-            apply_target: string;
+            apply_url?: string;
+            apply_email?: string;
+            apply_method?: components["schemas"]["ApplyMethodEnum"];
+            apply_target?: string;
             /** Format: date */
             deadline?: string | null;
         };
@@ -9129,13 +9076,6 @@ export interface components {
             timeline: components["schemas"]["TimelineEntry"][];
             referral: components["schemas"]["ApplicantReferral"];
         };
-        ApplicationApplicant: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            /** Format: email */
-            email: string;
-        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -9157,46 +9097,16 @@ export interface components {
             motivation: string;
             accept_conduct: boolean;
         };
-        ApplicationRow: {
-            /** Format: uuid */
-            id: string;
-            status: components["schemas"]["JobApplicationStatusEnum"];
-            note: string;
-            link: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            decided_at: string | null;
-            decision_note: string;
-            applicant: components["schemas"]["ApplicationApplicant"];
-            /** Format: uuid */
-            job_id: string;
-            job_title: string;
-            job_organisation: string;
-            job_status: string;
-        };
-        ApplicationStats: {
-            submitted: number;
-            reviewing: number;
-            shortlisted: number;
-            rejected: number;
-            hired: number;
-            withdrawn: number;
-        };
         Apply: {
+            /** @description The first route: url or email */
             method: string;
             target?: string;
-        };
-        /**
-         * @description Rejects fields the serializer does not declare.
-         *
-         *     Silently ignoring unknown input hides client bugs and makes mass
-         *     assignment mistakes easy to miss.
-         */
-        ApplyJobRequest: {
-            note: string;
-            /** @default  */
-            link: string;
+            /** @description An https link, or empty */
+            url: string;
+            /** @description Where to send an application; empty for the public */
+            email: string;
+            /** @description The site the link leads to */
+            host: string;
         };
         /**
          * @description * `url` - url
@@ -9452,6 +9362,19 @@ export interface components {
             value: unknown;
             /** Format: date */
             as_of_date: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        BulkApproveRequest: {
+            ids: string[];
+        };
+        BulkApproveResult: {
+            approved: number;
+            skipped: number;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -10066,25 +9989,6 @@ export interface components {
             mentorship: components["schemas"]["MentorshipSnapshot"];
             revenue: components["schemas"]["Availability"];
         };
-        /**
-         * @description Rejects fields the serializer does not declare.
-         *
-         *     Silently ignoring unknown input hides client bugs and makes mass
-         *     assignment mistakes easy to miss.
-         */
-        DecideApplicationRequest: {
-            status: components["schemas"]["DecideApplicationStatusEnum"];
-            /** @default  */
-            note: string;
-        };
-        /**
-         * @description * `reviewing` - reviewing
-         *     * `shortlisted` - shortlisted
-         *     * `rejected` - rejected
-         *     * `hired` - hired
-         * @enum {string}
-         */
-        DecideApplicationStatusEnum: "reviewing" | "shortlisted" | "rejected" | "hired";
         /**
          * @description * `approve` - approve
          *     * `decline` - decline
@@ -10807,16 +10711,6 @@ export interface components {
             saved: boolean;
             review_note: string;
         };
-        /**
-         * @description * `submitted` - submitted
-         *     * `reviewing` - reviewing
-         *     * `shortlisted` - shortlisted
-         *     * `rejected` - rejected
-         *     * `hired` - hired
-         *     * `withdrawn` - withdrawn
-         * @enum {string}
-         */
-        JobApplicationStatusEnum: "submitted" | "reviewing" | "shortlisted" | "rejected" | "hired" | "withdrawn";
         /** @description Fields shared by creating and editing a job. */
         JobCreateRequest: {
             title: string;
@@ -10829,8 +10723,10 @@ export interface components {
             description: string;
             requirements?: string;
             compensation?: string;
-            apply_method: components["schemas"]["ApplyMethodEnum"];
-            apply_target: string;
+            apply_url?: string;
+            apply_email?: string;
+            apply_method?: components["schemas"]["ApplyMethodEnum"];
+            apply_target?: string;
             /** Format: date */
             deadline?: string | null;
         };
@@ -10865,6 +10761,12 @@ export interface components {
         };
         JobSitemapList: {
             results: components["schemas"]["JobSitemapEntry"][];
+        };
+        JobTabCounts: {
+            active: number;
+            pending: number;
+            rejected: number;
+            closed: number;
         };
         /**
          * @description * `full_time` - full_time
@@ -11521,18 +11423,6 @@ export interface components {
         ModuleWriteRequest: {
             title: string;
         };
-        MyApplication: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            job_id: string;
-            status: components["schemas"]["JobApplicationStatusEnum"];
-            note: string;
-            link: string;
-            /** Format: date-time */
-            created_at: string;
-            decision_note: string;
-        };
         MyRating: {
             stars: number;
             feedback: string;
@@ -11968,21 +11858,6 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AdminWin"][];
         };
-        PaginatedApplicationRowList: {
-            /** @example 123 */
-            count: number;
-            /**
-             * Format: uri
-             * @example http://api.example.org/accounts/?offset=400&limit=100
-             */
-            next?: string | null;
-            /**
-             * Format: uri
-             * @example http://api.example.org/accounts/?offset=200&limit=100
-             */
-            previous?: string | null;
-            results: components["schemas"]["ApplicationRow"][];
-        };
         PaginatedAttendeeList: {
             /** @example 123 */
             count: number;
@@ -12242,6 +12117,8 @@ export interface components {
             description?: string;
             requirements?: string;
             compensation?: string;
+            apply_url?: string;
+            apply_email?: string;
             apply_method?: components["schemas"]["ApplyMethodEnum"];
             apply_target?: string;
             /** Format: date */
@@ -20319,103 +20196,12 @@ export interface operations {
             };
         };
     };
-    admin_job_applications_list: {
-        parameters: {
-            query?: {
-                job_id?: string | null;
-                limit?: number;
-                offset?: number;
-                q?: string;
-                /**
-                 * @description * `submitted` - submitted
-                 *     * `reviewing` - reviewing
-                 *     * `shortlisted` - shortlisted
-                 *     * `rejected` - rejected
-                 *     * `hired` - hired
-                 *     * `withdrawn` - withdrawn
-                 */
-                status?: "submitted" | "reviewing" | "shortlisted" | "rejected" | "hired" | "withdrawn";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedApplicationRowList"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    admin_job_applications_stats_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApplicationStats"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     admin_jobs_list: {
         parameters: {
             query?: {
+                company?: string;
+                date_from?: string | null;
+                date_to?: string | null;
                 limit?: number;
                 offset?: number;
                 /**
@@ -20423,6 +20209,7 @@ export interface operations {
                  *     * `admin` - admin
                  */
                 origin?: "member" | "admin";
+                poster_id?: string | null;
                 q?: string;
                 /**
                  * @description * `pending` - pending
@@ -20433,6 +20220,24 @@ export interface operations {
                  *     * `removed` - removed
                  */
                 status?: "pending" | "published" | "closed" | "expired" | "rejected" | "removed";
+                /**
+                 * @description Active (live), pending review, rejected, or closed, expired or removed.
+                 *
+                 *     * `active` - active
+                 *     * `pending` - pending
+                 *     * `rejected` - rejected
+                 *     * `closed` - closed
+                 */
+                tab?: "active" | "pending" | "rejected" | "closed";
+                /**
+                 * @description * `full_time` - full_time
+                 *     * `part_time` - part_time
+                 *     * `contract` - contract
+                 *     * `internship` - internship
+                 *     * `volunteer` - volunteer
+                 *     * `other` - other
+                 */
+                type?: "full_time" | "part_time" | "contract" | "internship" | "volunteer" | "other";
             };
             header?: never;
             path?: never;
@@ -20785,6 +20590,59 @@ export interface operations {
             };
         };
     };
+    admin_jobs_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminJob"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_jobs_unpublish_create: {
         parameters: {
             query?: never;
@@ -20831,6 +20689,50 @@ export interface operations {
             };
             /** @description Not in a state that allows this */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_jobs_bulk_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkApproveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkApproveResult"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20897,6 +20799,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobSettings"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_jobs_stats_retrieve: {
+        parameters: {
+            query?: {
+                company?: string;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                offset?: number;
+                /**
+                 * @description * `member` - member
+                 *     * `admin` - admin
+                 */
+                origin?: "member" | "admin";
+                poster_id?: string | null;
+                q?: string;
+                /**
+                 * @description * `pending` - pending
+                 *     * `published` - published
+                 *     * `closed` - closed
+                 *     * `expired` - expired
+                 *     * `rejected` - rejected
+                 *     * `removed` - removed
+                 */
+                status?: "pending" | "published" | "closed" | "expired" | "rejected" | "removed";
+                /**
+                 * @description Active (live), pending review, rejected, or closed, expired or removed.
+                 *
+                 *     * `active` - active
+                 *     * `pending` - pending
+                 *     * `rejected` - rejected
+                 *     * `closed` - closed
+                 */
+                tab?: "active" | "pending" | "rejected" | "closed";
+                /**
+                 * @description * `full_time` - full_time
+                 *     * `part_time` - part_time
+                 *     * `contract` - contract
+                 *     * `internship` - internship
+                 *     * `volunteer` - volunteer
+                 *     * `other` - other
+                 */
+                type?: "full_time" | "part_time" | "contract" | "internship" | "volunteer" | "other";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobTabCounts"];
                 };
             };
             /** @description Not authenticated */
@@ -27623,94 +27605,6 @@ export interface operations {
             };
         };
     };
-    job_applications_decide_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                application_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DecideApplicationRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApplicationRow"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    job_applications_withdraw_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                application_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MyApplication"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     jobs_list: {
         parameters: {
             query?: {
@@ -27923,143 +27817,6 @@ export interface operations {
             };
             /** @description If-Match header missing */
             428: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    jobs_applications_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApplicationRow"][];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    jobs_apply_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MyApplication"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    jobs_apply_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApplyJobRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MyApplication"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not allowed */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found, or not visible to you */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Already applied, or the job is closed */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };

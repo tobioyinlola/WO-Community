@@ -22,7 +22,6 @@ from apps.adminconsole import (
     team_views,
     views,
 )
-from apps.jobs import application_views
 
 KINDS = "sectors|stages|skills"
 
@@ -32,7 +31,7 @@ EVENT_ACTIONS = ("publish", "unpublish", "cancel")
 ITEM_ACTIONS = ("publish", "unpublish")
 COMMENT_ACTIONS_ITEM = ("hide", "unhide", "remove")
 WIN_DECISIONS = ("approve", "reject")
-JOB_DECISIONS = ("approve", "reject", "unpublish", "remove")
+JOB_DECISIONS = ("approve", "reject", "unpublish", "remove", "reopen")
 POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remove")
 
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
@@ -404,17 +403,13 @@ urlpatterns = [
         )
         for decision in WIN_DECISIONS
     ],
-    path(
-        "admin/job-applications",
-        application_views.AdminApplicationsView.as_view(),
-        name="admin-job-applications",
-    ),
-    path(
-        "admin/job-applications/stats",
-        application_views.AdminApplicationStatsView.as_view(),
-        name="admin-job-application-stats",
-    ),
     path("admin/jobs", job_views.AdminJobsView.as_view(), name="admin-jobs"),
+    path("admin/jobs/stats", job_views.AdminJobStatsView.as_view(), name="admin-jobs-stats"),
+    path(
+        "admin/jobs/bulk-approve",
+        job_views.AdminJobBulkApproveView.as_view(),
+        name="admin-jobs-bulk-approve",
+    ),
     path("admin/jobs/settings", job_views.JobSettingsView.as_view(), name="admin-job-settings"),
     path("admin/jobs/<uuid:job_id>", job_views.AdminJobView.as_view(), name="admin-job"),
     *[

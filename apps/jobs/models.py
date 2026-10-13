@@ -41,8 +41,12 @@ class Job(BaseModel):
     description_text = models.TextField()  # the same words without markup
     requirements = models.TextField(blank=True)  # sanitised HTML
     compensation = models.CharField(max_length=120, blank=True)
+    # How to apply, always off the platform: an https link, an email address, or both. Either may
+    # be blank but not both. `apply_method` and `apply_target` hold the first, for older code.
     apply_method = models.CharField(max_length=5)
     apply_target = models.CharField(max_length=300)
+    apply_url = models.CharField(max_length=300, blank=True)
+    apply_email = models.EmailField(max_length=254, blank=True)
     deadline = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     source = models.CharField(max_length=6, choices=Source.choices, default=Source.MEMBER)
@@ -116,7 +120,7 @@ class JobSettings(models.Model):
 
     id = models.PositiveSmallIntegerField(primary_key=True, default=1)
     require_approval = models.BooleanField(default=True)
-    default_duration_days = models.PositiveSmallIntegerField(default=60)
+    default_duration_days = models.PositiveSmallIntegerField(default=30)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -135,44 +139,3 @@ class JobSettings(models.Model):
     def load(cls) -> "JobSettings":
         row, _ = cls.objects.get_or_create(id=1)
         return row
-
-
-APPLICATION_STATUSES = ("submitted", "reviewing", "shortlisted", "rejected", "hired", "withdrawn")
-
-
-class JobApplication(BaseModel):
-    """A member's application to a job through the community, with where it stands."""
-
-    class Status(models.TextChoices):
-        SUBMITTED = "submitted"
-        REVIEWING = "reviewing"
-        SHORTLISTED = "shortlisted"
-        REJECTED = "rejected"
-        HIRED = "hired"
-        WITHDRAWN = "withdrawn"
-
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications")
-    applicant = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="job_applications"
-    )
-    note = models.TextField(blank=True)  # the cover note, plain text
-    link = models.CharField(max_length=300, blank=True)  # a CV or portfolio link
-    status = models.CharField(max_length=12, choices=Status.choices, default=Status.SUBMITTED)
-    decided_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
-    )
-    decided_at = models.DateTimeField(null=True, blank=True)
-    decision_note = models.CharField(max_length=500, blank=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["job", "applicant"], name="job_application_once"),
-            models.CheckConstraint(
-                condition=Q(status__in=APPLICATION_STATUSES), name="job_application_status_valid"
-            ),
-        ]
-        indexes = [
-            models.Index(fields=["status", "-created_at"], name="job_app_status_idx"),
-            models.Index(fields=["job", "-created_at"], name="job_app_job_idx"),
-            models.Index(fields=["applicant", "-created_at"], name="job_app_applicant_idx"),
-        ]

@@ -61,7 +61,9 @@ ci: lint typecheck security imports lint-migrations test schema check
 # Lints only the migrations that are new compared with BASE (default: the main branch), because
 # old migrations already ran. Findings are real deploy risks: read them before ignoring one.
 BASE ?= origin/main
+# Ignored: 0006_course_files widens a varchar (metadata only); 0003_remove_job_applications drops a
+# table no code reads any more, and the migration that made it never reached main.
 lint-migrations:
 	DJANGO_SETTINGS_MODULE=config.settings.test $(PY) manage.py lintmigrations --no-cache \
 		--git-commit-id $(BASE) --ignore-initial-migrations --exclude-apps django_celery_beat \
-		--sql-analyser postgresql --ignore-name 0006_course_files  # uploads: widening a varchar is metadata only
+		--sql-analyser postgresql --ignore-name 0006_course_files --ignore-name 0003_remove_job_applications

@@ -81,7 +81,7 @@ export function AnalyticsOverview() {
                 controls={false}
                 value={chartKey}
                 onChange={setChartKey}
-                options={(data?.series ?? []).filter((s) => ["members", "posts", "comments", "applications", "sessions"].includes(s.key)).map((s) => ({ value: s.key, label: s.title }))}
+                options={(data?.series ?? []).filter((s) => ["members", "posts", "comments", "sessions"].includes(s.key)).map((s) => ({ value: s.key, label: s.title }))}
               />
             </div>
             {chosen && data ? (
