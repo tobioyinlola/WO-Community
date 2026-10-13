@@ -1828,7 +1828,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One member */
+        /**
+         * One member in full
+         * @description The account, profile, activity, learning, mentorship, support and the last audit entries about them, in one read. Personal details, so each read is logged.
+         */
         get: operations["admin_members_retrieve"];
         put?: never;
         post?: never;
@@ -1946,6 +1949,23 @@ export interface paths {
          * @description Ends all their sessions and takes their public pages down.
          */
         post: operations["admin_members_remove_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/{user_id}/resend-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the verification email again */
+        post: operations["admin_members_resend_verification_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8279,6 +8299,11 @@ export interface components {
             email: string;
             status: string;
         };
+        AccountSection: {
+            invited_by: components["schemas"]["PersonRef"] | null;
+            referred_by: components["schemas"]["PersonRef"] | null;
+            approved_by: components["schemas"]["PersonRef"] | null;
+        };
         Activity: {
             daily_active: number | null;
             weekly_active: number | null;
@@ -8290,6 +8315,12 @@ export interface components {
             jobs_posted_last_30_days: number;
             /** Format: double */
             average_hours_to_approval: number | null;
+        };
+        ActivitySection: {
+            posts: number;
+            comments: number;
+            events_attended: number;
+            jobs_posted: number;
         };
         AdminAccessRequest: {
             /** Format: uuid */
@@ -9200,6 +9231,14 @@ export interface components {
             before: unknown;
             after: unknown;
         };
+        AuditRef: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            action: string;
+            outcome: string;
+        };
         AuditTarget: {
             type: string;
             id: string;
@@ -9584,6 +9623,13 @@ export interface components {
             signature_upload_id?: string;
             remove_signature?: boolean;
             holder_name?: string;
+        };
+        CertificateRef: {
+            number: string;
+            course_title: string;
+            /** Format: date-time */
+            issued_at: string;
+            revoked: boolean;
         };
         CertificateSettings: {
             title_text: string;
@@ -10752,6 +10798,11 @@ export interface components {
          * @enum {string}
          */
         LanguagesEnum: "af" | "am" | "ar" | "de" | "en" | "es" | "fr" | "ha" | "hi" | "ig" | "pt" | "sw" | "yo" | "zh" | "zu";
+        LearningSection: {
+            courses_started: number;
+            courses_completed: number;
+            certificates: components["schemas"]["CertificateRef"][];
+        };
         LearningSnapshot: {
             available: boolean;
             published_courses: number;
@@ -10962,6 +11013,35 @@ export interface components {
             last_login: string;
             /** Format: date-time */
             created_at: string;
+        };
+        /** @description The member row's account fields plus every section the drawer shows. */
+        MemberFull: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            status: string;
+            roles: string[];
+            /** Format: date-time */
+            email_verified_at: string | null;
+            /** Format: date-time */
+            approved_at: string | null;
+            approval_source: string;
+            status_reason: string;
+            /** Format: date-time */
+            status_changed_at: string | null;
+            /** Format: date-time */
+            last_login: string | null;
+            /** Format: date-time */
+            created_at: string;
+            name: string;
+            profile: components["schemas"]["ProfileSection"];
+            account: components["schemas"]["AccountSection"];
+            activity: components["schemas"]["ActivitySection"];
+            learning: components["schemas"]["LearningSection"];
+            mentorship: components["schemas"]["MentorshipSection"] | null;
+            open_tickets: components["schemas"]["TicketRef"][];
+            audit: components["schemas"]["AuditRef"][];
         };
         /** @description A member in the table: the account, plus what they gave on joining. */
         MemberRow: {
@@ -11239,6 +11319,15 @@ export interface components {
             can_apply_after: string | null;
             /** @description Said they want to mentor at registration and have not applied yet. */
             prompt_to_apply: boolean;
+        };
+        MentorshipSection: {
+            status: string;
+            paused: boolean;
+            capacity_per_week: number;
+            session_minutes: number;
+            default_price_minor: number | null;
+            sessions_as_mentor: number;
+            sessions_as_mentee: number;
         };
         MentorshipSnapshot: {
             available: boolean;
@@ -12258,6 +12347,11 @@ export interface components {
             photo: components["schemas"]["Image"] | null;
             slug: string | null;
         };
+        PersonRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -12474,6 +12568,23 @@ export interface components {
         ProfileCompleteness: {
             score: number;
             next_missing_field: string | null;
+        };
+        ProfileSection: {
+            full_name: string;
+            headline: string;
+            bio: string;
+            country: string;
+            city: string;
+            website_url: string;
+            linkedin_url: string;
+            x_url: string;
+            skills: string[];
+            open_to: string[];
+            completeness: number;
+            startup_name: string;
+            industry: string;
+            stage: string;
+            pitch: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -13867,6 +13978,13 @@ export interface components {
             readonly messages: {
                 [key: string]: unknown;
             }[];
+        };
+        TicketRef: {
+            /** Format: uuid */
+            id: string;
+            number: number;
+            subject: string;
+            status: string;
         };
         TimelineEntry: {
             kind: components["schemas"]["TimelineEntryKindEnum"];
@@ -20925,7 +21043,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Member"];
+                    "application/json": components["schemas"]["MemberFull"];
                 };
             };
             /** @description Not authenticated */
@@ -21233,6 +21351,54 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Member"];
                 };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_resend_verification_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not authenticated */
             401: {

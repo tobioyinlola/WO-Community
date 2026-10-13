@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import type { ColumnDef } from "@tanstack/react-table";
 import { Check, Download, MoreHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { REFERRAL_SOURCES } from "../referrals/ref";
 import { api, unwrap } from "../api/client";
 import { useCountries } from "../api/reference";
@@ -21,6 +21,7 @@ import { BulkBar, ColumnsMenu, DensityToggle, FilterChips, Pager, StatStrip, Sta
 import { useUndoable } from "./kit/undo";
 import { ROLE_LABELS } from "./permissions";
 import { usePref } from "./shell/prefs";
+import { MemberDrawer, type DrawerAction } from "./MemberDrawer";
 import { useStepUp } from "./StepUp";
 
 type Member = components["schemas"]["MemberRow"];
@@ -79,6 +80,8 @@ function RowActions({ member, onAct }: { member: Member; onAct: (kind: Action["k
 export default function Members() {
   useDocumentTitle("Members");
   const [params, setParams] = useSearchParams();
+  const { memberId } = useParams();
+  const navigate = useNavigate();
   const client = useQueryClient();
   const toast = useToast();
   const guard = useStepUp();
@@ -221,7 +224,7 @@ export default function Members() {
           <span className="adm-who">
             <Avatar name={row.original.email} id={row.original.id} size="sm" />
             <span className="adm-who__text">
-              <span className="adm-who__name">{row.original.name || row.original.email}</span>
+              <Link className="adm-who__name" to={{ pathname: `/admin/members/${row.original.id}`, search: params.toString() }}>{row.original.name || row.original.email}</Link>
               <span className="adm-who__id">{row.original.name ? `${row.original.email} · ` : ""}{shortId(row.original.id)}</span>
             </span>
           </span>
@@ -301,7 +304,7 @@ export default function Members() {
         cell: ({ row }) => <RowActions member={row.original} onAct={(kind) => setAction({ kind, member: row.original })} />,
       },
     ],
-    [countryName],
+    [countryName, params],
   );
   const visibility = Object.fromEntries(hidden.map((id) => [id, false]));
 
@@ -443,6 +446,14 @@ export default function Members() {
         <Button size="sm" variant="accent" onClick={bulkApprove} disabled={!rows.some((m) => selected.has(m.id) && m.status === "pending")}>Approve waiting</Button>
         <Button size="sm" variant="white" onClick={() => download(rows.filter((m) => selected.has(m.id)), `members-selected-${iso(new Date())}.csv`)}>Export selected</Button>
       </BulkBar>
+
+      {memberId ? (
+        <MemberDrawer
+          memberId={memberId}
+          onClose={() => navigate({ pathname: "/admin/members", search: params.toString() })}
+          onAct={(kind: DrawerAction, member) => setAction({ kind, member: member as Member })}
+        />
+      ) : null}
 
       {action && (action.kind === "reject" || action.kind === "suspend" || action.kind === "remove") ? (
         <ReasonDialog

@@ -204,7 +204,9 @@ export function App() {
                 <Route element={<RequireAuth />}>
                   <Route path="admin" element={<AdminLayout />}>
                     <Route index element={<AdminHome />} />
-                    <Route path="members" element={<AdminMembers />} />
+                    <Route path="members" element={<AdminMembers />}>
+                      <Route path=":memberId" element={null} />
+                    </Route>
                     <Route path="approvals" element={<AdminApprovals />} />
                     <Route path="invitations" element={<AdminInvitations />} />
                     <Route path="mentors" element={<AdminMentors />} />
