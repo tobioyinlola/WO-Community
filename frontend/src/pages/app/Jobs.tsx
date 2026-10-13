@@ -12,6 +12,7 @@ import { textToHtml } from "../../lib/html";
 import { EmptyState, LoadMore, Loaded, PageHeader, RichText, SkeletonRows } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
+import { Applicants, ApplyPanel } from "./JobApply";
 
 type Job = components["schemas"]["Job"];
 type JobType = components["schemas"]["JobTypeEnum"];
@@ -206,16 +207,18 @@ export function JobDetail() {
                 </dl>
                 {job.status === "published" && job.apply.target ? (
                   <a
-                    className="wo-btn wo-btn--primary wo-btn--lg"
+                    className={job.mine ? "wo-btn wo-btn--primary wo-btn--lg" : "wo-btn wo-btn--secondary wo-btn--lg"}
                     style={{ marginTop: "var(--space-6)", width: "100%" }}
                     href={job.apply.method === "email" ? `mailto:${job.apply.target}` : job.apply.target}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
                   >
-                    Apply
+                    {job.mine ? "Apply" : "Apply on their site"}
                   </a>
                 ) : null}
+                {job.status === "published" && !job.mine ? <ApplyPanel jobId={job.id} title={job.title} /> : null}
               </Card>
+              {job.mine ? <Applicants jobId={job.id} /> : null}
               {job.mine && job.status === "published" ? (
                 <Button variant="secondary" loading={close.isPending} onClick={() => close.mutate(undefined, { onSuccess: () => navigate("/app/jobs") })}>
                   Close this job

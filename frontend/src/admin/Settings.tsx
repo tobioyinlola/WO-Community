@@ -5,20 +5,16 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Alert, Avatar, Button, Input, Switch } from "../components";
-import { formatDate, humanise, timeAgo } from "../lib/format";
-import { EmptyState, ErrorState, Loaded, PageHeader, SkeletonRows, useDocumentTitle } from "../ui/blocks";
+import { humanise } from "../lib/format";
+import { Loaded, PageHeader, SkeletonRows, useDocumentTitle } from "../ui/blocks";
 import { FormError, useSubmit } from "../ui/forms";
 import { useToast } from "../ui/Toast";
 import { mfaAgeSeconds } from "./claims";
-import { DataTable } from "./kit/DataTable";
 import { StatusChip, type Density } from "./kit/TableBits";
 import { ROLE_LABELS, permissionsFor } from "./permissions";
 import { usePref } from "./shell/prefs";
 import Security from "./Security";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { components } from "../api/schema";
-
-type Member = components["schemas"]["MemberRow"];
+import { TeamSection } from "./Team";
 
 interface Section {
   id: string;
@@ -147,67 +143,6 @@ function CommunitySection({ permissions }: { permissions: Set<string> }) {
   );
 }
 
-function useRoleMembers(role: string) {
-  return useQuery({
-    queryKey: ["admin", "team", role],
-    queryFn: () => unwrap(api.GET("/api/v1/admin/members", { params: { query: { role, limit: 100 } } })),
-  });
-}
-
-function TeamSection() {
-  const queries = [useRoleMembers("super_admin"), useRoleMembers("community_admin"), useRoleMembers("content_editor")];
-  const loading = queries.some((q) => q.isPending);
-  const failed = queries.find((q) => q.isError);
-  const stamp = queries.map((q) => q.dataUpdatedAt).join(",");
-  const people = useMemo(() => {
-    const byId = new Map<string, Member>();
-    for (const q of queries) for (const m of q.data?.results ?? []) byId.set(m.id, m);
-    return [...byId.values()].sort((x, y) => x.email.localeCompare(y.email));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the stamp changes whenever any list does
-  }, [stamp]);
-  const columns = useMemo<Array<ColumnDef<Member, unknown>>>(
-    () => [
-      {
-        id: "person",
-        header: "Person",
-        cell: ({ row }) => (
-          <span className="adm-who">
-            <Avatar name={row.original.email} id={row.original.id} size="sm" />
-            <span className="adm-who__text"><span className="adm-who__name">{row.original.email}</span></span>
-          </span>
-        ),
-      },
-      { id: "roles", header: "Roles", cell: ({ row }) => row.original.roles.map((r) => ROLE_LABELS[r] ?? humanise(r)).join(", ") },
-      { id: "status", header: "Status", cell: ({ row }) => <StatusChip tone={row.original.status === "active" ? "success" : "warning"}>{humanise(row.original.status)}</StatusChip> },
-      { id: "last", header: "Last active", cell: ({ row }) => (row.original.last_login ? timeAgo(row.original.last_login) : "Never") },
-      { id: "since", header: "Added", cell: ({ row }) => formatDate(row.original.created_at) },
-    ],
-    [],
-  );
-  return (
-    <section className="adm-card adm-tablecard" aria-labelledby="team-title">
-      <div className="adm-tablecard__head">
-        <div>
-          <h2 className="adm-card__title" id="team-title">Roles and team</h2>
-          <p className="adm-card__sub">People with a role in the console. Roles are given by invitation, from the Invitations page.</p>
-        </div>
-      </div>
-      {failed ? (
-        <div style={{ padding: "var(--space-6)" }}><ErrorState error={failed.error} onRetry={() => void failed.refetch()} /></div>
-      ) : (
-        <DataTable
-          caption="People with a console role"
-          columns={columns}
-          data={people}
-          getRowId={(m) => m.id}
-          loading={loading}
-          empty={<div style={{ padding: "var(--space-6)" }}><EmptyState title="Nobody yet">No one has a console role.</EmptyState></div>}
-        />
-      )}
-    </section>
-  );
-}
-
 function AppearanceSection() {
   const toast = useToast();
   const [density, setDensity] = usePref<Density>("members:density", "comfortable");
@@ -272,7 +207,7 @@ export default function Settings() {
           {current?.id === "profile" ? <ProfileSection /> : null}
           {current?.id === "community" ? <CommunitySection permissions={have} /> : null}
           {current?.id === "security" ? <Security embedded /> : null}
-          {current?.id === "team" ? <TeamSection /> : null}
+          {current?.id === "team" ? <TeamSection permissions={have} /> : null}
           {current?.id === "appearance" ? <AppearanceSection /> : null}
           {!current ? <Alert tone="info" title="Nothing to show">Your role has no settings to change.</Alert> : null}
         </div>

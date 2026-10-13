@@ -84,6 +84,13 @@ const AdminCourseRequests = lazy(() => import("./admin/CourseRequests"));
 const AdminEmail = lazy(() => import("./admin/Email"));
 const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
+const AdminFeed = lazy(() => import("./admin/AdminFeed"));
+const AdminJobApplications = lazy(() => import("./admin/JobApplications"));
+const AdminSessions = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringSessions })));
+const AdminMatches = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringMatches })));
+const AdminAnalytics = lazy(() => import("./admin/Analytics").then((m) => ({ default: m.AnalyticsOverview })));
+const AdminFunnels = lazy(() => import("./admin/Analytics").then((m) => ({ default: m.AnalyticsFunnels })));
+const AdminAnalyticReports = lazy(() => import("./admin/Analytics").then((m) => ({ default: m.AnalyticsReports })));
 const AdminSettings = lazy(() => import("./admin/Settings"));
 const AdminDesign = lazy(() => import("./admin/AdminDesign"));
 const AdminSupport = lazy(() => import("./admin/Support"));
@@ -203,6 +210,13 @@ export function App() {
                     <Route path="reports" element={<AdminReports />} />
                     <Route path="jobs" element={<AdminJobs />} />
                     <Route path="wins" element={<AdminWins />} />
+                    <Route path="feed" element={<AdminFeed />} />
+                    <Route path="job-applications" element={<AdminJobApplications />} />
+                    <Route path="sessions" element={<AdminSessions />} />
+                    <Route path="matches" element={<AdminMatches />} />
+                    <Route path="analytics" element={<AdminAnalytics />} />
+                    <Route path="analytics/funnels" element={<AdminFunnels />} />
+                    <Route path="analytics/reports" element={<AdminAnalyticReports />} />
                     <Route path="news" element={<AdminNews />} />
                     <Route path="events" element={<AdminEvents />} />
                     <Route path="courses" element={<AdminCourses />} />

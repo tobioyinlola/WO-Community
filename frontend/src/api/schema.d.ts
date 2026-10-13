@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/admin/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Community analytics, counted live
+         * @description Totals for the range and the range before it, a count per day, breakdowns of who is here and what they do, and a funnel for people who signed up in the range. Defaults to the last 30 days; the range is at most 366 days.
+         */
+        get: operations["admin_analytics_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/answers/{item_id}/hide": {
         parameters: {
             query?: never;
@@ -1469,6 +1489,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/job-applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All job applications
+         * @description Newest first. Filter by `status`, `job_id` and text (job, organisation, applicant name or email).
+         */
+        get: operations["admin_job_applications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/job-applications/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Applications by status */
+        get: operations["admin_job_applications_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/jobs": {
         parameters: {
             query?: never;
@@ -1670,6 +1727,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mentor and founder pairs
+         * @description Everyone who has asked a mentor for a session, one row per pair, with how many sessions they have had and whether they are still working together. `active` is a pair with a request waiting or a session coming up.
+         */
+        get: operations["admin_matches_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members": {
         parameters: {
             query?: never;
@@ -1832,6 +1909,26 @@ export interface paths {
          * @description Super admin only. Ends the admin's sessions; they enrol again at next login.
          */
         post: operations["admin_members_reset_mfa_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give or take a console role
+         * @description Super admin only. Ends the person's sessions so the change applies at once.
+         */
+        post: operations["admin_members_role_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2047,6 +2144,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every post, for moderation
+         * @description Newest first, hidden ones included. Filter by `category`, `state` (live, hidden, pinned, featured, reported) and text. Use the post actions to pin, feature, hide or remove.
+         */
+        get: operations["admin_posts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/posts/{post_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One post with all of its comments
+         * @description Hidden comments are included so they can be restored.
+         */
+        get: operations["admin_posts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/posts/{post_id}/feature": {
         parameters: {
             query?: never;
@@ -2181,6 +2318,23 @@ export interface paths {
          * @description Actions: pin, unpin, feature, unfeature, hide, unhide, remove. Hidden posts disappear from the feed but the author still sees them; removed posts are gone. Every action is written to the audit log.
          */
         post: operations["admin_posts_unpin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/posts/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feed totals for the moderation page */
+        get: operations["admin_posts_stats_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2474,6 +2628,26 @@ export interface paths {
          * @description A hidden review leaves the average and the distribution.
          */
         post: operations["admin_reviews_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Roles and what each can do
+         * @description The permission matrix, from the same table the API enforces.
+         */
+        get: operations["admin_roles_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3918,6 +4092,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/job-applications/{application_id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an application along
+         * @description The poster of the job, or an admin. Reviewing, shortlisted, rejected, hired.
+         */
+        post: operations["job_applications_decide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/job-applications/{application_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw your application */
+        post: operations["job_applications_withdraw_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs": {
         parameters: {
             query?: never;
@@ -3964,6 +4175,44 @@ export interface paths {
          * @description Send only what changes, with the ETag in If-Match. Pending and published jobs only; renew a closed or expired job first.
          */
         patch: operations["jobs_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Applications to your job
+         * @description Only the member who posted the job, or an admin who moderates jobs.
+         */
+        get: operations["jobs_applications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your application to a job */
+        get: operations["jobs_apply_retrieve"];
+        put?: never;
+        /** Apply to a job through the community */
+        post: operations["jobs_apply_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/jobs/{job_id}/close": {
@@ -8259,6 +8508,26 @@ export interface components {
             size: number | null;
             content_type: string;
         };
+        AdminMatch: {
+            mentor: components["schemas"]["ConsolePerson"];
+            mentee: components["schemas"]["ConsolePerson"];
+            sessions: number;
+            completed: number;
+            upcoming: number;
+            waiting: number;
+            /** Format: date-time */
+            last_at: string;
+            /** Format: date-time */
+            next_at: string | null;
+            state: components["schemas"]["AdminMatchStateEnum"];
+        };
+        /**
+         * @description * `active` - active
+         *     * `completed` - completed
+         *     * `idle` - idle
+         * @enum {string}
+         */
+        AdminMatchStateEnum: "active" | "completed" | "idle";
         AdminMentor: {
             /**
              * Format: uuid
@@ -8321,7 +8590,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             status: components["schemas"]["MentoringSessionStatusEnum"];
-            role: components["schemas"]["RoleEnum"];
+            role: components["schemas"]["SessionViewRoleEnum"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -8392,6 +8661,49 @@ export interface components {
             id: string;
             name: string;
             email: string;
+        };
+        AdminPost: {
+            /** Format: uuid */
+            id: string;
+            author: components["schemas"]["ConsolePerson"];
+            category: string;
+            excerpt: string;
+            /** Format: date-time */
+            created_at: string;
+            pinned: boolean;
+            featured: boolean;
+            hidden: boolean;
+            comment_count: number;
+            reaction_count: number;
+            open_reports: number;
+        };
+        AdminPostComment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parent_id: string | null;
+            author: components["schemas"]["ConsolePerson"];
+            text: string;
+            hidden: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        AdminPostDetail: {
+            /** Format: uuid */
+            id: string;
+            author: components["schemas"]["ConsolePerson"];
+            category: string;
+            excerpt: string;
+            /** Format: date-time */
+            created_at: string;
+            pinned: boolean;
+            featured: boolean;
+            hidden: boolean;
+            comment_count: number;
+            reaction_count: number;
+            open_reports: number;
+            text: string;
+            comments: components["schemas"]["AdminPostComment"][];
         };
         AdminPreview: {
             /** Format: uuid */
@@ -8607,6 +8919,22 @@ export interface components {
             startup_id?: string;
             location?: string;
         };
+        Analytics: {
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            days: number;
+            stats: components["schemas"]["Stat"][];
+            series: components["schemas"]["AnalyticsSeries"][];
+            breakdowns: components["schemas"]["Breakdown"][];
+            funnel: components["schemas"]["CountRow"][];
+        };
+        AnalyticsSeries: {
+            key: string;
+            title: string;
+            points: components["schemas"]["SeriesPoint"][];
+        };
         Announcement: {
             /** Format: uuid */
             id: string;
@@ -8676,6 +9004,13 @@ export interface components {
             timeline: components["schemas"]["TimelineEntry"][];
             referral: components["schemas"]["ApplicantReferral"];
         };
+        ApplicationApplicant: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: email */
+            email: string;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -8697,9 +9032,46 @@ export interface components {
             motivation: string;
             accept_conduct: boolean;
         };
+        ApplicationRow: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["JobApplicationStatusEnum"];
+            note: string;
+            link: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            decided_at: string | null;
+            decision_note: string;
+            applicant: components["schemas"]["ApplicationApplicant"];
+            /** Format: uuid */
+            job_id: string;
+            job_title: string;
+            job_organisation: string;
+            job_status: string;
+        };
+        ApplicationStats: {
+            submitted: number;
+            reviewing: number;
+            shortlisted: number;
+            rejected: number;
+            hired: number;
+            withdrawn: number;
+        };
         Apply: {
             method: string;
             target?: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ApplyJobRequest: {
+            note: string;
+            /** @default  */
+            link: string;
         };
         /**
          * @description * `url` - url
@@ -8829,6 +9201,11 @@ export interface components {
             session_minutes: number;
             times: string[];
             sessions_left_this_week: number;
+        };
+        Breakdown: {
+            key: string;
+            title: string;
+            rows: components["schemas"]["CountRow"][];
         };
         BrowseJob: {
             /** Format: uuid */
@@ -9137,6 +9514,24 @@ export interface components {
          */
         CertificateStatusEnum: "valid" | "revoked";
         /**
+         * @description * `grant` - grant
+         *     * `revoke` - revoke
+         * @enum {string}
+         */
+        ChangeRoleActionEnum: "grant" | "revoke";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ChangeRoleRequest: {
+            role: components["schemas"]["TeamRoleEnum"];
+            action: components["schemas"]["ChangeRoleActionEnum"];
+            /** @default  */
+            reason: string;
+        };
+        /**
          * @description * `proposed` - proposed
          *     * `applied` - applied
          *     * `undone` - undone
@@ -9246,7 +9641,18 @@ export interface components {
             status: string;
             topic: string;
         };
+        ConsolePerson: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: email */
+            email: string;
+        };
         CountItem: {
+            name: string;
+            count: number;
+        };
+        CountRow: {
             name: string;
             count: number;
         };
@@ -9467,6 +9873,25 @@ export interface components {
             mentorship: components["schemas"]["MentorshipSnapshot"];
             revenue: components["schemas"]["Availability"];
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        DecideApplicationRequest: {
+            status: components["schemas"]["DecideApplicationStatusEnum"];
+            /** @default  */
+            note: string;
+        };
+        /**
+         * @description * `reviewing` - reviewing
+         *     * `shortlisted` - shortlisted
+         *     * `rejected` - rejected
+         *     * `hired` - hired
+         * @enum {string}
+         */
+        DecideApplicationStatusEnum: "reviewing" | "shortlisted" | "rejected" | "hired";
         /**
          * @description * `approve` - approve
          *     * `decline` - decline
@@ -9763,6 +10188,15 @@ export interface components {
          * @enum {string}
          */
         FeedActivityKindEnum: "comment" | "reaction";
+        FeedStats: {
+            posts: number;
+            posts_last_7_days: number;
+            comments: number;
+            reactions: number;
+            hidden: number;
+            pinned: number;
+            open_reports: number;
+        };
         FeedbackItem: {
             stars: number | null;
             comment: string;
@@ -10126,6 +10560,16 @@ export interface components {
             saved: boolean;
             review_note: string;
         };
+        /**
+         * @description * `submitted` - submitted
+         *     * `reviewing` - reviewing
+         *     * `shortlisted` - shortlisted
+         *     * `rejected` - rejected
+         *     * `hired` - hired
+         *     * `withdrawn` - withdrawn
+         * @enum {string}
+         */
+        JobApplicationStatusEnum: "submitted" | "reviewing" | "shortlisted" | "rejected" | "hired" | "withdrawn";
         /** @description Fields shared by creating and editing a job. */
         JobCreateRequest: {
             title: string;
@@ -10636,7 +11080,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             status: components["schemas"]["MentoringSessionStatusEnum"];
-            role: components["schemas"]["RoleEnum"];
+            role: components["schemas"]["SessionViewRoleEnum"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
@@ -10786,6 +11230,18 @@ export interface components {
          */
         ModuleWriteRequest: {
             title: string;
+        };
+        MyApplication: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            job_id: string;
+            status: components["schemas"]["JobApplicationStatusEnum"];
+            note: string;
+            link: string;
+            /** Format: date-time */
+            created_at: string;
+            decision_note: string;
         };
         MyRating: {
             stars: number;
@@ -11087,6 +11543,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AdminLearner"][];
         };
+        PaginatedAdminMatchList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminMatch"][];
+        };
         PaginatedAdminMentorApplicationList: {
             /** @example 123 */
             count: number;
@@ -11131,6 +11602,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AdminMentoringSession"][];
+        };
+        PaginatedAdminPostList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminPost"][];
         };
         PaginatedAdminPreviewList: {
             /** @example 123 */
@@ -11191,6 +11677,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AdminWin"][];
+        };
+        PaginatedApplicationRowList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["ApplicationRow"][];
         };
         PaginatedAttendeeList: {
             /** @example 123 */
@@ -12570,13 +13071,22 @@ export interface components {
         RevokeRequest: {
             reason: string;
         };
-        /**
-         * @description * `mentor` - mentor
-         *     * `mentee` - mentee
-         *     * `admin` - admin
-         * @enum {string}
-         */
-        RoleEnum: "mentor" | "mentee" | "admin";
+        Role: {
+            role: string;
+            title: string;
+            blurb: string;
+            permissions: string[];
+            people: number;
+            /** @description Whether it is a console role you can invite to */
+            team: boolean;
+        };
+        RoleHolder: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            roles: string[];
+        };
         /**
          * @description * `member` - member
          *     * `mentor` - mentor
@@ -12710,6 +13220,13 @@ export interface components {
              * @description Sum, or the average for averaged metrics
              */
             total: number | null;
+        };
+        SeriesPoint: {
+            /** Format: date */
+            day: string;
+            count: number;
+            /** @description The same day of the range before */
+            previous: number;
         };
         Session: {
             /** Format: uuid */
@@ -12851,6 +13368,13 @@ export interface components {
             /** @description 20 to 1000 characters introducing yourself and your goal. */
             message: string;
         };
+        /**
+         * @description * `mentor` - mentor
+         *     * `mentee` - mentee
+         *     * `admin` - admin
+         * @enum {string}
+         */
+        SessionViewRoleEnum: "mentor" | "mentee" | "admin";
         SetupOptions: {
             lengths: number[];
             buffers: number[];
@@ -13043,6 +13567,12 @@ export interface components {
             name: string;
             logo: components["schemas"]["Image"] | null;
         };
+        Stat: {
+            key: string;
+            title: string;
+            value: number;
+            previous: number;
+        };
         Stats: {
             counts: components["schemas"]["Counts"];
             median_first_response_seconds: number | null;
@@ -13136,6 +13666,13 @@ export interface components {
             title: string;
             is_founder: boolean;
         };
+        /**
+         * @description * `content_editor` - content_editor
+         *     * `community_admin` - community_admin
+         *     * `super_admin` - super_admin
+         * @enum {string}
+         */
+        TeamRoleEnum: "content_editor" | "community_admin" | "super_admin";
         Template: {
             /** Format: uuid */
             id: string;
@@ -14674,6 +15211,42 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_analytics_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Analytics"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_answers_hide_create: {
         parameters: {
             query?: never;
@@ -18873,6 +19446,8 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 q?: string;
+                /** @description A role, or `team` for every console role */
+                role?: string;
                 /**
                  * @description * `sent` - sent
                  *     * `opened` - opened
@@ -19168,6 +19743,100 @@ export interface operations {
             };
             /** @description Already registered, already invited, or not in a state that allows this */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_job_applications_list: {
+        parameters: {
+            query?: {
+                job_id?: string | null;
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `submitted` - submitted
+                 *     * `reviewing` - reviewing
+                 *     * `shortlisted` - shortlisted
+                 *     * `rejected` - rejected
+                 *     * `hired` - hired
+                 *     * `withdrawn` - withdrawn
+                 */
+                status?: "submitted" | "reviewing" | "shortlisted" | "rejected" | "hired" | "withdrawn";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedApplicationRowList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_job_applications_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationStats"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19863,6 +20532,49 @@ export interface operations {
             };
         };
     };
+    admin_matches_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `active` - active
+                 *     * `completed` - completed
+                 *     * `idle` - idle
+                 */
+                state?: "active" | "completed" | "idle";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminMatchList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_members_list: {
         parameters: {
             query?: {
@@ -20335,6 +21047,59 @@ export interface operations {
                 content?: never;
             };
             /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_role_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleHolder"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such account */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description That would leave no super admin */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -20901,6 +21666,88 @@ export interface operations {
             };
         };
     };
+    admin_posts_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `update` - update
+                 *     * `question` - question
+                 *     * `win` - win
+                 *     * `resource` - resource
+                 *     * `event` - event
+                 *     * `opportunity` - opportunity
+                 */
+                category?: "update" | "question" | "win" | "resource" | "event" | "opportunity";
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `live` - live
+                 *     * `hidden` - hidden
+                 *     * `pinned` - pinned
+                 *     * `featured` - featured
+                 *     * `reported` - reported
+                 */
+                state?: "live" | "hidden" | "pinned" | "featured" | "reported";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminPostList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPostDetail"];
+                };
+            };
+            /** @description No post */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_posts_feature_create: {
         parameters: {
             query?: never;
@@ -21216,6 +22063,39 @@ export interface operations {
             };
             /** @description No such post */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedStats"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22006,6 +22886,39 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_roles_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26093,6 +27006,94 @@ export interface operations {
             };
         };
     };
+    job_applications_decide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideApplicationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRow"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    job_applications_withdraw_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyApplication"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     jobs_list: {
         parameters: {
             query?: {
@@ -26305,6 +27306,143 @@ export interface operations {
             };
             /** @description If-Match header missing */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    jobs_applications_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRow"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    jobs_apply_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyApplication"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    jobs_apply_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyJobRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyApplication"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already applied, or the job is closed */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

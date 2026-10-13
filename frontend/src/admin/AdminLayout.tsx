@@ -8,6 +8,7 @@ import { useAuth } from "../auth/AuthProvider";
 import "../styles/admin.css";
 import "../styles/admin-kit.css";
 import "../styles/admin-table.css";
+import "../styles/admin-ops.css";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { mfaAgeSeconds } from "./claims";
 import MfaSetup from "./MfaSetup";
