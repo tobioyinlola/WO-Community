@@ -113,7 +113,6 @@ class ResendVerificationView(APIView):
             action="member.verification_resent",
             target_type="user",
             target_id=member.pk,
-            target_label=member.email,
             ip=_ip(request),
         )
         return Response(status=204)

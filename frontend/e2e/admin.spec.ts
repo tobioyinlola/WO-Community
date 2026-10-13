@@ -74,10 +74,11 @@ test.describe("the admin console", () => {
 
   test("a waiting job is published", async ({ page }) => {
     await signInAdmin(page);
-    await page.goto("/admin/jobs");
-    await page.getByRole("button", { name: "Publish" }).first().click();
-    await page.getByRole("button", { name: "Publish", exact: true }).last().click();
-    await expect(page.getByText("Job published")).toBeVisible();
+    await page.goto("/admin/jobs?tab=pending");
+    await page.locator("button.wo-linkbtn").first().click();
+    await page.getByRole("button", { name: "Approve", exact: true }).first().click();
+    await page.getByRole("button", { name: "Approve", exact: true }).last().click();
+    await expect(page.getByText("Job approved and live")).toBeVisible();
   });
 
   test("a report is acted on and a win is published", async ({ page }) => {

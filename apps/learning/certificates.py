@@ -235,6 +235,14 @@ def issue(enrolment_id: UUID) -> Certificate | None:
         store_pdf(certificate)
     except Exception:  # the file is drawn again on first download, so this must not undo the award
         logger.exception("certificate_pdf_failed", certificate_id=str(certificate.pk))
+    audit.record(
+        actor=None,
+        action="certificates.issued",
+        target_type="certificate",
+        target_id=certificate.pk,
+        target_label=certificate.course_title,
+        after={"number": certificate.code},
+    )
     analytics.track(
         "certificate_issued",
         actor_id=enrolment.user_id,

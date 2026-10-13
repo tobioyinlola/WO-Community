@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.adminconsole.views import _actor, _ip
+from apps.audit import services as audit
 from apps.core import etag, policies
 from apps.core.pagination import AdminLimitOffsetPagination
 from apps.jobs import selectors, services
@@ -213,7 +214,23 @@ class JobSettingsView(APIView):
         serializer = JobSettingsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         current: Any = JobSettings.load()
+        before = {
+            "require_approval": current.require_approval,
+            "default_duration_days": current.default_duration_days,
+        }
         current.require_approval = serializer.validated_data["require_approval"]
         current.default_duration_days = serializer.validated_data["default_duration_days"]
         current.save()
+        audit.record(
+            actor=_actor(request),
+            action="settings.jobs_changed",
+            target_type="settings",
+            target_label="Job board",
+            before=before,
+            after={
+                "require_approval": current.require_approval,
+                "default_duration_days": current.default_duration_days,
+            },
+            ip=_ip(request),
+        )
         return Response(JobSettingsSerializer(current).data)

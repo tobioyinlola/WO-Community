@@ -16,6 +16,7 @@ from django.utils.text import slugify
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.accounts.models import User
 from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import etag, ratelimit
@@ -245,6 +246,14 @@ def create_job(*, user_id: UUID, data: dict[str, Any], admin: bool = False) -> J
         job.save()
         _index(job)
         analytics.track("job_created", actor_id=user_id, properties={"job_type": job.type})
+        audit.record(
+            actor=User.objects.filter(pk=user_id).first(),
+            action="jobs.created",
+            target_type="job",
+            target_id=job.pk,
+            target_label=job.title,
+            after={"status": job.status, "origin": job.source},
+        )
         if job.status == Job.Status.PUBLISHED:
             _announce_published(job)
         else:

@@ -231,7 +231,7 @@ def create_post(
                 action="feed.post_created_by_team",
                 target_type="post",
                 target_id=post.pk,
-                target_label=text[:80],
+                target_label=f"{category} post",
                 after={k: str(v) for k, v in options.items()},
                 ip=team.get("ip", ""),
             )
@@ -321,7 +321,7 @@ def update_team_post(*, actor: Any, post_id: UUID, changes: dict[str, Any], ip: 
             action="feed.post_edited_by_team",
             target_type="post",
             target_id=post.pk,
-            target_label=post.body_text[:80],
+            target_label=f"{post.category} post",
             before=before,
             after={k: str(v) for k, v in changes.items() if k != "body"},
             ip=ip,
@@ -637,7 +637,7 @@ def moderate_post(
             action=f"feed.post_{action}",
             target_type="post",
             target_id=post.pk,
-            target_label=post.body_text[:80],
+            target_label=f"{post.category} post",
             reason=reason,
             ip=ip,
         )

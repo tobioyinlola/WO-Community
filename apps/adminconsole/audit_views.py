@@ -129,8 +129,27 @@ def _filters(request: Request) -> dict[str, Any]:
     }
 
 
+def _is_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _person_label(entry: AuditLog, targets: dict[Any, dict[str, Any]]) -> str:
+    if entry.target_type == "user" and _is_uuid(entry.target_id):
+        person = targets.get(UUID(entry.target_id))
+        return str(person["name"]) if person else "Deleted account"
+    return entry.target_id
+
+
 def _rows(entries: list[AuditLog], detail: bool = False) -> list[dict[str, Any]]:
     who = people(e.actor_id for e in entries)
+    # A person is named when the log is read, never written into it, so erasure leaves no trace.
+    targets = people(
+        UUID(e.target_id) for e in entries if e.target_type == "user" and _is_uuid(e.target_id)
+    )
     out = []
     for e in entries:
         person = who.get(e.actor_id) if e.actor_id else None
@@ -154,7 +173,7 @@ def _rows(entries: list[AuditLog], detail: bool = False) -> list[dict[str, Any]]
             "target": {
                 "type": e.target_type,
                 "id": e.target_id,
-                "title": e.target_label or e.target_id,
+                "title": e.target_label or _person_label(e, targets),
             },
             "outcome": e.outcome,
             "ip_ref": e.ip_hash[:8],

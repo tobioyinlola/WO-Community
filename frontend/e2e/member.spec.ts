@@ -82,7 +82,7 @@ test.describe("a signed-in member", () => {
     await page.goto("/app/jobs/new");
     await page.getByLabel("Job title").fill("Community manager");
     await page.getByLabel("Description").fill("Look after our members and events.\n\nYou will be the first hire.");
-    await page.getByLabel("Email address").fill("jobs@kudafoods.test");
+    await page.getByLabel("Application email").fill("jobs@kudafoods.test");
     await page.getByRole("button", { name: "Post job" }).click();
     await expect(page).toHaveURL(/\/app\/jobs\/[0-9a-f-]{36}/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Community manager");
