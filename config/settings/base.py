@@ -2,14 +2,20 @@ from datetime import timedelta
 
 import structlog
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 from kombu import Exchange, Queue
 
 from apps.core.logging import shared_processors
-from config.env import BASE_DIR, env, require
+from config.env import BASE_DIR, env, first
 
-SECRET_KEY = require("DJANGO_SECRET_KEY")
+# Both the project's own names and the plain ones a hosting platform uses are read.
+SECRET_KEY = first("DJANGO_SECRET_KEY", "SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("Environment variable DJANGO_SECRET_KEY (or SECRET_KEY) is required")
 DEBUG = False
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+ALLOWED_HOSTS = [
+    h.strip() for h in first("DJANGO_ALLOWED_HOSTS", "ALLOWED_HOSTS").split(",") if h.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -60,6 +66,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "apps.core.middleware.RequestContextMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -85,7 +92,7 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": env.str("REDIS_CACHE_URL", default="redis://localhost:6380/1"),
+        "LOCATION": first("REDIS_CACHE_URL", "REDIS_URL", default="redis://localhost:6380/1"),
         "KEY_PREFIX": "wo",
     }
 }
@@ -119,12 +126,18 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 # Requests are small JSON documents; uploads go straight to object storage.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1_048_576
 FILE_UPLOAD_MAX_MEMORY_SIZE = 262_144
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+# Origins allowed to send a form post or an unsafe request that carries the CSRF cookie.
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ["X-Request-ID", "ETag"]
 CORS_ALLOW_HEADERS = [
@@ -140,6 +153,9 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+
+# Proxies in front of the app that add to X-Forwarded-For (the platform's router counts as one).
+NUM_PROXIES = env.int("NUM_PROXIES", default=0)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.JWTAuthentication"],
@@ -178,7 +194,7 @@ REST_FRAMEWORK = {
         "course_request": "20/hour",
         "support_write": "30/hour",
     },
-    "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
+    "NUM_PROXIES": NUM_PROXIES,
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 
@@ -228,7 +244,7 @@ JWT_PUBLIC_KEY = env.str("JWT_PUBLIC_KEY", default="").replace("\\n", "\n")
 JWT_ACCESS_LIFETIME = timedelta(minutes=10)
 
 # --- Accounts ----------------------------------------------------------------
-FRONTEND_BASE_URL = env.str("FRONTEND_BASE_URL", default="http://localhost:5173")
+FRONTEND_BASE_URL = first("FRONTEND_URL", "FRONTEND_BASE_URL", default="http://localhost:5173")
 EMAIL_VERIFY_TTL = timedelta(hours=24)
 PASSWORD_RESET_TTL = timedelta(hours=1)
 REFRESH_SLIDING_LIFETIME = timedelta(days=30)
@@ -236,6 +252,8 @@ REFRESH_ABSOLUTE_LIFETIME = timedelta(days=90)
 REFRESH_COOKIE_NAME = "wo_refresh"
 REFRESH_COOKIE_PATH = "/api/v1/auth/"
 REFRESH_COOKIE_SECURE = env.bool("REFRESH_COOKIE_SECURE", default=True)
+# app.<domain> and api.<domain> are one site, so Lax cookies travel between them.
+REFRESH_COOKIE_SAMESITE = env.str("REFRESH_COOKIE_SAMESITE", default="Lax")
 LOGIN_MAX_FAILURES_PER_ACCOUNT = 5
 LOGIN_MAX_FAILURES_PER_IP = 30
 LOGIN_FAILURE_WINDOW_SECONDS = 600
@@ -257,7 +275,7 @@ MFA_RECOVERY_CODE_COUNT = 10
 CONSENT_DOCUMENT_VERSIONS = {"terms": "1", "privacy": "1", "conduct": "1", "marketing": "1"}
 
 # --- Celery ------------------------------------------------------------------
-CELERY_BROKER_URL = env.str("CELERY_BROKER_URL", default="redis://localhost:6380/0")
+CELERY_BROKER_URL = first("CELERY_BROKER_URL", "REDIS_URL", default="redis://localhost:6380/0")
 CELERY_RESULT_BACKEND = None
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True

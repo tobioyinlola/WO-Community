@@ -1,10 +1,56 @@
-from config.env import env, require
+from urllib.parse import urlparse
+
+from django.core.exceptions import ImproperlyConfigured
+
+from config.env import env, first, require
 
 from .base import *  # noqa: F403
-from .base import DATABASES
+from .base import (
+    ALLOWED_HOSTS,
+    API_BASE_URL,
+    CORS_ALLOWED_ORIGINS,
+    CSRF_TRUSTED_ORIGINS,
+    DATABASES,
+    FRONTEND_BASE_URL,
+    NUM_PROXIES,
+    REFRESH_COOKIE_SECURE,
+)
 
-DEBUG = False
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+# Anything a deployment can get wrong is checked here, so a bad setting stops the process at start
+# up with a message that names the variable, instead of failing on the first request.
+DEBUG = env.bool("DEBUG", default=False)
+if DEBUG:
+    raise ImproperlyConfigured("DEBUG must be false in production.")
+
+
+def _https_origin(name: str, value: str) -> None:
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.hostname == "localhost":
+        raise ImproperlyConfigured(f"{name} must be a public https address, got {value!r}.")
+    if parsed.path not in ("", "/"):
+        raise ImproperlyConfigured(f"{name} must be an origin with no path, got {value!r}.")
+
+
+if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must list the API host, never '*'.")
+if not first("REDIS_URL", "CELERY_BROKER_URL"):
+    raise ImproperlyConfigured("Environment variable REDIS_URL is required")
+if not CORS_ALLOWED_ORIGINS:
+    raise ImproperlyConfigured("Environment variable CORS_ALLOWED_ORIGINS is required")
+for _origin in CORS_ALLOWED_ORIGINS:
+    _https_origin("CORS_ALLOWED_ORIGINS", _origin)
+_https_origin("FRONTEND_URL", FRONTEND_BASE_URL)
+_https_origin("API_BASE_URL", API_BASE_URL)
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = [*CORS_ALLOWED_ORIGINS, API_BASE_URL]
+if NUM_PROXIES < 1:
+    raise ImproperlyConfigured(
+        "NUM_PROXIES must be at least 1 behind the platform proxy, or every visitor shares one "
+        "rate limit."
+    )
+if not REFRESH_COOKIE_SECURE:
+    raise ImproperlyConfigured("REFRESH_COOKIE_SECURE must stay true in production.")
+
 JWT_PRIVATE_KEY = require("JWT_PRIVATE_KEY").replace("\\n", "\n")
 JWT_PUBLIC_KEY = require("JWT_PUBLIC_KEY").replace("\\n", "\n")
 
@@ -15,7 +61,9 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-# Load balancer health checks arrive over plain HTTP inside the network.
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+# The platform's health checks arrive over plain HTTP inside its network.
 SECURE_REDIRECT_EXEMPT = [r"^health/"]
 
 DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = env.str("DB_SSLMODE", default="require")

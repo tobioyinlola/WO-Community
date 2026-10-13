@@ -53,3 +53,31 @@ def test_the_schema_route_is_absent_unless_switched_on(settings):
     finally:
         settings.SERVE_API_SCHEMA = True
         importlib.reload(urls)
+
+
+def test_health_reports_database_and_redis(api_client):
+    response = api_client.get("/health/")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "database": "ok", "redis": "ok"}
+
+
+def test_health_is_unavailable_and_names_the_part_when_the_database_fails(api_client, monkeypatch):
+    def broken(*args, **kwargs):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(connection, "cursor", broken)
+    response = api_client.get("/health/")
+    assert response.status_code == 503
+    assert response.json() == {"status": "unavailable", "database": "unavailable", "redis": "ok"}
+
+
+def test_health_is_unavailable_when_the_cache_fails(api_client, monkeypatch):
+    from django.core.cache import cache
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("redis down")
+
+    monkeypatch.setattr(cache, "set", broken)
+    response = api_client.get("/health/")
+    assert response.status_code == 503
+    assert response.json()["redis"] == "unavailable"

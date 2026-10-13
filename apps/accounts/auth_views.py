@@ -53,13 +53,15 @@ def _set_refresh_cookie(response: HttpResponse, token: str, max_age: int) -> Non
         path=settings.REFRESH_COOKIE_PATH,
         secure=settings.REFRESH_COOKIE_SECURE,
         httponly=True,
-        samesite="Lax",
+        samesite=settings.REFRESH_COOKIE_SAMESITE,
     )
 
 
 def _clear_refresh_cookie(response: HttpResponse) -> None:
     response.delete_cookie(
-        settings.REFRESH_COOKIE_NAME, path=settings.REFRESH_COOKIE_PATH, samesite="Lax"
+        settings.REFRESH_COOKIE_NAME,
+        path=settings.REFRESH_COOKIE_PATH,
+        samesite=settings.REFRESH_COOKIE_SAMESITE,
     )
 
 

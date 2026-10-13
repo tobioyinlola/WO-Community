@@ -12,6 +12,8 @@ from .keys import ephemeral_jwt_keys  # noqa: E402
 DEBUG = False
 # Dev only (see make lint-migrations): the production image does not install it.
 INSTALLED_APPS = [*INSTALLED_APPS, "django_migration_linter"]  # noqa: F405
+# No collected static files exist in tests.
+MIDDLEWARE = [m for m in MIDDLEWARE if "whitenoise" not in m]  # noqa: F405
 ALLOWED_HOSTS = ["testserver", "localhost"]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
