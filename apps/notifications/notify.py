@@ -144,6 +144,15 @@ TYPES: dict[str, Spec] = {
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
+    "post_moderated": Spec(
+        "moderation",
+        lambda who, p: (
+            f"Your post was {p.get('what', 'changed')} by the team"
+            + (f": {p['reason']}" if p.get("reason") else "")
+        ),
+        lambda p: f"/posts/{p['post_id']}" if p.get("what") != "removed" else "/home",
+        email=True,
+    ),
     "admin_attention": Spec(
         "moderation",
         lambda who, p: f"Needs your approval: {p.get('what', '')} ({p.get('who', '')})",

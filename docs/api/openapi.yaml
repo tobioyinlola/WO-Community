@@ -5670,8 +5670,7 @@ paths:
     get:
       operationId: admin_posts_list
       description: Newest first, hidden ones included. Filter by `category`, `state`
-        (live, hidden, pinned, featured, reported) and text. Use the post actions
-        to pin, feature, hide or remove.
+        (live, hidden, pinned, featured, reported, team, scheduled) and text.
       summary: Every post, for moderation
       parameters:
       - in: query
@@ -5720,6 +5719,8 @@ paths:
           - pinned
           - featured
           - reported
+          - scheduled
+          - team
           type: string
           default: ''
           minLength: 1
@@ -5729,6 +5730,8 @@ paths:
           * `pinned` - pinned
           * `featured` - featured
           * `reported` - reported
+          * `scheduled` - scheduled
+          * `team` - team
       tags:
       - admin
       security:
@@ -5739,6 +5742,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAdminPostList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+    post:
+      operationId: admin_posts_create
+      description: 'Skips the daily allowance and is never held for review. Options:
+        post as the WO Community team, pin (with an optional date it lapses), turn
+        comments off, limit to members or mentors, and schedule for later.'
+      summary: Post as the team or as yourself
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamPostRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPost'
           description: ''
         '401':
           description: Not authenticated
@@ -5766,6 +5796,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminPostDetail'
+          description: ''
+        '404':
+          description: No post
+    patch:
+      operationId: admin_posts_partial_update
+      summary: Edit any post, or change how the team's post behaves
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTeamPostUpdateRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPost'
           description: ''
         '404':
           description: No post
@@ -19652,10 +19710,26 @@ components:
           format: date-time
         pinned:
           type: boolean
+        pinned_until:
+          type: string
+          format: date-time
+          nullable: true
         featured:
           type: boolean
         hidden:
           type: boolean
+        official:
+          type: boolean
+        comments_enabled:
+          type: boolean
+        audience_roles:
+          type: array
+          items:
+            type: string
+        scheduled_for:
+          type: string
+          format: date-time
+          nullable: true
         comment_count:
           type: integer
         reaction_count:
@@ -19663,17 +19737,22 @@ components:
         open_reports:
           type: integer
       required:
+      - audience_roles
       - author
       - category
       - comment_count
+      - comments_enabled
       - created_at
       - excerpt
       - featured
       - hidden
       - id
+      - official
       - open_reports
       - pinned
+      - pinned_until
       - reaction_count
+      - scheduled_for
     AdminPostComment:
       type: object
       properties:
@@ -19717,10 +19796,26 @@ components:
           format: date-time
         pinned:
           type: boolean
+        pinned_until:
+          type: string
+          format: date-time
+          nullable: true
         featured:
           type: boolean
         hidden:
           type: boolean
+        official:
+          type: boolean
+        comments_enabled:
+          type: boolean
+        audience_roles:
+          type: array
+          items:
+            type: string
+        scheduled_for:
+          type: string
+          format: date-time
+          nullable: true
         comment_count:
           type: integer
         reaction_count:
@@ -19734,18 +19829,23 @@ components:
           items:
             $ref: '#/components/schemas/AdminPostComment'
       required:
+      - audience_roles
       - author
       - category
       - comment_count
       - comments
+      - comments_enabled
       - created_at
       - excerpt
       - featured
       - hidden
       - id
+      - official
       - open_reports
       - pinned
+      - pinned_until
       - reaction_count
+      - scheduled_for
       - text
     AdminPreview:
       type: object
@@ -27709,6 +27809,38 @@ components:
           maxLength: 300
         directory_opt_in:
           type: boolean
+    PatchedTeamPostUpdateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        official:
+          type: boolean
+        comments_enabled:
+          type: boolean
+        audience_roles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 20
+        pinned_until:
+          type: string
+          format: date-time
+          nullable: true
+        scheduled_for:
+          type: string
+          format: date-time
+          nullable: true
     PatchedTkAdminPlanSectionWriteRequest:
       type: object
       description: |-
@@ -27986,6 +28118,11 @@ components:
           type: string
           format: date-time
           nullable: true
+        official:
+          type: boolean
+          description: Posted by the WO Community team
+        comments_enabled:
+          type: boolean
         pinned:
           type: boolean
         featured:
@@ -28012,6 +28149,7 @@ components:
       - body
       - category
       - comment_count
+      - comments_enabled
       - country
       - created_at
       - edited_at
@@ -28021,6 +28159,7 @@ components:
       - images
       - mine
       - my_reactions
+      - official
       - pinned
       - previews
       - reaction_count
@@ -31375,6 +31514,50 @@ components:
       required:
       - is_founder
       - title
+    TeamPostRequest:
+      type: object
+      description: 'A post from the team: the same fields as a member''s, plus the
+        options only the team has.'
+      properties:
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        body:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageInputRequest'
+          maxItems: 10
+        official:
+          type: boolean
+          default: false
+          description: Post as the WO Community team
+        pin:
+          type: boolean
+          default: false
+        pinned_until:
+          type: string
+          format: date-time
+          nullable: true
+        comments_enabled:
+          type: boolean
+          default: true
+        audience_roles:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 20
+          description: Empty means every member
+        scheduled_for:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - body
+      - category
     TeamRoleEnum:
       enum:
       - content_editor

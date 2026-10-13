@@ -2494,11 +2494,15 @@ export interface paths {
         };
         /**
          * Every post, for moderation
-         * @description Newest first, hidden ones included. Filter by `category`, `state` (live, hidden, pinned, featured, reported) and text. Use the post actions to pin, feature, hide or remove.
+         * @description Newest first, hidden ones included. Filter by `category`, `state` (live, hidden, pinned, featured, reported, team, scheduled) and text.
          */
         get: operations["admin_posts_list"];
         put?: never;
-        post?: never;
+        /**
+         * Post as the team or as yourself
+         * @description Skips the daily allowance and is never held for review. Options: post as the WO Community team, pin (with an optional date it lapses), turn comments off, limit to members or mentors, and schedule for later.
+         */
+        post: operations["admin_posts_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2522,7 +2526,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Edit any post, or change how the team's post behaves */
+        patch: operations["admin_posts_partial_update"];
         trace?: never;
     };
     "/api/v1/admin/posts/{post_id}/feature": {
@@ -8950,8 +8955,15 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             pinned: boolean;
+            /** Format: date-time */
+            pinned_until: string | null;
             featured: boolean;
             hidden: boolean;
+            official: boolean;
+            comments_enabled: boolean;
+            audience_roles: string[];
+            /** Format: date-time */
+            scheduled_for: string | null;
             comment_count: number;
             reaction_count: number;
             open_reports: number;
@@ -8976,8 +8988,15 @@ export interface components {
             /** Format: date-time */
             created_at: string;
             pinned: boolean;
+            /** Format: date-time */
+            pinned_until: string | null;
             featured: boolean;
             hidden: boolean;
+            official: boolean;
+            comments_enabled: boolean;
+            audience_roles: string[];
+            /** Format: date-time */
+            scheduled_for: string | null;
             comment_count: number;
             reaction_count: number;
             open_reports: number;
@@ -12542,6 +12561,23 @@ export interface components {
          *     Silently ignoring unknown input hides client bugs and makes mass
          *     assignment mistakes easy to miss.
          */
+        PatchedTeamPostUpdateRequest: {
+            category?: components["schemas"]["CategoryEnum"];
+            body?: string;
+            official?: boolean;
+            comments_enabled?: boolean;
+            audience_roles?: string[];
+            /** Format: date-time */
+            pinned_until?: string | null;
+            /** Format: date-time */
+            scheduled_for?: string | null;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
         PatchedTkAdminPlanSectionWriteRequest: {
             chapter?: string;
             title?: string;
@@ -12690,6 +12726,9 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             edited_at: string | null;
+            /** @description Posted by the WO Community team */
+            official: boolean;
+            comments_enabled: boolean;
             pinned: boolean;
             featured: boolean;
             /** @description Only ever true for the author's own view */
@@ -14244,6 +14283,27 @@ export interface components {
             email?: string;
             title: string;
             is_founder: boolean;
+        };
+        /** @description A post from the team: the same fields as a member's, plus the options only the team has. */
+        TeamPostRequest: {
+            category: components["schemas"]["CategoryEnum"];
+            body: string;
+            images?: components["schemas"]["ImageInputRequest"][];
+            /**
+             * @description Post as the WO Community team
+             * @default false
+             */
+            official: boolean;
+            /** @default false */
+            pin: boolean;
+            /** Format: date-time */
+            pinned_until?: string | null;
+            /** @default true */
+            comments_enabled: boolean;
+            /** @description Empty means every member */
+            audience_roles?: string[];
+            /** Format: date-time */
+            scheduled_for?: string | null;
         };
         /**
          * @description * `content_editor` - content_editor
@@ -23231,8 +23291,10 @@ export interface operations {
                  *     * `pinned` - pinned
                  *     * `featured` - featured
                  *     * `reported` - reported
+                 *     * `scheduled` - scheduled
+                 *     * `team` - team
                  */
-                state?: "live" | "hidden" | "pinned" | "featured" | "reported";
+                state?: "live" | "hidden" | "pinned" | "featured" | "reported" | "scheduled" | "team";
             };
             header?: never;
             path?: never;
@@ -23246,6 +23308,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedAdminPostList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamPostRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
                 };
             };
             /** @description Not authenticated */
@@ -23281,6 +23380,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminPostDetail"];
+                };
+            };
+            /** @description No post */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTeamPostUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
                 };
             };
             /** @description No post */

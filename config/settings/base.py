@@ -291,6 +291,7 @@ CELERY_BEAT_SCHEDULE = {
     "notifications-purge": {"task": "notifications.purge_notifications", "schedule": 86400.0},
     "feed-purge-link-previews": {"task": "feed.purge_link_previews", "schedule": 86400.0},
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
+    "feed-publish-scheduled": {"task": "feed.publish_scheduled", "schedule": 60.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
     "news-digest": {

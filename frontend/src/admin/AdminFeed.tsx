@@ -3,10 +3,11 @@ import { useState } from "react";
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { Badge, Button, Card, Input, Select } from "../components";
-import { humanise, timeAgo } from "../lib/format";
+import { formatDateTime, humanise, timeAgo } from "../lib/format";
 import { EmptyState, ErrorState, LoadMore, PageHeader, Skeleton, SkeletonCards, useDocumentTitle } from "../ui/blocks";
 import { useToast } from "../ui/Toast";
 import { ReasonDialog } from "./dialogs";
+import { TeamPostForm } from "./TeamPostForm";
 import { useOffsetList } from "./useOffsetList";
 
 type Post = components["schemas"]["AdminPost"];
@@ -23,6 +24,8 @@ const STATES = [
   { value: "reported", label: "Has open reports" },
   { value: "pinned", label: "Pinned" },
   { value: "featured", label: "Featured" },
+  { value: "team", label: "Posted by the team" },
+  { value: "scheduled", label: "Scheduled" },
 ];
 
 const VERB: Record<string, string> = {
@@ -108,6 +111,7 @@ export default function AdminFeed() {
   const [state, setState] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [acting, setActing] = useState<Acting>(null);
+  const [composing, setComposing] = useState<{ post?: Post } | null>(null);
 
   const list = useOffsetList<Post>(["admin", "feed", "posts", term, category, state], (offset, limit) =>
     unwrap(
@@ -118,7 +122,7 @@ export default function AdminFeed() {
             offset,
             ...(term ? { q: term } : {}),
             ...(category ? { category: category as (typeof CATEGORIES)[number] } : {}),
-            ...(state ? { state: state as "live" | "hidden" | "pinned" | "featured" | "reported" } : {}),
+            ...(state ? { state: state as "live" | "hidden" | "pinned" | "featured" | "reported" | "team" | "scheduled" } : {}),
           },
         },
       }),
@@ -144,7 +148,7 @@ export default function AdminFeed() {
 
   return (
     <>
-      <PageHeader eyebrow="Content" title="Posts and feed" lead="Everything members have shared. Pin what matters, hide what does not belong, and look inside any conversation." />
+      <PageHeader eyebrow="Content" title="Posts and feed" lead="Everything members have shared. Pin what matters, hide what does not belong, and look inside any conversation." actions={<Button onClick={() => setComposing({})}>New post</Button>} />
       <Stats />
       <form className="app-formgrid" style={{ margin: "var(--space-6) 0", alignItems: "end" }} role="search" onSubmit={(e) => { e.preventDefault(); setTerm(q.trim()); }}>
         <Input label="Search posts or authors" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -166,7 +170,11 @@ export default function AdminFeed() {
                   <div className="app-cluster" style={{ justifyContent: "space-between" }}>
                     <div className="app-cluster">
                       <Badge variant="neutral">{humanise(p.category)}</Badge>
-                      {p.pinned ? <Badge variant="info">Pinned</Badge> : null}
+                      {p.official ? <Badge variant="info">Team post</Badge> : null}
+                      {p.scheduled_for ? <Badge variant="warning" dot>Goes out {formatDateTime(p.scheduled_for)}</Badge> : null}
+                      {!p.comments_enabled ? <Badge variant="neutral">Comments off</Badge> : null}
+                      {p.audience_roles.length > 0 ? <Badge variant="neutral">For {p.audience_roles.join(" and ")}s only</Badge> : null}
+                      {p.pinned ? <Badge variant="info">{p.pinned_until ? `Pinned until ${formatDateTime(p.pinned_until)}` : "Pinned"}</Badge> : null}
                       {p.featured ? <Badge variant="success">Featured</Badge> : null}
                       {p.hidden ? <Badge variant="warning" dot>Hidden</Badge> : null}
                       {p.open_reports > 0 ? <Badge variant="danger" dot>{p.open_reports} open report{p.open_reports === 1 ? "" : "s"}</Badge> : null}
@@ -184,7 +192,8 @@ export default function AdminFeed() {
                     <Button size="sm" variant="secondary" onClick={() => void quick(p, p.pinned ? "unpin" : "pin")}>{p.pinned ? "Unpin" : "Pin"}</Button>
                     <Button size="sm" variant="secondary" onClick={() => void quick(p, p.featured ? "unfeature" : "feature")}>{p.featured ? "Unfeature" : "Feature"}</Button>
                     <Button size="sm" variant="secondary" onClick={() => setActing({ kind: "post", post: p, action: p.hidden ? "unhide" : "hide" })}>{p.hidden ? "Show again" : "Hide"}</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setActing({ kind: "post", post: p, action: "remove" })}>Remove</Button>
+                    <Button size="sm" variant="secondary" onClick={() => setComposing({ post: p })}>Edit</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setActing({ kind: "post", post: p, action: "remove" })}>{p.scheduled_for ? "Cancel" : "Remove"}</Button>
                     <Button size="sm" variant="ghost" aria-expanded={open === p.id} onClick={() => setOpen(open === p.id ? null : p.id)}>
                       {open === p.id ? "Hide comments" : `Comments (${p.comment_count})`}
                     </Button>
@@ -202,6 +211,7 @@ export default function AdminFeed() {
         </>
       )}
 
+      {composing ? <TeamPostForm post={composing.post} onClose={() => setComposing(null)} onSaved={refresh} /> : null}
       {acting ? (
         <ReasonDialog
           title={`${VERB[acting.action]} this ${acting.kind}?`}
