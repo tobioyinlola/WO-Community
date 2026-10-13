@@ -127,7 +127,11 @@ class AdminCourseView(APIView):
         )
         return _one(course)
 
-    @extend_schema(summary="Remove a course", responses={204: None, **ERRORS}, tags=["admin"])
+    @extend_schema(
+        summary="Delete a course (409 if members are enrolled; archive it instead)",
+        responses={204: None, **ERRORS},
+        tags=["admin"],
+    )
     def delete(self, request: Request, course_id: UUID) -> Response:
         authoring.remove_course(actor=_actor(request), course_id=course_id, ip=_ip(request))
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -140,12 +144,12 @@ class CourseActionView(APIView):
     action = ""
 
     @extend_schema(
-        summary="Publish, unpublish or duplicate a course",
-        description="Publishing needs a title, description, category, thumbnail, a section with "
-        "three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open "
-        "it by link only. Unpublishing hides the course from the "
-        "catalogue; people already enrolled keep their access and progress. Duplicating makes a "
-        "draft copy of the modules and lessons (not enrolments, ratings or the cover).",
+        summary="Publish, unpublish, archive or duplicate a course",
+        description="Publishing needs a title, description, category, at least one module with "
+        "one lesson, valid YouTube links and a price (or free); a cover image is welcome but not "
+        "required. Send `unlisted: true` to open it by link only. Unpublishing hides the course "
+        "from the catalogue; people already enrolled keep their access and progress. Duplicating "
+        "makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).",
         request=PublishRequestSerializer,
         responses={
             200: AdminCourseSerializer,
@@ -169,6 +173,8 @@ class CourseActionView(APIView):
                 ip=ip,
             )
             return _one(published)
+        if self.action == "archive":
+            return _one(authoring.archive(actor=actor, course_id=course_id, ip=ip))
         return _one(authoring.unpublish(actor=actor, course_id=course_id, ip=ip))
 
 

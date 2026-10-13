@@ -24,15 +24,13 @@ test.describe("course administration", () => {
     await drawer.getByRole("button", { name: "Continue" }).click();
 
     // Step 2: lectures from pasted links.
-    await drawer.getByLabel("YouTube links, one per line").fill("https://youtu.be/dQw4w9WgXcQ\nhttps://www.youtube.com/watch?v=9bZkp7q19f0");
-    await expect(drawer.getByText("2 lectures will be added.")).toBeVisible();
+    await drawer.getByLabel("YouTube links for module 1").fill("https://youtu.be/dQw4w9WgXcQ\nhttps://www.youtube.com/watch?v=9bZkp7q19f0");
+    await expect(drawer.getByText("2 lessons")).toBeVisible();
     await drawer.getByRole("button", { name: "Continue" }).click();
 
-    // Step 3: a paid course needs a price.
-    await drawer.getByLabel("This is a paid course").check();
-    await expect(drawer.getByRole("button", { name: "Continue" })).toBeDisabled();
-    await drawer.getByLabel("Price").fill("15000");
-    await expect(drawer.getByText("Payments are not switched on")).toBeVisible();
+    // Step 3: every course is free for now; paid is shown but cannot be chosen.
+    await expect(drawer.getByRole("radio", { name: "Free" })).toBeChecked();
+    await expect(drawer.getByRole("radio", { name: /Paid/ })).toBeDisabled();
     await drawer.getByRole("button", { name: "Continue" }).click();
 
     // Step 4: review, then create.
@@ -41,10 +39,9 @@ test.describe("course administration", () => {
     await expect(page).toHaveURL(/\/admin\/courses\/[0-9a-f-]{36}/);
     await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
 
-    // A course with no thumbnail cannot be published, and says why.
-    await expect(page.getByText("Before this can be published")).toBeVisible();
-    await expect(page.getByText("A thumbnail image")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeDisabled();
+    // A cover image is optional, so a complete draft can be published right away.
+    await expect(page.getByText("Before this can be published")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeEnabled();
 
     // The curriculum has the two lectures; every other tab opens.
     await expect(page.getByText("Section 1: Section 1")).toBeVisible();
@@ -58,7 +55,7 @@ test.describe("course administration", () => {
     await page.getByRole("button", { name: "Save changes" }).click();
     await expect(page.getByText("Course saved")).toBeVisible();
 
-    await page.getByRole("button", { name: "Delete draft" }).click();
+    await page.getByRole("button", { name: "Delete course" }).click();
     await page.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(page.getByText("Course deleted")).toBeVisible();
     await expect(page).toHaveURL(/\/admin\/courses$/);

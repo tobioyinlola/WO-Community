@@ -387,7 +387,7 @@ def test_a_course_can_be_started_with_only_a_title_and_filled_in_later(as_editor
     made = as_editor.post(f"{ADMIN}/courses", {"title": "Starting small"}, format="json")
     assert made.status_code == 201 and made.json()["level"] == "all"
     missing = {item["key"] for item in made.json()["checklist"] if not item["done"]}
-    assert missing == {"description", "category", "thumbnail", "curriculum"}
+    assert missing == {"description", "category", "curriculum"}
     patched = as_editor.get(f"{ADMIN}/courses/{made.json()['id']}")
     etag = patched["ETag"]
     done = as_editor.patch(

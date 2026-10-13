@@ -22,7 +22,7 @@ LANGUAGES = {
     "am": "Amharic",
 }
 CURRENCIES = ("NGN", "USD", "KES", "GHS", "ZAR", "EGP", "GBP", "EUR")
-MIN_LECTURES_TO_PUBLISH = 3
+MIN_LECTURES_TO_PUBLISH = 1
 MAX_BULLETS = 8
 MAX_REQUIREMENTS = 10
 RATING_MIN_PERCENT = 25
@@ -67,14 +67,8 @@ def publish_checklist(course: Course) -> list[dict[str, Any]]:
         },
         {"key": "category", "text": "A category", "done": bool(course.category), "step": 1},
         {
-            "key": "thumbnail",
-            "text": "A thumbnail image",
-            "done": bool(course.cover_key),
-            "step": 1,
-        },
-        {
             "key": "curriculum",
-            "text": f"At least one section and {MIN_LECTURES_TO_PUBLISH} lectures",
+            "text": "At least one module with one lesson",
             "done": course.modules.exists() and lectures >= MIN_LECTURES_TO_PUBLISH,
             "step": 2,
         },
