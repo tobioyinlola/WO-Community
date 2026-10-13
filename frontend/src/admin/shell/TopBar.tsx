@@ -1,26 +1,18 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, CircleHelp, Clock, Menu, Monitor, Moon, Sun, UserCheck } from "lucide-react";
+import { ChevronDown, CircleHelp, Clock, Menu, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { Avatar } from "../../components";
 import { formatTime } from "../../lib/format";
-import { useTheme, type ThemeChoice } from "../../theme/ThemeProvider";
 import { NotificationBell } from "../../shell/NotificationBell";
 import { GlobalSearch } from "../../shell/GlobalSearch";
 import type { QuickLink } from "../../shell/searchModel";
 import { ROLE_LABELS } from "../permissions";
 
-const THEMES: Array<{ value: ThemeChoice; label: string; icon: typeof Sun }> = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "Match my device", icon: Monitor },
-];
-
 export function UserMenu({ name, role, onShortcuts }: { name: string; role: string; onShortcuts: () => void }) {
   const { me, logout } = useAuth();
   const navigate = useNavigate();
-  const { choice, setChoice } = useTheme();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -43,16 +35,6 @@ export function UserMenu({ name, role, onShortcuts }: { name: string; role: stri
           <DropdownMenu.Item asChild>
             <Link to="/admin/settings?section=profile" className="adm-menu__item">Your profile</Link>
           </DropdownMenu.Item>
-          <DropdownMenu.Label className="adm-menu__label">Theme</DropdownMenu.Label>
-          <DropdownMenu.RadioGroup value={choice} onValueChange={(v) => setChoice(v as ThemeChoice)}>
-            {THEMES.map(({ value, label, icon: Icon }) => (
-              <DropdownMenu.RadioItem key={value} value={value} className="adm-menu__item adm-menu__radio">
-                <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-                <span>{label}</span>
-                <DropdownMenu.ItemIndicator className="adm-menu__tick" aria-hidden="true">{"✓"}</DropdownMenu.ItemIndicator>
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
           <DropdownMenu.Separator className="adm-menu__sep" />
           <DropdownMenu.Item className="adm-menu__item" onSelect={onShortcuts}>
             Keyboard shortcuts
