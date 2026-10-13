@@ -22,8 +22,10 @@ const COMMUNITY_ADMIN = [
   "feed.moderate",
   "dashboard.view",
   "support.manage",
+  "email.templates.manage",
+  "email.health",
 ];
-const SUPER_ADMIN = [...COMMUNITY_ADMIN, "roles.manage", "audit.read", "settings.manage", "toolkit.settings"];
+const SUPER_ADMIN = [...COMMUNITY_ADMIN, "roles.manage", "audit.read", "email.suppression.manage", "settings.manage", "toolkit.settings"];
 
 const BY_ROLE: Record<string, string[]> = {
   member: MEMBER,
