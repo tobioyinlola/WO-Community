@@ -138,31 +138,24 @@ def content_for(certificate: Certificate) -> CertificateContent:
         issued_at=certificate.issued_at,
         number=certificate.code,
         hours=certificate.hours,
-        verify_url=verify_url_for(certificate.code),
         title_text=template.get("title_text") or DEFAULT_TITLE,
-        signatory_name=template.get("signatory_name", ""),
-        signatory_title=template.get("signatory_title", ""),
-        signature_png=_signature_png(template.get("signature_key", "")),
+        # The name on the sheet is the one in the settings today, so a reissue or a new download
+        # always carries the current signatory.
+        signatory_name=current_settings().signatory_name or template.get("signatory_name", ""),
     )
 
 
 def preview_pdf(*, data: dict[str, Any]) -> bytes:
     """The template drawn with sample details and the settings being edited, saved or not."""
     row = current_settings()
-    key = row.signature_key
-    if data.get("remove_signature"):
-        key = ""
     content = CertificateContent(
         holder=data.get("holder_name") or "Amaka Obi",
         course="Founder fundamentals",
         issued_at=timezone.now(),
         number="WO-C-2026-000341",
         hours=Decimal("4.5"),
-        verify_url=verify_url_for("WO-C-2026-000341"),
         title_text=plain(data.get("title_text") or row.title_text) or DEFAULT_TITLE,
         signatory_name=plain(data.get("signatory_name", row.signatory_name)),
-        signatory_title=plain(data.get("signatory_title", row.signatory_title)),
-        signature_png=_signature_png(key),
     )
     return render_certificate(content)
 

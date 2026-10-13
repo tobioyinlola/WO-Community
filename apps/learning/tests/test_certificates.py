@@ -6,10 +6,10 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from PIL import Image
+from pypdf import PdfReader
 
 from apps.analytics.models import AnalyticsEvent
-from apps.integrations.storage import MEDIA, PRIVATE, get_storage
+from apps.integrations.storage import PRIVATE, get_storage
 from apps.learning import certificates
 from apps.learning.models import Certificate, CertificateSettings, Enrolment
 from apps.learning.pdf import COLOURS, CertificateContent, render_certificate
@@ -51,7 +51,6 @@ def sample(**overrides):
         "issued_at": datetime(2026, 10, 10, tzinfo=UTC),
         "number": "WO-C-2026-000341",
         "hours": Decimal("4.5"),
-        "verify_url": "https://app.test/verify/WO-C-2026-000341",
     }
     values.update(overrides)
     return CertificateContent(**values)
@@ -274,19 +273,44 @@ def test_unusual_characters_and_long_text_do_not_break_the_file():
             holder="Ọlákúnlé Adébáyọ̀ Ṣola 李 (the) \\ Obi",
             course="C" * 300,
             signatory_name="S" * 120,
-            signatory_title="T" * 120,
         )
     )
     assert pdf.startswith(b"%PDF-") and len(pdf) < 500 * 1024
     assert pdf.count(b"%%EOF") == 1
 
 
-def test_a_signature_image_is_placed_on_the_page():
-    image = io.BytesIO()
-    Image.new("RGBA", (200, 60), (6, 55, 47, 255)).save(image, "PNG")
-    plain_pdf = render_certificate(sample())
-    signed = render_certificate(sample(signature_png=image.getvalue(), signatory_name="Onyeka"))
-    assert b"/Subtype /Image" in signed and b"/Subtype /Image" not in plain_pdf
+def text_of(pdf: bytes) -> str:
+    reader = PdfReader(io.BytesIO(pdf))
+    return " ".join(page.extract_text() for page in reader.pages)
+
+
+def test_the_signatory_is_a_name_only_and_defaults_to_onyeka_akumah():
+    pdf = render_certificate(sample())
+    text = text_of(pdf)
+    assert "Onyeka Akumah" in text
+    assert "http" not in text and "verify" not in text.lower()
+    assert b"/Subtype /Image" not in pdf  # no signature image and no QR code
+    assert "Dr A. Other" in text_of(render_certificate(sample(signatory_name="Dr A. Other")))
+
+
+@pytest.mark.parametrize(
+    ("holder", "course"),
+    [
+        ("Ada Obi", "Fundraising basics"),
+        ("Chidi Okonkwo", "Go to market in Lagos"),
+        ("Zoë Müller-Ndiaye", "Hiring your first ten people"),
+    ],
+)
+def test_each_certificate_shows_its_own_learner_and_course(holder, course):
+    text = text_of(render_certificate(sample(holder=holder, course=course)))
+    assert holder in text and course in text
+
+
+def test_long_names_and_titles_stay_on_the_page():
+    for holder, course in (("N" * 60, "C" * 60), ("M" * 120, "word " * 24)):
+        pdf = render_certificate(sample(holder=holder, course=course))
+        assert len(PdfReader(io.BytesIO(pdf)).pages) == 1
+        assert holder[:20] in text_of(pdf)
 
 
 def test_the_colours_are_the_design_tokens():
@@ -297,27 +321,18 @@ def test_the_colours_are_the_design_tokens():
             assert found.group(1).upper() == value.upper(), name
 
 
-def test_a_stored_signature_appears_on_new_certificates(
+def test_an_issued_certificate_carries_the_learner_course_and_signatory(
     course, learner, learner_client, run_outbox, editor
 ):
-    image = io.BytesIO()
-    Image.new("RGBA", (200, 60), (6, 55, 47, 255)).save(image, "WEBP")
-    get_storage().write(
-        bucket=MEDIA,
-        key="media/cert_signature/abc/large.webp",
-        data=image.getvalue(),
-        content_type="image/webp",
-    )
-    row = certificates.current_settings()
-    row.signature_key = "media/cert_signature/abc"
-    row.signatory_name = "Onyeka Obi"
-    row.save()
+    assert certificates.current_settings().signatory_name == "Onyeka Akumah"
     set_name(learner, "Ada Obi")
     finish(learner_client, course)
     run_outbox()
     certificate = Certificate.objects.get()
     data, _ = get_storage().objects[(PRIVATE, certificate.pdf_key)]
-    assert b"/Subtype /Image" in data
+    text = text_of(data)
+    assert "Ada Obi" in text and "Fundraising basics" in text and "Onyeka Akumah" in text
+    assert "http" not in text
     assert CertificateSettings.objects.count() == 1
 
 
