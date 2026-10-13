@@ -97,7 +97,7 @@ function CertificateCard({ certificate }: { certificate: Certificate }) {
   const { busy, download, share } = useCertificateActions(certificate);
   const revoked = certificate.status === "revoked";
   return (
-    <Card variant="white">
+    <Card>
       <Award size={28} strokeWidth={1.5} aria-hidden="true" />
       <CardTitle style={{ marginTop: "var(--space-3)" }}>{certificate.course_title}</CardTitle>
       <CardText>
