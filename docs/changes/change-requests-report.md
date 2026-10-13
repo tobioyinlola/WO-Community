@@ -74,7 +74,7 @@ All apply on an empty database and on a copy of the previous schema with data in
 | Migrations | Empty database: all apply, no pending model changes. Previous schema with legacy rows: forward, backfills verified, backward to the previous state. |
 | Back end tests | 4566 passed, 1 skipped, no errors (a full run on a fresh test database). An earlier run showed 3 errors in the concurrency tests; the cause was my concurrent booking test missing `serialized_rollback=True`, which is fixed. |
 | Front end | ESLint clean, TypeScript clean, production build succeeds, 106 unit tests pass across 10 files |
-| End to end | Last full run: 67 passed, 4 failed, 18 did not run (they follow a failing test in a serial group). Two failures are the launch toolkit (below). The other two were test problems, fixed and rerun together with their files: 16 passed. The approvals drawer test that failed earlier passed in this run. Earlier failures were also demo data used up by earlier runs, so the report below says how to reseed. |
+| End to end | Last full run: 67 passed, 4 failed, 18 did not run. Since then: the launch toolkit fix above (launch spec 7 of 7 and the 360 pixel accessibility profile pass), the review and awaiting approval tests were fixed (16 of 16). A final full run after these was not repeated. Earlier failures were also demo data used up by earlier runs, so the notes below say how to reseed. |
 | Visual check | 39 screens in light and dark at 1440, 1024 and 390 pixels, 234 images in `docs/changes/screenshots/` (named `screen-theme-width.jpg`) |
 
 The visual review found and fixed these before the final capture: unread dots that disappeared in dark mode,
@@ -145,10 +145,11 @@ mentor pricing; and certificates, one of them revoked.
   browser tests do not wait for them.
 - **Booking calendar preview.** `/admin/design` shows the weekly grid but not the booking calendar, which
   reads live availability from the API.
-- **Launch toolkit.** `launch.spec.ts` ("a venture can be started") and the 360 pixel accessibility profile,
-  which starts a venture, fail: a new venture opens showing the name of the member's startup ("Kuda Foods")
-  instead of the name typed. This comes from the venture prefill added earlier, `apps/toolkit` and the launch
-  screens are untouched by these changes, and it was left alone.
+- **Launch toolkit (fixed late).** Starting a venture from one of the member's startups copied the startup's
+  name over the name typed in the dialog. The dialog selects the first startup by default, so anyone who edited the
+  name lost it. The typed name now wins when a venture is created; importing into an existing venture still takes
+  the startup's name. The test cleanup also could not see the renamed ventures, so three leftovers filled the limit
+  of three; those local test leftovers were deleted.
 - **Browser test data.** The browser tests use up demo data (pending applicants, reported posts) and hit the
   sign up limit of five an hour. Run `seed_admin_demo.py` again to add more, put `pending@demo.test` back to pending (the approval journey approves it), and clear the throttle keys in
   Redis database 1 if the sign up journeys stop at "Check your email".
