@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "../api/client";
 import { messageOf } from "../api/errors";
-import { Alert, Button, Checkbox, Input, Select, Textarea } from "../components";
+import { Alert, Badge, Button, Checkbox, Input, Select, Textarea } from "../components";
 import { uploadFile } from "../api/upload";
 import { textToHtml } from "../lib/html";
+import "../styles/learn.css";
 import { Drawer } from "../ui/Drawer";
 import { errorsFrom, FormError, useSubmit } from "../ui/forms";
 import { useToast } from "../ui/Toast";
@@ -23,11 +24,30 @@ const LANGUAGES = [
   { value: "ha", label: "Hausa" },
   { value: "ig", label: "Igbo" },
 ];
-const CURRENCIES = [
-  { value: "NGN", label: "Naira (NGN)" },
-  { value: "USD", label: "US dollar (USD)" },
-];
-const STEPS = ["Basics", "Lectures", "Pricing and access", "Review"] as const;
+const STEPS = ["Details", "Modules and videos", "Pricing", "Review"] as const;
+
+/** What the server accepts too: youtube.com/watch, youtu.be, /embed and /shorts, and no other host. */
+export function youtubeId(link: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(link.trim());
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^(www|m)\./, "");
+  const valid = (id: string | null | undefined) => (id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null);
+  if (host === "youtu.be") return valid(url.pathname.slice(1).split("/")[0]);
+  if (host !== "youtube.com" && host !== "youtube-nocookie.com") return null;
+  if (url.pathname === "/watch") return valid(url.searchParams.get("v"));
+  const match = url.pathname.match(/^\/(embed|shorts)\/([^/]+)/);
+  return match ? valid(match[2]) : null;
+}
+
+interface ModuleDraft {
+  key: number;
+  title: string;
+  links: string;
+}
 
 interface Draft {
   title: string;
@@ -37,15 +57,14 @@ interface Draft {
   category: string;
   level: string;
   language: string;
-  links: string;
-  paid: boolean;
-  price: string;
-  currency: string;
+  outcomes: string;
   open_to_visitors: boolean;
   certificate_enabled: boolean;
   publish: boolean;
   cover: File | null;
 }
+
+const firstModule = (): ModuleDraft => ({ key: 1, title: "Module 1", links: "" });
 
 const BLANK: Draft = {
   title: "",
@@ -55,15 +74,20 @@ const BLANK: Draft = {
   category: "",
   level: "beginner",
   language: "en",
-  links: "",
-  paid: false,
-  price: "",
-  currency: "NGN",
+  outcomes: "",
   open_to_visitors: false,
   certificate_enabled: true,
   publish: false,
   cover: null,
 };
+
+function move<T>(items: T[], index: number, by: -1 | 1): T[] {
+  const next = [...items];
+  const target = index + by;
+  if (target < 0 || target >= next.length) return next;
+  [next[index], next[target]] = [next[target] as T, next[index] as T];
+  return next;
+}
 
 const linesOf = (text: string) => text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
@@ -77,12 +101,21 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
   const guard = useStepUp();
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>(BLANK);
+  const [modules, setModules] = useState<ModuleDraft[]>([firstModule()]);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
-  const dirty = JSON.stringify({ ...draft, cover: draft.cover?.name }) !== JSON.stringify({ ...BLANK, cover: undefined });
+  const dirty =
+    JSON.stringify({ ...draft, cover: draft.cover?.name }) !== JSON.stringify({ ...BLANK, cover: undefined }) ||
+    modules.length > 1 ||
+    modules.some((m) => m.links.trim() !== "");
 
   const categories = useQuery({ queryKey: ["course-categories"], queryFn: () => unwrap(api.GET("/api/v1/courses/categories")) });
-  const links = linesOf(draft.links);
-  const price = Number(draft.price);
+  // Each module's links, checked as they are typed: the line number and what is wrong.
+  const checkedModules = modules.map((m) => {
+    const lines = linesOf(m.links);
+    return { ...m, lines, bad: lines.map((l, i) => (youtubeId(l) ? null : i + 1)).filter((n): n is number => n !== null) };
+  });
+  const links = checkedModules.flatMap((m) => m.lines);
+  const badLinks = checkedModules.some((m) => m.bad.length > 0);
 
   // What stops the next step, said in words rather than by a dead button.
   const problem =
@@ -94,13 +127,16 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
           : !draft.category.trim()
             ? "Choose or type a category."
             : ""
-      : step === 2 && draft.paid && !(price > 0)
-        ? "Enter a price above zero."
-        : "";
+      : step === 1 && badLinks
+        ? "Fix the links marked below. Only YouTube links work."
+        : step === 1 && links.length === 0
+          ? "Add at least one YouTube link to publish. You can also save a draft without one."
+          : "";
+  const blocked = step === 0 ? Boolean(problem) : step === 1 ? badLinks : false;
 
   const checked = useQuery({
     queryKey: ["youtube-check", links[0] ?? ""],
-    enabled: step === 1 && links.length > 0,
+    enabled: step === 1 && links.length > 0 && !badLinks,
     retry: false,
     queryFn: () => unwrap(api.POST("/api/v1/admin/youtube/validate", { body: { url: links[0] ?? "" } })),
   });
@@ -117,9 +153,9 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
             category: draft.category.trim(),
             level: draft.level as "beginner",
             language: draft.language,
-            access: draft.paid ? "paid" : "free",
-            ...(draft.paid ? { price_minor: Math.round(price * 100), currency: draft.currency } : {}),
-            open_to_visitors: !draft.paid && draft.open_to_visitors,
+            access: "free",
+            learn_bullets: linesOf(draft.outcomes),
+            open_to_visitors: draft.open_to_visitors,
             certificate_enabled: draft.certificate_enabled,
           },
         }),
@@ -130,9 +166,10 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
         const cover = await uploadFile(draft.cover, "course_cover");
         await guard(() => unwrap(api.PUT("/api/v1/admin/courses/{course_id}/cover", { params: { path: { course_id: course.id } }, body: { upload_id: cover.id } })));
       }
-      if (links.length > 0) {
-        const section = await guard(() => unwrap(api.POST("/api/v1/admin/courses/{course_id}/modules", { params: { path: { course_id: course.id } }, body: { title: "Section 1" } })));
-        await guard(() => unwrap(api.POST("/api/v1/admin/modules/{module_id}/lessons/bulk", { params: { path: { module_id: section.id } }, body: { urls: links } })));
+      for (const m of checkedModules) {
+        if (m.lines.length === 0 && checkedModules.length > 1) continue;
+        const section = await guard(() => unwrap(api.POST("/api/v1/admin/courses/{course_id}/modules", { params: { path: { course_id: course.id } }, body: { title: m.title.trim() || "Module" } })));
+        if (m.lines.length > 0) await guard(() => unwrap(api.POST("/api/v1/admin/modules/{module_id}/lessons/bulk", { params: { path: { module_id: section.id } }, body: { urls: m.lines } })));
       }
       if (draft.publish) await guard(() => unwrap(api.POST("/api/v1/admin/courses/{course_id}/publish", { params: { path: { course_id: course.id } } })));
     } catch (error) {
@@ -172,7 +209,7 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
               {draft.publish ? "Create and publish" : "Create draft"}
             </Button>
           ) : (
-            <Button disabled={Boolean(problem)} onClick={() => setStep(step + 1)}>
+            <Button disabled={blocked} onClick={() => setStep(step + 1)}>
               Continue
             </Button>
           )}
@@ -211,8 +248,9 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
                 Thumbnail image
               </label>
               <input id="add-cover" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => set("cover", e.target.files?.[0] ?? null)} />
-              <p className="wo-hint">A course needs one to be published. JPEG, PNG or WebP.</p>
+              <p className="wo-hint">Optional. JPEG, PNG or WebP.</p>
             </div>
+            <Textarea label="What members will learn (optional)" rows={3} hint="One outcome per line." value={draft.outcomes} onChange={(e) => set("outcomes", e.target.value)} />
             <datalist id="course-categories">
               {(categories.data?.categories ?? []).map((c) => (
                 <option key={c} value={c} />
@@ -223,27 +261,62 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
 
         {step === 1 ? (
           <>
-            <Textarea
-              label="YouTube links, one per line"
-              rows={8}
-              hint="Each link becomes a lecture, in this order, with its title taken from YouTube. You can add sections, reorder and edit on the course page afterwards."
-              value={draft.links}
-              onChange={(e) => set("links", e.target.value)}
-              error={errors.urls}
-            />
             <p className="body-sm app-muted" style={{ margin: 0 }}>
-              {links.length === 0 ? "No lectures yet. You can add them later." : `${links.length} ${links.length === 1 ? "lecture" : "lectures"} will be added.`}
+              Paste one YouTube link per line. Each link becomes a lesson in this module, titled from the video. One module
+              with one link is a complete course. You can reorder, retitle and add notes on the course page afterwards.
             </p>
-            {links.length > 0 && checked.isPending ? <p className="body-sm app-muted">Checking the first link…</p> : null}
+            {checkedModules.map((m, index) => (
+              <fieldset key={m.key} className="wo-box" style={{ display: "grid", gap: "var(--space-3)", margin: 0 }}>
+                <legend className="wo-learn__h3">Module {index + 1}</legend>
+                <Input label="Module title" value={m.title} maxLength={120} onChange={(e) => setModules((all) => all.map((x) => (x.key === m.key ? { ...x, title: e.target.value } : x)))} />
+                <Textarea
+                  label={`YouTube links for module ${index + 1}`}
+                  rows={4}
+                  placeholder="https://youtu.be/..."
+                  value={m.links}
+                  onChange={(e) => setModules((all) => all.map((x) => (x.key === m.key ? { ...x, links: e.target.value } : x)))}
+                  error={m.bad.length > 0 ? `${m.bad.length === 1 ? `Line ${m.bad[0]} is` : `Lines ${m.bad.join(", ")} are`} not a YouTube link. Use youtube.com/watch, youtu.be, embed or shorts links.` : undefined}
+                />
+                <div className="app-cluster">
+                  <span className="body-sm app-muted">
+                    {m.lines.length === 0 ? "No lessons yet" : `${m.lines.length} ${m.lines.length === 1 ? "lesson" : "lessons"}`}
+                  </span>
+                  <Button variant="ghost" size="sm" disabled={index === 0} aria-label={`Move module ${index + 1} up`} onClick={() => setModules((all) => move(all, index, -1))}>
+                    Up
+                  </Button>
+                  <Button variant="ghost" size="sm" disabled={index === modules.length - 1} aria-label={`Move module ${index + 1} down`} onClick={() => setModules((all) => move(all, index, 1))}>
+                    Down
+                  </Button>
+                  {modules.length > 1 ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Delete module ${index + 1}`}
+                      onClick={() => {
+                        if (window.confirm(`Delete module ${index + 1}${m.lines.length ? ` and its ${m.lines.length} lessons` : ""}?`)) setModules((all) => all.filter((x) => x.key !== m.key));
+                      }}
+                    >
+                      Delete module
+                    </Button>
+                  ) : null}
+                </div>
+              </fieldset>
+            ))}
+            <div>
+              <Button variant="secondary" onClick={() => setModules((all) => [...all, { key: Math.max(...all.map((x) => x.key)) + 1, title: `Module ${all.length + 1}`, links: "" }])}>
+                Add module
+              </Button>
+            </div>
+            {links.length > 0 && !badLinks && checked.isPending ? <p className="body-sm app-muted">Checking the first link…</p> : null}
             {checked.isError ? (
-              <Alert tone="danger" title="The first link is not a YouTube video">
+              <Alert tone="danger" title="The first link could not be found on YouTube">
                 {messageOf(checked.error)}
               </Alert>
             ) : null}
             {checked.data ? (
               <div className="app-cluster" style={{ flexWrap: "nowrap" }}>
                 <img src={checked.data.thumbnail} alt="" width={96} height={54} style={{ borderRadius: "var(--radius-md)" }} />
-                <span className="body-sm">{checked.data.title || "First lecture found"}</span>
+                <span className="body-sm">{checked.data.title || "First lesson found"}</span>
               </div>
             ) : null}
           </>
@@ -251,20 +324,19 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
 
         {step === 2 ? (
           <>
-            <Checkbox label="This is a paid course" checked={draft.paid} onChange={(e) => set("paid", e.target.checked)} />
-            {draft.paid ? (
-              <>
-                <div className="app-formgrid">
-                  <Input label="Price" type="number" min={1} step="any" value={draft.price} onChange={(e) => set("price", e.target.value)} error={errors.price_minor} />
-                  <Select label="Currency" options={CURRENCIES} value={draft.currency} onChange={(e) => set("currency", e.target.value)} error={errors.currency} />
-                </div>
-                <Alert tone="info" title="Payments are not switched on">
-                  Members will ask for access and you approve each request. The price is shown so they know what it is.
-                </Alert>
-              </>
-            ) : (
-              <Checkbox label="Visitors can read it without joining" checked={draft.open_to_visitors} onChange={(e) => set("open_to_visitors", e.target.checked)} />
-            )}
+            <fieldset className="wo-box" style={{ display: "grid", gap: "var(--space-3)", margin: 0 }}>
+              <legend className="wo-learn__h3">Price</legend>
+              <label className="app-cluster">
+                <input type="radio" name="pricing" checked readOnly /> Free
+              </label>
+              <label className="app-cluster app-muted">
+                <input type="radio" name="pricing" disabled /> Paid <Badge>Coming soon</Badge>
+              </label>
+              <p className="body-sm app-muted" style={{ margin: 0 }}>
+                Every course is free for now. The course keeps a pricing model, so paid courses can be switched on later.
+              </p>
+            </fieldset>
+            <Checkbox label="Visitors can read it without joining" checked={draft.open_to_visitors} onChange={(e) => set("open_to_visitors", e.target.checked)} />
             <Checkbox label="Give a certificate on completion" checked={draft.certificate_enabled} onChange={(e) => set("certificate_enabled", e.target.checked)} />
           </>
         ) : null}
@@ -278,18 +350,26 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
               <dd>
                 {draft.category} · {LEVELS.find((l) => l.value === draft.level)?.label} · {LANGUAGES.find((l) => l.value === draft.language)?.label}
               </dd>
-              <dt>Lectures</dt>
+              <dt>Modules</dt>
+              <dd>{checkedModules.filter((m) => m.lines.length > 0 || checkedModules.length === 1).length}</dd>
+              <dt>Lessons</dt>
               <dd>{links.length}</dd>
               <dt>Price</dt>
-              <dd>{draft.paid ? `${draft.currency} ${price.toLocaleString()} (requests, while payments are off)` : "Free"}</dd>
-              <dt>Thumbnail</dt>
-              <dd>{draft.cover ? draft.cover.name : "None yet"}</dd>
+              <dd>Free</dd>
+              <dt>Cover image</dt>
+              <dd>{draft.cover ? draft.cover.name : "None (optional)"}</dd>
               <dt>Certificate</dt>
               <dd>{draft.certificate_enabled ? "Yes" : "No"}</dd>
             </dl>
+            <ul style={{ margin: 0, paddingLeft: "var(--space-5)" }} aria-label="Checklist">
+              <li>{draft.title.trim() ? "Title: done" : "Title: missing"}</li>
+              <li>{draft.description.trim() ? "Description: done" : "Description: missing"}</li>
+              <li>{draft.category.trim() ? "Category: done" : "Category: missing"}</li>
+              <li>{links.length > 0 ? "At least one lesson with a YouTube link: done" : "At least one lesson with a YouTube link: missing, so it stays a draft"}</li>
+            </ul>
             <Checkbox label="Publish as soon as it is created" checked={draft.publish} onChange={(e) => set("publish", e.target.checked)} />
             <p className="body-sm app-muted" style={{ margin: 0 }}>
-              {draft.publish ? "A course needs a cover, a description and at least one lecture to publish. If something is missing it stays a draft and the course page lists what to do." : "It starts as a draft only editors can see."}
+              {draft.publish ? "Publishing makes it live for members straight away. If something is missing it stays a draft and the course page lists what to do." : "It starts as a draft only editors can see. Use View as a learner on the course page to preview it."}
             </p>
           </>
         ) : null}

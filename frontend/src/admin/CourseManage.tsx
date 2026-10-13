@@ -340,7 +340,7 @@ export default function CourseManage() {
   const guard = useStepUp();
   const toast = useToast();
   const navigate = useNavigate();
-  const [confirm, setConfirm] = useState<"unpublish" | "delete" | null>(null);
+  const [confirm, setConfirm] = useState<"unpublish" | "delete" | "archive" | null>(null);
   const tab = TABS.some((t) => t.id === params.get("tab")) ? (params.get("tab") as string) : "curriculum";
   const query = useQuery({ queryKey: ["admin", "course", id], queryFn: () => unwrap(api.GET("/api/v1/admin/courses/{course_id}", { params: { path: { course_id: id } } })) });
   const course = query.data;
@@ -377,7 +377,7 @@ export default function CourseManage() {
           <div className="app-cluster">
             <StatusChip tone={course.status === "published" ? "success" : course.status === "unlisted" ? "info" : "neutral"}>{humanise(course.status)}</StatusChip>
             <span className="body-sm app-muted">
-              {course.lesson_count} lectures · {course.learners_count} learners
+              {course.lesson_count} {course.lesson_count === 1 ? "lecture" : "lectures"} · {course.learners_count} {course.learners_count === 1 ? "learner" : "learners"}
             </span>
           </div>
         </div>
@@ -385,14 +385,17 @@ export default function CourseManage() {
           <a className="wo-btn wo-btn--secondary" href={`/app/learn/courses/${course.slug}`} target="_blank" rel="noreferrer">
             View as a learner <ExternalLink size={14} strokeWidth={1.5} aria-hidden="true" />
           </a>
+          <Button variant="ghost" onClick={() => setConfirm("archive")}>
+            Archive
+          </Button>
           {live ? (
             <Button variant="secondary" onClick={() => setConfirm("unpublish")}>
-              Take down
+              Unpublish
             </Button>
           ) : (
             <>
               <Button variant="ghost" onClick={() => setConfirm("delete")}>
-                Delete draft
+                Delete course
               </Button>
               <Button variant="secondary" loading={publish.busy} disabled={todo.length > 0} onClick={() => void publish.run(true)}>
                 Publish by link only
@@ -433,22 +436,37 @@ export default function CourseManage() {
       </div>
       {confirm === "unpublish" ? (
         <ConfirmDialog
-          title="Take this course down?"
+          title="Unpublish this course?"
           body="New members cannot enrol. People already learning keep their progress."
-          confirmLabel="Take down"
+          confirmLabel="Unpublish"
           tone="danger"
           onConfirm={async () => {
             await guard(() => unwrap(api.POST("/api/v1/admin/courses/{course_id}/unpublish", { params: { path: { course_id: id } } })));
-            toast.show("Course taken down");
+            toast.show("Course unpublished");
             await refresh();
+          }}
+          onClose={() => setConfirm(null)}
+        />
+      ) : null}
+      {confirm === "archive" ? (
+        <ConfirmDialog
+          title="Archive this course?"
+          body="It leaves the catalogue for good. People already learning keep their access and progress."
+          confirmLabel="Archive"
+          tone="danger"
+          onConfirm={async () => {
+            await guard(() => unwrap(api.POST("/api/v1/admin/courses/{course_id}/archive", { params: { path: { course_id: id } } })));
+            toast.show("Course archived");
+            await client.invalidateQueries({ queryKey: ["admin", "courses"] });
+            navigate("/admin/courses");
           }}
           onClose={() => setConfirm(null)}
         />
       ) : null}
       {confirm === "delete" ? (
         <ConfirmDialog
-          title="Delete this draft?"
-          body="The draft and its lectures are deleted for good."
+          title="Delete this course?"
+          body="The course and its lessons are deleted. A course that members have joined cannot be deleted; archive it instead."
           confirmLabel="Delete"
           tone="danger"
           onConfirm={async () => {

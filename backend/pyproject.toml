@@ -1,0 +1,110 @@
+[project]
+name = "wo-community-backend"
+version = "0.1.0"
+description = "WO Community backend API"
+requires-python = ">=3.12"
+dependencies = [
+  "Django==5.2.17",
+  "djangorestframework==3.17.2",
+  "drf-spectacular==0.28.0",
+  "django-filter==25.2",
+  "django-cors-headers==4.9.0",
+  "django-environ==0.12.0",
+  "django-storages[s3]==1.14.6",
+  "django-celery-beat==2.8.1",
+  "celery[redis]==5.5.3",
+  "psycopg[binary]==3.2.10",
+  "argon2-cffi==25.1.0",
+  "gunicorn==23.0.0",
+  "whitenoise==6.11.0",
+  "sentry-sdk==2.39.0",
+  "structlog==25.4.0",
+  "redis==5.2.1",
+  "nh3==0.3.0",
+  "Pillow==12.3.0",
+  "httpx==0.28.1",
+  # Not imported directly: pinned because botocore, sentry-sdk and requests pull it in and
+  # versions before 2.8.0 have CVE-2026-97689 (unbounded chunk-size line in streaming reads).
+  "urllib3==2.8.0",
+  "pyotp==2.9.0",
+  "pyjwt[crypto]==2.15.0",
+  "python-dateutil==2.9.0.post0",
+  "pyarrow==26.0.0",
+  "prometheus-client==0.26.0",
+  "opentelemetry-api==1.45.1",
+  "opentelemetry-sdk==1.45.1",
+  "opentelemetry-exporter-otlp-proto-http==1.45.1",
+  "opentelemetry-instrumentation-django==0.66b1",
+  "opentelemetry-instrumentation-psycopg==0.66b1",
+  "opentelemetry-instrumentation-celery==0.66b1",
+  "opentelemetry-instrumentation-httpx==0.66b1",
+  "pydantic==2.14.0",
+  "jsonschema==4.26.0",
+  "python-docx==1.2.0",
+  "python-pptx==1.0.2",
+  "openpyxl==3.1.5",
+  "reportlab==5.0.1",
+  "dnspython==2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.0.3",
+  "pypdf==6.20.1",
+  "pytest-django==4.11.1",
+  "factory-boy==3.3.3",
+  "ruff==0.13.3",
+  "black==26.3.1",
+  "mypy==1.18.2",
+  "hypothesis==6.169.0",
+  "django-stubs[compatible-mypy]==5.2.5",
+  "djangorestframework-stubs==3.16.4",
+  "bandit==1.8.6",
+  "pip-audit==2.9.0",
+  "import-linter==2.5.2",
+  "pre-commit==4.3.0",
+  "django-migration-linter==6.0.0",
+]
+
+[tool.setuptools]
+packages = []
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "DJ", "C4"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106", "S311"]
+"config/settings/test.py" = ["S105"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+strict_optional = true
+warn_unused_ignores = true
+exclude = ["migrations/", "/tests/"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*", "reportlab.*", "pypdf.*", "dns.*", "openpyxl.*", "pptx.*", "docx.*", "jsonschema.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+testpaths = ["apps", "tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers --ds=config.settings.test"
+
+[tool.bandit]
+exclude_dirs = ["apps/*/tests", "tests"]
