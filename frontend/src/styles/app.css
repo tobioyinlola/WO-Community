@@ -697,6 +697,27 @@ a.app-list__item:hover {
   align-items: center;
   margin-bottom: var(--space-3);
 }
+.app-post__who {
+  flex: 1;
+  min-width: 0;
+}
+.app-post__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  max-width: 50%;
+}
+@media (max-width: 480px) {
+  .app-post__head {
+    flex-wrap: wrap;
+  }
+  .app-post__badges {
+    max-width: 100%;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
 .app-post__author {
   margin: 0;
   font: 700 16px/20px var(--font-body);

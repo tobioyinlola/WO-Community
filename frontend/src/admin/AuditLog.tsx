@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Check, Copy, Download, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { api, unwrap } from "../api/client";
+import { api, authFetch, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { Button, Input, Select } from "../components";
 import { formatDateTime, humanise, timeAgo } from "../lib/format";
@@ -87,7 +87,7 @@ function EntryDrawer({ entry, onClose }: { entry: Entry; onClose: () => void }) 
   const link = targetLink(entry);
   const rows: Array<[string, React.ReactNode]> = [
     ["Time", <time key="t" dateTime={entry.created_at}>{formatDateTime(entry.created_at)}</time>],
-    ["Who", `${entry.actor.name}${entry.actor.email ? ` · ${entry.actor.email}` : ""}`],
+    ["Who", `${entry.actor.name}${entry.actor.email && entry.actor.email !== entry.actor.name ? ` · ${entry.actor.email}` : ""}`],
     ["Role", entry.actor.roles.length ? entry.actor.roles.map(humanise).join(", ") : "None"],
     ["Action", <code key="a">{entry.action}</code>],
     ["Target", link ? <Link key="l" to={link}>{entry.target.title || entry.target.id}</Link> : entry.target.title || "None"],
@@ -181,9 +181,14 @@ export default function AuditLog() {
     set("group", [...now].join(","));
   };
 
+  const [exportError, setExportError] = useState(false);
   const download = async () => {
-    const response = await fetch(exportHref, { credentials: "include" });
-    if (!response.ok) return;
+    setExportError(false);
+    const response = await authFetch(new Request(new URL(exportHref, window.location.origin)));
+    if (!response.ok) {
+      setExportError(true);
+      return;
+    }
     const url = URL.createObjectURL(await response.blob());
     const a = document.createElement("a");
     a.href = url;
@@ -200,6 +205,7 @@ export default function AuditLog() {
         lead="Every sensitive action, who did it and what changed. Entries cannot be edited or deleted. The log starts on the day it was switched on; earlier actions are not listed."
         actions={<Button variant="secondary" icon={<Download size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => void download()}>Export CSV</Button>}
       />
+      {exportError ? <p role="alert" className="app-error">The export could not be made. Try again, or narrow the dates.</p> : null}
 
       <form className="adm-filterbar" role="search" aria-label="Filter the audit log" onSubmit={(e) => e.preventDefault()}>
         <Input label="Search" placeholder="Target or action" value={get("q")} onChange={(e) => set("q", e.target.value)} />
@@ -242,7 +248,7 @@ export default function AuditLog() {
               {rows.map((e) => (
                 <tr key={e.id} className="adm-row--click" onClick={() => setOpen(e)}>
                   <td><time dateTime={e.created_at} title={formatDateTime(e.created_at)}>{timeAgo(e.created_at)}</time></td>
-                  <td>{e.actor.name}{e.actor.email ? <span className="app-faint"> · {e.actor.email}</span> : null}</td>
+                  <td>{e.actor.name}{e.actor.email && e.actor.email !== e.actor.name ? <span className="app-faint"> · {e.actor.email}</span> : null}</td>
                   <td>
                     <button type="button" className="wo-linkbtn" onClick={() => setOpen(e)} aria-label={`Open entry: ${e.action}`}>{e.action}</button>
                   </td>

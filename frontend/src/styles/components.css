@@ -133,7 +133,7 @@ a.wo-card:hover,.wo-card--interactive:hover{box-shadow:var(--shadow-md);transfor
 .wo-alert--info{background:var(--info-soft);color:var(--info-text)}.wo-alert--info .wo-alert__icon{background:var(--info-solid);color:var(--info-on-solid)}
 
 /* Modal */
-.wo-scrim{position:fixed;inset:0;background:var(--bg-overlay);display:grid;place-items:center;padding:var(--space-4);z-index:var(--z-modal)}
+.wo-scrim{position:fixed;inset:0;background:var(--bg-overlay);display:grid;place-items:center;padding:var(--space-4);z-index:calc(var(--z-modal) + 50);pointer-events:auto}
 .wo-modal{width:100%;max-width:520px;background:var(--bg-raised);color:var(--text-primary);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);overflow:hidden;border:var(--stroke-1) solid var(--border-subtle)}
 .wo-modal__head{padding:var(--space-6) var(--space-8) 0}
 .wo-modal__title{font:800 28px/30px var(--font-display);letter-spacing:-.025em;text-transform:uppercase;margin:var(--space-2) 0 0}

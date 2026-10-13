@@ -64,9 +64,11 @@ test.describe("the admin console", () => {
     await signInAdmin(page);
     await page.goto("/admin/invitations");
     const email = `invitee${Date.now()}@demo.test`;
-    await page.getByLabel("Email address").fill(email);
-    await page.getByRole("button", { name: "Send invitation" }).click();
-    await expect(page.getByText(`Invitation sent to ${email}`)).toBeVisible();
+    const box = page.getByLabel("Email addresses");
+    await box.fill(email);
+    await box.press("Enter");
+    await page.getByRole("button", { name: "Send 1 invitation" }).click();
+    await expect(page.getByText("1 sent, 0 skipped")).toBeVisible();
     await page.getByRole("button", { name: `Withdraw the invitation to ${email}` }).click();
     await page.getByRole("button", { name: "Withdraw", exact: true }).click();
     await expect(page.getByText("Invitation withdrawn")).toBeVisible();

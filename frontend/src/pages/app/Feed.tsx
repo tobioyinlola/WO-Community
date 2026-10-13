@@ -272,7 +272,7 @@ function PostCard({ post }: { post: Post }) {
       <article>
         <div className="app-post__head">
           <Avatar name={post.author.name} id={post.author.id} src={post.author.photo?.thumb} />
-          <div style={{ flex: 1 }}>
+          <div className="app-post__who">
             <p className="app-post__author">
               {post.author.slug ? (
                 <Link className="app-link" to={`/app/members/${post.author.id}`} style={{ textDecoration: "none" }}>
@@ -288,9 +288,11 @@ function PostCard({ post }: { post: Post }) {
               {post.edited_at ? " · edited" : ""}
             </p>
           </div>
-          {post.official ? <Badge variant="solid">WO Community team</Badge> : null}
-          {post.pinned ? <Badge variant="solid">Pinned</Badge> : null}
-          <Badge variant="mentor">{humanise(post.category)}</Badge>
+          <div className="app-post__badges">
+            {post.official ? <Badge variant="solid">WO Community team</Badge> : null}
+            {post.pinned ? <Badge variant="solid">Pinned</Badge> : null}
+            <Badge variant="mentor">{humanise(post.category)}</Badge>
+          </div>
         </div>
         {editing ? (
           <div className="app-stack">
