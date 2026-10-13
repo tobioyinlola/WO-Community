@@ -117,6 +117,30 @@ class SitemapPageSerializer(serializers.Serializer):
     lastmod = serializers.DateTimeField(allow_null=True)
 
 
+class PublicStatsSerializer(serializers.Serializer):
+    startups = serializers.IntegerField()
+    founders = serializers.IntegerField()
+    courses = serializers.IntegerField()
+    jobs = serializers.IntegerField()
+
+
+class PublicStatsView(PublicView):
+    cache_control = "public, max-age=600, stale-while-revalidate=600"
+
+    @extend_schema(
+        summary="How much is on the public site",
+        description="Counts of what a visitor can see: startups and founders listed, courses "
+        "open to visitors and open roles. Counted from the same lists as the sitemap, so every "
+        "number is something a visitor can click through to. Nothing about individual members.",
+        responses={200: PublicStatsSerializer},
+        tags=["public"],
+    )
+    def get(self, request: Request) -> Response:
+        if request.query_params:
+            raise serializers.ValidationError({"detail": "No parameters are accepted."})
+        return self.cached(request, PublicStatsSerializer(sitemap.counts()).data)
+
+
 class FullSitemapSerializer(serializers.Serializer):
     startups = SitemapPageSerializer(many=True)
     founders = SitemapPageSerializer(many=True)
