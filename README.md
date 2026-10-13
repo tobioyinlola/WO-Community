@@ -26,16 +26,29 @@ can put in front of an investor.
 Visitors who are not members can read the public site, browse public startups and jobs, and ask for
 access. New accounts are reviewed before they see the community.
 
+## Repository layout
+
+```
+backend/     the Django API, the Celery worker and everything they need (apps/, config/, tests,
+             Dockerfile, pyproject.toml, .env.example). Deployed to Railway.
+frontend/    the React app (Vite). Deployed to Vercel.
+docs/        decisions, runbooks, the OpenAPI description and the deployment guide
+docker-compose.yml   PostgreSQL, Redis, a mail catcher and storage for local development
+```
+
+Run back end commands from `backend/` and front end commands from `frontend/`. Deploying to
+production: start at `docs/deployment/README.md`.
+
 ## How it is built
 
-- **Back end** (`apps/`, `config/`): a Django modular monolith with Django REST Framework, PostgreSQL,
+- **Back end** (`backend/apps/`, `backend/config/`): a Django modular monolith with Django REST Framework, PostgreSQL,
   Redis and Celery. The API is described by an OpenAPI schema (`docs/api/openapi.yaml`), errors follow
   RFC 9457 problem details, lists use cursor pagination, and edits to shared records carry an ETag
   or version so two tabs cannot overwrite each other silently.
 - **Front end** (`frontend/`): React 18, TypeScript and Vite. Its API types are generated from the
   back end's OpenAPI schema, so a change to the API that breaks the app fails the type check. The
   look follows the WO design system (see `frontend/README.md`).
-- **Toolkit** (`apps/toolkit/`): long running work (scoring, plans, exports, prototypes) runs as
+- **Toolkit** (`backend/apps/toolkit/`): long running work (scoring, plans, exports, prototypes) runs as
   jobs the browser follows. AI features sit behind an adapter with a fake for tests and are
   advisory: they never state a figure that is not in the member's data or a cited source.
 - **Security**: short lived access tokens in memory, a refresh token in an HttpOnly cookie, every
@@ -49,6 +62,7 @@ Decisions and their reasons are in `docs/adr/`; what each stage delivered is in 
 Requirements: Python 3.12, Docker.
 
 ```bash
+cd backend
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 make install
 cp .env.example .env
@@ -76,7 +90,7 @@ and must not be public), and start ClamAV with `docker compose --profile scanner
 ## Run the whole thing
 
 ```bash
-# back end (see above for the first time set up)
+# back end, from backend/ (see above for the first time set up)
 make up && make migrate
 make run                      # API on http://localhost:8000
 make worker                   # jobs: scores, plans, exports (needed for the toolkit)
@@ -132,11 +146,11 @@ the API requests that were refused), and screenshots and traces are kept as an a
 
 ## Quality gates
 
-`make ci` runs everything the pipeline runs: `ruff`, `black --check`, `mypy`, `bandit`,
+`make ci` (from `backend/`) runs everything the pipeline runs: `ruff`, `black --check`, `mypy`, `bandit`,
 `pip-audit`, `import-linter`, the test suite, OpenAPI generation and `check --deploy`.
 Tests need PostgreSQL (`make up`); SQLite is not supported.
 
-Formatting has one definition: `[tool.ruff]` and `[tool.black]` in `pyproject.toml`, with the
+Formatting has one definition: `[tool.ruff]` and `[tool.black]` in `backend/pyproject.toml`, with the
 tool versions pinned there and again in `.pre-commit-config.yaml`. CI runs `ruff check .` and
 `black --check .` over the whole repository, scripts included, so run `make format` (not `black`
 on a few folders) before pushing. Run `make hooks` once after cloning so the same checks run on

@@ -1,13 +1,13 @@
 x-app: &app
-  build: .
-  env_file: .env
+  build: ./backend
+  env_file: ./backend/.env
   environment:
     DJANGO_SETTINGS_MODULE: config.settings.local
     DATABASE_URL: postgres://wo:wo@db:5432/wo
     REDIS_CACHE_URL: redis://redis:6379/1
     CELERY_BROKER_URL: redis://redis:6379/0
   volumes:
-    - .:/app
+    - ./backend:/app
   depends_on:
     db:
       condition: service_healthy

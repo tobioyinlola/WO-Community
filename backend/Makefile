@@ -3,10 +3,10 @@ PY ?= python
 .PHONY: toolkit-evaluate up down install migrate run worker beat test lint format typecheck security imports schema check ci lint-migrations hooks
 
 up:
-	docker compose up -d db redis mail storage
+	docker compose -f ../docker-compose.yml up -d db redis mail storage
 
 down:
-	docker compose down
+	docker compose -f ../docker-compose.yml down
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -51,7 +51,7 @@ imports:
 	lint-imports
 
 schema:
-	$(PY) manage.py spectacular --file docs/api/openapi.yaml --validate --fail-on-warn
+	$(PY) manage.py spectacular --file ../docs/api/openapi.yaml --validate --fail-on-warn
 
 check:
 	$(PY) scripts/deploy_check.py
