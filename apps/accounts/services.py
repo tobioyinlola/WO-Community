@@ -471,7 +471,9 @@ def session_expiry(raw_refresh_token: str) -> datetime | None:
 # Admin member commands live in ``membership``; re-exported so other modules use one facade.
 from apps.accounts.invitations import (  # noqa: E402
     InvitationEmail,
+    batch_create,
     bulk_create,
+    check_addresses,
     create_invitation,
     resend_invitation,
     revoke_invitation,
@@ -489,7 +491,9 @@ from apps.accounts.membership import (  # noqa: E402
 __all__ = [
     "InvitationEmail",
     "approve_member",
+    "batch_create",
     "bulk_create",
+    "check_addresses",
     "create_invitation",
     "invitation_status",
     "resend_invitation",

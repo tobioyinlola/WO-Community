@@ -131,6 +131,41 @@ class BulkInvitationSerializer(StrictSerializer):
     csv = serializers.CharField(max_length=300_000, trim_whitespace=False)
 
 
+class InvitationBatchSerializer(StrictSerializer):
+    emails = serializers.ListField(
+        child=serializers.CharField(max_length=254), min_length=1, max_length=200
+    )
+    role = serializers.CharField(required=False, default="member", max_length=30)
+    message = serializers.CharField(
+        required=False, allow_blank=True, default="", max_length=500, trim_whitespace=False
+    )
+    idempotency_key = serializers.CharField(max_length=80, help_text="One per submit.")
+
+
+class InvitationCheckSerializer(StrictSerializer):
+    emails = serializers.ListField(
+        child=serializers.CharField(max_length=254), min_length=1, max_length=200
+    )
+
+
+class InvitationCheckRowSerializer(serializers.Serializer):
+    email = serializers.CharField()
+    state = serializers.ChoiceField(choices=["ok", "invalid", "member", "pending"])
+
+
+class InvitationBatchRowSerializer(serializers.Serializer):
+    email = serializers.CharField()
+    result = serializers.ChoiceField(choices=["sent", "skipped", "failed"])
+    reason = serializers.CharField(allow_blank=True)
+
+
+class InvitationBatchResultSerializer(serializers.Serializer):
+    sent = serializers.IntegerField()
+    skipped = serializers.IntegerField()
+    failed = serializers.IntegerField()
+    results = InvitationBatchRowSerializer(many=True)
+
+
 class InvitationSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     email = serializers.EmailField()

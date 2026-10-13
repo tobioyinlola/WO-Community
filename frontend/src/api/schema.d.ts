@@ -1526,6 +1526,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/invitations/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite a list of addresses and get a result for each
+         * @description Up to 200 at once. A repeated address is merged; an address that already has an account or a live invitation is skipped with the reason. Sending the same `idempotency_key` again returns the first answer and sends nothing new.
+         */
+        post: operations["admin_invitations_batch_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/invitations/bulk": {
         parameters: {
             query?: never;
@@ -1540,6 +1560,23 @@ export interface paths {
          * @description Send the file's contents as `csv`. The first row must name the columns: `email` (required), `role` and `message` (optional). Up to 500 rows. Rows that fail are reported and skipped; the rest are invited.
          */
         post: operations["admin_invitations_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/invitations/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say which addresses could be invited, without sending anything */
+        post: operations["admin_invitations_check_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9442,9 +9479,15 @@ export interface components {
         BulkRow: {
             row: number;
             email: string;
-            result: components["schemas"]["ResultEnum"];
+            result: components["schemas"]["BulkRowResultEnum"];
             reason: string;
         };
+        /**
+         * @description * `created` - created
+         *     * `skipped` - skipped
+         * @enum {string}
+         */
+        BulkRowResultEnum: "created" | "skipped";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -10569,6 +10612,60 @@ export interface components {
             /** Format: date-time */
             registered_at: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        InvitationBatchRequest: {
+            emails: string[];
+            /** @default member */
+            role: string;
+            /** @default  */
+            message: string;
+            /** @description One per submit. */
+            idempotency_key: string;
+        };
+        InvitationBatchResult: {
+            sent: number;
+            skipped: number;
+            failed: number;
+            results: components["schemas"]["InvitationBatchRow"][];
+        };
+        InvitationBatchRow: {
+            email: string;
+            result: components["schemas"]["InvitationBatchRowResultEnum"];
+            reason: string;
+        };
+        /**
+         * @description * `sent` - sent
+         *     * `skipped` - skipped
+         *     * `failed` - failed
+         * @enum {string}
+         */
+        InvitationBatchRowResultEnum: "sent" | "skipped" | "failed";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        InvitationCheckRequest: {
+            emails: string[];
+        };
+        InvitationCheckRow: {
+            email: string;
+            state: components["schemas"]["InvitationCheckRowStateEnum"];
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `invalid` - invalid
+         *     * `member` - member
+         *     * `pending` - pending
+         * @enum {string}
+         */
+        InvitationCheckRowStateEnum: "ok" | "invalid" | "member" | "pending";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -13249,12 +13346,6 @@ export interface components {
          * @enum {string}
          */
         ResourceKindEnum: "link" | "file";
-        /**
-         * @description * `created` - created
-         *     * `skipped` - skipped
-         * @enum {string}
-         */
-        ResultEnum: "created" | "skipped";
         Resume: {
             /** Format: uuid */
             lesson_id: string;
@@ -20075,6 +20166,57 @@ export interface operations {
             };
         };
     };
+    admin_invitations_batch_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationBatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationBatchResult"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already registered, already invited, or not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_invitations_bulk_create: {
         parameters: {
             query?: never;
@@ -20094,6 +20236,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkReport"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already registered, already invited, or not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_invitations_check_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationCheckRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationCheckRow"][];
                 };
             };
             /** @description Not authenticated */

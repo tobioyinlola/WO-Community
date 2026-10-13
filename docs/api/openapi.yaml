@@ -3489,6 +3489,40 @@ paths:
         '409':
           description: Already registered, already invited, or not in a state that
             allows this
+  /api/v1/admin/invitations/batch:
+    post:
+      operationId: admin_invitations_batch_create
+      description: Up to 200 at once. A repeated address is merged; an address that
+        already has an account or a live invitation is skipped with the reason. Sending
+        the same `idempotency_key` again returns the first answer and sends nothing
+        new.
+      summary: Invite a list of addresses and get a result for each
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationBatchRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationBatchResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
   /api/v1/admin/invitations/bulk:
     post:
       operationId: admin_invitations_bulk_create
@@ -3512,6 +3546,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BulkReport'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Invitation not found
+        '409':
+          description: Already registered, already invited, or not in a state that
+            allows this
+  /api/v1/admin/invitations/check:
+    post:
+      operationId: admin_invitations_check_create
+      summary: Say which addresses could be invited, without sending anything
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationCheckRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvitationCheckRow'
           description: ''
         '401':
           description: Not authenticated
@@ -20916,7 +20982,7 @@ components:
         email:
           type: string
         result:
-          $ref: '#/components/schemas/ResultEnum'
+          $ref: '#/components/schemas/BulkRowResultEnum'
         reason:
           type: string
       required:
@@ -20924,6 +20990,14 @@ components:
       - reason
       - result
       - row
+    BulkRowResultEnum:
+      enum:
+      - created
+      - skipped
+      type: string
+      description: |-
+        * `created` - created
+        * `skipped` - skipped
     CalendarConnectRequest:
       type: object
       description: |-
@@ -23425,6 +23499,120 @@ components:
       - registered_at
       - role
       - status
+    InvitationBatchRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 254
+          maxItems: 200
+          minItems: 1
+        role:
+          type: string
+          minLength: 1
+          default: member
+          maxLength: 30
+        message:
+          type: string
+          default: ''
+          maxLength: 500
+        idempotency_key:
+          type: string
+          minLength: 1
+          description: One per submit.
+          maxLength: 80
+      required:
+      - emails
+      - idempotency_key
+    InvitationBatchResult:
+      type: object
+      properties:
+        sent:
+          type: integer
+        skipped:
+          type: integer
+        failed:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvitationBatchRow'
+      required:
+      - failed
+      - results
+      - sent
+      - skipped
+    InvitationBatchRow:
+      type: object
+      properties:
+        email:
+          type: string
+        result:
+          $ref: '#/components/schemas/InvitationBatchRowResultEnum'
+        reason:
+          type: string
+      required:
+      - email
+      - reason
+      - result
+    InvitationBatchRowResultEnum:
+      enum:
+      - sent
+      - skipped
+      - failed
+      type: string
+      description: |-
+        * `sent` - sent
+        * `skipped` - skipped
+        * `failed` - failed
+    InvitationCheckRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 254
+          maxItems: 200
+          minItems: 1
+      required:
+      - emails
+    InvitationCheckRow:
+      type: object
+      properties:
+        email:
+          type: string
+        state:
+          $ref: '#/components/schemas/InvitationCheckRowStateEnum'
+      required:
+      - email
+      - state
+    InvitationCheckRowStateEnum:
+      enum:
+      - ok
+      - invalid
+      - member
+      - pending
+      type: string
+      description: |-
+        * `ok` - ok
+        * `invalid` - invalid
+        * `member` - member
+        * `pending` - pending
     InvitationCreateRequest:
       type: object
       description: |-
@@ -29115,14 +29303,6 @@ components:
       description: |-
         * `link` - link
         * `file` - file
-    ResultEnum:
-      enum:
-      - created
-      - skipped
-      type: string
-      description: |-
-        * `created` - created
-        * `skipped` - skipped
     Resume:
       type: object
       properties:
