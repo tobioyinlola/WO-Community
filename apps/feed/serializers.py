@@ -117,6 +117,8 @@ class PostSerializer(serializers.Serializer):
     previews = LinkPreviewSerializer(many=True, help_text="Cards for links, once fetched")
     created_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField(allow_null=True)
+    official = serializers.BooleanField(help_text="Posted by the WO Community team")
+    comments_enabled = serializers.BooleanField()
     pinned = serializers.BooleanField()
     featured = serializers.BooleanField()
     hidden = serializers.BooleanField(help_text="Only ever true for the author's own view")

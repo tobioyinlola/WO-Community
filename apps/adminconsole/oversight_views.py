@@ -17,6 +17,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import exceptions, serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 
 from apps.accounts.models import User
@@ -26,7 +27,9 @@ from apps.core import policies
 from apps.core.pagination import AdminLimitOffsetPagination
 from apps.core.serializers import StrictSerializer
 from apps.events.models import EventRegistration
+from apps.feed import services as feed_services
 from apps.feed.models import CATEGORIES, Comment, Post, Reaction, Report
+from apps.feed.serializers import ImageInputSerializer
 from apps.jobs.models import Job
 from apps.learning.models import Enrolment
 from apps.mentorship.models import MentorSession
@@ -55,7 +58,9 @@ class AdminPostQuerySerializer(StrictSerializer):
     q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
     category = serializers.ChoiceField(choices=list(CATEGORIES), required=False, default="")
     state = serializers.ChoiceField(
-        choices=["live", "hidden", "pinned", "featured", "reported"], required=False, default=""
+        choices=["live", "hidden", "pinned", "featured", "reported", "scheduled", "team"],
+        required=False,
+        default="",
     )
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
     offset = serializers.IntegerField(required=False, min_value=0)
@@ -68,8 +73,13 @@ class AdminPostSerializer(serializers.Serializer):
     excerpt = serializers.CharField()
     created_at = serializers.DateTimeField()
     pinned = serializers.BooleanField()
+    pinned_until = serializers.DateTimeField(allow_null=True)
     featured = serializers.BooleanField()
     hidden = serializers.BooleanField()
+    official = serializers.BooleanField()
+    comments_enabled = serializers.BooleanField()
+    audience_roles = serializers.ListField(child=serializers.CharField())
+    scheduled_for = serializers.DateTimeField(allow_null=True)
     comment_count = serializers.IntegerField()
     reaction_count = serializers.IntegerField()
     open_reports = serializers.IntegerField()
@@ -91,6 +101,10 @@ class AdminPostDetailSerializer(AdminPostSerializer):
 
 def _post_queryset(*, q: str, category: str, state: str) -> QuerySet[Post]:
     queryset = Post.objects.filter(deleted_at__isnull=True)
+    # Posts written ahead are listed only on their own tab, so they are not mistaken for live ones.
+    if state == "scheduled":
+        return queryset.filter(scheduled_for__isnull=False).order_by("scheduled_for", "id")
+    queryset = queryset.filter(scheduled_for__isnull=True)
     if q:
         queryset = queryset.filter(
             Q(body_text__icontains=q)
@@ -107,6 +121,8 @@ def _post_queryset(*, q: str, category: str, state: str) -> QuerySet[Post]:
         queryset = queryset.filter(pinned_at__isnull=False)
     elif state == "featured":
         queryset = queryset.filter(featured_at__isnull=False)
+    elif state == "team":
+        queryset = queryset.filter(official=True)
     elif state == "reported":
         reported = Report.objects.filter(status="open", target_type="post").values("target_id")
         queryset = queryset.filter(pk__in=reported)
@@ -131,8 +147,13 @@ def _post_rows(posts: list[Post]) -> list[dict[str, Any]]:
             "excerpt": p.body_text[:240],
             "created_at": p.created_at,
             "pinned": p.pinned_at is not None,
+            "pinned_until": p.pinned_until,
             "featured": p.featured_at is not None,
             "hidden": p.hidden_at is not None,
+            "official": p.official,
+            "comments_enabled": p.comments_enabled,
+            "audience_roles": p.audience_roles,
+            "scheduled_for": p.scheduled_for,
             "comment_count": p.comment_count,
             "reaction_count": p.reaction_count,
             "open_reports": reports.get(p.pk, 0),
@@ -141,15 +162,80 @@ def _post_rows(posts: list[Post]) -> list[dict[str, Any]]:
     ]
 
 
+class TeamPostSerializer(StrictSerializer):
+    """A post from the team: the same fields as a member's, plus the options only the team has."""
+
+    category = serializers.ChoiceField(choices=list(CATEGORIES))
+    body = serializers.CharField(max_length=20_000, trim_whitespace=False)
+    images = serializers.ListField(
+        child=ImageInputSerializer(), required=False, default=list, max_length=10
+    )
+    official = serializers.BooleanField(
+        required=False, default=False, help_text="Post as the WO Community team"
+    )
+    pin = serializers.BooleanField(required=False, default=False)
+    pinned_until = serializers.DateTimeField(required=False, allow_null=True, default=None)
+    comments_enabled = serializers.BooleanField(required=False, default=True)
+    audience_roles = serializers.ListField(
+        child=serializers.CharField(max_length=20),
+        required=False,
+        default=list,
+        help_text="Empty means every member",
+    )
+    scheduled_for = serializers.DateTimeField(required=False, allow_null=True, default=None)
+
+
+class TeamPostUpdateSerializer(StrictSerializer):
+    category = serializers.ChoiceField(choices=list(CATEGORIES), required=False)
+    body = serializers.CharField(max_length=20_000, trim_whitespace=False, required=False)
+    official = serializers.BooleanField(required=False)
+    comments_enabled = serializers.BooleanField(required=False)
+    audience_roles = serializers.ListField(
+        child=serializers.CharField(max_length=20), required=False
+    )
+    pinned_until = serializers.DateTimeField(required=False, allow_null=True)
+    scheduled_for = serializers.DateTimeField(required=False, allow_null=True)
+
+
 class AdminPostsView(APIView):
     policy = MODERATE
     pagination_class = AdminLimitOffsetPagination  # documents the page shape
 
     @extend_schema(
+        summary="Post as the team or as yourself",
+        description="Skips the daily allowance and is never held for review. Options: post as "
+        "the WO Community team, pin (with an optional date it lapses), turn comments off, limit "
+        "to members or mentors, and schedule for later.",
+        request=TeamPostSerializer,
+        responses={201: AdminPostSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = TeamPostSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        post = feed_services.create_post(
+            user_id=cast(UUID, request.user.pk),
+            category=data["category"],
+            body=data["body"],
+            images=data["images"],
+            team={
+                "actor": request.user,
+                "ip": BaseThrottle().get_ident(request) or "",
+                "official": data["official"],
+                "pin": data["pin"],
+                "pinned_until": data["pinned_until"],
+                "comments_enabled": data["comments_enabled"],
+                "audience_roles": data["audience_roles"],
+                "scheduled_for": data["scheduled_for"],
+            },
+        )
+        return Response(AdminPostSerializer(_post_rows([post])[0]).data, status=201)
+
+    @extend_schema(
         summary="Every post, for moderation",
         description="Newest first, hidden ones included. Filter by `category`, `state` "
-        "(live, hidden, pinned, featured, reported) and text. Use the post actions to pin, "
-        "feature, hide or remove.",
+        "(live, hidden, pinned, featured, reported, team, scheduled) and text.",
         parameters=[AdminPostQuerySerializer],
         responses={200: AdminPostSerializer(many=True), **ERRORS},
         tags=["admin"],
@@ -167,6 +253,23 @@ class AdminPostsView(APIView):
 
 class AdminPostView(APIView):
     policy = MODERATE
+
+    @extend_schema(
+        summary="Edit any post, or change how the team's post behaves",
+        request=TeamPostUpdateSerializer,
+        responses={200: AdminPostSerializer, 404: OpenApiResponse(description="No post")},
+        tags=["admin"],
+    )
+    def patch(self, request: Request, post_id: UUID) -> Response:
+        serializer = TeamPostUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        post = feed_services.update_team_post(
+            actor=request.user,
+            post_id=post_id,
+            changes=dict(serializer.validated_data),
+            ip=BaseThrottle().get_ident(request) or "",
+        )
+        return Response(AdminPostSerializer(_post_rows([post])[0]).data)
 
     @extend_schema(
         summary="One post with all of its comments",

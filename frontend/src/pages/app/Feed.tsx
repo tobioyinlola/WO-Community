@@ -288,6 +288,7 @@ function PostCard({ post }: { post: Post }) {
               {post.edited_at ? " · edited" : ""}
             </p>
           </div>
+          {post.official ? <Badge variant="solid">WO Community team</Badge> : null}
           {post.pinned ? <Badge variant="solid">Pinned</Badge> : null}
           <Badge variant="mentor">{humanise(post.category)}</Badge>
         </div>
@@ -352,7 +353,8 @@ function PostCard({ post }: { post: Post }) {
             )}
           </span>
         </div>
-        {open ? <Comments post={post} /> : null}
+        {open && post.comments_enabled ? <Comments post={post} /> : null}
+        {open && !post.comments_enabled ? <p className="body-sm app-muted" style={{ margin: "var(--space-3) 0 0" }}>Comments are turned off for this post.</p> : null}
         {reporting ? <ReportDialog postId={post.id} onClose={() => setReporting(false)} /> : null}
       </article>
     </Card>

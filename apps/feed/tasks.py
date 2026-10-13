@@ -5,7 +5,7 @@ import structlog
 from celery import shared_task
 
 from apps.core.models import OutboxEvent
-from apps.feed import links
+from apps.feed import links, services
 from apps.notifications import notify
 from apps.startups import selectors as startups
 
@@ -106,3 +106,22 @@ def fetch_link_preview(event_id: str) -> None:
 @shared_task(name="feed.purge_link_previews")
 def purge_link_previews() -> int:
     return links.purge_unused()
+
+
+@shared_task(name="feed.publish_scheduled")
+def publish_scheduled() -> int:
+    return services.publish_due()
+
+
+@shared_task(name="feed.notify_moderated")
+def notify_moderated(event_id: str) -> None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is None:
+        return
+    data = event.payload
+    notify.notify(
+        UUID(data["author_id"]),
+        "post_moderated",
+        {"post_id": data["post_id"], "what": data["action"], "reason": data["reason"]},
+        dedupe_key=f"{event_id}:moderated",
+    )
