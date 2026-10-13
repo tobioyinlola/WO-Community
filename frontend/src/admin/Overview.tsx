@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Button } from "../components";
+import { nameFromEmail, welcomeTitle } from "../lib/greeting";
 import { formatDate, formatDateTime, formatNumber, timeAgo } from "../lib/format";
 import { EmptyState, ErrorState, Loaded, PageHeader, SkeletonRows, useDocumentTitle } from "../ui/blocks";
 import { useToast } from "../ui/Toast";
@@ -201,8 +202,8 @@ export default function Overview() {
     <>
       <PageHeader
         eyebrow="Console"
-        title="Dashboard"
-        lead={`${formatDate(w.thisStart)} to ${formatDate(w.today)}${d?.refreshed_at ? ` · figures updated ${timeAgo(d.refreshed_at)}` : ""}`}
+        title={welcomeTitle(nameFromEmail(me?.email) || "Admin")}
+        lead={`📊 ${formatDate(w.thisStart)} to ${formatDate(w.today)}${d?.refreshed_at ? ` · figures updated ${timeAgo(d.refreshed_at)}` : ""}`}
         actions={
           <div className="adm-toolbar">
             <Button variant="secondary" onClick={refresh}>Refresh figures</Button>
