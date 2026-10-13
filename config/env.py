@@ -23,3 +23,12 @@ def require(name: str) -> str:
     if not value:
         raise ImproperlyConfigured(f"Environment variable {name} is required")
     return value
+
+
+def first(*names: str, default: str = "") -> str:
+    """The first of several variable names that is set, so a platform's own names also work."""
+    for name in names:
+        value = env.str(name, default="")
+        if value:
+            return value
+    return default

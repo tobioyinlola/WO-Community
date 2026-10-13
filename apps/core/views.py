@@ -53,6 +53,32 @@ class HealthReadyView(_PublicView):
         return Response({"status": "ok"})
 
 
+class HealthView(_PublicView):
+    """The one address a platform health check needs: is the database up, and is Redis."""
+
+    # A platform probe, not part of the public API description.
+    @extend_schema(exclude=True)
+    def get(self, request: Request) -> Response:
+        database = redis = "ok"
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+        except Exception:
+            database = "unavailable"
+        try:
+            key = f"health:{uuid.uuid4().hex}"
+            cache.set(key, "1", 5)
+            if cache.get(key) != "1":
+                raise RuntimeError("cache round trip failed")
+        except Exception:
+            redis = "unavailable"
+        healthy = database == "ok" and redis == "ok"
+        return Response(
+            {"status": "ok" if healthy else "unavailable", "database": database, "redis": redis},
+            status=status.HTTP_200_OK if healthy else status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+
 class PingView(_PublicView):
     throttle_classes = _PublicView.throttle_classes
 
