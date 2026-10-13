@@ -13,10 +13,15 @@ COPY pyproject.toml ./
 RUN pip install --upgrade pip && pip install . && pip uninstall -y pip
 
 COPY . .
+# Static files are collected once, here, so the running container only reads them. The values are
+# placeholders that the build needs to load settings; nothing from them is kept.
+RUN DJANGO_SETTINGS_MODULE=config.settings.base SECRET_KEY=build-only     DATABASE_URL=postgres://build:build@localhost:5432/build     python manage.py collectstatic --noinput
 RUN chown -R app:app /app
 USER app
 
 ENV DJANGO_SETTINGS_MODULE=config.settings.production
 EXPOSE 8000
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "30", "--graceful-timeout", "30", "--access-logfile", "-"]
+# The web process. The worker and scheduler run from the same image with their own command
+# (see docs/deployment/railway.md).
+CMD ["gunicorn", "config.wsgi:application", "-c", "gunicorn.conf.py"]

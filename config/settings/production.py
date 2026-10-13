@@ -33,6 +33,8 @@ def _https_origin(name: str, value: str) -> None:
 
 if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must list the API host, never '*'.")
+# Railway's own health check calls the service by this name.
+ALLOWED_HOSTS = [*ALLOWED_HOSTS, "healthcheck.railway.app"]
 if not first("REDIS_URL", "CELERY_BROKER_URL"):
     raise ImproperlyConfigured("Environment variable REDIS_URL is required")
 if not CORS_ALLOWED_ORIGINS:
