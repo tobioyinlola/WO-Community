@@ -136,6 +136,12 @@ the API requests that were refused), and screenshots and traces are kept as an a
 `pip-audit`, `import-linter`, the test suite, OpenAPI generation and `check --deploy`.
 Tests need PostgreSQL (`make up`); SQLite is not supported.
 
+Formatting has one definition: `[tool.ruff]` and `[tool.black]` in `pyproject.toml`, with the
+tool versions pinned there and again in `.pre-commit-config.yaml`. CI runs `ruff check .` and
+`black --check .` over the whole repository, scripts included, so run `make format` (not `black`
+on a few folders) before pushing. Run `make hooks` once after cloning so the same checks run on
+every commit and unformatted code never reaches CI.
+
 ## Layout
 
 See `docs/adr/` for the reasons behind structural decisions and `docs/stages/` for what each stage
