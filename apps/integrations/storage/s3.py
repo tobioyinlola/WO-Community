@@ -120,16 +120,25 @@ class S3Storage(ObjectStorage):
     def write_once(
         self, *, bucket: str, key: str, data: bytes, content_type: str, retain_days: int
     ) -> bool:
-        """Needs a bucket created with S3 Object Lock; COMPLIANCE mode lets nobody shorten it."""
+        """Needs a bucket created with S3 Object Lock; COMPLIANCE mode lets nobody shorten it.
+
+        Cloudflare R2 has no Object Lock headers. There, set STORAGE_ANCHOR_OBJECT_LOCK=false and
+        give the bucket a retention rule in the R2 dashboard, which R2 enforces itself.
+        """
         if self.head(bucket=bucket, key=key) is not None:
             return False
+        lock: dict[str, Any] = {}
+        if settings.STORAGE_ANCHOR_OBJECT_LOCK:
+            lock = {
+                "ObjectLockMode": "COMPLIANCE",
+                "ObjectLockRetainUntilDate": datetime.now(UTC) + timedelta(days=retain_days),
+            }
         self.client.put_object(
             Bucket=self.bucket_name(bucket),
             Key=key,
             Body=data,
             ContentType=content_type,
-            ObjectLockMode="COMPLIANCE",
-            ObjectLockRetainUntilDate=datetime.now(UTC) + timedelta(days=retain_days),
+            **lock,
         )
         return True
 
