@@ -369,6 +369,9 @@ EMAIL_FROM_TRANSACTIONAL = env.str(
 )
 EMAIL_FROM_MARKETING = env.str("EMAIL_FROM_MARKETING", default="WO Community <community@localhost>")
 EMAIL_REPLY_TO = env.str("EMAIL_REPLY_TO", default="")
+# Only for SmtpEmailAdapter, a local mail catcher (Mailpit listens on 1025 inside Docker).
+EMAIL_SMTP_HOST = env.str("EMAIL_SMTP_HOST", default="localhost")
+EMAIL_SMTP_PORT = env.int("EMAIL_SMTP_PORT", default=1026)
 EMAIL_WEBHOOK_RETENTION_DAYS = 30
 
 CDN_PURGER = env.str("CDN_PURGER", default="apps.integrations.cdn.fake.LoggingPurger")
