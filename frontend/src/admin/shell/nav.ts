@@ -71,7 +71,7 @@ export const NAV: NavEntry[] = [
     label: "Content",
     icon: FileText,
     children: [
-      { id: "feed", label: "Posts and feed", to: "/admin/feed", needs: "feed.moderate", soon: true },
+      { id: "feed", label: "Posts and feed", to: "/admin/feed", needs: "feed.moderate" },
       { id: "news", label: "News and awards", to: "/admin/news", needs: "editorial.manage" },
       { id: "wins", label: "Win submissions", to: "/admin/wins", needs: "editorial.manage", badge: "wins_awaiting_review" },
       { id: "events", label: "Events", to: "/admin/events", needs: "events.manage" },
@@ -83,7 +83,7 @@ export const NAV: NavEntry[] = [
     icon: Briefcase,
     children: [
       { id: "jobs-all", label: "All jobs", to: "/admin/jobs", needs: "jobs.moderate", badge: "jobs_awaiting_review" },
-      { id: "job-applications", label: "Applications", to: "/admin/job-applications", needs: "jobs.moderate", soon: true },
+      { id: "job-applications", label: "Applications", to: "/admin/job-applications", needs: "jobs.moderate" },
     ],
   },
   {
@@ -102,8 +102,8 @@ export const NAV: NavEntry[] = [
     label: "Mentorship",
     icon: UserCheck,
     children: [
-      { id: "sessions", label: "Sessions", to: "/admin/sessions", needs: "sessions.manage", soon: true },
-      { id: "matches", label: "Matches", to: "/admin/matches", needs: "sessions.manage", soon: true },
+      { id: "sessions", label: "Sessions", to: "/admin/sessions", needs: "sessions.manage" },
+      { id: "matches", label: "Matches", to: "/admin/matches", needs: "sessions.manage" },
     ],
   },
   {
@@ -133,9 +133,9 @@ export const NAV: NavEntry[] = [
     label: "Analytics",
     icon: BarChart3,
     children: [
-      { id: "analytics-overview", label: "Overview", to: "/admin/analytics", needs: "dashboard.view", soon: true },
-      { id: "funnels", label: "Funnels", to: "/admin/analytics/funnels", needs: "dashboard.view", soon: true },
-      { id: "reports-analytics", label: "Reports", to: "/admin/analytics/reports", needs: "dashboard.view", soon: true },
+      { id: "analytics-overview", label: "Overview", to: "/admin/analytics", needs: "dashboard.view" },
+      { id: "funnels", label: "Funnels", to: "/admin/analytics/funnels", needs: "dashboard.view" },
+      { id: "reports-analytics", label: "Reports", to: "/admin/analytics/reports", needs: "dashboard.view" },
     ],
   },
   {

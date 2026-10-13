@@ -15,10 +15,27 @@ Everything floats on the cream canvas: nothing touches the edge of the window.
   hover, focus or click), single items get a tooltip, and a waiting count becomes a dot. Below 1024px
   it becomes a drawer with a scrim, a focus trap and Esc to close.
 - **Top bar** (`shell/TopBar.tsx`): a pill-shaped card that stays in view. A search field (see Search below), then a chip with the number of requests waiting for approval, the local time with
-  its zone, help, notifications and the account menu (theme, keyboard shortcuts, sign out).
+  its zone, help, notifications and the account menu (keyboard shortcuts, sign out). The product is light only for now, so there is no theme choice anywhere.
 - **Page header**: the shared `PageHeader` restyled in `admin.css`: a small eyebrow, a sentence case
   40px title, a one line subtitle and a toolbar of pill controls on the right.
 - **Content**: cards on a `space-4` to `space-6` rhythm, at most 1440px wide.
+
+## Running the community
+
+These pages count and act on the live database, with no background job in between:
+
+- **Posts and feed** (`AdminFeed.tsx`, `GET /admin/posts`): every post, hidden ones included, with
+  filters, pin, feature, hide and remove, and each post's comments to hide, restore or remove.
+- **Job applications** (`JobApplications.tsx`, `GET /admin/job-applications`): members apply through
+  the community (`POST /jobs/{id}/apply`); the poster or an admin moves each application through
+  reviewing, shortlisted, hired or declined, and the applicant sees the status.
+- **Sessions and matches** (`MentoringSessions.tsx`): every mentoring session with cancel, and one row
+  per mentor and founder pair with how many sessions they have had.
+- **Analytics** (`Analytics.tsx`, `GET /admin/analytics`): totals against the period before, a daily
+  chart, breakdowns, a sign up funnel and a CSV download.
+- **Roles and team** (`Team.tsx`): the permission matrix, inviting a teammate with a console role, and
+  giving or taking a role. Only a super admin (`roles.manage`) can do these, each needs a fresh two
+  step check, a person cannot change their own roles, and the last super admin cannot be demoted.
 
 Pages not built yet appear in the sidebar with a "Soon" tag and open an honest placeholder page
 (`Stub.tsx`) instead of being hidden, so the map of the console is complete.

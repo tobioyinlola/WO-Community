@@ -282,9 +282,9 @@ test.describe("the admin console", () => {
     await page.getByRole("button", { name: "Discard" }).click();
     await expect(page.getByRole("region", { name: "Unsaved changes" })).toHaveCount(0);
     await page.goto("/admin/settings?section=appearance");
-    await page.getByLabel("Dark", { exact: false }).first().check();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await page.getByLabel("Light", { exact: false }).first().check();
+    // The product is light only for now, so there is no theme choice to make.
+    await expect(page.getByRole("heading", { name: "Theme" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Table density" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   });
 
