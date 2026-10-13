@@ -131,6 +131,21 @@ class EnrolView(APIView):
         )
 
 
+class UnenrolView(APIView):
+    policy = policies.has_permission("learning.enrol")
+
+    @extend_schema(
+        summary="Leave a course",
+        description="Progress is kept; enrolling again picks up where you left off.",
+        request=None,
+        responses={204: OpenApiResponse(description="Left the course"), **ERRORS},
+        tags=["learning"],
+    )
+    def delete(self, request: Request, course_id: UUID) -> Response:
+        learn.unenrol(user_id=_uid(request), course_id=course_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class MyCoursesView(APIView):
     policy = policies.active_member
 

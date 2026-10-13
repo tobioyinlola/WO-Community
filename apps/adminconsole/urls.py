@@ -28,7 +28,7 @@ from apps.adminconsole import (
 
 KINDS = "sectors|stages|skills"
 
-COURSE_ACTIONS = ("publish", "unpublish", "duplicate")
+COURSE_ACTIONS = ("publish", "unpublish", "archive", "duplicate")
 CAMPAIGN_ACTIONS = ("send", "schedule", "unschedule", "pause", "resume", "cancel", "test")
 EVENT_ACTIONS = ("publish", "unpublish", "cancel")
 ITEM_ACTIONS = ("publish", "unpublish")

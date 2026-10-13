@@ -444,7 +444,7 @@ def test_a_draft_starts_with_only_a_title(editor):
 def test_the_checklist_names_what_is_missing_and_publishing_refuses(editor):
     course = authoring.create_course(actor=editor, data={"title": "Thin"})
     todo = {i["key"] for i in lms.publish_checklist(course) if not i["done"]}
-    assert todo == {"description", "category", "thumbnail", "curriculum"}
+    assert todo == {"description", "category", "curriculum"}
     with pytest.raises(exceptions.ValidationError) as caught:
         authoring.publish(actor=editor, course_id=course.pk)
     assert "Still to do" in str(caught.value)
@@ -532,3 +532,27 @@ def test_one_wrong_link_adds_none_and_is_named(editor):
         )
     assert "Link 2" in str(caught.value)
     assert module.lessons.count() == 0
+
+
+def test_a_course_with_one_video_and_no_cover_can_be_published(editor):
+    """Regression: publishing used to need three lectures and a thumbnail, so a single video course
+    could never go live and the creator looked broken."""
+    course = authoring.create_course(
+        actor=editor,
+        data={
+            "title": "One video",
+            "description": "<p>A single talk.</p>",
+            "category": "Foundations",
+            "access": "free",
+        },
+    )
+    module = authoring.add_module(actor=editor, course_id=course.pk, title="Module 1")
+    authoring.add_lesson(
+        actor=editor,
+        module_id=module.pk,
+        data={"type": "video", "title": "The talk", "video_url": "https://youtu.be/dQw4w9WgXcQ"},
+    )
+    assert not course.cover_key
+    assert all(item["done"] for item in lms.publish_checklist(course))
+    published = authoring.publish(actor=editor, course_id=course.pk)
+    assert published.status == "published"

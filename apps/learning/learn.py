@@ -82,6 +82,14 @@ def enrol(*, user_id: UUID, course_id: UUID) -> tuple[Enrolment, bool]:
         if existing is not None:
             return existing, False
         raise PaymentRequired()
+    left = Enrolment.everything.filter(
+        course=course, user_id=user_id, ended_at__isnull=False
+    ).first()
+    if left is not None:  # coming back: the old progress is still there
+        left.ended_at = None
+        left.save(update_fields=["ended_at", "updated_at"])
+        lms.refresh_counts(course.pk)
+        return left, True
     try:
         with transaction.atomic():
             enrolment, created = Enrolment.objects.get_or_create(
@@ -99,6 +107,16 @@ def enrol(*, user_id: UUID, course_id: UUID) -> tuple[Enrolment, bool]:
     except IntegrityError:  # two taps at once
         return Enrolment.objects.get(course=course, user_id=user_id), False
     return enrolment, created
+
+
+def unenrol(*, user_id: UUID, course_id: UUID) -> None:
+    """Leave a course. The progress is kept, so enrolling again picks up where they were."""
+    enrolment = enrolment_of(user_id, course_id)
+    if enrolment is None:
+        raise NotFound()
+    enrolment.ended_at = timezone.now()
+    enrolment.save(update_fields=["ended_at", "updated_at"])
+    lms.refresh_counts(course_id)
 
 
 def grant(*, actor: Any, course_id: UUID, user_id: UUID, ip: str = "") -> tuple[Enrolment, bool]:

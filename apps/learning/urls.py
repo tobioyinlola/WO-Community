@@ -7,6 +7,7 @@ urlpatterns = [
     path("courses/categories", views.CategoriesView.as_view(), name="course-categories"),
     path("courses/<uuid:course_id>", views.CourseView.as_view(), name="course"),
     path("courses/<uuid:course_id>/enrol", views.EnrolView.as_view(), name="course-enrol"),
+    path("courses/<uuid:course_id>/unenrol", views.UnenrolView.as_view(), name="course-unenrol"),
     path("courses/<uuid:course_id>/rating", views.RatingView.as_view(), name="course-rating"),
     path("courses/page/<str:ref>", lms_views.CoursePageView.as_view(), name="course-page"),
     path(

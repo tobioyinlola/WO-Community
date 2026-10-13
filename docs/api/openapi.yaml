@@ -1548,7 +1548,7 @@ paths:
           description: If-Match header missing
     delete:
       operationId: admin_courses_destroy
-      summary: Remove a course
+      summary: Delete a course (409 if members are enrolled; archive it instead)
       parameters:
       - in: path
         name: course_id
@@ -1633,6 +1633,53 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/courses/{course_id}/archive:
+    post:
+      operationId: admin_courses_archive_create
+      description: 'Publishing needs a title, description, category, at least one
+        module with one lesson, valid YouTube links and a price (or free); a cover
+        image is welcome but not required. Send `unlisted: true` to open it by link
+        only. Unpublishing hides the course from the catalogue; people already enrolled
+        keep their access and progress. Duplicating makes a draft copy of the modules
+        and lessons (not enrolments, ratings or the cover).'
+      summary: Publish, unpublish, archive or duplicate a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishRequestRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCourse'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not in a state that allows this
   /api/v1/admin/courses/{course_id}/cover:
     put:
       operationId: admin_courses_cover_update
@@ -1699,13 +1746,13 @@ paths:
   /api/v1/admin/courses/{course_id}/duplicate:
     post:
       operationId: admin_courses_duplicate_create
-      description: 'Publishing needs a title, description, category, thumbnail, a
-        section with three lectures, valid YouTube links and a price (or free); send
-        `unlisted: true` to open it by link only. Unpublishing hides the course from
-        the catalogue; people already enrolled keep their access and progress. Duplicating
-        makes a draft copy of the modules and lessons (not enrolments, ratings or
-        the cover).'
-      summary: Publish, unpublish or duplicate a course
+      description: 'Publishing needs a title, description, category, at least one
+        module with one lesson, valid YouTube links and a price (or free); a cover
+        image is welcome but not required. Send `unlisted: true` to open it by link
+        only. Unpublishing hides the course from the catalogue; people already enrolled
+        keep their access and progress. Duplicating makes a draft copy of the modules
+        and lessons (not enrolments, ratings or the cover).'
+      summary: Publish, unpublish, archive or duplicate a course
       parameters:
       - in: path
         name: course_id
@@ -1995,13 +2042,13 @@ paths:
   /api/v1/admin/courses/{course_id}/publish:
     post:
       operationId: admin_courses_publish_create
-      description: 'Publishing needs a title, description, category, thumbnail, a
-        section with three lectures, valid YouTube links and a price (or free); send
-        `unlisted: true` to open it by link only. Unpublishing hides the course from
-        the catalogue; people already enrolled keep their access and progress. Duplicating
-        makes a draft copy of the modules and lessons (not enrolments, ratings or
-        the cover).'
-      summary: Publish, unpublish or duplicate a course
+      description: 'Publishing needs a title, description, category, at least one
+        module with one lesson, valid YouTube links and a price (or free); a cover
+        image is welcome but not required. Send `unlisted: true` to open it by link
+        only. Unpublishing hides the course from the catalogue; people already enrolled
+        keep their access and progress. Duplicating makes a draft copy of the modules
+        and lessons (not enrolments, ratings or the cover).'
+      summary: Publish, unpublish, archive or duplicate a course
       parameters:
       - in: path
         name: course_id
@@ -2207,13 +2254,13 @@ paths:
   /api/v1/admin/courses/{course_id}/unpublish:
     post:
       operationId: admin_courses_unpublish_create
-      description: 'Publishing needs a title, description, category, thumbnail, a
-        section with three lectures, valid YouTube links and a price (or free); send
-        `unlisted: true` to open it by link only. Unpublishing hides the course from
-        the catalogue; people already enrolled keep their access and progress. Duplicating
-        makes a draft copy of the modules and lessons (not enrolments, ratings or
-        the cover).'
-      summary: Publish, unpublish or duplicate a course
+      description: 'Publishing needs a title, description, category, at least one
+        module with one lesson, valid YouTube links and a price (or free); a cover
+        image is welcome but not required. Send `unlisted: true` to open it by link
+        only. Unpublishing hides the course from the catalogue; people already enrolled
+        keep their access and progress. Duplicating makes a draft copy of the modules
+        and lessons (not enrolments, ratings or the cover).'
+      summary: Publish, unpublish, archive or duplicate a course
       parameters:
       - in: path
         name: course_id
@@ -8902,6 +8949,31 @@ paths:
           description: ''
         '401':
           description: Not logged in
+        '403':
+          description: Not an active member, or not enrolled
+        '404':
+          description: Not found
+  /api/v1/courses/{course_id}/unenrol:
+    delete:
+      operationId: courses_unenrol_destroy
+      description: Progress is kept; enrolling again picks up where you left off.
+      summary: Leave a course
+      parameters:
+      - in: path
+        name: course_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - learning
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Left the course
+        '401':
+          description: Not authenticated
         '403':
           description: Not an active member, or not enrolled
         '404':

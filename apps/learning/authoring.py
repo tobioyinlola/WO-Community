@@ -2,6 +2,7 @@
 
 import re
 import secrets
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from uuid import UUID
 
@@ -14,10 +15,11 @@ from rest_framework import exceptions
 from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import etag
+from apps.core.errors import ConflictError
 from apps.core.text import clean_url, plain, rich_post, text_of
 from apps.integrations import youtube
 from apps.learning import lms
-from apps.learning.models import ACCESS, LESSON_TYPES, LEVELS, Course, Lesson, Module
+from apps.learning.models import ACCESS, LESSON_TYPES, LEVELS, Course, Enrolment, Lesson, Module
 from apps.uploads import services as uploads
 from apps.uploads.models import UploadPurpose
 
@@ -239,13 +241,31 @@ def unpublish(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
 
 
 def remove_course(*, actor: Any, course_id: UUID, ip: str = "") -> None:
+    """Delete a course nobody has joined. With learners, archive it instead."""
     with transaction.atomic():
         course = _lock_course(course_id)
+        if Enrolment.objects.filter(course=course).exists():
+            raise ConflictError(
+                "This course has enrolled members, so it cannot be deleted. Archive it instead.",
+                code="has_learners",
+            )
         course.status = Course.Status.REMOVED
         course.save(update_fields=["status", "updated_at"])
         audit.record(
             actor=actor, action="courses.removed", target_type="course", target_id=course.pk, ip=ip
         )
+
+
+def archive(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
+    """Take a course off the catalogue for good. Learners keep their access and progress."""
+    with transaction.atomic():
+        course = _lock_course(course_id)
+        course.status = Course.Status.REMOVED
+        course.save(update_fields=["status", "updated_at"])
+        audit.record(
+            actor=actor, action="courses.archived", target_type="course", target_id=course.pk, ip=ip
+        )
+    return course
 
 
 def duplicate(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
@@ -604,6 +624,9 @@ def add_lessons_from_links(
             problems.append(f"Link {number}: {exc}")
     if problems:
         raise _invalid("urls", " ".join(problems))
+    # Titles come from YouTube, a few seconds each when it is slow, so ask for them together.
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        titles = list(pool.map(lambda v: plain(youtube.title_of(v.video_id)), parsed))
     created: list[Lesson] = []
     with transaction.atomic():
         module = _lock_module(module_id)
@@ -613,7 +636,7 @@ def add_lessons_from_links(
         last = module.lessons.aggregate(m=Max("position"))["m"]
         position = 0 if last is None else last + 1
         for index, video in enumerate(parsed):
-            title = plain(youtube.title_of(video.video_id)) or f"Lecture {existing + index + 1}"
+            title = titles[index] or f"Lecture {existing + index + 1}"
             lesson = Lesson.objects.create(
                 module=module,
                 course=module.course,

@@ -309,13 +309,10 @@ def test_publishing_needs_a_lesson_and_unpublishing_hides_the_course(as_editor, 
     course = create(as_editor)
     base = f"{ADMIN}/courses/{course['id']}"
     refused = as_editor.post(f"{base}/publish")
-    assert refused.status_code == 400 and "section" in str(refused.json()).lower()
+    assert refused.status_code == 400 and "module" in str(refused.json()).lower()
     module = add_module(as_editor, course)
     add_lesson(as_editor, module)
-    assert as_editor.post(f"{base}/publish").status_code == 400  # one lecture, no thumbnail
-    for i in range(2):
-        add_lesson(as_editor, module, title=f"More {i}")
-    Course.objects.filter(pk=course["id"]).update(cover_key="media/course_cover/test")
+    # One lesson and no cover image is enough.
     live = as_editor.post(f"{base}/publish")
     assert live.status_code == 200 and live.json()["status"] == "published"
     assert as_editor.post(f"{base}/publish").status_code == 409

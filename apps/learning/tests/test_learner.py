@@ -376,7 +376,7 @@ def test_unpublishing_hides_a_course_but_enrolled_members_keep_going(
 
 def test_removed_courses_vanish_for_everyone(editor, course, learner_client):
     enrol(learner_client, course)
-    authoring.remove_course(actor=editor, course_id=course.pk)
+    authoring.archive(actor=editor, course_id=course.pk)
     assert learner_client.get(url(course)).status_code == 404
     assert learner_client.get(lesson_url(lesson_ids(course)[0])).status_code == 404
     assert Course.objects.get(pk=course.pk).status == "removed"
@@ -434,3 +434,34 @@ def test_enrolled_members_can_rate_and_change_their_rating(course, learner_clien
 def test_bad_ratings_are_refused(course, learner_client, body):
     enrol(learner_client, course)
     assert learner_client.put(url(course, "/rating"), body, format="json").status_code == 400
+
+
+def test_leaving_a_course_keeps_the_progress_for_when_they_return(course, learner_client):
+    enrol(learner_client, course)
+    first = lesson_ids(course)[0]
+    progress(learner_client, first, completed=True)
+    assert learner_client.delete(url(course, "/unenrol")).status_code == 204
+    assert learner_client.get(lesson_url(first)).status_code == 403  # no longer enrolled
+    assert not Enrolment.objects.filter(course=course).exists()
+    assert learner_client.delete(url(course, "/unenrol")).status_code == 404
+    assert enrol(learner_client, course).status_code == 201
+    assert LessonProgress.objects.filter(lesson_id=first, completed_at__isnull=False).count() == 1
+    assert Enrolment.objects.filter(course=course).count() == 1
+
+
+def test_unenrolling_needs_sign_in(course, client):
+    assert client.delete(url(course, "/unenrol")).status_code in (401, 403)
+
+
+def test_a_course_with_learners_cannot_be_deleted_but_can_be_archived(
+    editor, course, learner_client
+):
+    enrol(learner_client, course)
+    with pytest.raises(Exception) as caught:
+        authoring.remove_course(actor=editor, course_id=course.pk)
+    assert "Archive it instead" in str(caught.value)
+    authoring.archive(actor=editor, course_id=course.pk)
+    assert Course.objects.get(pk=course.pk).status == "removed"
+    empty = build_course(editor, title="Nobody joined")
+    authoring.remove_course(actor=editor, course_id=empty.pk)
+    assert Course.objects.get(pk=empty.pk).status == "removed"

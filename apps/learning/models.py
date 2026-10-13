@@ -128,6 +128,13 @@ class Lesson(BaseModel):
         ]
 
 
+class ActiveEnrolments(models.Manager):
+    """Enrolments a member still holds; ones they left stay, with progress, out of sight."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(ended_at__isnull=True)
+
+
 class Enrolment(BaseModel):
     class Source(models.TextChoices):
         FREE = "free"
@@ -141,10 +148,15 @@ class Enrolment(BaseModel):
     source = models.CharField(max_length=8, choices=Source.choices)
     started_at = models.DateTimeField()
     completed_at = models.DateTimeField(null=True, blank=True)
+    # Set when the member leaves the course; the row and its progress stay for if they return.
+    ended_at = models.DateTimeField(null=True, blank=True)
     # Where the member left off, so the course can be resumed.
     last_lesson = models.ForeignKey(
         Lesson, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
+
+    objects = ActiveEnrolments()
+    everything = models.Manager()
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["course", "user"], name="enrolment_unique")]
