@@ -4298,7 +4298,10 @@ paths:
   /api/v1/admin/members/{user_id}:
     get:
       operationId: admin_members_retrieve
-      summary: One member
+      description: The account, profile, activity, learning, mentorship, support and
+        the last audit entries about them, in one read. Personal details, so each
+        read is logged.
+      summary: One member in full
       parameters:
       - in: path
         name: user_id
@@ -4315,7 +4318,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Member'
+                $ref: '#/components/schemas/MemberFull'
           description: ''
         '401':
           description: Not authenticated
@@ -4527,6 +4530,32 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/members/{user_id}/resend-verification:
+    post:
+      operationId: admin_members_resend_verification_create
+      summary: Send the verification email again
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '409':
+          description: The account is not in a state that allows this
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Member not found
   /api/v1/admin/members/{user_id}/reset-mfa:
     post:
       operationId: admin_members_reset_mfa_create
@@ -17964,6 +17993,25 @@ components:
       - email
       - id
       - status
+    AccountSection:
+      type: object
+      properties:
+        invited_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          nullable: true
+        referred_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          nullable: true
+        approved_by:
+          allOf:
+          - $ref: '#/components/schemas/PersonRef'
+          nullable: true
+      required:
+      - approved_by
+      - invited_by
+      - referred_by
     Activity:
       type: object
       properties:
@@ -18001,6 +18049,22 @@ components:
       - posts_last_7_days
       - reactions_last_7_days
       - weekly_active
+    ActivitySection:
+      type: object
+      properties:
+        posts:
+          type: integer
+        comments:
+          type: integer
+        events_attended:
+          type: integer
+        jobs_posted:
+          type: integer
+      required:
+      - comments
+      - events_attended
+      - jobs_posted
+      - posts
     AdminAccessRequest:
       type: object
       properties:
@@ -20348,6 +20412,24 @@ components:
       - reason
       - request_id
       - target
+    AuditRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        action:
+          type: string
+        outcome:
+          type: string
+      required:
+      - action
+      - created_at
+      - id
+      - outcome
     AuditTarget:
       type: object
       properties:
@@ -21205,6 +21287,23 @@ components:
           type: string
           minLength: 1
           maxLength: 160
+    CertificateRef:
+      type: object
+      properties:
+        number:
+          type: string
+        course_title:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        revoked:
+          type: boolean
+      required:
+      - course_title
+      - issued_at
+      - number
+      - revoked
     CertificateSettings:
       type: object
       properties:
@@ -23809,6 +23908,21 @@ components:
         * `yo` - yo
         * `zh` - zh
         * `zu` - zu
+    LearningSection:
+      type: object
+      properties:
+        courses_started:
+          type: integer
+        courses_completed:
+          type: integer
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CertificateRef'
+      required:
+      - certificates
+      - courses_completed
+      - courses_started
     LearningSnapshot:
       type: object
       properties:
@@ -24256,6 +24370,87 @@ components:
       - email_verified_at
       - id
       - last_login
+      - roles
+      - status
+      - status_changed_at
+      - status_reason
+    MemberFull:
+      type: object
+      description: The member row's account fields plus every section the drawer shows.
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        approval_source:
+          type: string
+        status_reason:
+          type: string
+        status_changed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        name:
+          type: string
+        profile:
+          $ref: '#/components/schemas/ProfileSection'
+        account:
+          $ref: '#/components/schemas/AccountSection'
+        activity:
+          $ref: '#/components/schemas/ActivitySection'
+        learning:
+          $ref: '#/components/schemas/LearningSection'
+        mentorship:
+          allOf:
+          - $ref: '#/components/schemas/MentorshipSection'
+          nullable: true
+        open_tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketRef'
+        audit:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditRef'
+      required:
+      - account
+      - activity
+      - approval_source
+      - approved_at
+      - audit
+      - created_at
+      - email
+      - email_verified_at
+      - id
+      - last_login
+      - learning
+      - mentorship
+      - name
+      - open_tickets
+      - profile
       - roles
       - status
       - status_changed_at
@@ -25009,6 +25204,32 @@ components:
       - interested
       - is_mentor
       - prompt_to_apply
+    MentorshipSection:
+      type: object
+      properties:
+        status:
+          type: string
+        paused:
+          type: boolean
+        capacity_per_week:
+          type: integer
+        session_minutes:
+          type: integer
+        default_price_minor:
+          type: integer
+          nullable: true
+        sessions_as_mentor:
+          type: integer
+        sessions_as_mentee:
+          type: integer
+      required:
+      - capacity_per_week
+      - default_price_minor
+      - paused
+      - session_minutes
+      - sessions_as_mentee
+      - sessions_as_mentor
+      - status
     MentorshipSnapshot:
       type: object
       properties:
@@ -26953,6 +27174,17 @@ components:
       - name
       - photo
       - slug
+    PersonRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+      - id
+      - name
     PhotoSetRequest:
       type: object
       description: |-
@@ -27396,6 +27628,59 @@ components:
       required:
       - next_missing_field
       - score
+    ProfileSection:
+      type: object
+      properties:
+        full_name:
+          type: string
+        headline:
+          type: string
+        bio:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        website_url:
+          type: string
+        linkedin_url:
+          type: string
+        x_url:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        open_to:
+          type: array
+          items:
+            type: string
+        completeness:
+          type: integer
+        startup_name:
+          type: string
+        industry:
+          type: string
+        stage:
+          type: string
+        pitch:
+          type: string
+      required:
+      - bio
+      - city
+      - completeness
+      - country
+      - full_name
+      - headline
+      - industry
+      - linkedin_url
+      - open_to
+      - pitch
+      - skills
+      - stage
+      - startup_name
+      - website_url
+      - x_url
     ProgressRequest:
       type: object
       description: |-
@@ -30473,6 +30758,23 @@ components:
       - satisfaction_comment
       - status
       - status_label
+      - subject
+    TicketRef:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        subject:
+          type: string
+        status:
+          type: string
+      required:
+      - id
+      - number
+      - status
       - subject
     TimelineEntry:
       type: object

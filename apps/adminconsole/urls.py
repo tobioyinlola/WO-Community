@@ -571,6 +571,11 @@ urlpatterns = [
         name="admin-member-reset-mfa",
     ),
     path(
+        "admin/members/<uuid:user_id>/resend-verification",
+        views.ResendVerificationView.as_view(),
+        name="admin-member-resend-verification",
+    ),
+    path(
         "admin/members/<uuid:user_id>/remove",
         views.RemoveView.as_view(),
         name="admin-member-remove",
