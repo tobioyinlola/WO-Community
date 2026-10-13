@@ -1,10 +1,11 @@
+# ruff: noqa: F811
 """Each sensitive action leaves exactly one audit entry, with the right actor and target."""
 
 import pytest
 from django.utils import timezone
 
 from apps.audit.models import AuditLog
-from apps.jobs.tests.conftest import post_job, set_board
+from apps.jobs.tests.conftest import post_job, poster, poster_client, set_board  # noqa: F401
 
 pytestmark = pytest.mark.django_db
 

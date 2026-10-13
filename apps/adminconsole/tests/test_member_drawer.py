@@ -69,7 +69,7 @@ def test_resending_verification_publishes_the_event_and_is_audited(
     response = admin_client.post(f"{BASE}/{unverified.pk}/resend-verification")
     assert response.status_code == 204 and len(sent) == 1
     entry = AuditLog.objects.get(action="member.verification_resent")
-    assert entry.target_id == str(unverified.pk) and entry.target_label == "new@example.com"
+    assert entry.target_id == str(unverified.pk) and "@" not in entry.target_label
 
 
 def test_resending_to_a_verified_member_is_refused(admin_client, ada):
