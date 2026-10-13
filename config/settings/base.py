@@ -322,6 +322,11 @@ CELERY_BEAT_SCHEDULE = {
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
+    "admin-alert-digests": {"task": "notifications.dispatch_admin_alerts", "schedule": 300.0},
+    "admin-alert-stale-summary": {
+        "task": "adminconsole.send_stale_summary",
+        "schedule": crontab(hour=8, minute=30),
+    },
 }
 OUTBOX_MAX_ATTEMPTS = 8
 
@@ -586,3 +591,11 @@ EMAIL_SIGNOFF = env.str("EMAIL_SIGNOFF", default="Best regards,\nThe WO Communit
     "\n", "\n"
 )
 EMAIL_LOGO_URL = env.str("EMAIL_LOGO_URL", default=f"{FRONTEND_BASE_URL}/assets/email-logo.png")
+
+# Warming up a new sending domain (see apps/notifications/warmup.py).
+EMAIL_WARMUP_START = env.str("EMAIL_WARMUP_START", default="")
+EMAIL_HOURLY_CAP = env.int("EMAIL_HOURLY_CAP", default=-1)
+# The DKIM selectors the provider asks you to publish, checked by the email health page.
+EMAIL_DKIM_SELECTORS = env.list("EMAIL_DKIM_SELECTORS", default=["resend"])
+# How the health check asks the DNS; tests swap it for a fake.
+EMAIL_DNS_RESOLVER = env.str("EMAIL_DNS_RESOLVER", default="apps.integrations.dns.SystemResolver")

@@ -96,7 +96,10 @@ def test_an_unknown_certificate_is_not_found(as_editor, method, path, payload):
 
 def test_the_settings_start_with_sensible_defaults(as_editor):
     body = as_editor.get(f"{ADMIN}/certificate-settings").json()
-    assert body["title_text"] == "Certificate of completion" and body["signatory_name"] == ""
+    assert (
+        body["title_text"] == "Certificate of completion"
+        and body["signatory_name"] == "Onyeka Akumah"
+    )
     assert body["signature_url"] is None and body["version"] == 1
     assert CertificateSettings.objects.count() == 1
 
@@ -162,7 +165,7 @@ def test_the_preview_draws_a_pdf_and_saves_nothing(as_editor):
         response.content.startswith(b"%PDF-") and response["Cache-Control"] == "private, no-store"
     )
     row = certificates.current_settings()
-    assert row.signatory_name == "" and row.version == 1
+    assert row.signatory_name == "Onyeka Akumah" and row.version == 1
 
 
 def test_a_bad_preview_is_refused(as_editor):

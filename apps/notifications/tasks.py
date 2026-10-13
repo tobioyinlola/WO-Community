@@ -8,7 +8,8 @@ from django.db import transaction
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
 from apps.integrations.email import get_email_adapter
-from apps.notifications import centre, emails, notify, services
+from apps.notifications import adminalerts, centre, emails, notify, services
+from apps.notifications.models import AdminAlert
 
 logger = structlog.get_logger(__name__)
 
@@ -132,3 +133,36 @@ def notify_approved(event_id: str) -> None:
 @shared_task(name="notifications.purge_notifications")
 def purge_notifications() -> int:
     return centre.purge_old()
+
+
+@shared_task(name="notifications.deliver_admin_alert")
+def deliver_admin_alert(event_id: str) -> None:
+    event = OutboxEvent.objects.filter(pk=event_id).first()
+    if event is None:
+        return
+    alert = AdminAlert.objects.filter(pk=event.payload["alert_id"]).first()
+    if alert is None:
+        return
+    adminalerts.deliver_in_app(alert.pk)
+    adminalerts.dispatch(alert.kind)
+
+
+@shared_task(name="notifications.dispatch_admin_alerts")
+def dispatch_admin_alerts() -> int:
+    """The sweep that sends the digests whose 15 minutes are up."""
+    return adminalerts.dispatch_all()
+
+
+@shared_task(name="notifications.alert_signup")
+def alert_signup(event_id: str) -> None:
+    user_id = _user_id(event_id)
+    contact = accounts.get_contact(user_id) if user_id else None
+    if contact is None:
+        return
+    adminalerts.raise_alert(
+        "member_signup",
+        item_key=f"signup:{user_id}",
+        what="New member request",
+        who=contact.email,
+        path=f"/admin/members/{user_id}",
+    )

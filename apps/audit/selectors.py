@@ -5,7 +5,6 @@ from typing import Any
 
 from django.db.models import Q, QuerySet
 
-from apps.accounts.models import User
 from apps.audit.models import AuditLog
 
 # The filter groups on the page: a group matches every action that starts with one of its prefixes.
@@ -35,7 +34,7 @@ def entries(
     *,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
-    actor: str = "",
+    actor_ids: list[Any] | None = None,
     groups: list[str] | None = None,
     actions: list[str] | None = None,
     outcome: str = "",
@@ -54,11 +53,8 @@ def entries(
         rows = rows.filter(target_type=target_type)
     if target_id:
         rows = rows.filter(target_id=target_id)
-    if actor:
-        ids = User.objects.filter(
-            Q(email__icontains=actor) | Q(founder_profile__full_name__icontains=actor)
-        ).values_list("pk", flat=True)[:200]
-        rows = rows.filter(actor_id__in=list(ids))
+    if actor_ids is not None:
+        rows = rows.filter(actor_id__in=actor_ids)
     if groups or actions:
         rows = rows.filter(_group_filter(groups or [], actions or []))
     if q:

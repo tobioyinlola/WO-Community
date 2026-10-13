@@ -84,6 +84,8 @@ const AdminCourseRequests = lazy(() => import("./admin/CourseRequests"));
 const AdminEmail = lazy(() => import("./admin/Email"));
 const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
+const EmailTemplates = lazy(() => import("./admin/EmailTemplates"));
+const EmailHealth = lazy(() => import("./admin/EmailHealth"));
 const AuditLog = lazy(() => import("./admin/AuditLog"));
 const AdminFeed = lazy(() => import("./admin/AdminFeed"));
 const AdminSessions = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringSessions })));
@@ -215,6 +217,8 @@ export function App() {
                     <Route path="wins" element={<AdminWins />} />
                     <Route path="feed" element={<AdminFeed />} />
                     <Route path="audit" element={<AuditLog />} />
+                    <Route path="email-templates" element={<EmailTemplates />} />
+                    <Route path="email-health" element={<EmailHealth />} />
                     <Route path="sessions" element={<AdminSessions />} />
                     <Route path="matches" element={<AdminMatches />} />
                     <Route path="analytics" element={<AdminAnalytics />} />

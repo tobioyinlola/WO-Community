@@ -13,6 +13,14 @@ class UserRegistered(DomainEvent):
 
 
 @dataclass(frozen=True)
+class RegistrationAwaitingApproval(DomainEvent):
+    """An address was confirmed and the registration now waits for an admin."""
+
+    topic: ClassVar[str] = "accounts.registration_awaiting_approval"
+    user_id: str
+
+
+@dataclass(frozen=True)
 class RegistrationRepeated(DomainEvent):
     """Someone registered with an address that already has an account."""
 

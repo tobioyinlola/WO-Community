@@ -1254,6 +1254,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/email-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every email template */
+        get: operations["admin_email_templates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One template with its wording and variables */
+        get: operations["admin_email_templates_retrieve"];
+        /**
+         * Change the wording of a template
+         * @description Only the subject, preview text and body are editable; the layout and brand are fixed. The previous wording stays in the history.
+         */
+        put: operations["admin_email_templates_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a template with sample data
+         * @description Send a draft to see it without saving. The same HTML serves the desktop and the mobile view; the layout adapts at 620 px.
+         */
+        post: operations["admin_email_templates_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Go back to the built in wording */
+        post: operations["admin_email_templates_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put an earlier wording back */
+        post: operations["admin_email_templates_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test of a template to yourself */
+        post: operations["admin_email_templates_test_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The history of a template's wording */
+        get: operations["admin_email_templates_versions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Email health: DNS records, sending results and recent failures
+         * @description SPF, DKIM and DMARC are read from public DNS. Whether the provider has verified the domain, and the sender's reputation, cannot be seen from here.
+         */
+        get: operations["admin_email_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email/suppressions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Addresses we no longer send broadcasts to
+         * @description Addresses are stored as hashes, so search with the full address.
+         */
+        get: operations["admin_email_suppressions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email/suppressions/{suppression_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Allow broadcasts to an address again
+         * @description Super admin only, with a fresh two step check. Recorded in the audit log.
+         */
+        delete: operations["admin_email_suppressions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/events": {
         parameters: {
             query?: never;
@@ -1854,6 +2040,27 @@ export interface paths {
          */
         get: operations["admin_matches_list"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/me/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which approval emails I get
+         * @description Only the kinds this admin may approve are listed. All are on by default.
+         */
+        get: operations["admin_me_alerts_list"];
+        /** Switch one kind of approval email on or off */
+        put: operations["admin_me_alerts_update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -8991,6 +9198,11 @@ export interface components {
             startup_id?: string;
             location?: string;
         };
+        AlertPreference: {
+            kind: string;
+            title: string;
+            enabled: boolean;
+        };
         Analytics: {
             /** Format: date */
             start: string;
@@ -9747,6 +9959,12 @@ export interface components {
             score: number;
             next_missing_field: string | null;
         };
+        Configured: {
+            api_key: boolean;
+            webhook_secret: boolean;
+            reply_to: boolean;
+            logo: boolean;
+        };
         ConflictSession: {
             /** Format: uuid */
             id: string;
@@ -9763,6 +9981,20 @@ export interface components {
             name: string;
             /** Format: email */
             email: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CopyRequest: {
+            subject: string;
+            /** @default  */
+            preheader: string;
+            body: string;
+            /** @default  */
+            note: string;
         };
         CountItem: {
             name: string;
@@ -10016,6 +10248,26 @@ export interface components {
             slug: string;
             name: string;
         };
+        DnsCheck: {
+            key: string;
+            title: string;
+            status: components["schemas"]["DnsCheckStatusEnum"];
+            detail: string;
+            record: string;
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `warning` - warning
+         *     * `missing` - missing
+         *     * `unknown` - unknown
+         * @enum {string}
+         */
+        DnsCheckStatusEnum: "ok" | "warning" | "missing" | "unknown";
+        DomainHealth: {
+            domain: string;
+            stream: string;
+            checks: components["schemas"]["DnsCheck"][];
+        };
         EditorialItem: {
             /** Format: uuid */
             id: string;
@@ -10253,6 +10505,15 @@ export interface components {
             /** @default false */
             acknowledge: boolean;
         };
+        Failure: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            provider_message_id: string;
+            occurred_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
         Featured: {
             /** Format: uuid */
             id: string;
@@ -10480,6 +10741,15 @@ export interface components {
         GrantRequest: {
             /** Format: uuid */
             user_id: string;
+        };
+        Health: {
+            provider: string;
+            configured: components["schemas"]["Configured"];
+            separate_streams: boolean;
+            hourly_cap: number | null;
+            domains: components["schemas"]["DomainHealth"][];
+            stats: components["schemas"]["SendingStats"];
+            failures: components["schemas"]["Failure"][];
         };
         /** @description Public addresses of the two sizes of a processed image. */
         Image: {
@@ -10935,6 +11205,34 @@ export interface components {
         LogoSetRequest: {
             /** Format: uuid */
             upload_id: string;
+        };
+        MailTemplate: {
+            key: string;
+            name: string;
+            about: string;
+            stream: components["schemas"]["StreamEnum"];
+            subject: string;
+            edited: boolean;
+            version: number;
+            /** Format: date-time */
+            updated_at: string | null;
+            preheader: string;
+            body: string;
+            default_subject: string;
+            default_preheader: string;
+            default_body: string;
+            variables: components["schemas"]["TemplateVariable"][];
+        };
+        MailTemplateSummary: {
+            key: string;
+            name: string;
+            about: string;
+            stream: components["schemas"]["StreamEnum"];
+            subject: string;
+            edited: boolean;
+            version: number;
+            /** Format: date-time */
+            updated_at: string | null;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -11946,6 +12244,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Segment"][];
         };
+        PaginatedSuppressionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Suppression"][];
+        };
         PaginatedTicketList: {
             /** @example 123 */
             count: number;
@@ -12464,6 +12777,23 @@ export interface components {
                     [key: string]: boolean;
                 };
             };
+        };
+        Preview: {
+            subject: string;
+            preheader: string;
+            html: string;
+            text: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PreviewRequestRequest: {
+            subject?: string;
+            preheader?: string;
+            body?: string;
         };
         PreviewResult: {
             /** @description Active members who fit the segment */
@@ -13223,6 +13553,15 @@ export interface components {
          * @enum {string}
          */
         ResourceKindEnum: "link" | "file";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        RestoreRequest: {
+            version: number;
+        };
         Resume: {
             /** Format: uuid */
             lesson_id: string;
@@ -13407,6 +13746,15 @@ export interface components {
             /** @description False when the event has no organiser email and it went to you. */
             sent_to_organiser: boolean;
         };
+        SendingStats: {
+            days: number;
+            sent: number;
+            delivered: number;
+            bounced: number;
+            complained: number;
+            unsubscribed: number;
+            suppressed_total: number;
+        };
         Series: {
             metric: string;
             description: string;
@@ -13571,6 +13919,26 @@ export interface components {
          * @enum {string}
          */
         SessionViewRoleEnum: "mentor" | "mentee" | "admin";
+        /**
+         * @description * `member_signup` - member_signup
+         *     * `job_pending` - job_pending
+         *     * `mentor_application` - mentor_application
+         *     * `course_access` - course_access
+         *     * `content_report` - content_report
+         *     * `support_ticket` - support_ticket
+         * @enum {string}
+         */
+        SetAlertPreferenceKindEnum: "member_signup" | "job_pending" | "mentor_application" | "course_access" | "content_report" | "support_ticket";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        SetAlertPreferenceRequest: {
+            kind: components["schemas"]["SetAlertPreferenceKindEnum"];
+            enabled: boolean;
+        };
         SetupOptions: {
             lengths: number[];
             buffers: number[];
@@ -13778,6 +14146,12 @@ export interface components {
         Status: {
             status: string;
         };
+        /**
+         * @description * `transactional` - transactional
+         *     * `broadcast` - broadcast
+         * @enum {string}
+         */
+        StreamEnum: "transactional" | "broadcast";
         Suggestion: {
             /** Format: uuid */
             id: string;
@@ -13821,6 +14195,15 @@ export interface components {
             avatar: {
                 [key: string]: unknown;
             } | null;
+        };
+        Suppression: {
+            /** Format: uuid */
+            id: string;
+            reason: string;
+            /** @description The first characters of the address hash */
+            readonly reference: string;
+            /** Format: date-time */
+            created_at: string;
         };
         /**
          * @description * `profile_complete` - profile_complete
@@ -13878,6 +14261,13 @@ export interface components {
             }[];
             /** Format: date-time */
             created_at: string;
+        };
+        TemplateVariable: {
+            name: string;
+            kind: string;
+            is_required: boolean;
+            must_appear: boolean;
+            sample: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -15257,6 +15647,17 @@ export interface components {
             /** Format: double */
             hours: number | null;
             verify_url: string;
+        };
+        Version: {
+            version: number;
+            subject: string;
+            preheader: string;
+            body: string;
+            note: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            saved_by: string | null;
         };
         Video: {
             provider: string;
@@ -19145,6 +19546,480 @@ export interface operations {
             };
         };
     };
+    admin_email_templates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplateSummary"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PreviewRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preview"];
+                };
+            };
+            /** @description Bad wording */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_test_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PreviewRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad wording */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_versions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_suppressions_list: {
+        parameters: {
+            query?: {
+                email?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSuppressionList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_suppressions_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suppression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such entry */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_events_list: {
         parameters: {
             query?: {
@@ -21108,6 +21983,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedAdminMatchList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_me_alerts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreference"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_me_alerts_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAlertPreferenceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreference"][];
                 };
             };
             /** @description Not authenticated */

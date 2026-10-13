@@ -260,6 +260,8 @@ def verify_email(raw_token: str) -> None:
             actor=user, action="auth.email_verified", target_type="user", target_id=user.pk
         )
         analytics.track("email_verified", actor_id=user.pk)
+        if user.status == UserStatus.PENDING:
+            domain_events.publish(events.RegistrationAwaitingApproval(user_id=str(user.pk)))
 
 
 # --- Password reset ---

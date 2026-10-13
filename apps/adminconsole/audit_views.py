@@ -6,6 +6,7 @@ from datetime import UTC, datetime, time, timedelta
 from typing import Any
 from uuid import UUID
 
+from django.db.models import Q
 from django.http import StreamingHttpResponse
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import exceptions, serializers
@@ -14,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import User
 from apps.adminconsole.people import people
 from apps.adminconsole.views import _actor, _ip
 from apps.audit import selectors, services
@@ -107,7 +109,17 @@ def _filters(request: Request) -> dict[str, Any]:
         "date_from": datetime.combine(start, time.min, tzinfo=UTC) if start else None,
         # The end day is included, so the bound is the start of the day after.
         "date_to": datetime.combine(end + timedelta(days=1), time.min, tzinfo=UTC) if end else None,
-        "actor": data["actor"],
+        # Who did it is found by name or email here, so the audit module needs no account models.
+        "actor_ids": (
+            list(
+                User.objects.filter(
+                    Q(email__icontains=data["actor"])
+                    | Q(founder_profile__full_name__icontains=data["actor"])
+                ).values_list("pk", flat=True)[:200]
+            )
+            if data["actor"]
+            else None
+        ),
         "groups": [g for g in data["group"].split(",") if g],
         "actions": [a for a in data["action"].split(",") if a],
         "outcome": data["outcome"],

@@ -59,3 +59,4 @@ GOOGLE_TOKEN_VERIFIER = (
 )
 
 SERVE_API_SCHEMA = True
+EMAIL_DNS_RESOLVER = "apps.notifications.tests.fake_dns.FakeResolver"

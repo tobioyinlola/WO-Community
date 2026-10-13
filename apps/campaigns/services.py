@@ -1,7 +1,7 @@
 """Public commands of the campaigns module: segments, newsletters and sending."""
 
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -36,6 +36,7 @@ from apps.integrations.email import (
     get_email_adapter,
 )
 from apps.notifications import services as notifications
+from apps.notifications import warmup
 from apps.profiles import selectors as profiles
 
 logger = structlog.get_logger(__name__)
@@ -483,15 +484,30 @@ def _send_row(campaign: Campaign, row_id: UUID, adapter: Any) -> str:
     return "ok"
 
 
+def hourly_room() -> int | None:
+    """How many broadcast emails may still go out this hour while the domain warms up.
+
+    None means no limit. Counted across every campaign, so two newsletters share one allowance.
+    """
+    sent = CampaignRecipient.objects.filter(
+        sent_at__gte=timezone.now() - timedelta(hours=1)
+    ).count()
+    return warmup.room(timezone.localdate(), sent)
+
+
 def send_batch(campaign_id: UUID) -> bool:
     """Send the next batch. Returns True if more remain, so the caller schedules another."""
     campaign = Campaign.objects.filter(pk=campaign_id).first()
     if campaign is None or campaign.status != Campaign.Status.SENDING:
         return False
+    room = hourly_room()
+    batch = (
+        settings.CAMPAIGN_BATCH_SIZE if room is None else min(settings.CAMPAIGN_BATCH_SIZE, room)
+    )
     row_ids = list(
         campaign.recipients.filter(status=CampaignRecipient.Status.QUEUED)
         .order_by("id")
-        .values_list("pk", flat=True)[: settings.CAMPAIGN_BATCH_SIZE]
+        .values_list("pk", flat=True)[:batch]
     )
     adapter = get_email_adapter()
     for row_id in row_ids:

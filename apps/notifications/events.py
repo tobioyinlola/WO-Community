@@ -10,3 +10,11 @@ class WebhookReceived(DomainEvent):
 
     topic: ClassVar[str] = "notifications.webhook_received"
     delivery_id: str
+
+
+@dataclass(frozen=True)
+class AdminAlertRaised(DomainEvent):
+    """Something needs an admin's approval; admins are told by notification and email."""
+
+    topic: ClassVar[str] = "notifications.admin_alert_raised"
+    alert_id: str
