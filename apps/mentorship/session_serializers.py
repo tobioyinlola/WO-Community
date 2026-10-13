@@ -107,10 +107,13 @@ class SessionPriceSerializer(serializers.Serializer):
     )
 
 
+SESSION_VIEW_ROLES = ["mentor", "mentee", "admin"]
+
+
 class MentoringSessionSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=SESSION_STATUSES)
-    role = serializers.ChoiceField(choices=["mentor", "mentee", "admin"])
+    role = serializers.ChoiceField(choices=SESSION_VIEW_ROLES)
     starts_at = serializers.DateTimeField()
     ends_at = serializers.DateTimeField()
     topic = serializers.CharField()

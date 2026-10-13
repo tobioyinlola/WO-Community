@@ -134,8 +134,15 @@ EVENTS: dict[str, Spec] = {
     # Admin
     "member_removed": Spec(),
     "member_suspended": Spec(),
-    "invitation_sent": Spec(props={"role": enum("member", "mentor"), "bulk": flag()}),
-    "invitation_registered": Spec(props={"role": enum("member", "mentor")}),
+    "invitation_sent": Spec(
+        props={
+            "role": enum("member", "mentor", "content_editor", "community_admin", "super_admin"),
+            "bulk": flag(),
+        }
+    ),
+    "invitation_registered": Spec(
+        props={"role": enum("member", "mentor", "content_editor", "community_admin", "super_admin")}
+    ),
     "report_actioned": Spec(props={"outcome": enum("reviewed", "actioned")}),
     # Referrals
     "referral_captured": Spec(

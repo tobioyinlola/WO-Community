@@ -4,6 +4,39 @@ info:
   version: 1.0.0
   description: REST API for the WO Community platform.
 paths:
+  /api/v1/admin/analytics:
+    get:
+      operationId: admin_analytics_retrieve
+      description: Totals for the range and the range before it, a count per day,
+        breakdowns of who is here and what they do, and a funnel for people who signed
+        up in the range. Defaults to the last 30 days; the range is at most 366 days.
+      summary: Community analytics, counted live
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analytics'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/answers/{item_id}/hide:
     post:
       operationId: admin_answers_hide_create
@@ -3086,6 +3119,13 @@ paths:
           default: ''
           maxLength: 100
       - in: query
+        name: role
+        schema:
+          type: string
+          default: ''
+          maxLength: 20
+        description: A role, or `team` for every console role
+      - in: query
         name: status
         schema:
           enum:
@@ -3280,6 +3320,94 @@ paths:
         '409':
           description: Already registered, already invited, or not in a state that
             allows this
+  /api/v1/admin/job-applications:
+    get:
+      operationId: admin_job_applications_list
+      description: Newest first. Filter by `status`, `job_id` and text (job, organisation,
+        applicant name or email).
+      summary: All job applications
+      parameters:
+      - in: query
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+          nullable: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: status
+        schema:
+          enum:
+          - submitted
+          - reviewing
+          - shortlisted
+          - rejected
+          - hired
+          - withdrawn
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `submitted` - submitted
+          * `reviewing` - reviewing
+          * `shortlisted` - shortlisted
+          * `rejected` - rejected
+          * `hired` - hired
+          * `withdrawn` - withdrawn
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApplicationRowList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/admin/job-applications/stats:
+    get:
+      operationId: admin_job_applications_stats_retrieve
+      summary: Applications by status
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationStats'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
   /api/v1/admin/jobs:
     get:
       operationId: admin_jobs_list
@@ -3794,6 +3922,60 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such post
+  /api/v1/admin/matches:
+    get:
+      operationId: admin_matches_list
+      description: Everyone who has asked a mentor for a session, one row per pair,
+        with how many sessions they have had and whether they are still working together.
+        `active` is a pair with a request waiting or a session coming up.
+      summary: Mentor and founder pairs
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: state
+        schema:
+          enum:
+          - active
+          - completed
+          - idle
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `active` - active
+          * `completed` - completed
+          * `idle` - idle
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminMatchList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/members:
     get:
       operationId: admin_members_list
@@ -4175,6 +4357,44 @@ paths:
           description: Member not found
         '409':
           description: The account is not in a state that allows this
+  /api/v1/admin/members/{user_id}/role:
+    post:
+      operationId: admin_members_role_create
+      description: Super admin only. Ends the person's sessions so the change applies
+        at once.
+      summary: Give or take a console role
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRoleRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleHolder'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such account
+        '409':
+          description: That would leave no super admin
   /api/v1/admin/members/{user_id}/suspend:
     post:
       operationId: admin_members_suspend_create
@@ -4601,6 +4821,109 @@ paths:
           description: Not found
         '409':
           description: Not every lesson listed once
+  /api/v1/admin/posts:
+    get:
+      operationId: admin_posts_list
+      description: Newest first, hidden ones included. Filter by `category`, `state`
+        (live, hidden, pinned, featured, reported) and text. Use the post actions
+        to pin, feature, hide or remove.
+      summary: Every post, for moderation
+      parameters:
+      - in: query
+        name: category
+        schema:
+          enum:
+          - update
+          - question
+          - win
+          - resource
+          - event
+          - opportunity
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `update` - update
+          * `question` - question
+          * `win` - win
+          * `resource` - resource
+          * `event` - event
+          * `opportunity` - opportunity
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: state
+        schema:
+          enum:
+          - live
+          - hidden
+          - pinned
+          - featured
+          - reported
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `live` - live
+          * `hidden` - hidden
+          * `pinned` - pinned
+          * `featured` - featured
+          * `reported` - reported
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAdminPostList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/posts/{post_id}:
+    get:
+      operationId: admin_posts_retrieve
+      description: Hidden comments are included so they can be restored.
+      summary: One post with all of its comments
+      parameters:
+      - in: path
+        name: post_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostDetail'
+          description: ''
+        '404':
+          description: No post
   /api/v1/admin/posts/{post_id}/feature:
     post:
       operationId: admin_posts_feature_create
@@ -4853,6 +5176,25 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such post
+  /api/v1/admin/posts/stats:
+    get:
+      operationId: admin_posts_stats_retrieve
+      summary: Feed totals for the moderation page
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedStats'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/questions/{item_id}/hide:
     post:
       operationId: admin_questions_hide_create
@@ -5444,6 +5786,28 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/roles:
+    get:
+      operationId: admin_roles_list
+      description: The permission matrix, from the same table the API enforces.
+      summary: Roles and what each can do
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/search:
     get:
       operationId: admin_search_retrieve
@@ -8519,6 +8883,70 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/job-applications/{application_id}/decide:
+    post:
+      operationId: job_applications_decide_create
+      description: The poster of the job, or an admin. Reviewing, shortlisted, rejected,
+        hired.
+      summary: Move an application along
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecideApplicationRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationRow'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/job-applications/{application_id}/withdraw:
+    post:
+      operationId: job_applications_withdraw_create
+      summary: Withdraw your application
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
   /api/v1/jobs:
     get:
       operationId: jobs_list
@@ -8712,6 +9140,100 @@ paths:
           description: Changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/jobs/{job_id}/applications:
+    get:
+      operationId: jobs_applications_list
+      description: Only the member who posted the job, or an admin who moderates jobs.
+      summary: Applications to your job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApplicationRow'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
+  /api/v1/jobs/{job_id}/apply:
+    get:
+      operationId: jobs_apply_retrieve
+      summary: Your application to a job
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
+    post:
+      operationId: jobs_apply_create
+      summary: Apply to a job through the community
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyJobRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyApplication'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed
+        '404':
+          description: Not found, or not visible to you
+        '409':
+          description: Already applied, or the job is closed
   /api/v1/jobs/{job_id}/close:
     post:
       operationId: jobs_close_create
@@ -18010,6 +18532,50 @@ components:
       - content_type
       - name
       - size
+    AdminMatch:
+      type: object
+      properties:
+        mentor:
+          $ref: '#/components/schemas/ConsolePerson'
+        mentee:
+          $ref: '#/components/schemas/ConsolePerson'
+        sessions:
+          type: integer
+        completed:
+          type: integer
+        upcoming:
+          type: integer
+        waiting:
+          type: integer
+        last_at:
+          type: string
+          format: date-time
+        next_at:
+          type: string
+          format: date-time
+          nullable: true
+        state:
+          $ref: '#/components/schemas/AdminMatchStateEnum'
+      required:
+      - completed
+      - last_at
+      - mentee
+      - mentor
+      - next_at
+      - sessions
+      - state
+      - upcoming
+      - waiting
+    AdminMatchStateEnum:
+      enum:
+      - active
+      - completed
+      - idle
+      type: string
+      description: |-
+        * `active` - active
+        * `completed` - completed
+        * `idle` - idle
     AdminMentor:
       type: object
       properties:
@@ -18185,7 +18751,7 @@ components:
         status:
           $ref: '#/components/schemas/MentoringSessionStatusEnum'
         role:
-          $ref: '#/components/schemas/RoleEnum'
+          $ref: '#/components/schemas/SessionViewRoleEnum'
         starts_at:
           type: string
           format: date-time
@@ -18344,6 +18910,118 @@ components:
       - email
       - id
       - name
+    AdminPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/ConsolePerson'
+        category:
+          type: string
+        excerpt:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        pinned:
+          type: boolean
+        featured:
+          type: boolean
+        hidden:
+          type: boolean
+        comment_count:
+          type: integer
+        reaction_count:
+          type: integer
+        open_reports:
+          type: integer
+      required:
+      - author
+      - category
+      - comment_count
+      - created_at
+      - excerpt
+      - featured
+      - hidden
+      - id
+      - open_reports
+      - pinned
+      - reaction_count
+    AdminPostComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        author:
+          $ref: '#/components/schemas/ConsolePerson'
+        text:
+          type: string
+        hidden:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author
+      - created_at
+      - hidden
+      - id
+      - parent_id
+      - text
+    AdminPostDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/ConsolePerson'
+        category:
+          type: string
+        excerpt:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        pinned:
+          type: boolean
+        featured:
+          type: boolean
+        hidden:
+          type: boolean
+        comment_count:
+          type: integer
+        reaction_count:
+          type: integer
+        open_reports:
+          type: integer
+        text:
+          type: string
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPostComment'
+      required:
+      - author
+      - category
+      - comment_count
+      - comments
+      - created_at
+      - excerpt
+      - featured
+      - hidden
+      - id
+      - open_reports
+      - pinned
+      - reaction_count
+      - text
     AdminPreview:
       type: object
       properties:
@@ -18872,6 +19550,56 @@ components:
         location:
           type: string
           maxLength: 120
+    Analytics:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        days:
+          type: integer
+        stats:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stat'
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsSeries'
+        breakdowns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Breakdown'
+        funnel:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountRow'
+      required:
+      - breakdowns
+      - days
+      - end
+      - funnel
+      - series
+      - start
+      - stats
+    AnalyticsSeries:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/SeriesPoint'
+      required:
+      - key
+      - points
+      - title
     Announcement:
       type: object
       properties:
@@ -19049,6 +19777,21 @@ components:
       - referral
       - startup
       - timeline
+    ApplicationApplicant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+      - email
+      - id
+      - name
     ApplicationCreateRequest:
       type: object
       description: |-
@@ -19131,6 +19874,73 @@ components:
       - timezone
       - weekly_hours
       - years_experience
+    ApplicationRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/JobApplicationStatusEnum'
+        note:
+          type: string
+        link:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        decision_note:
+          type: string
+        applicant:
+          $ref: '#/components/schemas/ApplicationApplicant'
+        job_id:
+          type: string
+          format: uuid
+        job_title:
+          type: string
+        job_organisation:
+          type: string
+        job_status:
+          type: string
+      required:
+      - applicant
+      - created_at
+      - decided_at
+      - decision_note
+      - id
+      - job_id
+      - job_organisation
+      - job_status
+      - job_title
+      - link
+      - note
+      - status
+    ApplicationStats:
+      type: object
+      properties:
+        submitted:
+          type: integer
+        reviewing:
+          type: integer
+        shortlisted:
+          type: integer
+        rejected:
+          type: integer
+        hired:
+          type: integer
+        withdrawn:
+          type: integer
+      required:
+      - hired
+      - rejected
+      - reviewing
+      - shortlisted
+      - submitted
+      - withdrawn
     Apply:
       type: object
       properties:
@@ -19140,6 +19950,24 @@ components:
           type: string
       required:
       - method
+    ApplyJobRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        note:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        link:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - note
     ApplyMethodEnum:
       enum:
       - url
@@ -19425,6 +20253,21 @@ components:
       - sessions_left_this_week
       - times
       - timezone
+    Breakdown:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CountRow'
+      required:
+      - key
+      - rows
+      - title
     BrowseJob:
       type: object
       properties:
@@ -20088,6 +20931,33 @@ components:
       description: |-
         * `valid` - valid
         * `revoked` - revoked
+    ChangeRoleActionEnum:
+      enum:
+      - grant
+      - revoke
+      type: string
+      description: |-
+        * `grant` - grant
+        * `revoke` - revoke
+    ChangeRoleRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        role:
+          $ref: '#/components/schemas/TeamRoleEnum'
+        action:
+          $ref: '#/components/schemas/ChangeRoleActionEnum'
+        reason:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - action
+      - role
     ChangeSetStatusEnum:
       enum:
       - proposed
@@ -20323,7 +21193,32 @@ components:
       - starts_at
       - status
       - topic
+    ConsolePerson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+      - email
+      - id
+      - name
     CountItem:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - name
+    CountRow:
       type: object
       properties:
         name:
@@ -20936,6 +21831,34 @@ components:
       - pending
       - refreshed_at
       - revenue
+    DecideApplicationRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        status:
+          $ref: '#/components/schemas/DecideApplicationStatusEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - status
+    DecideApplicationStatusEnum:
+      enum:
+      - reviewing
+      - shortlisted
+      - rejected
+      - hired
+      type: string
+      description: |-
+        * `reviewing` - reviewing
+        * `shortlisted` - shortlisted
+        * `rejected` - rejected
+        * `hired` - hired
     DecisionEnum:
       enum:
       - approve
@@ -21564,6 +22487,31 @@ components:
       description: |-
         * `comment` - comment
         * `reaction` - reaction
+    FeedStats:
+      type: object
+      properties:
+        posts:
+          type: integer
+        posts_last_7_days:
+          type: integer
+        comments:
+          type: integer
+        reactions:
+          type: integer
+        hidden:
+          type: integer
+        pinned:
+          type: integer
+        open_reports:
+          type: integer
+      required:
+      - comments
+      - hidden
+      - open_reports
+      - pinned
+      - posts
+      - posts_last_7_days
+      - reactions
     FeedbackItem:
       type: object
       properties:
@@ -22350,6 +23298,22 @@ components:
       - status
       - title
       - type
+    JobApplicationStatusEnum:
+      enum:
+      - submitted
+      - reviewing
+      - shortlisted
+      - rejected
+      - hired
+      - withdrawn
+      type: string
+      description: |-
+        * `submitted` - submitted
+        * `reviewing` - reviewing
+        * `shortlisted` - shortlisted
+        * `rejected` - rejected
+        * `hired` - hired
+        * `withdrawn` - withdrawn
     JobCreateRequest:
       type: object
       description: Fields shared by creating and editing a job.
@@ -23573,7 +24537,7 @@ components:
         status:
           $ref: '#/components/schemas/MentoringSessionStatusEnum'
         role:
-          $ref: '#/components/schemas/RoleEnum'
+          $ref: '#/components/schemas/SessionViewRoleEnum'
         starts_at:
           type: string
           format: date-time
@@ -23920,6 +24884,34 @@ components:
           maxLength: 160
       required:
       - title
+    MyApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/JobApplicationStatusEnum'
+        note:
+          type: string
+        link:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        decision_note:
+          type: string
+      required:
+      - created_at
+      - decision_note
+      - id
+      - job_id
+      - link
+      - note
+      - status
     MyRating:
       type: object
       properties:
@@ -24488,6 +25480,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminLearner'
+    PaginatedAdminMatchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMatch'
     PaginatedAdminMentorApplicationList:
       type: object
       required:
@@ -24557,6 +25572,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminMentoringSession'
+    PaginatedAdminPostList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPost'
     PaginatedAdminPreviewList:
       type: object
       required:
@@ -24649,6 +25687,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminWin'
+    PaginatedApplicationRowList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationRow'
     PaginatedAttendeeList:
       type: object
       required:
@@ -27515,16 +28576,48 @@ components:
           maxLength: 300
       required:
       - reason
-    RoleEnum:
-      enum:
-      - mentor
-      - mentee
-      - admin
-      type: string
-      description: |-
-        * `mentor` - mentor
-        * `mentee` - mentee
-        * `admin` - admin
+    Role:
+      type: object
+      properties:
+        role:
+          type: string
+        title:
+          type: string
+        blurb:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        people:
+          type: integer
+        team:
+          type: boolean
+          description: Whether it is a console role you can invite to
+      required:
+      - blurb
+      - people
+      - permissions
+      - role
+      - team
+      - title
+    RoleHolder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+      required:
+      - email
+      - id
+      - roles
     RolesEnum:
       enum:
       - member
@@ -27804,6 +28897,21 @@ components:
       - metric
       - points
       - total
+    SeriesPoint:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        count:
+          type: integer
+        previous:
+          type: integer
+          description: The same day of the range before
+      required:
+      - count
+      - day
+      - previous
     Session:
       type: object
       properties:
@@ -28070,6 +29178,16 @@ components:
       - message
       - starts_at
       - topic
+    SessionViewRoleEnum:
+      enum:
+      - mentor
+      - mentee
+      - admin
+      type: string
+      description: |-
+        * `mentor` - mentor
+        * `mentee` - mentee
+        * `admin` - admin
     SetupOptions:
       type: object
       properties:
@@ -28578,6 +29696,22 @@ components:
       - logo
       - name
       - slug
+    Stat:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        value:
+          type: integer
+        previous:
+          type: integer
+      required:
+      - key
+      - previous
+      - title
+      - value
     Stats:
       type: object
       properties:
@@ -28775,6 +29909,16 @@ components:
       required:
       - is_founder
       - title
+    TeamRoleEnum:
+      enum:
+      - content_editor
+      - community_admin
+      - super_admin
+      type: string
+      description: |-
+        * `content_editor` - content_editor
+        * `community_admin` - community_admin
+        * `super_admin` - super_admin
     Template:
       type: object
       properties:

@@ -191,6 +191,9 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "CategoryEnum": "apps.feed.models.CATEGORIES",
+        "JobApplicationStatusEnum": "apps.jobs.models.APPLICATION_STATUSES",
+        "TeamRoleEnum": "apps.adminconsole.team_views.TEAM_ROLES",
+        "SessionViewRoleEnum": "apps.mentorship.session_serializers.SESSION_VIEW_ROLES",
         "PricingModeEnum": "apps.mentorship.models.PRICING_MODES",
         "AvailabilityExceptionKindEnum": "apps.mentorship.models.EXCEPTION_KINDS",
         "CertificateStatusEnum": "apps.learning.models.CERTIFICATE_STATUSES",
