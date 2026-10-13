@@ -10,7 +10,7 @@ that offers one. The design follows the certificate specification; see ADR 0051 
   The certificate is drawn by a worker a moment after the last lecture, so the card says it is being
   prepared and then fills in.
 - `/app/learn/certificates` lists every certificate; `/app/learn/certificates/:id` shows one as the page
-  members receive, with the QR code, the number and the ways to download and share it.
+  members receive, with the number and the ways to download and share it.
 - The name is taken from the member's profile on the day the certificate is issued, so it can be
   corrected in the profile before the first certificate. Later profile changes do not alter it.
 
@@ -24,7 +24,7 @@ name, the course, the date and the course length, and nothing else. A revoked ce
 
 | Route | What it is |
 | --- | --- |
-| `/admin/learning/certificate-template` | Title, signatory name and title, optional signature image, with a live preview and a PDF preview |
+| `/admin/learning/certificate-template` | Title and signatory name (default Onyeka Akumah), with a live preview and a PDF preview |
 | `/admin/certificates` | Every issued certificate: search, filter, revoke (reason required), reissue or restore |
 
 Template changes apply to certificates issued afterwards. **Reissue** draws one again with the current
@@ -59,3 +59,7 @@ verification link, and no more than the public page already says. The holder cha
 |---|---|
 | `PATCH /certificates/{id}` | The holder only; anyone else gets 404 |
 | `GET /members/{id}/certificates` | A signed in member who may see that profile |
+
+## Layout (current)
+
+The certificate carries no QR code and no web address. The signatory is printed as a name only, taken from the settings (default **Onyeka Akumah**), over a small uppercase "WO COMMUNITY" label. The certificate ID stays in the details row; it is looked up on the verification page. The learner name and course title are copied onto the record when it is issued. Downloads and reissues are drawn from that record with the current layout and signatory.

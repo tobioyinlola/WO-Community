@@ -36,16 +36,16 @@ describe("CertificateSheet", () => {
     expect(screen.getByText("10 Oct 2026")).toBeInTheDocument();
     expect(screen.getByText("4.5 hours")).toBeInTheDocument();
     expect(screen.getByText("WO-C-2026-000341")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "QR code that opens https://app.test/verify/WO-C-2026-000341" })).toBeInTheDocument();
-    expect(screen.getByText("Verify at app.test/verify")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /QR code/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Verify at/)).not.toBeInTheDocument();
     expect(screen.getByText("The future of Africa is being built here.")).toBeInTheDocument();
   });
 
   it("uses the title and signatory it is given, and the singular for one hour", () => {
-    render(<CertificateSheet {...sheet} hours={1} titleText="Certificate of merit" signatoryName="" signatoryTitle="" />);
+    render(<CertificateSheet {...sheet} hours={1} titleText="Certificate of merit" signatoryName="" />);
     expect(screen.getByText("Certificate of merit")).toBeInTheDocument();
     expect(screen.getByText("1 hour")).toBeInTheDocument();
-    expect(screen.queryByText("Onyeka Obi")).not.toBeInTheDocument();
+    expect(screen.getByText("Onyeka Akumah")).toBeInTheDocument();
   });
 });
 

@@ -192,9 +192,6 @@ export default function CertificatePage() {
           hours={certificate.hours}
           titleText={certificate.title_text}
           signatoryName={certificate.signatory_name}
-          signatoryTitle={certificate.signatory_title}
-          signatureUrl={certificate.signature_url}
-          verifyUrl={certificate.verify_url}
         />
         <aside className="app-stack" aria-label="About this certificate">
           <div className="wo-certpage__actions">

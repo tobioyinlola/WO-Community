@@ -2,8 +2,10 @@
 
 The layout follows the design specification for certificates: a cream canvas with a thin forest
 border, the logo and the eyebrow along the top, the learner and the course on the left, a forest
-arch with the brand shapes on the right, a signature at the bottom left and a QR code that opens the
-public verification page at the bottom right. The same arrangement is shown on screen by the front
+arch with the brand shapes on the right, the signatory's name at the bottom left and the
+certificate ID in the
+details row. There is no QR code and no web address on the page; the ID is looked up on the
+verification page. The same arrangement is shown on screen by the front
 end (`CertificateSheet`), so the preview an administrator edits matches what members receive.
 
 It is drawn directly with ReportLab rather than through an HTML engine: no browser or system
@@ -19,11 +21,7 @@ from datetime import datetime
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import urlparse
 
-from reportlab.graphics import renderPDF
-from reportlab.graphics.barcode import qr
-from reportlab.graphics.shapes import Drawing
 from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader, simpleSplit
 from reportlab.pdfbase import pdfmetrics
@@ -58,6 +56,7 @@ FONTS = {
 }
 
 LEFT = 60
+DEFAULT_SIGNATORY = "Onyeka Akumah"
 TEXT_WIDTH = round(PAGE_WIDTH * 0.6)  # the centre block is 60 percent of the page
 
 
@@ -68,11 +67,8 @@ class CertificateContent:
     issued_at: datetime
     number: str
     hours: Decimal
-    verify_url: str
     title_text: str = "Certificate of completion"
     signatory_name: str = ""
-    signatory_title: str = ""
-    signature_png: bytes | None = None
 
 
 def _c(name: str) -> HexColor:
@@ -190,48 +186,18 @@ def _details(pdf: canvas.Canvas, content: CertificateContent, y: float) -> None:
 
 
 def _signature(pdf: canvas.Canvas, content: CertificateContent) -> None:
+    """The signatory as a name only, over a rule, with a small uppercase label under it."""
     line_y = 112
-    if content.signature_png:
-        pdf.drawImage(
-            ImageReader(io.BytesIO(content.signature_png)),
-            LEFT,
-            line_y + 4,
-            width=150,
-            height=44,
-            preserveAspectRatio=True,
-            anchor="sw",
-            mask="auto",
-        )
     pdf.setStrokeColor(_c("forest-700"))
     pdf.setLineWidth(0.8)
-    pdf.line(LEFT, line_y, LEFT + 170, line_y)
-    y = line_y - 15
+    pdf.line(LEFT, line_y, LEFT + 190, line_y)
+    name = _printable(content.signatory_name or DEFAULT_SIGNATORY, _font("bold"))
+    size = _fit(name, _font("bold"), 13, 8, 190)
     pdf.setFillColor(_c("forest-700"))
-    if content.signatory_name:
-        pdf.setFont(_font("bold"), 11)
-        pdf.drawString(LEFT, y, _printable(content.signatory_name, _font("bold")))
-        y -= 13
-    pdf.setFillColor(_c("text-secondary"))
-    pdf.setFont(_font("regular"), 9.5)
-    if content.signatory_title:
-        pdf.drawString(LEFT, y, _printable(content.signatory_title, _font("regular")))
-        y -= 12
-    pdf.drawString(LEFT, y, "WO Community")
-
-
-def _verify(pdf: canvas.Canvas, content: CertificateContent) -> None:
-    size = 62
-    widget = qr.QrCodeWidget(content.verify_url, barLevel="M", barBorder=0)
-    x0, y0, x1, y1 = widget.getBounds()
-    drawing = Drawing(size, size, transform=[size / (x1 - x0), 0, 0, size / (y1 - y0), 0, 0])
-    drawing.add(widget)
-    host = urlparse(content.verify_url).netloc or "wo.community"
-    x = PAGE_WIDTH - 60 - size
-    pdf.setFillColor(_c("forest-700"))
-    renderPDF.draw(drawing, pdf, x, 82)
-    pdf.setFillColor(_c("text-secondary"))
-    pdf.setFont(_font("regular"), 7.5)
-    pdf.drawRightString(PAGE_WIDTH - 60, 68, f"Verify at {host}/verify")
+    pdf.setFont(_font("bold"), size)
+    pdf.drawString(LEFT, line_y - 16, name)
+    pdf.setFillColor(_c("gold-700"))
+    _tracked(pdf, LEFT, line_y - 29, "WO COMMUNITY", _font("bold"), 7.5, 1.1)
 
 
 def render_certificate(content: CertificateContent) -> bytes:
@@ -289,7 +255,6 @@ def render_certificate(content: CertificateContent) -> bytes:
 
     _details(pdf, content, 205)
     _signature(pdf, content)
-    _verify(pdf, content)
     pdf.setFillColor(_c("text-secondary"))
     pdf.setFont(_font("regular"), 8.5)
     pdf.drawString(LEFT, 42, "The future of Africa is being built here.")

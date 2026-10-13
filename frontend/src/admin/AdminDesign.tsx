@@ -194,9 +194,7 @@ export default function AdminDesign() {
             number="WO-C-2026-000341"
             hours={4.5}
             titleText="Certificate of completion"
-            signatoryName="Onyeka Obi"
-            signatoryTitle="Founder, WO Community"
-            verifyUrl="https://app.example/verify/WO-C-2026-000341"
+            signatoryName="Onyeka Akumah"
           />
           <WeekGrid
             week={[

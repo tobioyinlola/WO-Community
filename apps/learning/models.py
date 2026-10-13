@@ -218,7 +218,7 @@ class CertificateSettings(BaseModel):
     """What appears on every new certificate. One row; changes apply to new certificates only."""
 
     title_text = models.CharField(max_length=60, default="Certificate of completion")
-    signatory_name = models.CharField(max_length=120, default="")
+    signatory_name = models.CharField(max_length=120, default="Onyeka Akumah")
     signatory_title = models.CharField(max_length=120, default="")
     # The base key of a processed `certificate_signature` image in the media bucket. Optional.
     signature_key = models.CharField(max_length=200, blank=True)
