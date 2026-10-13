@@ -85,7 +85,7 @@ function AttentionCard({ items, loading }: { items: Attention[]; loading: boolea
   );
 }
 
-function ActivityCard({ events, loading }: { events: RecentEvent[]; loading: boolean }) {
+function ActivityCard({ events, loading, viewAll }: { events: RecentEvent[]; loading: boolean; viewAll?: boolean }) {
   return (
     <section className="adm-card" aria-labelledby="act-title">
       <h2 className="adm-card__title" id="act-title">Recent activity</h2>
@@ -106,6 +106,7 @@ function ActivityCard({ events, loading }: { events: RecentEvent[]; loading: boo
           ))}
         </ol>
       )}
+      {viewAll ? <p style={{ margin: "var(--space-3) 0 0" }}><Link to="/admin/audit">View all in the audit log</Link></p> : null}
     </section>
   );
 }
@@ -141,6 +142,15 @@ export default function Overview() {
   const recent = useQuery({
     queryKey: ["admin", "recent-activity"],
     queryFn: async (): Promise<RecentEvent[]> => {
+      if (have.has("audit.read")) {
+        const page = await unwrap(api.GET("/api/v1/admin/audit", { params: { query: { limit: 10 } } }));
+        return page.results.map((e) => ({
+          id: e.id,
+          at: e.created_at,
+          icon: e.outcome === "failure" ? Flag : UserCheck,
+          text: `${e.actor.name} · ${e.action.replace(/[._]/g, " ")}${e.target.title ? `: ${e.target.title}` : ""}`,
+        }));
+      }
       const out: RecentEvent[] = [];
       if (have.has("members.view")) {
         const page = await unwrap(api.GET("/api/v1/admin/members", { params: { query: { limit: 6 } } }));
@@ -279,7 +289,7 @@ export default function Overview() {
 
       <div className="adm-twocol">
         <AttentionCard items={attention} loading={loading} />
-        <ActivityCard events={recent.data ?? []} loading={recent.isPending} />
+        <ActivityCard events={recent.data ?? []} loading={recent.isPending} viewAll={have.has("audit.read")} />
       </div>
     </>
   );

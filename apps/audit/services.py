@@ -38,6 +38,21 @@ def hash_value(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest() if value else ""
 
 
+SECRET_KEYS = ("password", "secret", "token", "otp", "recovery", "authorization", "api_key")
+
+
+def redact(value: Any) -> Any:
+    """Replace the value of any field that looks like a secret, at any depth."""
+    if isinstance(value, dict):
+        return {
+            k: "[redacted]" if any(s in str(k).lower() for s in SECRET_KEYS) else redact(v)
+            for k, v in value.items()
+        }
+    if isinstance(value, list):
+        return [redact(v) for v in value]
+    return value
+
+
 def _entry_hash(prev_hash: str, fields: dict[str, Any]) -> str:
     canonical = json.dumps(fields, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(f"{prev_hash}|{canonical}".encode()).hexdigest()
@@ -67,8 +82,15 @@ def record(
     reason: str = "",
     ip: str = "",
     user_agent: str = "",
+    outcome: str = "success",
+    target_label: str = "",
+    request_id: str = "",
 ) -> AuditLog:
-    """Append an entry. Call inside the transaction that makes the change."""
+    """Append an entry. Call inside the transaction that makes the change.
+
+    ``before`` and ``after`` are redacted here, so a caller can pass a record's fields as they are.
+    """
+    request_id = request_id or str(structlog.contextvars.get_contextvars().get("request_id", ""))
     with transaction.atomic():
         now = timezone.now()
         day_key = now.date().isoformat()
@@ -94,9 +116,12 @@ def record(
             action=action,
             target_type=target_type,
             target_id=str(target_id) if target_id else "",
-            before=before,
-            after=after,
+            before=redact(before),
+            after=redact(after),
             reason=reason,
+            outcome=outcome if outcome in ("success", "failure") else "success",
+            request_id=request_id[:64],
+            target_label=target_label[:200],
             ip_hash=hash_value(ip),
             user_agent_hash=hash_value(user_agent),
             prev_hash=prev_hash,
