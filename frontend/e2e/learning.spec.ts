@@ -143,7 +143,7 @@ test.describe("learning", () => {
     await page.getByLabel(/Tell others what you thought/).fill(text);
     await page.getByRole("button", { name: /Send review|Update review/ }).click();
     await expect(page.getByText(/Thank you for your review|Your review is updated/)).toBeVisible();
-    await expect(page.getByText(text)).toBeVisible();
+    await expect(page.locator(".wo-review__body", { hasText: text })).toBeVisible();
   });
 
   test("My learning shows progress and what was saved", async ({ page }) => {
