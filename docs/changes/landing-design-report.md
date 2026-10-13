@@ -53,7 +53,7 @@ presentational:
 |-------|--------|
 | Type check, lint, unit tests (138), production build | pass |
 | New Playwright spec `landing.spec.ts` (14 tests) | pass: content intact, no sideways scroll at 360, 768, 1024, 1280 and 1536 px, axe at 360 and 1440 px in both themes, floating header state, mobile menu by keyboard, Tab walk with a focus ring on every stop, reduced motion |
-| Existing `public-and-auth` and `accessibility` specs | see the run noted at the end of this file |
+| Existing `public-and-auth` and `accessibility` specs, run with the new spec (33 tests) | 32 pass, including the width and axe audit of `/` and every other public page in both themes. The one failure, "a member awaiting approval sees the holding page", is dev data: `pending@demo.test` was approved by earlier test runs, so it no longer gets the holding page. It does not touch the landing page. |
 | Axe color-contrast, both themes, 1440 px | 0 violations, 75 pairings passed. Undecided (axe cannot compute these): the decorative "WO" in the hero frame (cream on the frame fill, about 4:1, large text, was already so), and the giant footer wordmark (decorative, `aria-hidden`, faded on purpose) |
 | Keyboard walk | Header links, buttons and the menu button all take focus in order with a visible ring; the mobile menu opens and closes with Enter |
 | Reduced motion | No pending reveals, no line animation, no hover lift |
