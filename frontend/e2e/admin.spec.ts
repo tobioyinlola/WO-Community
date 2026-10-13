@@ -263,6 +263,8 @@ test.describe("the admin console", () => {
     await signInAdmin(page);
     await page.goto("/admin/approvals?next=1");
     await expect(page.getByRole("dialog").getByRole("button", { name: "Approve" })).toBeVisible();
+    // The first request is the seeded pending member that the sign-in test needs, so approve the next one.
+    await page.keyboard.press("j");
     await page.keyboard.press("a");
     await expect(page.getByText(/^Approving /)).toBeVisible();
     await expect(page.getByText(/ approved$/)).toBeVisible({ timeout: 30_000 });

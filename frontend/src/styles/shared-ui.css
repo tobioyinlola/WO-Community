@@ -1081,7 +1081,7 @@
   gap: var(--space-3);
   font: 400 14px/20px var(--font-body);
 }
-.wo-refcard__person span {
+.wo-refcard__person > span:not(.wo-avatar) {
   color: var(--text-secondary);
 }
 
