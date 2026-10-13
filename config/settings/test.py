@@ -52,9 +52,11 @@ PASSWORD_BREACH_CHECKER = (
 )
 FRONTEND_BASE_URL = "https://app.test"
 LINK_PREVIEW_FETCHER = "apps.integrations.linkpreview.fake.FakeFetcher"
+YOUTUBE_TITLE_LOOKUP = "apps.integrations.youtube.fake_title"
 GOOGLE_CLIENT_ID = "test-client.apps.googleusercontent.com"
 GOOGLE_TOKEN_VERIFIER = (
     "apps.integrations.identity.fake.FakeGoogleVerifier"  # noqa: S105  # nosec B105
 )
 
 SERVE_API_SCHEMA = True
+EMAIL_DNS_RESOLVER = "apps.notifications.tests.fake_dns.FakeResolver"

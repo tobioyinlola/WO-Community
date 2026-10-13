@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "apps.startups",
     "apps.directory",
     "apps.memberarea",
+    "apps.globalsearch",
+    "apps.referrals",
     "apps.feed",
     "apps.jobs",
     "apps.editorial",
@@ -39,6 +41,7 @@ INSTALLED_APPS = [
     "apps.campaigns",
     "apps.learning",
     "apps.mentorship",
+    "apps.support",
     "apps.toolkit.ventures",
     "apps.toolkit.jobs",
     "apps.toolkit.ai",
@@ -170,6 +173,10 @@ REST_FRAMEWORK = {
         "public_search": "60/min",
         "uploads": "30/hour",
         "analytics": "120/min",
+        "support_contact": "5/hour",
+        "referrer_search": "30/hour",
+        "course_request": "20/hour",
+        "support_write": "30/hour",
     },
     "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
@@ -183,6 +190,14 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]",
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "CategoryEnum": "apps.feed.models.CATEGORIES",
+        "TeamRoleEnum": "apps.adminconsole.team_views.TEAM_ROLES",
+        "SessionViewRoleEnum": "apps.mentorship.session_serializers.SESSION_VIEW_ROLES",
+        "PricingModeEnum": "apps.mentorship.models.PRICING_MODES",
+        "AvailabilityExceptionKindEnum": "apps.mentorship.models.EXCEPTION_KINDS",
+        "CertificateStatusEnum": "apps.learning.models.CERTIFICATE_STATUSES",
+        "ReferralKindEnum": "apps.accounts.referrals.SOURCES",
+        "SupportCategoryEnum": "apps.support.domain.CATEGORIES",
         "ChangeSetStatusEnum": "apps.toolkit.partner.models.CHANGE_STATUSES",
         "PrototypeKindEnum": "apps.toolkit.prototypes.spec.KINDS",
         "ShareSubjectTypeEnum": "apps.toolkit.sharing.models.SUBJECT_TYPES",
@@ -276,6 +291,7 @@ CELERY_BEAT_SCHEDULE = {
     "notifications-purge": {"task": "notifications.purge_notifications", "schedule": 86400.0},
     "feed-purge-link-previews": {"task": "feed.purge_link_previews", "schedule": 86400.0},
     "jobs-expire": {"task": "jobs.expire_due", "schedule": 900.0},
+    "feed-publish-scheduled": {"task": "feed.publish_scheduled", "schedule": 60.0},
     "editorial-publish-due": {"task": "editorial.publish_due", "schedule": 60.0},
     "events-reminders": {"task": "events.send_reminders", "schedule": 600.0},
     "news-digest": {
@@ -307,6 +323,11 @@ CELERY_BEAT_SCHEDULE = {
     "directory-reconcile": {"task": "directory.reconcile", "schedule": 3600.0},
     "audit-ensure-partitions": {"task": "audit.ensure_partitions", "schedule": 86400.0},
     "audit-verify-chain": {"task": "audit.verify_previous_day", "schedule": 86400.0},
+    "admin-alert-digests": {"task": "notifications.dispatch_admin_alerts", "schedule": 300.0},
+    "admin-alert-stale-summary": {
+        "task": "adminconsole.send_stale_summary",
+        "schedule": crontab(hour=8, minute=30),
+    },
 }
 OUTBOX_MAX_ATTEMPTS = 8
 
@@ -384,6 +405,11 @@ UPLOAD_DOCUMENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
 }
 UPLOAD_DOCUMENT_MAX_BYTES = 25 * 1024 * 1024
+# What a member may attach to a support request.
+SUPPORT_ATTACHMENT_TYPES = ("application/pdf", "image/jpeg", "image/png", "image/webp")
+SUPPORT_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024
+# A request nobody has answered after this many hours shows under "Needs attention".
+SUPPORT_SLA_HOURS = env.int("SUPPORT_SLA_HOURS", default=24)
 UPLOAD_DOCUMENT_MAX_UNPACKED_BYTES = 200 * 1024 * 1024  # a zip bomb guard for Office files
 DOCUMENT_LINK_TTL_SECONDS = 300
 UPLOAD_PRESIGN_TTL_SECONDS = 900
@@ -432,6 +458,10 @@ SILENCED_SYSTEM_CHECKS = ["auth.E003", "auth.W004"]
 FEED_POSTS_PER_DAY = env.int("FEED_POSTS_PER_DAY", default=20)
 FEED_COMMENTS_PER_DAY = env.int("FEED_COMMENTS_PER_DAY", default=200)
 FEED_MAX_IMAGES = 10
+# Looks up the title of a YouTube video for an admin adding lectures. Tests use a fake.
+YOUTUBE_TITLE_LOOKUP = env.str(
+    "YOUTUBE_TITLE_LOOKUP", default="apps.integrations.youtube.oembed_title"
+)
 LINK_PREVIEW_FETCHER = env.str(
     "LINK_PREVIEW_FETCHER", default="apps.integrations.linkpreview.fetcher.WebFetcher"
 )
@@ -556,3 +586,17 @@ GOOGLE_MEET_CALENDAR_ID = env.str("GOOGLE_MEET_CALENDAR_ID", default="primary")
 ZOOM_ACCOUNT_ID = env.str("ZOOM_ACCOUNT_ID", default="")
 ZOOM_CLIENT_ID = env.str("ZOOM_CLIENT_ID", default="")
 ZOOM_CLIENT_SECRET = env.str("ZOOM_CLIENT_SECRET", default="")
+
+# Email look and feel. The sign off ends every email; the logo must be a hosted https PNG.
+EMAIL_SIGNOFF = env.str("EMAIL_SIGNOFF", default="Best regards,\nThe WO Community Team").replace(
+    "\n", "\n"
+)
+EMAIL_LOGO_URL = env.str("EMAIL_LOGO_URL", default=f"{FRONTEND_BASE_URL}/assets/email-logo.png")
+
+# Warming up a new sending domain (see apps/notifications/warmup.py).
+EMAIL_WARMUP_START = env.str("EMAIL_WARMUP_START", default="")
+EMAIL_HOURLY_CAP = env.int("EMAIL_HOURLY_CAP", default=-1)
+# The DKIM selectors the provider asks you to publish, checked by the email health page.
+EMAIL_DKIM_SELECTORS = env.list("EMAIL_DKIM_SELECTORS", default=["resend"])
+# How the health check asks the DNS; tests swap it for a fake.
+EMAIL_DNS_RESOLVER = env.str("EMAIL_DNS_RESOLVER", default="apps.integrations.dns.SystemResolver")

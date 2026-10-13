@@ -96,7 +96,12 @@ def test_rich_text_is_cleaned_and_external_links_must_be_https(as_editor):
         {"external_url": "javascript:alert(1)"},
         {"startup_ids": [str(uuid.uuid4())]},
         {"startup_ids": [str(uuid.uuid4())] * 11},
-        {"banner_ends_at": when(60)},  # banners are for announcements only
+        {
+            "type": "award",
+            "show_banner": True,
+            "banner_starts_at": when(0),
+            "banner_ends_at": when(60),
+        },
         {"status": "published"},
         {"slug": "mine"},
     ],
@@ -118,21 +123,80 @@ def test_items_can_link_startups(as_editor, make_user, client_for):
 # --- banners ---
 
 
-def test_announcements_can_have_a_banner_window_of_up_to_ninety_days(as_editor):
+def test_a_banner_needs_a_start_an_end_after_it_and_at_most_ninety_days(as_editor):
     ok = create(
-        as_editor, type="announcement", banner_starts_at=when(0), banner_ends_at=when(60 * 24 * 30)
+        as_editor,
+        type="announcement",
+        show_banner=True,
+        banner_starts_at=when(0),
+        banner_ends_at=when(60 * 24 * 30),
+        banner_text="Join us on Friday",
+        banner_kind="urgent",
+        banner_link="/events",
     )
-    assert ok["banner_ends_at"]
+    assert ok["banner_status"] == "live" and ok["banner_kind"] == "urgent"
+    assert ok["banner_text"] == "Join us on Friday" and ok["banner_link"] == "/events"
+    on = {"type": "announcement", "show_banner": True}
+    window = {"banner_starts_at": when(0), "banner_ends_at": when(60)}
     for bad in (
-        {"banner_ends_at": when(-60)},
+        {"banner_starts_at": when(0), "banner_ends_at": when(-60)},
         {"banner_starts_at": when(120), "banner_ends_at": when(60)},
         {"banner_starts_at": when(0), "banner_ends_at": when(60 * 24 * 91)},
         {"banner_starts_at": when(0)},
+        {"banner_ends_at": when(60)},
+        {**window, "banner_text": "x" * 141},
+        {**window, "banner_kind": "loud"},
+        {**window, "banner_link": "javascript:x"},
+        {**window, "banner_link": "//evil.example"},
     ):
-        assert (
-            as_editor.post(ADMIN, body(type="announcement", **bad), format="json").status_code
-            == 400
-        )
+        response = as_editor.post(ADMIN, body(**on, **bad), format="json")
+        assert response.status_code == 400, bad
+
+
+def test_a_banner_that_is_switched_off_ignores_its_dates(as_editor):
+    item = create(
+        as_editor,
+        type="news",
+        show_banner=False,
+        banner_starts_at=when(0),
+        banner_ends_at=when(60),
+    )
+    assert item["banner_status"] == "off"
+
+
+def test_the_list_says_scheduled_live_or_expired_and_end_now_works(as_editor):
+    scheduled = create(
+        as_editor,
+        type="news",
+        show_banner=True,
+        banner_starts_at=when(120),
+        banner_ends_at=when(240),
+    )
+    live = create(
+        as_editor, type="news", show_banner=True, banner_starts_at=when(-5), banner_ends_at=when(60)
+    )
+    assert (scheduled["banner_status"], live["banner_status"]) == ("scheduled", "live")
+    ended = as_editor.post(f"{ADMIN}/{live['id']}/end-banner").json()
+    assert ended["banner_status"] == "expired"
+    cancelled = as_editor.post(f"{ADMIN}/{scheduled['id']}/end-banner").json()
+    assert cancelled["banner_status"] == "off"
+    assert as_editor.post(f"{ADMIN}/{scheduled['id']}/end-banner").status_code == 409
+
+
+def test_editing_the_words_of_an_expired_banner_story_is_allowed(as_editor):
+    from apps.editorial.models import EditorialItem
+
+    item = create(
+        as_editor, type="news", show_banner=True, banner_starts_at=when(-5), banner_ends_at=when(60)
+    )
+    EditorialItem.objects.filter(pk=item["id"]).update(
+        banner_starts_at=when(-300), banner_ends_at=when(-60)
+    )
+    etag = as_editor.get(f"{ADMIN}/{item['id']}")["ETag"]
+    done = as_editor.patch(
+        f"{ADMIN}/{item['id']}", {"title": "Better title"}, format="json", HTTP_IF_MATCH=etag
+    )
+    assert done.status_code == 200 and done.json()["banner_status"] == "expired"
 
 
 # --- editing ---

@@ -1,7 +1,7 @@
 """Public commands of the campaigns module: segments, newsletters and sending."""
 
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -36,6 +36,7 @@ from apps.integrations.email import (
     get_email_adapter,
 )
 from apps.notifications import services as notifications
+from apps.notifications import warmup
 from apps.profiles import selectors as profiles
 
 logger = structlog.get_logger(__name__)
@@ -300,6 +301,16 @@ def _begin(campaign: Campaign) -> None:
     domain_events.publish(events.CampaignStarted(campaign_id=str(campaign.pk)))
 
 
+def audience_size(campaign_id: UUID) -> int:
+    """How many people the campaign would go to if it were sent now."""
+    campaign = Campaign.objects.filter(pk=campaign_id).select_related("segment").first()
+    if campaign is None:
+        raise NotFound()
+    if campaign.segment is None:
+        return 0
+    return len(segments.recipients(campaign.segment.definition))
+
+
 def send_now(*, actor: Any, campaign_id: UUID, ip: str = "") -> Campaign:
     with transaction.atomic():
         campaign = _lock(campaign_id)
@@ -387,13 +398,15 @@ def _build(
     token = unsubscribe_token(user_id, campaign.pk)
     page_url = f"{settings.FRONTEND_BASE_URL}/unsubscribe?token={token}"
     one_click = f"{settings.API_BASE_URL}/api/v1/unsubscribe?token={token}"
+    subject = render.MERGE_TOKEN.sub(lambda m: first_name or render.FALLBACK_NAME, campaign.subject)
     html_body, text_body = render.render(
         preheader=campaign.preheader,
         blocks=campaign.blocks,
         first_name=first_name,
         unsubscribe_url=page_url,
+        subject=subject,
+        preferences_url=f"{settings.FRONTEND_BASE_URL}/settings/notifications",
     )
-    subject = render.MERGE_TOKEN.sub(lambda m: first_name or render.FALLBACK_NAME, campaign.subject)
     key = hashlib.sha256(
         f"campaign:{campaign.pk}:{user_id}:{'test' if test else ''}".encode()
     ).hexdigest()
@@ -483,15 +496,30 @@ def _send_row(campaign: Campaign, row_id: UUID, adapter: Any) -> str:
     return "ok"
 
 
+def hourly_room() -> int | None:
+    """How many broadcast emails may still go out this hour while the domain warms up.
+
+    None means no limit. Counted across every campaign, so two newsletters share one allowance.
+    """
+    sent = CampaignRecipient.objects.filter(
+        sent_at__gte=timezone.now() - timedelta(hours=1)
+    ).count()
+    return warmup.room(timezone.localdate(), sent)
+
+
 def send_batch(campaign_id: UUID) -> bool:
     """Send the next batch. Returns True if more remain, so the caller schedules another."""
     campaign = Campaign.objects.filter(pk=campaign_id).first()
     if campaign is None or campaign.status != Campaign.Status.SENDING:
         return False
+    room = hourly_room()
+    batch = (
+        settings.CAMPAIGN_BATCH_SIZE if room is None else min(settings.CAMPAIGN_BATCH_SIZE, room)
+    )
     row_ids = list(
         campaign.recipients.filter(status=CampaignRecipient.Status.QUEUED)
         .order_by("id")
-        .values_list("pk", flat=True)[: settings.CAMPAIGN_BATCH_SIZE]
+        .values_list("pk", flat=True)[:batch]
     )
     adapter = get_email_adapter()
     for row_id in row_ids:

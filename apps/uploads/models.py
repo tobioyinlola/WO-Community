@@ -12,9 +12,14 @@ class UploadPurpose(models.TextChoices):
     CAMPAIGN_IMAGE = "campaign_image"
     COURSE_COVER = "course_cover"
     COURSE_FILE = "course_file"  # a document, not an image
+    CERT_SIGNATURE = "cert_signature"  # an image of a signature, shown on certificates
+    SUPPORT_ATTACHMENT = "support_attachment"  # a PDF or an image kept as it arrived, privately
 
 
-DOCUMENT_PURPOSES = frozenset({UploadPurpose.COURSE_FILE})
+# Stored as they arrived, in the private bucket, and only ever delivered through a signed link.
+DOCUMENT_PURPOSES = frozenset({UploadPurpose.COURSE_FILE, UploadPurpose.SUPPORT_ATTACHMENT})
+# The ones only staff who manage courses may upload; a support attachment is open to any member.
+STAFF_DOCUMENT_PURPOSES = frozenset({UploadPurpose.COURSE_FILE})
 
 
 class UploadStatus(models.TextChoices):

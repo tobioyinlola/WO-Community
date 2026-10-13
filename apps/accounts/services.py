@@ -17,7 +17,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
 
-from apps.accounts import events, invitations, mfa, sessions, tokens
+from apps.accounts import events, invitations, mfa, referrals, sessions, tokens
 from apps.accounts.exceptions import InvalidToken
 from apps.accounts.models import (
     BLOCKED_STATUSES,
@@ -118,6 +118,7 @@ def register(
     invitation_token: str = "",
     signup: dict[str, Any] | None = None,
     anonymous_id: UUID | None = None,
+    referral: dict[str, Any] | None = None,
 ) -> bool:
     """Create an account. Returns True when an invitation approved it on the spot.
 
@@ -146,6 +147,7 @@ def register(
             else:
                 user = User.objects.create_user(address, password)
             record_consents(user, consents, ip)
+            referrals.capture(user, referral)
             if anonymous_id is not None:
                 analytics.identify(anonymous_id, user.pk)  # joins the funnel to the member
             if signup:
@@ -258,6 +260,8 @@ def verify_email(raw_token: str) -> None:
             actor=user, action="auth.email_verified", target_type="user", target_id=user.pk
         )
         analytics.track("email_verified", actor_id=user.pk)
+        if user.status == UserStatus.PENDING:
+            domain_events.publish(events.RegistrationAwaitingApproval(user_id=str(user.pk)))
 
 
 # --- Password reset ---
@@ -440,6 +444,12 @@ def logout(*, raw_refresh_token: str) -> None:
     family = sessions.family_for_token(raw_refresh_token)
     if family is not None:
         sessions.revoke(family, "logout")
+        audit.record(
+            actor=family.user,
+            action="auth.logout",
+            target_type="user",
+            target_id=family.user_id,
+        )
 
 
 # --- Sessions ---
@@ -469,7 +479,9 @@ def session_expiry(raw_refresh_token: str) -> datetime | None:
 # Admin member commands live in ``membership``; re-exported so other modules use one facade.
 from apps.accounts.invitations import (  # noqa: E402
     InvitationEmail,
+    batch_create,
     bulk_create,
+    check_addresses,
     create_invitation,
     resend_invitation,
     revoke_invitation,
@@ -487,7 +499,9 @@ from apps.accounts.membership import (  # noqa: E402
 __all__ = [
     "InvitationEmail",
     "approve_member",
+    "batch_create",
     "bulk_create",
+    "check_addresses",
     "create_invitation",
     "invitation_status",
     "resend_invitation",

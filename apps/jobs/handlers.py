@@ -8,3 +8,4 @@ def register() -> None:
     outbox.register_handler(events.JobPublished.topic, "jobs.send_instant_alerts", "default")
     outbox.register_handler(events.JobReviewed.topic, "jobs.notify_review", "default")
     outbox.register_handler(events.JobExpiring.topic, "jobs.notify_expiring", "default")
+    outbox.register_handler(events.JobStatusChanged.topic, "jobs.notify_changed", "default")

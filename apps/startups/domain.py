@@ -6,7 +6,7 @@ from typing import Any
 GROUP_FIELDS: dict[str, tuple[str, ...]] = {
     "basics": ("name", "pitch", "logo", "sector", "stage", "country", "city", "year_founded"),
     "description": ("description",),
-    "website": ("website_url",),
+    "website": ("website_url", "pitch_deck_url"),
     "team": ("team",),
 }
 

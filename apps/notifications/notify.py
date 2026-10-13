@@ -34,6 +34,8 @@ class Spec:
     link: Callable[[dict[str, Any]], str]  # frontend path
     email: bool = False
     rate_limited_email: bool = False  # members can trigger these for each other
+    # Extra words for the email (for example the reply itself), from the payload.
+    body: Callable[[dict[str, Any]], str] | None = None
 
 
 def _outcome_title(payload: dict[str, Any]) -> str:
@@ -74,6 +76,11 @@ def _reschedule_closed_title(who: str, payload: dict[str, Any]) -> str:
 
 def _post_link(payload: dict[str, Any]) -> str:
     return f"/posts/{payload['post_id']}"
+
+
+def _arranged(p: dict[str, Any]) -> str:
+    """Paid sessions are settled between the two while online payment is off, and say so."""
+    return ". Payment arranged directly" if p.get("payment") == "arranged" else ""
 
 
 TYPES: dict[str, Spec] = {
@@ -129,10 +136,34 @@ TYPES: dict[str, Spec] = {
         "jobs",
         lambda who, p: f"Your job \"{p.get('title', '')}\" is now live",
         lambda p: f"/jobs/{p['job_id']}",
+        email=True,
     ),
     "job_rejected": Spec(
         "jobs",
         lambda who, p: f"Your job \"{p.get('title', '')}\" was not approved: {p.get('reason', '')}",
+        lambda p: f"/jobs/{p['job_id']}",
+        email=True,
+    ),
+    "post_moderated": Spec(
+        "moderation",
+        lambda who, p: (
+            f"Your post was {p.get('what', 'changed')} by the team"
+            + (f": {p['reason']}" if p.get("reason") else "")
+        ),
+        lambda p: f"/posts/{p['post_id']}" if p.get("what") != "removed" else "/home",
+        email=True,
+    ),
+    "admin_attention": Spec(
+        "moderation",
+        lambda who, p: f"Needs your approval: {p.get('what', '')} ({p.get('who', '')})",
+        lambda p: p.get("path", "/admin"),
+    ),
+    "job_changed": Spec(
+        "jobs",
+        lambda who, p: (
+            f"Your job \"{p.get('title', '')}\" was {p.get('what', 'changed')} by an admin"
+            + (f": {p['reason']}" if p.get("reason") else "")
+        ),
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
@@ -182,13 +213,13 @@ TYPES: dict[str, Spec] = {
     "certificate_ready": Spec(
         "learning",
         lambda who, p: f"Your certificate for \"{p.get('title', 'your course')}\" is ready",
-        lambda p: f"/certificates/{p['certificate_id']}",
+        lambda p: f"/learn/certificates/{p['certificate_id']}",
         email=True,
     ),
     "course_granted": Spec(
         "learning",
         lambda who, p: f"You now have access to \"{p.get('title', 'a course')}\"",
-        lambda p: f"/courses/{p['course_id']}",
+        lambda p: f"/learn/courses/{p['course_id']}",
         email=True,
     ),
     "mentor_application_received": Spec(
@@ -211,14 +242,14 @@ TYPES: dict[str, Spec] = {
     ),
     "session_requested": Spec(
         "mentorship",
-        lambda who, p: f"{who} asked you for a mentoring session",
+        lambda who, p: f"{who} asked you for a mentoring session{_arranged(p)}",
         _session_link,
         email=True,
         rate_limited_email=True,
     ),
     "session_confirmed": Spec(
         "mentorship",
-        lambda who, p: f"{who} confirmed your mentoring session",
+        lambda who, p: f"{who} confirmed your mentoring session{_arranged(p)}",
         _session_link,
         email=True,
     ),
@@ -279,6 +310,54 @@ TYPES: dict[str, Spec] = {
         "approvals", lambda who, p: "Your registration was approved. Welcome!", lambda p: "/home"
     ),
     "report_outcome": Spec("moderation", lambda who, p: _outcome_title(p), lambda p: "/home"),
+    # Learning: asking for access, answers, announcements.
+    "course_request": Spec(
+        "learning",
+        lambda who, p: f"New access request for \"{p.get('title', 'a course')}\"",
+        lambda p: f"/admin/courses?course={p['course_id']}&tab=requests",
+    ),
+    "course_request_declined": Spec(
+        "learning",
+        lambda who, p: f"Your request for \"{p.get('title', 'a course')}\" was not approved",
+        lambda p: f"/learn/courses/{p['course_id']}",
+        email=True,
+    ),
+    "lecture_answer": Spec(
+        "learning",
+        lambda who, p: f"{who} answered your question in \"{p.get('title', 'a course')}\"",
+        lambda p: f"/learn/courses/{p['course_id']}/lecture/{p['lesson_id']}?tab=qa",
+    ),
+    "course_announcement": Spec(
+        "learning",
+        lambda who, p: f"New in \"{p.get('title', 'your course')}\": {p.get('announcement', '')}",
+        lambda p: f"/learn/courses/{p['course_id']}?tab=announcements",
+        email=True,
+    ),
+    # Support: members are told in the app and by email; admins only in the app.
+    "ticket_reply": Spec(
+        "support",
+        lambda who, p: f"Support replied to {p.get('reference', 'your request')}",
+        lambda p: f"/support/{p['ticket_id']}",
+        email=True,
+        body=lambda p: str(p.get("excerpt", "")),
+    ),
+    "ticket_resolved": Spec(
+        "support",
+        lambda who, p: f"Support marked {p.get('reference', 'your request')} as resolved",
+        lambda p: f"/support/{p['ticket_id']}",
+        email=True,
+        body=lambda p: str(p.get("excerpt", "")),
+    ),
+    "ticket_new": Spec(
+        "support",
+        lambda who, p: f"New support request {p.get('reference', '')}".strip(),
+        lambda p: f"/admin/support?ticket={p['ticket_id']}",
+    ),
+    "ticket_member_reply": Spec(
+        "support",
+        lambda who, p: f"{p.get('reference', 'A request')} has a new reply from the member",
+        lambda p: f"/admin/support?ticket={p['ticket_id']}",
+    ),
 }
 
 
@@ -334,6 +413,49 @@ def notify(
     return created
 
 
+def mail_template_for(
+    type_: str, title: str, extra: str, link: str, payload: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    """The email template that suits a notification, with its values; the generic one otherwise."""
+    when = "in 1 hour" if payload.get("when") == "1h" else "in 24 hours"
+    match type_:
+        case "job_approved":
+            return "job_approved", {"job_title": payload.get("title"), "job_url": link}
+        case "job_rejected":
+            return "job_rejected", {
+                "job_title": payload.get("title"),
+                "reason": payload.get("reason"),
+                "job_url": link,
+            }
+        case "mentor_application_decision":
+            approved = str(payload.get("decision", "")) == "approved"
+            return "mentor_decision", {
+                "outcome": "approved" if approved else "not approved",
+                "note": extra,
+                "url": link,
+            }
+        case "ticket_reply" | "ticket_resolved":
+            return "ticket_reply", {
+                "reference": payload.get("reference"),
+                "excerpt": extra,
+                "ticket_url": link,
+            }
+        case "course_granted":
+            return "course_access", {"course_title": payload.get("title"), "course_url": link}
+        case "certificate_ready":
+            return "certificate_issued", {
+                "course_title": payload.get("title"),
+                "certificate_url": link,
+            }
+        case "event_reminder":
+            return "event_reminder", {
+                "event_title": payload.get("title"),
+                "when": when,
+                "event_url": link,
+            }
+    return "notice", {"title": title, "detail": extra, "link_url": link}
+
+
 def _email(
     user_id: UUID,
     type_: str,
@@ -352,11 +474,18 @@ def _email(
     actor_id = _actor_id(payload)
     who = actor_names(user_id, [actor_id]).get(actor_id, "Someone") if actor_id else "Someone"
     title = spec.title(who, payload)
+    extra = spec.body(payload) if spec.body else ""
+    lead = f"{extra}\n\n" if extra else ""
+    link = f"{settings.FRONTEND_BASE_URL}{spec.link(payload)}"
+    template, values = mail_template_for(type_, title, extra, link, payload)
     emails.send_notice(
         contact.email,
         title,
-        f"{title}.\n\n{settings.FRONTEND_BASE_URL}{spec.link(payload)}",
+        f"{title}.\n\n{lead}{link}",
         category=f"notification_{type_}",
+        template=template,
+        values=values,
+        link=link,
     )
     if notification is not None:
         notification.channels_sent = [*notification.channels_sent, "email"]

@@ -1,17 +1,28 @@
 from django.urls import path, re_path
 
 from apps.adminconsole import (
+    alert_views,
+    audit_views,
     campaign_views,
+    certificate_views,
     course_views,
     dashboard_views,
     editorial_views,
+    email_health_views,
+    email_template_views,
     event_views,
     featured_views,
     feed_views,
     invitation_views,
     job_views,
+    lms_views,
     mentor_views,
+    oversight_views,
     reference_views,
+    referral_views,
+    search_views,
+    support_views,
+    team_views,
     views,
 )
 
@@ -23,12 +34,171 @@ EVENT_ACTIONS = ("publish", "unpublish", "cancel")
 ITEM_ACTIONS = ("publish", "unpublish")
 COMMENT_ACTIONS_ITEM = ("hide", "unhide", "remove")
 WIN_DECISIONS = ("approve", "reject")
-JOB_DECISIONS = ("approve", "reject", "unpublish", "remove")
+JOB_DECISIONS = ("approve", "reject", "unpublish", "remove", "reopen")
 POST_ACTIONS = ("pin", "unpin", "feature", "unfeature", "hide", "unhide", "remove")
 
 COMMENT_ACTIONS = ("hide", "unhide", "remove")
 
 urlpatterns = [
+    path(
+        "admin/certificate-settings",
+        certificate_views.CertificateSettingsView.as_view(),
+        name="admin-certificate-settings",
+    ),
+    path(
+        "admin/certificate-settings/preview",
+        certificate_views.CertificatePreviewView.as_view(),
+        name="admin-certificate-preview",
+    ),
+    path(
+        "admin/certificates",
+        certificate_views.AdminCertificatesView.as_view(),
+        name="admin-certificates",
+    ),
+    path(
+        "admin/certificates/<uuid:certificate_id>/revoke",
+        certificate_views.RevokeCertificateView.as_view(),
+        name="admin-certificate-revoke",
+    ),
+    path(
+        "admin/certificates/<uuid:certificate_id>/reissue",
+        certificate_views.ReissueCertificateView.as_view(),
+        name="admin-certificate-reissue",
+    ),
+    path(
+        "admin/course-requests",
+        lms_views.AccessRequestsView.as_view(),
+        name="admin-course-requests",
+    ),
+    path(
+        "admin/course-requests/<uuid:request_id>/approve",
+        lms_views.ApproveRequestView.as_view(),
+        name="admin-course-request-approve",
+    ),
+    path(
+        "admin/course-requests/<uuid:request_id>/decline",
+        lms_views.DeclineRequestView.as_view(),
+        name="admin-course-request-decline",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/requests",
+        lms_views.CourseRequestsView.as_view(),
+        name="admin-course-requests-one",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/learners",
+        lms_views.CourseLearnersView.as_view(),
+        name="admin-course-learners",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/learners.csv",
+        lms_views.CourseLearnersCsvView.as_view(),
+        name="admin-course-learners-csv",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/learners/<uuid:user_id>",
+        lms_views.LearnerView.as_view(),
+        name="admin-course-learner",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/reviews",
+        lms_views.CourseReviewsView.as_view(),
+        name="admin-course-reviews",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/questions",
+        lms_views.CourseQuestionsView.as_view(),
+        name="admin-course-questions",
+    ),
+    path(
+        "admin/courses/<uuid:course_id>/announcements",
+        lms_views.CourseAnnouncementsView.as_view(),
+        name="admin-course-announcements",
+    ),
+    path(
+        "admin/questions/<uuid:question_id>/answer",
+        lms_views.StaffAnswerView.as_view(),
+        name="admin-question-answer",
+    ),
+    path("admin/youtube/validate", lms_views.YouTubeValidateView.as_view(), name="admin-youtube"),
+    path(
+        "admin/modules/<uuid:module_id>/lessons/bulk",
+        lms_views.BulkLecturesView.as_view(),
+        name="admin-lessons-bulk",
+    ),
+    *[
+        path(
+            f"admin/{kind}s/<uuid:item_id>/{verb}",
+            lms_views.moderation(kind, verb == "hide").as_view(),
+            name=f"admin-{kind}-{verb}",
+        )
+        for kind in ("review", "question", "answer")
+        for verb in ("hide", "restore")
+    ],
+    path(
+        "admin/referrals/summary",
+        referral_views.ReferralSummaryView.as_view(),
+        name="admin-referrals-summary",
+    ),
+    path(
+        "admin/referrals/top", referral_views.TopReferrersView.as_view(), name="admin-referrals-top"
+    ),
+    path(
+        "admin/members/<uuid:user_id>/referral",
+        referral_views.MemberReferralView.as_view(),
+        name="admin-member-referral",
+    ),
+    path(
+        "admin/support/tickets",
+        support_views.AdminTicketsView.as_view(),
+        name="admin-support-tickets",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>",
+        support_views.AdminTicketView.as_view(),
+        name="admin-support-ticket",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>/messages",
+        support_views.AdminTicketMessagesView.as_view(),
+        name="admin-support-ticket-messages",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>/resolve",
+        support_views.AdminTicketResolveView.as_view(),
+        name="admin-support-ticket-resolve",
+    ),
+    path(
+        "admin/support/tickets/<uuid:ticket_id>/reopen",
+        support_views.AdminTicketReopenView.as_view(),
+        name="admin-support-ticket-reopen",
+    ),
+    path(
+        "admin/support/stats",
+        support_views.AdminSupportStatsView.as_view(),
+        name="admin-support-stats",
+    ),
+    path(
+        "admin/support/agents",
+        support_views.AdminSupportAgentsView.as_view(),
+        name="admin-support-agents",
+    ),
+    path(
+        "admin/support/canned-replies",
+        support_views.AdminCannedRepliesView.as_view(),
+        name="admin-support-canned",
+    ),
+    path(
+        "admin/support/canned-replies/<uuid:reply_id>",
+        support_views.AdminCannedReplyView.as_view(),
+        name="admin-support-canned-one",
+    ),
+    path(
+        "admin/support/attachments/<uuid:attachment_id>/download",
+        support_views.AdminAttachmentDownloadView.as_view(),
+        name="admin-support-attachment",
+    ),
+    path("admin/search", search_views.AdminSearchView.as_view(), name="admin-search"),
     path("admin/courses", course_views.AdminCoursesView.as_view(), name="admin-courses"),
     path(
         "admin/courses/<uuid:course_id>",
@@ -148,6 +318,11 @@ urlpatterns = [
         name="admin-campaign",
     ),
     path(
+        "admin/campaigns/<uuid:campaign_id>/audience",
+        campaign_views.CampaignAudienceView.as_view(),
+        name="admin-campaign-audience",
+    ),
+    path(
         "admin/campaigns/<uuid:campaign_id>/report",
         campaign_views.CampaignReportView.as_view(),
         name="admin-campaign-report",
@@ -202,6 +377,11 @@ urlpatterns = [
         name="admin-editorial-item",
     ),
     path(
+        "admin/editorial/<uuid:item_id>/end-banner",
+        editorial_views.EndBannerView.as_view(),
+        name="admin-editorial-end-banner",
+    ),
+    path(
         "admin/editorial/<uuid:item_id>/schedule",
         editorial_views.ScheduleItemView.as_view(),
         name="admin-editorial-schedule",
@@ -237,6 +417,12 @@ urlpatterns = [
         for decision in WIN_DECISIONS
     ],
     path("admin/jobs", job_views.AdminJobsView.as_view(), name="admin-jobs"),
+    path("admin/jobs/stats", job_views.AdminJobStatsView.as_view(), name="admin-jobs-stats"),
+    path(
+        "admin/jobs/bulk-approve",
+        job_views.AdminJobBulkApproveView.as_view(),
+        name="admin-jobs-bulk-approve",
+    ),
     path("admin/jobs/settings", job_views.JobSettingsView.as_view(), name="admin-job-settings"),
     path("admin/jobs/<uuid:job_id>", job_views.AdminJobView.as_view(), name="admin-job"),
     *[
@@ -320,6 +506,16 @@ urlpatterns = [
         name="admin-invitations",
     ),
     path(
+        "admin/invitations/batch",
+        invitation_views.InvitationBatchView.as_view(),
+        name="admin-invitations-batch",
+    ),
+    path(
+        "admin/invitations/check",
+        invitation_views.InvitationCheckView.as_view(),
+        name="admin-invitations-check",
+    ),
+    path(
         "admin/invitations/bulk",
         invitation_views.InvitationBulkView.as_view(),
         name="admin-invitations-bulk",
@@ -339,9 +535,85 @@ urlpatterns = [
         invitation_views.InvitationRevokeView.as_view(),
         name="admin-invitation-revoke",
     ),
+    path("admin/posts", oversight_views.AdminPostsView.as_view(), name="admin-posts"),
+    path(
+        "admin/posts/stats", oversight_views.AdminFeedStatsView.as_view(), name="admin-posts-stats"
+    ),
+    path("admin/posts/<uuid:post_id>", oversight_views.AdminPostView.as_view(), name="admin-post"),
+    path("admin/matches", oversight_views.AdminMatchesView.as_view(), name="admin-matches"),
+    path("admin/analytics", oversight_views.AdminAnalyticsView.as_view(), name="admin-analytics"),
+    path(
+        "admin/email-templates",
+        email_template_views.TemplatesView.as_view(),
+        name="admin-email-templates",
+    ),
+    path(
+        "admin/email-templates/<slug:key>",
+        email_template_views.TemplateView.as_view(),
+        name="admin-email-template",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/preview",
+        email_template_views.PreviewView.as_view(),
+        name="admin-email-template-preview",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/test",
+        email_template_views.SendTestView.as_view(),
+        name="admin-email-template-test",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/versions",
+        email_template_views.VersionsView.as_view(),
+        name="admin-email-template-versions",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/restore",
+        email_template_views.RestoreView.as_view(),
+        name="admin-email-template-restore",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/reset",
+        email_template_views.ResetView.as_view(),
+        name="admin-email-template-reset",
+    ),
+    path(
+        "admin/me/alerts",
+        alert_views.AlertPreferencesView.as_view(),
+        name="admin-alert-preferences",
+    ),
+    path("admin/email/health", email_health_views.HealthView.as_view(), name="admin-email-health"),
+    path(
+        "admin/email/suppressions",
+        email_health_views.SuppressionsView.as_view(),
+        name="admin-email-suppressions",
+    ),
+    path(
+        "admin/email/suppressions/<uuid:suppression_id>",
+        email_health_views.SuppressionView.as_view(),
+        name="admin-email-suppression",
+    ),
+    path("admin/audit", audit_views.AuditListView.as_view(), name="admin-audit"),
+    path("admin/audit/export", audit_views.AuditExportView.as_view(), name="admin-audit-export"),
+    path(
+        "admin/audit/<uuid:entry_id>",
+        audit_views.AuditEntryView.as_view(),
+        name="admin-audit-entry",
+    ),
+    path("admin/roles", team_views.RolesView.as_view(), name="admin-roles"),
+    path(
+        "admin/members/<uuid:user_id>/role",
+        team_views.ChangeRoleView.as_view(),
+        name="admin-member-role",
+    ),
     path("admin/queues", views.QueuesView.as_view(), name="admin-queues"),
     path("admin/members", views.MemberListView.as_view(), name="admin-members"),
     path("admin/members/<uuid:user_id>", views.MemberDetailView.as_view(), name="admin-member"),
+    path(
+        "admin/members/<uuid:user_id>/application",
+        views.MemberApplicationView.as_view(),
+        name="admin-member-application",
+    ),
     path(
         "admin/members/<uuid:user_id>/approve",
         views.ApproveView.as_view(),
@@ -366,6 +638,11 @@ urlpatterns = [
         "admin/members/<uuid:user_id>/reset-mfa",
         views.ResetMfaView.as_view(),
         name="admin-member-reset-mfa",
+    ),
+    path(
+        "admin/members/<uuid:user_id>/resend-verification",
+        views.ResendVerificationView.as_view(),
+        name="admin-member-resend-verification",
     ),
     path(
         "admin/members/<uuid:user_id>/remove",

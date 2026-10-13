@@ -204,6 +204,36 @@ export function LoadMore({
   );
 }
 
+/** Page controls for lists the server pages by number. */
+export function Pagination({
+  page,
+  pages,
+  count,
+  noun,
+  onPage,
+}: {
+  page: number;
+  pages: number;
+  count: number;
+  noun: string;
+  onPage: (page: number) => void;
+}) {
+  if (pages <= 1) return null;
+  return (
+    <nav className="app-pager" aria-label="Pages">
+      <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+        Previous
+      </Button>
+      <p className="body-sm app-muted" style={{ margin: 0 }} aria-live="polite">
+        Page {page} of {pages} &middot; {count} {noun}
+      </p>
+      <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>
+        Next
+      </Button>
+    </nav>
+  );
+}
+
 /** A table that scrolls sideways inside its own box on narrow screens, reachable by keyboard. */
 export function TableScroll({ label, children, style }: { label: string; children: ReactNode; style?: CSSProperties }) {
   return (

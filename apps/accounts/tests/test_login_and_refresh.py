@@ -210,3 +210,11 @@ def test_refresh_tokens_are_stored_hashed(api_client, member):
     secret = cookie.partition(".")[2]
     assert secret not in RefreshTokenFamily.objects.get().current_hash
     assert len(RefreshTokenFamily.objects.get().current_hash) == 64
+
+
+def test_signing_out_is_audited_without_naming_the_person(api_client, member):
+    api_client.cookies[COOKIE] = login(api_client).cookies[COOKIE].value
+    api_client.post(LOGOUT_URL, **AJAX)
+    [entry] = AuditLog.objects.filter(action="auth.logout")
+    assert entry.actor_id == member.pk and entry.target_id == str(member.pk)
+    assert "member@example.com" not in str(entry.__dict__)

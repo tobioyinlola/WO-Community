@@ -85,7 +85,11 @@ def _clean_comment(body: str) -> str:
 
 def _live_posts() -> QuerySet[Post]:
     """Posts that exist and whose author may still post: removed members' posts vanish at once."""
-    return Post.objects.filter(deleted_at__isnull=True, author_id__in=accounts.active_user_ids())
+    return Post.objects.filter(
+        deleted_at__isnull=True,
+        scheduled_for__isnull=True,
+        author_id__in=accounts.active_user_ids(),
+    )
 
 
 def _lock_post(post_id: UUID, *, open_to_all: bool = True) -> Post:
@@ -188,13 +192,18 @@ def create_post(
     images: list[dict[str, Any]],
     startup_id: UUID | None = None,
     mentions: list[UUID] | None = None,
+    team: dict[str, Any] | None = None,
 ) -> Post:
+    """Publish a post. ``team`` carries the options only the team has: official, pin, comments,
+    audience and a time to publish. A team post skips the daily allowance and is never held."""
     if category not in CATEGORIES:
         raise exceptions.ValidationError({"category": ["Choose a category from the list."]})
     html, text = _clean_post(body)
     mention_ids = _check_mentions(mentions or [])
-    _check_startup(user_id, startup_id)
-    spend("post", user_id, settings.FEED_POSTS_PER_DAY)
+    if team is None:
+        _check_startup(user_id, startup_id)
+        spend("post", user_id, settings.FEED_POSTS_PER_DAY)
+    options = _team_options(team) if team is not None else {}
     with transaction.atomic():
         post = Post.objects.create(
             author_id=user_id,
@@ -203,6 +212,7 @@ def create_post(
             body=html,
             body_text=text,
             country=profiles.country_of(user_id),
+            **options,
         )
         _attach_images(post, images, user_id)
         links.sync(post, html)
@@ -215,7 +225,134 @@ def create_post(
         )
         post.save(update_fields=["mentioned"])
         analytics.track("post_created", actor_id=user_id, properties={"category": category})
+        if team is not None:
+            audit.record(
+                actor=team.get("actor"),
+                action="feed.post_created_by_team",
+                target_type="post",
+                target_id=post.pk,
+                target_label=f"{category} post",
+                after={k: str(v) for k, v in options.items()},
+                ip=team.get("ip", ""),
+            )
     return post
+
+
+TEAM_AUDIENCES = ("member", "mentor")
+
+
+def _team_options(team: dict[str, Any]) -> dict[str, Any]:
+    """Validate and translate the team-only options into post fields."""
+    now = timezone.now()
+    options: dict[str, Any] = {
+        "official": bool(team.get("official", False)),
+        "comments_enabled": bool(team.get("comments_enabled", True)),
+    }
+    roles = list(dict.fromkeys(team.get("audience_roles") or []))
+    if any(r not in TEAM_AUDIENCES for r in roles):
+        raise exceptions.ValidationError({"audience_roles": ["Choose members or mentors."]})
+    options["audience_roles"] = roles
+    until = team.get("pinned_until")
+    if team.get("pin"):
+        options["pinned_at"] = now
+        if until is not None:
+            if until <= now:
+                raise exceptions.ValidationError({"pinned_until": ["Choose a time in the future."]})
+            options["pinned_until"] = until
+    elif until is not None:
+        raise exceptions.ValidationError({"pinned_until": ["Pin the post to set when it lapses."]})
+    scheduled = team.get("scheduled_for")
+    if scheduled is not None:
+        if scheduled <= now:
+            raise exceptions.ValidationError({"scheduled_for": ["Choose a time in the future."]})
+        options["scheduled_for"] = scheduled
+    return options
+
+
+def update_team_post(*, actor: Any, post_id: UUID, changes: dict[str, Any], ip: str = "") -> Post:
+    """Edit any post as the team: the words, the category and the team-only options."""
+    with transaction.atomic():
+        post = Post.objects.select_for_update().filter(pk=post_id, deleted_at__isnull=True).first()
+        if post is None:
+            raise NotFound()
+        before = {
+            "body": post.body_text[:200],
+            "category": post.category,
+            "comments_enabled": post.comments_enabled,
+            "official": post.official,
+            "audience_roles": post.audience_roles,
+            "pinned_until": str(post.pinned_until) if post.pinned_until else None,
+            "scheduled_for": str(post.scheduled_for) if post.scheduled_for else None,
+        }
+        if "category" in changes:
+            if changes["category"] not in CATEGORIES:
+                raise exceptions.ValidationError({"category": ["Choose a category from the list."]})
+            post.category = changes["category"]
+        if "body" in changes:
+            post.body, post.body_text = _clean_post(changes["body"])
+            links.sync(post, post.body)
+        if "comments_enabled" in changes:
+            post.comments_enabled = bool(changes["comments_enabled"])
+        if "official" in changes:
+            post.official = bool(changes["official"])
+        if "audience_roles" in changes:
+            roles = list(dict.fromkeys(changes["audience_roles"] or []))
+            if any(r not in TEAM_AUDIENCES for r in roles):
+                raise exceptions.ValidationError({"audience_roles": ["Choose members or mentors."]})
+            post.audience_roles = roles
+        if "pinned_until" in changes:
+            until = changes["pinned_until"]
+            if until is not None and until <= timezone.now():
+                raise exceptions.ValidationError({"pinned_until": ["Choose a time in the future."]})
+            post.pinned_until = until
+        if "scheduled_for" in changes:
+            if post.scheduled_for is None:
+                raise exceptions.ValidationError({"scheduled_for": ["This post is already out."]})
+            when = changes["scheduled_for"]
+            if when is None or when <= timezone.now():
+                raise exceptions.ValidationError(
+                    {"scheduled_for": ["Choose a time in the future."]}
+                )
+            post.scheduled_for = when
+        post.edited_at = timezone.now()
+        post.save()
+        audit.record(
+            actor=actor,
+            action="feed.post_edited_by_team",
+            target_type="post",
+            target_id=post.pk,
+            target_label=f"{post.category} post",
+            before=before,
+            after={k: str(v) for k, v in changes.items() if k != "body"},
+            ip=ip,
+        )
+        if post.author_id != getattr(actor, "pk", None):
+            domain_events.publish(
+                events.PostModerated(
+                    post_id=str(post.pk),
+                    author_id=str(post.author_id),
+                    action="edited",
+                    reason="",
+                )
+            )
+    return post
+
+
+def publish_due(now: Any = None) -> int:
+    """Put scheduled posts into the feed once their time has come."""
+    now = now or timezone.now()
+    due = list(
+        Post.objects.filter(
+            scheduled_for__isnull=False, scheduled_for__lte=now, deleted_at__isnull=True
+        )
+    )
+    for post in due:
+        with transaction.atomic():
+            # The feed is ordered by creation time, so the post enters at the top at its time.
+            Post.objects.filter(pk=post.pk, scheduled_for__isnull=False).update(
+                scheduled_for=None, created_at=post.scheduled_for
+            )
+    return len(due)
 
 
 def update_post(
@@ -295,6 +432,8 @@ def add_comment(
     spend("comment", user_id, settings.FEED_COMMENTS_PER_DAY)
     with transaction.atomic():
         post = _lock_post(post_id)
+        if not post.comments_enabled:
+            raise Forbidden("Comments are turned off for this post.")
         parent = None
         if parent_id is not None:
             parent = Comment.objects.filter(
@@ -474,6 +613,7 @@ def moderate_post(
         now = timezone.now()
         if action in ("pin", "unpin"):
             post.pinned_at = now if action == "pin" else None
+            post.pinned_until = None
         elif action in ("feature", "unfeature"):
             post.featured_at = now if action == "feature" else None
         elif action in ("hide", "unhide"):
@@ -483,13 +623,31 @@ def moderate_post(
         else:
             raise ValueError(action)
         if action != "remove":
-            post.save(update_fields=["pinned_at", "featured_at", "hidden_at", "updated_at"])
+            post.save(
+                update_fields=[
+                    "pinned_at",
+                    "pinned_until",
+                    "featured_at",
+                    "hidden_at",
+                    "updated_at",
+                ]
+            )
         audit.record(
             actor=actor,
             action=f"feed.post_{action}",
             target_type="post",
             target_id=post.pk,
+            target_label=f"{post.category} post",
             reason=reason,
             ip=ip,
         )
+        if action in ("hide", "remove", "unhide") and post.author_id != getattr(actor, "pk", None):
+            domain_events.publish(
+                events.PostModerated(
+                    post_id=str(post.pk),
+                    author_id=str(post.author_id),
+                    action={"hide": "hidden", "remove": "removed", "unhide": "restored"}[action],
+                    reason=reason,
+                )
+            )
     return post

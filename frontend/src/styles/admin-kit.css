@@ -1,0 +1,444 @@
+/*
+ * Building blocks for console pages: cards, KPI cards, change chips, the segmented control, the
+ * bar chart, the attention list and the activity timeline. Tokens only. Loaded with the console.
+ */
+
+/* ---------- Cards ---------- */
+.adm-card {
+  background: var(--adm-card);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-6);
+  color: var(--text-primary);
+}
+.adm-card__title {
+  margin: 0;
+  font: 700 20px/28px var(--font-body);
+  letter-spacing: -0.01em;
+}
+.adm-card__sub {
+  margin: var(--space-1) 0 0;
+  font: 400 14px/20px var(--font-body);
+  color: var(--text-secondary);
+}
+.adm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.adm-twocol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 1023px) {
+  .adm-twocol {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- KPI cards ---------- */
+.adm-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+@media (max-width: 1279px) {
+  .adm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 639px) {
+  .adm-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.adm-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  transition: box-shadow var(--duration-base) var(--ease-standard);
+}
+a.adm-kpi:hover {
+  box-shadow: var(--shadow-md);
+}
+a.adm-kpi:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.adm-kpi__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.adm-kpi__label {
+  font: 600 14px/20px var(--font-body);
+  color: var(--text-secondary);
+}
+.adm-kpi__tag {
+  font: 700 11px/16px var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.adm-kpi__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.adm-kpi__value {
+  font: 700 44px/48px var(--font-body);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.adm-kpi__rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.adm-kpi__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: var(--stroke-1) solid var(--border-subtle);
+  font: 400 14px/20px var(--font-body);
+}
+.adm-kpi__row dt {
+  color: var(--text-secondary);
+}
+.adm-kpi__row dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.adm-kpi[data-highlight="true"] {
+  background: var(--bg-brand);
+  border-color: var(--bg-brand);
+  color: var(--text-on-brand);
+}
+.adm-kpi[data-highlight="true"] .adm-kpi__label,
+.adm-kpi[data-highlight="true"] .adm-kpi__tag,
+.adm-kpi[data-highlight="true"] .adm-kpi__row dt {
+  color: var(--text-on-brand-muted);
+}
+.adm-kpi[data-highlight="true"] .adm-kpi__value {
+  color: var(--text-highlight);
+}
+.adm-kpi[data-highlight="true"] .adm-kpi__row {
+  border-top-color: var(--border-on-brand);
+}
+a.adm-kpi[data-highlight="true"]:focus-visible {
+  box-shadow: var(--shadow-focus-inverse);
+}
+
+/* ---------- Change chip: always an arrow and a sign, never colour alone ---------- */
+.adm-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font: 700 13px/18px var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.adm-delta[data-tone="good"] {
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+.adm-delta[data-tone="bad"] {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+/* ---------- Segmented control ---------- */
+.adm-seg {
+  display: inline-flex;
+  gap: var(--space-1);
+  max-width: 100%;
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.adm-seg__tab {
+  flex: none;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 600 14px/20px var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.adm-seg__tab:hover {
+  color: var(--text-primary);
+}
+.adm-seg__tab[aria-selected="true"] {
+  background: var(--bg-brand);
+  color: var(--text-on-brand);
+}
+.adm-seg__tab:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.adm-seg__tab[aria-selected="true"]:focus-visible {
+  box-shadow: var(--shadow-focus-inverse);
+}
+
+/* ---------- Bar chart ---------- */
+.adm-chartcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.adm-chartcard__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.adm-totals {
+  margin: 0;
+  display: flex;
+  gap: var(--space-8);
+}
+.adm-totals dt {
+  display: flex;
+  align-items: center;
+  font: 500 13px/18px var(--font-body);
+  color: var(--text-secondary);
+}
+.adm-totals dd {
+  margin: 0;
+  font: 700 28px/34px var(--font-body);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.adm-dotkey {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: var(--space-2);
+  border-radius: var(--radius-full);
+}
+.adm-dotkey[data-series="current"] {
+  background: var(--chart-1);
+}
+.adm-dotkey[data-series="previous"] {
+  background: var(--chart-2);
+}
+.adm-chart__plot {
+  position: relative;
+  height: 280px;
+  margin-left: 44px;
+}
+.adm-chart__grid {
+  position: absolute;
+  inset: 0;
+}
+.adm-chart__tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: var(--stroke-1) dashed var(--chart-grid);
+}
+.adm-chart__tick span {
+  position: absolute;
+  left: -44px;
+  width: 36px;
+  transform: translateY(-50%);
+  text-align: right;
+  font: 500 12px/16px var(--font-body);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.adm-chart__cols {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  gap: 3px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+.adm-chart__cols:focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+.adm-chart__col {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+}
+.adm-chart__col[data-active="true"] {
+  background: var(--bg-brand-soft);
+}
+/* Days still to come are hatched. */
+.adm-chart__col[data-future="true"] {
+  background: repeating-linear-gradient(135deg, var(--border-default) 0 2px, transparent 2px 8px);
+  opacity: 0.55;
+}
+.adm-chart__bar {
+  width: 68%;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: var(--chart-1);
+}
+.adm-chart__marker {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 3px;
+  border-radius: var(--radius-full);
+  background: var(--chart-2);
+  transform: translateY(50%);
+}
+.adm-chart__tip {
+  position: absolute;
+  top: 0;
+  z-index: 3;
+  min-width: 188px;
+  padding: var(--space-3) var(--space-4);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.adm-chart__tip[data-edge="start"] {
+  transform: translateX(-12%);
+}
+.adm-chart__tip[data-edge="end"] {
+  transform: translateX(-88%);
+}
+.adm-chart__tip p {
+  margin: 0;
+}
+.adm-chart__tip-date {
+  margin-bottom: var(--space-2) !important;
+  font: 700 14px/20px var(--font-body);
+}
+.adm-chart__tip-row {
+  display: flex;
+  align-items: center;
+  font: 400 13px/22px var(--font-body);
+  color: var(--text-secondary);
+}
+.adm-chart__tip-row strong {
+  margin-left: auto;
+  padding-left: var(--space-4);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.adm-chart__tip .adm-delta {
+  margin-top: var(--space-2);
+}
+.adm-chart__axis {
+  display: grid;
+  gap: 3px;
+  margin: var(--space-2) 0 0 44px;
+}
+.adm-chart__axis span {
+  text-align: center;
+  font: 500 12px/16px var(--font-body);
+  color: var(--text-tertiary);
+  visibility: hidden;
+}
+.adm-chart__axis span[data-show="true"] {
+  visibility: visible;
+}
+.adm-chart__table {
+  margin-top: var(--space-4);
+}
+.adm-chart__table summary {
+  cursor: pointer;
+  font: 600 14px/20px var(--font-body);
+  color: var(--text-link);
+}
+
+/* ---------- Attention list and activity timeline ---------- */
+.adm-attn {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+.adm-attn__item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: var(--stroke-1) solid var(--border-subtle);
+}
+.adm-attn__icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-brand-soft);
+  color: var(--text-link);
+}
+.adm-attn__text {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.adm-attn__text strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.adm-timeline {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+.adm-timeline__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+}
+.adm-timeline__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 28px;
+  bottom: 0;
+  width: var(--stroke-1);
+  background: var(--border-subtle);
+}
+.adm-timeline__mark {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+.adm-timeline__text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.adm-timeline__time {
+  margin: 0;
+  font: 400 13px/18px var(--font-body);
+  color: var(--text-tertiary);
+}

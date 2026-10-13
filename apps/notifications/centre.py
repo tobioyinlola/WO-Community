@@ -20,6 +20,17 @@ def unread_count(user_id: UUID) -> int:
     return Notification.objects.filter(user_id=user_id, read_at__isnull=True).count()
 
 
+def count_fingerprint(user_id: UUID) -> str:
+    """Changes whenever the unread count could have changed, for cheap polling of the bell."""
+    stats = Notification.objects.filter(user_id=user_id).aggregate(
+        total=Count("id"),
+        unread=Count("id", filter=Q(read_at__isnull=True)),
+        last=Max("updated_at"),
+    )
+    raw = "|".join(str(part) for part in [user_id, "count", *stats.values()])
+    return f'"{hashlib.sha256(raw.encode()).hexdigest()[:32]}"'
+
+
 def fingerprint(user_id: UUID, *, unread_only: bool, cursor: str, limit: int) -> str:
     """Changes whenever the list a client would see could have changed.
 

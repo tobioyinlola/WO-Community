@@ -54,5 +54,5 @@ export async function signInAdmin(page: Page) {
     if (/\/app/.test(page.url())) break;
   }
   await page.goto("/admin");
-  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
 }

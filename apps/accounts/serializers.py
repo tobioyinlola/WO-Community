@@ -4,6 +4,7 @@ from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from apps.accounts import referrals
 from apps.accounts.models import RefreshTokenFamily, User
 from apps.core.serializers import StrictSerializer
 from apps.core.text import plain
@@ -77,6 +78,30 @@ def _plain_required(value: str) -> str:
     return cleaned
 
 
+class ReferralInputSerializer(StrictSerializer):
+    """How the person heard of us. Every part is optional; a wrong entry never blocks sign up."""
+
+    kind = serializers.ChoiceField(choices=referrals.SOURCES, required=False, allow_blank=True)
+    detail = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=referrals.DETAIL_MAX,
+        help_text="Which platform, event or organisation; or a member's name when they could not "
+        "be found in the search.",
+    )
+    referred_by = serializers.UUIDField(
+        required=False,
+        allow_null=True,
+        help_text="The member who brought them, chosen from the search. Only with source `member`.",
+    )
+    code = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=12,
+        help_text="The code in the referral link they opened, if any.",
+    )
+
+
 class RegisterSerializer(StrictSerializer):
     email = serializers.EmailField(max_length=254)
     password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
@@ -92,6 +117,7 @@ class RegisterSerializer(StrictSerializer):
     profile = SignupProfileSerializer()
     startup = SignupStartupSerializer()
     anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    referral = ReferralInputSerializer(required=False, default=dict)
     invitation_token = serializers.CharField(
         required=False, allow_blank=True, max_length=200, default=""
     )
@@ -123,6 +149,7 @@ class GoogleRegistrationSerializer(StrictSerializer):
     profile = SignupProfileSerializer()
     startup = SignupStartupSerializer()
     anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    referral = ReferralInputSerializer(required=False, default=dict)
     invitation_token = serializers.CharField(
         required=False, allow_blank=True, max_length=200, default=""
     )

@@ -22,6 +22,15 @@ class Post(BaseModel, SoftDeleteModel):
     # The author's country when they posted, so the feed can be filtered by country.
     country = models.CharField(max_length=2, blank=True)
     pinned_at = models.DateTimeField(null=True, blank=True)
+    # The pin lapses on its own at this time; empty means until someone unpins it.
+    pinned_until = models.DateTimeField(null=True, blank=True)
+    # Posted by the team, shown with the team's name instead of the admin's.
+    official = models.BooleanField(default=False)
+    comments_enabled = models.BooleanField(default=True)
+    # Roles allowed to see the post; empty means every member.
+    audience_roles = models.JSONField(default=list, blank=True)
+    # A post written ahead of time stays out of the feed until this moment.
+    scheduled_for = models.DateTimeField(null=True, blank=True)
     featured_at = models.DateTimeField(null=True, blank=True)
     hidden_at = models.DateTimeField(null=True, blank=True)
     edited_at = models.DateTimeField(null=True, blank=True)

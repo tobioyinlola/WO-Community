@@ -304,9 +304,24 @@ def test_a_venture_can_start_from_a_startup_profile(client, member, make_user):
     assert venture.status_code == 201, venture.content
     profile = client.get(f"{BASE}/ventures/{venture.json()['id']}/profile").json()
     fields, meta = profile["fields"], profile["field_meta"]
-    assert fields["name"] == "ZZSTARTUP Pay" and fields["country"] == "NG"
+    assert fields["name"] == "From startup"  # the name typed when starting wins
+    assert fields["country"] == "NG"
     assert fields["sector"] == "fintech" and meta["country"]["source"] == "imported"
     assert profile["team"] == []  # nobody else is on that startup yet
+
+
+def test_importing_into_an_existing_venture_takes_the_startup_name(client, member):
+    from apps.startups.tests.conftest import new_startup_body
+
+    startup = client.post("/api/v1/startups", new_startup_body()).json()["id"]
+    venture = client.post(f"{BASE}/ventures", {"name": "Mine"}, format="json").json()["id"]
+    done = client.post(
+        f"{BASE}/ventures/{venture}/profile/import-startup", {"startup_id": startup}, format="json"
+    )
+    assert done.status_code == 200, done.content
+    assert (
+        client.get(f"{BASE}/ventures/{venture}/profile").json()["fields"]["name"] == "ZZSTARTUP Pay"
+    )
 
 
 def test_only_your_own_startup_can_be_imported(client, other_client, make_user):

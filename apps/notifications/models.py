@@ -109,3 +109,83 @@ class Notification(BaseModel):
             models.Index(fields=["user", "read_at", "-created_at"], name="notification_unread_idx"),
             models.Index(fields=["user", "-created_at", "-id"], name="notification_list_idx"),
         ]
+
+
+class EmailTemplate(BaseModel):
+    """An edited wording for one email template. No row means the built-in wording is used.
+
+    Only the words are stored; the layout, the brand and the variables are code
+    (see ``apps.notifications.mailtemplates``).
+    """
+
+    key = models.CharField(max_length=40, unique=True)
+    subject = models.CharField(max_length=200)
+    preheader = models.CharField(max_length=200, blank=True)
+    body = models.TextField()
+    version = models.PositiveIntegerField(default=1)
+    updated_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+
+class EmailTemplateVersion(BaseModel):
+    """Every wording a template has had, so an earlier one can be put back."""
+
+    template_key = models.CharField(max_length=40)
+    version = models.PositiveIntegerField()
+    subject = models.CharField(max_length=200)
+    preheader = models.CharField(max_length=200, blank=True)
+    body = models.TextField()
+    saved_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    note = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["template_key", "version"], name="email_template_version_unique"
+            )
+        ]
+        ordering = ["-version"]
+
+
+class AdminAlert(BaseModel):
+    """One item that needs an admin's approval. The key is unique, so raising it twice is safe."""
+
+    kind = models.CharField(max_length=30)
+    item_key = models.CharField(max_length=120, unique=True)
+    what = models.CharField(max_length=200)
+    who = models.CharField(max_length=200, blank=True)
+    path = models.CharField(max_length=300)
+    in_app = models.BooleanField(default=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["kind", "created_at"], name="admin_alert_kind_idx")]
+
+
+class AdminAlertCursor(BaseModel):
+    """What one admin has been told about for one kind, and when, for the 15 minute rule."""
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="+")
+    kind = models.CharField(max_length=30)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    covered_until = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "kind"], name="admin_alert_cursor_unique")
+        ]
+
+
+class AdminAlertPreference(BaseModel):
+    """An admin's choice to stop (or resume) approval emails of one kind."""
+
+    user = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="+")
+    kind = models.CharField(max_length=30)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "kind"], name="admin_alert_pref_unique")
+        ]

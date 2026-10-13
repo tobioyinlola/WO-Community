@@ -21,7 +21,7 @@ from apps.startups.models import Startup, StartupMember, TractionMetric
 from apps.uploads import services as uploads
 
 BASIC_FIELDS = ("name", "pitch", "country", "city", "year_founded")
-TEXT_FIELDS = ("description", "website_url")
+TEXT_FIELDS = ("description", "website_url", "pitch_deck_url")
 
 
 def _new_slug(name: str) -> str:

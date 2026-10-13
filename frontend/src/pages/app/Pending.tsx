@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
-import { Alert } from "../../components";
+import { Alert, Button } from "../../components";
+import { useSupport } from "../../support/SupportProvider";
 import { useDocumentTitle } from "../../ui/blocks";
 
 /** What a member sees until an admin approves them: the status, the next step, nothing else. */
 export function PendingNotice() {
   useDocumentTitle("Application received");
+  const support = useSupport();
   return (
     <div className="wo-container--narrow" style={{ margin: "var(--space-12) auto" }}>
       <div className="wo-page-rule">
@@ -24,6 +26,10 @@ export function PendingNotice() {
         </Link>{" "}
         ready so people know who you are on day one.
       </p>
+      <p className="body app-muted">Questions about your application?</p>
+      <Button variant="secondary" onClick={() => support.open("approval")}>
+        Contact support
+      </Button>
     </div>
   );
 }

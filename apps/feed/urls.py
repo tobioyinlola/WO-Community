@@ -19,6 +19,7 @@ urlpatterns = [
         views.FollowSuggestionsView.as_view(),
         name="feed-follow-suggestions",
     ),
+    path("feed/activity", views.ActivityView.as_view(), name="feed-activity"),
     path("posts", views.FeedView.as_view(), name="feed"),
     path("posts/<uuid:post_id>", views.PostView.as_view(), name="feed-post"),
     path("posts/<uuid:post_id>/comments", views.PostCommentsView.as_view(), name="feed-comments"),

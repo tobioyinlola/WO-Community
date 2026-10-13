@@ -79,20 +79,49 @@ def _lock(item_id: UUID) -> EditorialItem:
 # --- writing stories ---
 
 
-def _check_banner(item: EditorialItem) -> None:
-    start, end = item.banner_starts_at, item.banner_ends_at
-    if start is None and end is None:
+BANNER_KINDS = ("announcement", "news", "urgent")
+BANNER_TEXT_MAX = 140
+
+
+def _check_banner(item: EditorialItem, *, fresh: bool = True) -> None:
+    """A banner needs a text, a place to go (optional), a start and an end after it.
+
+    ``fresh`` is true when the banner settings were just set, in which case the end must lie
+    ahead; an old banner that has run its course can still be left alone while the story is edited.
+    """
+    if not item.show_banner:
         return
-    if item.type != "announcement":
-        raise _invalid("banner_ends_at", "Only announcements can be pinned as a banner.")
+    start, end = item.banner_starts_at, item.banner_ends_at
+    if item.type not in ("news", "announcement"):
+        raise _invalid("show_banner", "Only news and announcements can be shown as a banner.")
+    if item.banner_kind not in BANNER_KINDS:
+        raise _invalid("banner_kind", "Choose announcement, news or urgent.")
+    if len(item.banner_text) > BANNER_TEXT_MAX:
+        raise _invalid("banner_text", f"Keep the banner text under {BANNER_TEXT_MAX} characters.")
+    if start is None:
+        raise _invalid("banner_starts_at", "Say when the banner starts.")
     if end is None:
         raise _invalid("banner_ends_at", "Say when the banner ends.")
-    if start is not None and end <= start:
+    if end <= start:
         raise _invalid("banner_ends_at", "The banner must end after it starts.")
-    if end <= timezone.now():
+    if fresh and end <= timezone.now():
         raise _invalid("banner_ends_at", "The banner must end in the future.")
-    if end - (start or timezone.now()) > timedelta(days=MAX_BANNER_DAYS):
+    if end - start > timedelta(days=MAX_BANNER_DAYS):
         raise _invalid("banner_ends_at", f"A banner can run for at most {MAX_BANNER_DAYS} days.")
+
+
+def _clean_banner_link(value: str) -> str:
+    value = value.strip()
+    if not value:
+        return ""
+    if value.startswith("/") and not value.startswith("//") and " " not in value:
+        return value[:300]  # a page inside the app
+    try:
+        return clean_url(value)
+    except exceptions.ValidationError as exc:
+        raise _invalid(
+            "banner_link", "Use a page in the app (/jobs) or a full https link."
+        ) from exc
 
 
 def _apply(item: EditorialItem, data: dict[str, Any]) -> None:
@@ -119,9 +148,13 @@ def _apply(item: EditorialItem, data: dict[str, Any]) -> None:
     for field in ("comments_enabled", "public"):
         if field in data:
             setattr(item, field, bool(data[field]))
-    for field in ("banner_starts_at", "banner_ends_at"):
+    for field in ("banner_starts_at", "banner_ends_at", "show_banner", "banner_kind"):
         if field in data:
             setattr(item, field, data[field])
+    if "banner_text" in data:
+        item.banner_text = plain(data["banner_text"])
+    if "banner_link" in data:
+        item.banner_link = _clean_banner_link(data["banner_link"])
 
 
 def _link_startups(item: EditorialItem, startup_ids: list[UUID]) -> None:
@@ -165,7 +198,10 @@ def update_item(
         item = _lock(item_id)
         etag.assert_matches(if_match, item)
         _apply(item, data)
-        _check_banner(item)
+        banner_touched = any(
+            k in data for k in ("show_banner", "banner_starts_at", "banner_ends_at", "banner_kind")
+        )
+        _check_banner(item, fresh=banner_touched)
         item.edited_at = timezone.now()
         item.save()
         if "startup_ids" in data:
@@ -540,3 +576,35 @@ def _draft_from_win(actor: Any, win: WinSubmission) -> EditorialItem:
     if win.startup_id:
         ItemStartup.objects.create(item=item, startup_id=win.startup_id, position=0)
     return item
+
+
+def end_banner(*, actor: Any, item_id: UUID, ip: str = "") -> EditorialItem:
+    """Stop showing the banner now. The story itself stays published."""
+    with transaction.atomic():
+        item = _lock(item_id)
+        if not item.show_banner:
+            raise Conflict("This item is not shown as a banner.")
+        now = timezone.now()
+        if item.banner_starts_at is not None and item.banner_starts_at > now:
+            item.show_banner = False  # it never started: just switch it off
+        else:
+            item.banner_ends_at = now
+        item.save(update_fields=["show_banner", "banner_ends_at", "updated_at"])
+        audit.record(
+            actor=actor,
+            action="editorial.banner_ended",
+            target_type="editorial",
+            target_id=item.pk,
+            target_label=item.title,
+            ip=ip,
+        )
+        return item
+
+
+def dismiss_banner(*, user_id: UUID, item_id: UUID) -> None:
+    """Close a banner for this member for good. Closing it twice does nothing."""
+    from apps.editorial.models import BannerDismissal
+
+    if not EditorialItem.objects.filter(pk=item_id, show_banner=True).exists():
+        raise NotFound()
+    BannerDismissal.objects.get_or_create(user_id=user_id, item_id=item_id)

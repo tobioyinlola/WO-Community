@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.mentorship import calendar_views, session_views, views
+from apps.mentorship import calendar_views, session_views, setup_views, views
 
 urlpatterns = [
     path("mentor-applications", views.MentorApplicationsView.as_view(), name="mentor-applications"),
@@ -17,6 +17,28 @@ urlpatterns = [
     path("me/mentoring", views.MyMentoringView.as_view(), name="my-mentoring"),
     path("me/mentor-profile", views.MyMentorProfileView.as_view(), name="my-mentor-profile"),
     path("me/availability", views.MyAvailabilityView.as_view(), name="my-availability"),
+    path(
+        "me/mentor/settings", setup_views.MyMentorSettingsView.as_view(), name="my-mentor-settings"
+    ),
+    path(
+        "me/mentor/availability",
+        setup_views.MyMentorAvailabilityView.as_view(),
+        name="my-mentor-availability",
+    ),
+    path(
+        "me/mentor/exceptions",
+        setup_views.MyMentorExceptionsView.as_view(),
+        name="my-mentor-exceptions",
+    ),
+    path(
+        "me/mentor/exceptions/<uuid:item_id>",
+        setup_views.MyMentorExceptionView.as_view(),
+        name="my-mentor-exception",
+    ),
+    path("me/mentor/preview", setup_views.MyMentorPreviewView.as_view(), name="my-mentor-preview"),
+    path(
+        "mentors/<uuid:user_id>/slots", setup_views.MentorSlotsView.as_view(), name="mentor-slots"
+    ),
     path("me/mentorship-needs", views.MyNeedsView.as_view(), name="my-mentorship-needs"),
     path("me/calendar", calendar_views.MyCalendarView.as_view(), name="my-calendar"),
     path(

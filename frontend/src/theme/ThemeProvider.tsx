@@ -25,30 +25,18 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readChoice(): ThemeChoice {
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === "light" || saved === "dark") return saved;
+    // Light only for now: a dark choice saved earlier is ignored and cleared.
+    window.localStorage.removeItem(STORAGE_KEY);
   } catch {
     // Storage can be blocked; fall back to the system setting.
   }
-  return "system";
-}
-
-function systemTheme(): ResolvedTheme {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [choice, setChoiceState] = useState<ThemeChoice>(readChoice);
-  const [system, setSystem] = useState<ResolvedTheme>(systemTheme);
 
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setSystem(query.matches ? "dark" : "light");
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-
-  const theme: ResolvedTheme = choice === "system" ? system : choice;
+  const theme: ResolvedTheme = "light";
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);

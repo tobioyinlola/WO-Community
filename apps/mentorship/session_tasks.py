@@ -48,7 +48,11 @@ def notify_session_requested(event_id: str) -> None:
     notify.notify(
         session.mentor_id,
         "session_requested",
-        {"session_id": str(session.pk), "actor_id": str(session.mentee_id)},
+        {
+            "session_id": str(session.pk),
+            "actor_id": str(session.mentee_id),
+            "payment": session.payment_mode,
+        },
         dedupe_key=f"{event_id}:requested",
     )
 
@@ -61,7 +65,11 @@ def notify_session_confirmed(event_id: str) -> None:
     notify.notify(
         session.mentee_id,
         "session_confirmed",
-        {"session_id": str(session.pk), "actor_id": str(session.mentor_id)},
+        {
+            "session_id": str(session.pk),
+            "actor_id": str(session.mentor_id),
+            "payment": session.payment_mode,
+        },
         dedupe_key=f"{event_id}:confirmed",
     )
 

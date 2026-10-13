@@ -49,6 +49,20 @@ def notify_review(event_id: str) -> None:
         )
 
 
+@shared_task(name="jobs.notify_changed")
+def notify_changed(event_id: str) -> None:
+    data = _payload(event_id)
+    job = Job.objects.filter(pk=data["job_id"]).first() if data else None
+    if data is None or job is None:
+        return
+    notify.notify(
+        job.poster_id,
+        "job_changed",
+        {"job_id": str(job.pk), "title": job.title, "what": data["what"], "reason": data["note"]},
+        dedupe_key=f"{event_id}:changed",
+    )
+
+
 @shared_task(name="jobs.notify_expiring")
 def notify_expiring(event_id: str) -> None:
     data = _payload(event_id)

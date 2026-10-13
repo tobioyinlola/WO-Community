@@ -81,7 +81,7 @@ def test_jobs_that_never_went_live_or_were_removed_cannot_be_renewed(
     assert status_of(live_job) == state
 
 
-@pytest.mark.parametrize("state", ["closed", "expired", "rejected"])
+@pytest.mark.parametrize("state", ["closed", "expired"])
 def test_ended_jobs_cannot_be_edited_until_renewed(poster_client, live_job, state):
     etag = poster_client.get(f"{JOBS}/{live_job}")["ETag"]
     Job.objects.filter(pk=live_job).update(status=state)

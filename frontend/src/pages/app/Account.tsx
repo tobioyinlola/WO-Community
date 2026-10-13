@@ -1,3 +1,4 @@
+import { ReferralCard } from "../../referrals/ReferralCard";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -93,6 +94,10 @@ export default function ProfilePage() {
                   {tagged.data.completeness?.score ?? 0}% complete{tagged.data.completeness?.next_missing_field ? `. Next: add your ${humanise(tagged.data.completeness.next_missing_field).toLowerCase()}.` : "."}
                 </p>
               </Card>
+              <Card>
+                <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Your referrals</h2>
+                <ReferralCard />
+              </Card>
               <MyStartups />
             </aside>
           </div>
@@ -127,16 +132,16 @@ export function StartupForm() {
   const sectors = useSectors();
   const stages = useStages();
   const existing = useQuery({ queryKey: ["startups", id, "tagged"], enabled: editing, queryFn: () => unwrapTagged(api.GET("/api/v1/startups/{startup_id}", { params: { path: { startup_id: id ?? "" } } })) });
-  const [f, setF] = useState({ name: "", pitch: "", country: "", city: "", sector: "", stage: "", description: "", website_url: "", directory_opt_in: false });
+  const [f, setF] = useState({ name: "", pitch: "", country: "", city: "", sector: "", stage: "", description: "", website_url: "", pitch_deck_url: "", directory_opt_in: false });
   const [etag, setEtag] = useState("");
   useEffect(() => {
     const s = existing.data?.data;
     if (!s) return;
     setEtag(existing.data?.etag ?? "");
-    setF({ name: s.name ?? "", pitch: s.pitch ?? "", country: s.country ?? "", city: s.city ?? "", sector: s.sector?.slug ?? "", stage: s.stage?.slug ?? "", description: s.description ?? "", website_url: s.website_url ?? "", directory_opt_in: Boolean(s.directory_opt_in) });
+    setF({ name: s.name ?? "", pitch: s.pitch ?? "", country: s.country ?? "", city: s.city ?? "", sector: s.sector?.slug ?? "", stage: s.stage?.slug ?? "", description: s.description ?? "", website_url: s.website_url ?? "", pitch_deck_url: s.pitch_deck_url ?? "", directory_opt_in: Boolean(s.directory_opt_in) });
   }, [existing.data]);
   const save = useSubmit(async () => {
-    const body = { name: f.name.trim(), pitch: f.pitch.trim(), country: f.country, city: f.city.trim(), sector: f.sector, stage: f.stage, description: f.description.trim(), website_url: f.website_url.trim() };
+    const body = { name: f.name.trim(), pitch: f.pitch.trim(), country: f.country, city: f.city.trim(), sector: f.sector, stage: f.stage, description: f.description.trim(), website_url: f.website_url.trim(), pitch_deck_url: f.pitch_deck_url.trim() };
     const result = editing
       ? await unwrap(api.PATCH("/api/v1/startups/{startup_id}", { params: { path: { startup_id: id ?? "" }, header: { "If-Match": etag } }, body: { ...body, directory_opt_in: f.directory_opt_in } }))
       : await unwrap(api.POST("/api/v1/startups", { body }));
@@ -161,6 +166,7 @@ export function StartupForm() {
         </div>
         <Textarea label="More detail (optional)" rows={5} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} error={errors.description} />
         <Input label="Website (optional)" value={f.website_url} onChange={(e) => setF({ ...f, website_url: e.target.value })} error={errors.website_url} />
+        <Input label="Pitch deck link (optional)" hint="A link to your deck, for example on Google Drive, DocSend or Pitch." value={f.pitch_deck_url} onChange={(e) => setF({ ...f, pitch_deck_url: e.target.value })} error={errors.pitch_deck_url} />
         {editing ? <Switch label="Show this startup in the public directory" checked={f.directory_opt_in} onChange={(e) => setF({ ...f, directory_opt_in: e.target.checked })} /> : null}
         <div className="app-cluster">
           <Button size="lg" type="submit" loading={save.busy}>{editing ? "Save" : "Add startup"}</Button>

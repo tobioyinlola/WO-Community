@@ -10,6 +10,7 @@ from apps.adminconsole.views import _actor, _ip
 from apps.core import etag, policies
 from apps.core.pagination import AdminLimitOffsetPagination
 from apps.learning import authoring, learn, selectors
+from apps.learning.lms_serializers import PublishRequestSerializer
 from apps.learning.models import Course, Lesson, Module
 from apps.learning.serializers import (
     AdminCourseSerializer,
@@ -140,10 +141,12 @@ class CourseActionView(APIView):
 
     @extend_schema(
         summary="Publish, unpublish or duplicate a course",
-        description="Publishing needs at least one lesson. Unpublishing hides the course from the "
+        description="Publishing needs a title, description, category, thumbnail, a section with "
+        "three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open "
+        "it by link only. Unpublishing hides the course from the "
         "catalogue; people already enrolled keep their access and progress. Duplicating makes a "
         "draft copy of the modules and lessons (not enrolments, ratings or the cover).",
-        request=None,
+        request=PublishRequestSerializer,
         responses={
             200: AdminCourseSerializer,
             201: AdminCourseSerializer,
@@ -156,8 +159,17 @@ class CourseActionView(APIView):
         actor, ip = _actor(request), _ip(request)
         if self.action == "duplicate":
             return _one(authoring.duplicate(actor=actor, course_id=course_id, ip=ip), 201)
-        call = authoring.publish if self.action == "publish" else authoring.unpublish
-        return _one(call(actor=actor, course_id=course_id, ip=ip))
+        if self.action == "publish":
+            options = PublishRequestSerializer(data=request.data or {})
+            options.is_valid(raise_exception=True)
+            published = authoring.publish(
+                actor=actor,
+                course_id=course_id,
+                unlisted=options.validated_data["unlisted"],
+                ip=ip,
+            )
+            return _one(published)
+        return _one(authoring.unpublish(actor=actor, course_id=course_id, ip=ip))
 
 
 def action_view(action: str) -> type[CourseActionView]:
@@ -279,6 +291,8 @@ def _lesson_body(lesson: Lesson) -> dict[str, object]:
             "title": lesson.title,
             "position": lesson.position,
             "duration_seconds": lesson.duration_seconds,
+            "description": lesson.description,
+            "is_preview": lesson.is_preview,
             "video_url": lesson.video_url,
             "video_id": lesson.video_id,
             "body": lesson.body,

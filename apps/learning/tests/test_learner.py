@@ -83,7 +83,12 @@ def test_the_catalogue_filters_and_pages(editor, learner_client):
 def test_a_paid_course_shows_its_price_in_minor_units(editor, learner_client):
     build_course(editor, access="paid", price_minor=1250000, currency="ngn")
     [item] = learner_client.get(COURSES).json()["results"]
-    assert item["price"] == {"amount_minor": 1250000, "currency": "NGN"}
+    assert item["price"] == {
+        "amount_minor": 1250000,
+        "currency": "NGN",
+        "original_minor": None,
+        "promo_ends_at": None,
+    }
 
 
 @pytest.mark.parametrize(
@@ -400,6 +405,10 @@ def test_enrolled_members_can_rate_and_change_their_rating(course, learner_clien
     )
     enrol(learner_client, course)
     enrol(other_client, course)
+    # A review comes after a quarter of the course: one lecture of three is enough.
+    first = course.lessons.order_by("module__position", "position").first()
+    for client in (learner_client, other_client):
+        progress(client, first.pk, completed=True)
     learner_client.put(
         url(course, "/rating"), {"stars": 5, "feedback": "Great <b>course</b>"}, format="json"
     )

@@ -26,6 +26,9 @@ class AuditLog(models.Model):
     reason = models.TextField(blank=True)
     ip_hash = models.CharField(max_length=64, blank=True)
     user_agent_hash = models.CharField(max_length=64, blank=True)
+    outcome = models.CharField(max_length=10, default="success")
+    request_id = models.CharField(max_length=64, blank=True)
+    target_label = models.CharField(max_length=200, blank=True)
     prev_hash = models.CharField(max_length=64, blank=True)
     hash = models.CharField(max_length=64)
 

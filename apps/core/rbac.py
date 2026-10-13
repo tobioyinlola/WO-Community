@@ -38,10 +38,14 @@ _COMMUNITY_ADMIN = _EDITOR | {
     "reports.handle",
     "feed.moderate",
     "dashboard.view",
+    "support.manage",
+    "email.templates.manage",
+    "email.health",
 }
 _SUPER_ADMIN = _COMMUNITY_ADMIN | {
     "roles.manage",
     "audit.read",
+    "email.suppression.manage",
     "settings.manage",
     "toolkit.settings",
 }

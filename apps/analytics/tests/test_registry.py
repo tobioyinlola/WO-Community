@@ -40,6 +40,11 @@ REQUIRED_EVENTS = {
         "course_completed",
         "course_checkout_started",
         "course_purchased",
+        "course_published",
+        "certificate_issued",
+        "certificate_downloaded",
+        "certificate_revoked",
+        "certificate_reissued",
     ],
     "mentorship": [
         "mentor_application_submitted",
@@ -71,6 +76,8 @@ REQUIRED_EVENTS = {
         "invitation_registered",
         "report_actioned",
     ],
+    "Referrals": ["referral_captured"],
+    "Support": ["support_ticket_created", "support_ticket_resolved"],
 }
 
 # Only things the browser alone can see may be reported by the browser.

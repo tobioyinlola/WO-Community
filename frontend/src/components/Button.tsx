@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cx } from "../lib/cx";
 
 export type ButtonVariant =
@@ -34,20 +34,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * The capsule button. Use `primary` once per view; `accent` and `white` belong on forest bands
  * (`bg-brand`, `bg-inverse`) only.
  */
-export function Button({
-  variant = "primary",
-  size = "md",
-  loading = false,
-  icon,
-  className,
-  children,
-  disabled,
-  type = "button",
-  ...rest
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant = "primary", size = "md", loading = false, icon, className, children, disabled, type = "button", ...rest },
+  ref,
+) {
   return (
     <button
       {...rest}
+      ref={ref}
       type={type}
       disabled={disabled}
       aria-busy={loading || undefined}
@@ -64,4 +58,4 @@ export function Button({
       {children}
     </button>
   );
-}
+});

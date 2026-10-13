@@ -43,11 +43,13 @@ dependencies = [
   "python-pptx==1.0.2",
   "openpyxl==3.1.5",
   "reportlab==5.0.1",
+  "dnspython==2.8.0",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest==9.0.3",
+  "pypdf==6.20.1",
   "pytest-django==4.11.1",
   "factory-boy==3.3.3",
   "ruff==0.13.3",
@@ -91,7 +93,7 @@ warn_unused_ignores = true
 exclude = ["migrations/", "/tests/"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*", "reportlab.*", "openpyxl.*", "pptx.*", "docx.*", "jsonschema.*"]
+module = ["celery.*", "kombu.*", "environ", "boto3.*", "botocore.*", "reportlab.*", "pypdf.*", "dns.*", "openpyxl.*", "pptx.*", "docx.*", "jsonschema.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

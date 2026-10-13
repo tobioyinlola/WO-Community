@@ -24,3 +24,13 @@ class JobReviewed(DomainEvent):
 class JobExpiring(DomainEvent):
     topic: ClassVar[str] = "jobs.expiring"
     job_id: str
+
+
+@dataclass(frozen=True)
+class JobStatusChanged(DomainEvent):
+    """An admin closed, removed or reopened a job, so the poster is told."""
+
+    topic: ClassVar[str] = "jobs.status_changed"
+    job_id: str
+    what: str  # closed, removed or reopened
+    note: str

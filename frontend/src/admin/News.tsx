@@ -11,6 +11,7 @@ import { errorsFrom, FormError, useSubmit } from "../ui/forms";
 import { useToast } from "../ui/Toast";
 import { ConfirmDialog } from "./dialogs";
 import { useStepUp } from "./StepUp";
+import { TickerView } from "../ui/BannerTicker";
 import { useOffsetList } from "./useOffsetList";
 
 type Item = components["schemas"]["AdminItem"];
@@ -30,9 +31,14 @@ interface Draft {
   public: boolean;
   banner_starts_at: string;
   banner_ends_at: string;
+  show_banner: boolean;
+  banner_text: string;
+  banner_kind: "announcement" | "news" | "urgent";
+  banner_link: string;
 }
 
-const blank: Draft = { type: "news", title: "", body: "", external_url: "", comments_enabled: true, public: false, banner_starts_at: "", banner_ends_at: "" };
+const blank: Draft = { type: "news", title: "", body: "", external_url: "", comments_enabled: true, public: false, banner_starts_at: "", banner_ends_at: "", show_banner: false, banner_text: "", banner_kind: "announcement", banner_link: "" };
+const BANNER_STATE: Record<string, string> = { scheduled: "Banner scheduled", live: "Banner live", expired: "Banner ended" };
 
 function toDraft(item: Item): Draft {
   return {
@@ -44,6 +50,10 @@ function toDraft(item: Item): Draft {
     public: item.public,
     banner_starts_at: item.banner_starts_at ? toLocalInput(item.banner_starts_at, ZONE) : "",
     banner_ends_at: item.banner_ends_at ? toLocalInput(item.banner_ends_at, ZONE) : "",
+    show_banner: item.show_banner,
+    banner_text: item.banner_text,
+    banner_kind: item.banner_kind as Draft["banner_kind"],
+    banner_link: item.banner_link,
   };
 }
 
@@ -74,6 +84,10 @@ function Editor({ id, onClose, onSaved }: { id: string | null; onClose: () => vo
       public: draft.public,
       banner_starts_at: draft.banner_starts_at ? fromLocalInput(draft.banner_starts_at, ZONE) : null,
       banner_ends_at: draft.banner_ends_at ? fromLocalInput(draft.banner_ends_at, ZONE) : null,
+      show_banner: draft.show_banner,
+      banner_text: draft.banner_text.trim(),
+      banner_kind: draft.banner_kind,
+      banner_link: draft.banner_link.trim(),
     };
     await guard(() =>
       id
@@ -107,10 +121,23 @@ function Editor({ id, onClose, onSaved }: { id: string | null; onClose: () => vo
         <Input label="Link to read more (optional)" value={draft.external_url} onChange={(e) => set("external_url", e.target.value)} error={errors.external_url} />
         <Checkbox label="Members can comment" checked={draft.comments_enabled} onChange={(e) => set("comments_enabled", e.target.checked)} />
         <Checkbox label="Show on the public site" checked={draft.public} onChange={(e) => set("public", e.target.checked)} />
-        <div className="app-formgrid">
-          <Input label="Banner starts (Lagos time)" type="datetime-local" value={draft.banner_starts_at} onChange={(e) => set("banner_starts_at", e.target.value)} error={errors.banner_starts_at} />
-          <Input label="Banner ends (Lagos time)" type="datetime-local" value={draft.banner_ends_at} onChange={(e) => set("banner_ends_at", e.target.value)} error={errors.banner_ends_at} />
-        </div>
+        <Checkbox label="Show in the dashboard banner" checked={draft.show_banner} onChange={(e) => set("show_banner", e.target.checked)} />
+        {draft.show_banner ? (
+          <fieldset className="app-stack" style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend className="wo-label">Banner</legend>
+            <Input label="Banner text" hint={`${draft.banner_text.length} of 140. Leave empty to use the title.`} maxLength={140} placeholder={draft.title} value={draft.banner_text} onChange={(e) => set("banner_text", e.target.value)} error={errors.banner_text} />
+            <Input label="Link (optional)" hint="A page in the app, such as /jobs, or a full https address. Empty opens this story." value={draft.banner_link} onChange={(e) => set("banner_link", e.target.value)} error={errors.banner_link} />
+            <Select label="Type" options={[{ value: "announcement", label: "Announcement" }, { value: "news", label: "News" }, { value: "urgent", label: "Urgent" }]} value={draft.banner_kind} onChange={(e) => set("banner_kind", e.target.value as Draft["banner_kind"])} error={errors.banner_kind} />
+            <div className="app-formgrid">
+              <Input label="Starts (Lagos time)" type="datetime-local" value={draft.banner_starts_at} onChange={(e) => set("banner_starts_at", e.target.value)} error={errors.banner_starts_at} />
+              <Input label="Ends (Lagos time)" type="datetime-local" value={draft.banner_ends_at} onChange={(e) => set("banner_ends_at", e.target.value)} error={errors.banner_ends_at} />
+            </div>
+            <div>
+              <p className="wo-label" style={{ margin: "0 0 var(--space-2)" }}>Preview</p>
+              <TickerView preview items={[{ id: "preview", kind: draft.banner_kind, text: draft.banner_text.trim() || draft.title || "Your banner text", link: draft.banner_link || "/news" }]} />
+            </div>
+          </fieldset>
+        ) : null}
       </div>
       ) : null}
     </Modal>
@@ -162,6 +189,12 @@ export default function News() {
     await refresh();
   };
 
+  const endBanner = async (item: Item) => {
+    await guard(() => unwrap(api.POST("/api/v1/admin/editorial/{item_id}/end-banner", { params: { path: { item_id: item.id } } })));
+    toast.show("The banner has ended");
+    await refresh();
+  };
+
   return (
     <>
       <PageHeader eyebrow="Content" title="News" lead="Stories, announcements and wins shared with the community." actions={<Button onClick={() => setEditing("new")}>New story</Button>} />
@@ -183,6 +216,7 @@ export default function News() {
                       <Badge variant={TONE[i.status] ?? "neutral"} dot>{humanise(i.status)}</Badge>
                       <Badge variant="neutral">{humanise(i.type)}</Badge>
                       {i.public ? <Badge variant="info">Public</Badge> : null}
+                      {i.banner_status !== "off" ? <Badge variant={i.banner_status === "live" ? "success" : "neutral"} dot>{BANNER_STATE[i.banner_status]}</Badge> : null}
                     </div>
                     <span className="caption app-muted">
                       {i.status === "published" && i.published_at ? `Published ${formatDate(i.published_at)}` : i.status === "scheduled" && i.publish_at ? `Goes out ${formatDateTime(i.publish_at)}` : `Edited ${formatDate(i.edited_at ?? i.created_at)}`}
@@ -195,6 +229,7 @@ export default function News() {
                     <Button size="sm" variant="secondary" onClick={() => setEditing(i)}>Edit</Button>
                     {i.status !== "published" ? <Button size="sm" onClick={() => setConfirm({ item: i, action: "publish" })}>Publish now</Button> : null}
                     {i.status === "draft" ? <Button size="sm" variant="secondary" onClick={() => setScheduling(i)}>Schedule</Button> : null}
+                    {i.banner_status === "live" || i.banner_status === "scheduled" ? <Button size="sm" variant="ghost" onClick={() => void endBanner(i)}>End banner now</Button> : null}
                     {i.status !== "draft" ? <Button size="sm" variant="ghost" onClick={() => setConfirm({ item: i, action: "unpublish" })}>{i.status === "scheduled" ? "Cancel schedule" : "Take down"}</Button> : null}
                   </div>
                 </Card>

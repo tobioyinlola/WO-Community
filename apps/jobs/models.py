@@ -41,8 +41,12 @@ class Job(BaseModel):
     description_text = models.TextField()  # the same words without markup
     requirements = models.TextField(blank=True)  # sanitised HTML
     compensation = models.CharField(max_length=120, blank=True)
+    # How to apply, always off the platform: an https link, an email address, or both. Either may
+    # be blank but not both. `apply_method` and `apply_target` hold the first, for older code.
     apply_method = models.CharField(max_length=5)
     apply_target = models.CharField(max_length=300)
+    apply_url = models.CharField(max_length=300, blank=True)
+    apply_email = models.EmailField(max_length=254, blank=True)
     deadline = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     source = models.CharField(max_length=6, choices=Source.choices, default=Source.MEMBER)
@@ -116,7 +120,7 @@ class JobSettings(models.Model):
 
     id = models.PositiveSmallIntegerField(primary_key=True, default=1)
     require_approval = models.BooleanField(default=True)
-    default_duration_days = models.PositiveSmallIntegerField(default=60)
+    default_duration_days = models.PositiveSmallIntegerField(default=30)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

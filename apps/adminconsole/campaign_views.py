@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
-from rest_framework import exceptions, status
+from rest_framework import exceptions, serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -311,6 +311,24 @@ class CampaignReportView(APIView):
     )
     def get(self, request: Request, campaign_id: UUID) -> Response:
         return Response(ReportSerializer(services.report(_campaign(campaign_id))).data)
+
+
+class AudienceSizeSerializer(serializers.Serializer):
+    recipients = serializers.IntegerField(help_text="People it would go to if sent now")
+
+
+class CampaignAudienceView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        summary="How many people a newsletter would reach",
+        description="For the confirm step before sending. People who unsubscribed, bounced or "
+        "complained are already left out.",
+        responses={200: AudienceSizeSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request, campaign_id: UUID) -> Response:
+        return Response({"recipients": services.audience_size(campaign_id)})
 
 
 class CampaignActionView(APIView):

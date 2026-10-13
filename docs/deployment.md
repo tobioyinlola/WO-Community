@@ -94,3 +94,21 @@ Set `CDN_PURGER=apps.integrations.cdn.cloudflare.CloudflarePurger`, `CLOUDFLARE_
 Purge on the one zone only), `CLOUDFLARE_ZONE_ID` and `CDN_ORIGIN_URL` (the public host behind
 Cloudflare). See ADR 0046. Authenticated routes and share links send `private, no-store` and must
 not be cached by a rule.
+
+## Content security policy for the web app (YouTube lectures)
+
+The API sends the strictest policy because it never renders HTML (`apps/core/middleware.py`). The web
+app is static files, so its policy is set where those files are served (the CDN or the web server), and it
+must allow the lecture player:
+
+| Directive | Value to add | Why |
+|---|---|---|
+| `script-src` | `https://www.youtube.com` | the player script (`iframe_api`), loaded only when a lecture is opened |
+| `frame-src` | `https://www.youtube-nocookie.com` | the embedded video, in privacy enhanced mode |
+| `connect-src` | none extra | the browser never calls YouTube's API; titles are looked up by the server |
+
+Nothing else from YouTube is loaded. Course thumbnails are our own uploads, so `img-src` needs no YouTube
+host. The server looks up a video's title through `YOUTUBE_TITLE_LOOKUP` (oEmbed) when an admin adds
+lectures; point it at your own function to change how titles are fetched. Paid course videos stay on
+YouTube as unlisted videos (see ADR 0034), so the lecture page is the place that checks entitlement.
+

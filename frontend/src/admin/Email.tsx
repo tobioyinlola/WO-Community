@@ -122,6 +122,17 @@ function SchedulePrompt({ campaign, onClose, onDone }: { campaign: Campaign; onC
 
 type Act = "send" | "unschedule" | "pause" | "resume" | "cancel" | "delete";
 
+/** The line in the send confirmation that says how many people it will reach. */
+function AudienceCount({ campaignId }: { campaignId: string }) {
+  const size = useQuery({
+    queryKey: ["admin", "campaigns", campaignId, "audience"],
+    queryFn: () => unwrap(api.GET("/api/v1/admin/campaigns/{campaign_id}/audience", { params: { path: { campaign_id: campaignId } } })),
+  });
+  if (size.isPending) return <strong role="status">Counting who it will reach…</strong>;
+  if (size.isError) return <strong role="status">We could not count the audience.</strong>;
+  return <strong role="status">It will go to {size.data.recipients.toLocaleString("en-NG")} {size.data.recipients === 1 ? "person" : "people"}.</strong>;
+}
+
 function Newsletters() {
   const client = useQueryClient();
   const toast = useToast();
@@ -203,7 +214,7 @@ function Newsletters() {
       {editing ? <CampaignEditor id={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={refresh} /> : null}
       {scheduling ? <SchedulePrompt campaign={scheduling} onClose={() => setScheduling(null)} onDone={refresh} /> : null}
       {reporting ? <Report campaign={reporting} onClose={() => setReporting(null)} /> : null}
-      {confirm ? <ConfirmDialog title={COPY[confirm.action].title} body={COPY[confirm.action].body} confirmLabel={COPY[confirm.action].label} tone={COPY[confirm.action].tone} onConfirm={() => run(confirm.campaign, confirm.action)} onClose={() => setConfirm(null)} /> : null}
+      {confirm ? <ConfirmDialog title={COPY[confirm.action].title} body={<>{COPY[confirm.action].body}{confirm.action === "send" ? <> <AudienceCount campaignId={confirm.campaign.id} /></> : null}</>} confirmLabel={COPY[confirm.action].label} tone={COPY[confirm.action].tone} onConfirm={() => run(confirm.campaign, confirm.action)} onClose={() => setConfirm(null)} /> : null}
     </>
   );
 }

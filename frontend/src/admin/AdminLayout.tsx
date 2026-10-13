@@ -1,164 +1,138 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Briefcase,
-  CalendarDays,
-  GraduationCap,
-  Newspaper,
-  Flag,
-  LayoutDashboard,
-  ListChecks,
-  Mail,
-  Menu,
-  ShieldCheck,
-  Trophy,
-  UserCheck,
-  UserPlus,
-  Users,
-  X,
-  type LucideIcon,
-} from "lucide-react";
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { getAccessToken, onTokenChange } from "../api/session";
 import { useAuth } from "../auth/AuthProvider";
-import { Logo } from "../components";
-import { UserMenu } from "../layouts/AppLayout";
+import "../styles/admin.css";
+import "../styles/admin-kit.css";
+import "../styles/admin-table.css";
+import "../styles/admin-ops.css";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { mfaAgeSeconds } from "./claims";
 import MfaSetup from "./MfaSetup";
 import { isAdmin, permissionsFor } from "./permissions";
+import { adminLinks } from "./shell/links";
+import { flatNav, visibleNav } from "./shell/nav";
+import { isTyping, useMediaQuery, usePref } from "./shell/prefs";
+import { Shortcuts } from "./shell/Shortcuts";
+import { Sidebar, type Counts } from "./shell/Sidebar";
+import { TopBar } from "./shell/TopBar";
 import { StepUpProvider } from "./StepUp";
-
-interface Item {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  needs: string;
-  end?: boolean;
-  badge?: "registrations_awaiting_approval" | "open_reports" | "jobs_awaiting_review" | "wins_awaiting_review";
-}
-
-const GROUPS: Array<{ title: string; items: Item[] }> = [
-  { title: "", items: [{ to: "/admin", label: "Overview", icon: LayoutDashboard, needs: "dashboard.view", end: true }] },
-  {
-    title: "People",
-    items: [
-      { to: "/admin/members", label: "Members", icon: Users, needs: "members.view", badge: "registrations_awaiting_approval" },
-      { to: "/admin/invitations", label: "Invitations", icon: UserPlus, needs: "invitations.manage" },
-      { to: "/admin/mentors", label: "Mentor applications", icon: UserCheck, needs: "mentors.decide" },
-    ],
-  },
-  {
-    title: "Moderation",
-    items: [
-      { to: "/admin/reports", label: "Reports", icon: Flag, needs: "reports.handle", badge: "open_reports" },
-      { to: "/admin/jobs", label: "Jobs", icon: Briefcase, needs: "jobs.moderate", badge: "jobs_awaiting_review" },
-      { to: "/admin/wins", label: "Wins", icon: Trophy, needs: "editorial.manage", badge: "wins_awaiting_review" },
-    ],
-  },
-  {
-    title: "Content",
-    items: [
-      { to: "/admin/news", label: "News", icon: Newspaper, needs: "editorial.manage" },
-      { to: "/admin/events", label: "Events", icon: CalendarDays, needs: "events.manage" },
-      { to: "/admin/courses", label: "Courses", icon: GraduationCap, needs: "courses.manage" },
-      { to: "/admin/email", label: "Email", icon: Mail, needs: "campaigns.send" },
-    ],
-  },
-  { title: "Settings", items: [{ to: "/admin/lists", label: "Lists", icon: ListChecks, needs: "reference.manage" }] },
-];
 
 /** The first section a person may open, used when they land on the console. */
 export function firstAllowed(roles: readonly string[]): string {
   const have = permissionsFor(roles);
-  for (const group of GROUPS) for (const item of group.items) if (have.has(item.needs)) return item.to;
-  return "/admin/security";
+  return flatNav(have).find((p) => !p.soon)?.to ?? "/admin/settings";
 }
 
-/** The console frame. Admin accounts must have passed a second step before anything opens. */
+const ROLE_ORDER = ["super_admin", "community_admin", "content_editor"];
+
+function nameFrom(email: string | undefined): string {
+  const local = (email ?? "Admin").split("@")[0] ?? "Admin";
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
+/**
+ * The console frame: a floating sidebar that collapses to a rail, a floating top bar and the page.
+ * Admin accounts must have passed a second step before anything opens.
+ */
 export function AdminLayout() {
   const { me } = useAuth();
   const location = useLocation();
+  const narrow = useMediaQuery("(max-width: 1023px)");
+  const [collapsed, setCollapsed] = usePref("sidebar-collapsed", false);
   const [drawer, setDrawer] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [settingUp, setSettingUp] = useState(false);
   // Re-read the session whenever the token changes (after enrolling or a step up check).
   useSyncExternalStore(onTokenChange as (cb: () => void) => () => void, getAccessToken);
-  const roles = me?.roles ?? [];
-  const have = permissionsFor(roles);
-  const counts = useQuery({
+
+  const roles = useMemo(() => me?.roles ?? [], [me?.roles]);
+  const have = useMemo(() => permissionsFor(roles), [roles]);
+  const links = useMemo(() => adminLinks(have), [have]);
+  const verified = mfaAgeSeconds() !== null;
+  const ready = verified && !settingUp;
+
+  const queues = useQuery({
     queryKey: ["admin", "queues"],
     queryFn: () => unwrap(api.GET("/api/v1/admin/queues")),
-    enabled: isAdmin(roles) && mfaAgeSeconds() !== null && have.has("dashboard.view"),
+    enabled: isAdmin(roles) && verified && have.has("dashboard.view"),
     refetchInterval: 60_000,
   });
-  const [settingUp, setSettingUp] = useState(false);
+  const counts: Counts = queues.data ?? {};
 
-  useEffect(() => setDrawer(false), [location.pathname]);
+  useEffect(() => setDrawer(false), [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key === "[") setCollapsed((c) => !c);
+      else if (event.key === "?") setHelp(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ready, setCollapsed]);
 
   if (!isAdmin(roles)) return <Navigate to="/app" replace />;
-  const verified = mfaAgeSeconds() !== null;
+
+  const topRole = ROLE_ORDER.find((r) => roles.includes(r)) ?? "content_editor";
+  const name = nameFrom(me?.email);
+  const entries = visibleNav(have);
+  const sidebar = (inDrawer: boolean) => (
+    <Sidebar
+      entries={entries}
+      counts={counts}
+      collapsed={inDrawer ? false : collapsed}
+      onToggle={() => (inDrawer ? setDrawer(false) : setCollapsed((c) => !c))}
+      onNavigate={inDrawer ? () => setDrawer(false) : undefined}
+      onHelp={() => setHelp(true)}
+      inDrawer={inDrawer}
+      person={{ id: me?.id, name, role: topRole }}
+    />
+  );
 
   return (
     <StepUpProvider>
-      <div className="app-shell">
-        <aside className="app-side" data-open={drawer} aria-label="Console sections">
-          <Link to="/admin" className="app-side__logo" aria-label="WO Community console, home">
-            <Logo height={40} />
-          </Link>
-          <p className="app-nav__group" style={{ marginTop: 0 }}>Admin console</p>
-          {verified && !settingUp ? (
-            <nav aria-label="Admin">
-              {GROUPS.map((group) => {
-                const items = group.items.filter((i) => have.has(i.needs));
-                if (items.length === 0) return null;
-                return (
-                  <div key={group.title || "top"}>
-                    {group.title ? <p className="app-nav__group">{group.title}</p> : null}
-                    <ul className="app-nav">
-                      {items.map((item) => {
-                        const n = item.badge ? counts.data?.[item.badge] ?? 0 : 0;
-                        return (
-                          <li key={item.to}>
-                            <NavLink to={item.to} end={item.end} className="app-nav__link">
-                              <item.icon size={20} strokeWidth={1.5} aria-hidden="true" />
-                              {item.label}
-                              {n > 0 ? <span className="app-nav__badge" aria-label={`${n} waiting`}>{n}</span> : null}
-                            </NavLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                );
-              })}
-              <p className="app-nav__group">Account</p>
-              <ul className="app-nav">
-                <li>
-                  <NavLink to="/admin/security" className="app-nav__link"><ShieldCheck size={20} strokeWidth={1.5} aria-hidden="true" />Security</NavLink>
-                </li>
-                <li>
-                  <Link to="/app" className="app-nav__link"><ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />Back to the community</Link>
-                </li>
-              </ul>
-            </nav>
-          ) : null}
-        </aside>
-        <div className="app-scrim" data-open={drawer} onClick={() => setDrawer(false)} aria-hidden="true" />
-        <header className="app-head">
-          <button type="button" className="app-iconbtn app-head__menu" aria-label={drawer ? "Close menu" : "Open menu"} aria-expanded={drawer} onClick={() => setDrawer((v) => !v)}>
-            {drawer ? <X size={22} strokeWidth={1.5} /> : <Menu size={22} strokeWidth={1.5} />}
-          </button>
-          <div className="app-head__search" aria-hidden="true" />
-          <div className="app-head__tail"><UserMenu /></div>
-        </header>
-        <main className="app-main" id="main">
-          <div className="app-main__inner">
+      <div className="adm" data-collapsed={ready && !narrow && collapsed} data-narrow={narrow}>
+        <a className="adm-skip" href="#main">Skip to content</a>
+        {ready && !narrow ? (
+          <aside className="adm-side" aria-label="Sidebar">
+            {sidebar(false)}
+          </aside>
+        ) : null}
+        {ready && narrow ? (
+          <Dialog.Root open={drawer} onOpenChange={setDrawer}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="adm-scrim" />
+              <Dialog.Content className="adm-drawer" aria-describedby={undefined}>
+                <Dialog.Title className="wo-visually-hidden">Menu</Dialog.Title>
+                {sidebar(true)}
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+        ) : null}
+        <div className="adm-main">
+          <TopBar
+            limited={!ready}
+            narrow={narrow}
+            onMenu={() => setDrawer(true)}
+            links={links}
+            onHelp={() => setHelp(true)}
+            pending={counts.registrations_awaiting_approval ?? 0}
+            canSeePending={have.has("members.approve") && have.has("dashboard.view")}
+            name={name}
+            role={topRole}
+          />
+          <main className="adm-content" id="main" tabIndex={-1}>
             <ErrorBoundary resetKey={location.pathname}>
-              {verified && !settingUp ? <Outlet /> : <MfaSetup onConfirmed={() => setSettingUp(true)} onDone={() => setSettingUp(false)} />}
+              {ready ? <Outlet /> : <MfaSetup onConfirmed={() => setSettingUp(true)} onDone={() => setSettingUp(false)} />}
             </ErrorBoundary>
-          </div>
-        </main>
+          </main>
+        </div>
+        <Shortcuts open={help} onOpenChange={setHelp} />
       </div>
     </StepUpProvider>
   );

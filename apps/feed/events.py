@@ -50,3 +50,14 @@ class FollowStarted(DomainEvent):
     follower_id: str
     kind: str  # "member" or "startup"
     target_id: str
+
+
+@dataclass(frozen=True)
+class PostModerated(DomainEvent):
+    """The team hid, removed, restored or edited a member's post."""
+
+    topic: ClassVar[str] = "feed.post_moderated"
+    post_id: str
+    author_id: str
+    action: str
+    reason: str

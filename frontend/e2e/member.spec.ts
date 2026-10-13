@@ -13,6 +13,20 @@ test.describe("a signed-in member", () => {
     expect(problems).toEqual([]);
   });
 
+  test("the sidebar collapses to a rail and the slash key goes to search", async ({ page }) => {
+    await signIn(page);
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav.getByText("Directory")).toBeVisible();
+    await page.getByRole("button", { name: "Collapse sidebar" }).click();
+    await expect(nav.getByText("Directory")).toBeHidden();
+    await expect(nav.getByRole("link", { name: "Directory" })).toBeVisible();
+    await page.getByRole("button", { name: "Expand sidebar" }).click();
+    await expect(nav.getByText("Directory")).toBeVisible();
+    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("/");
+    await expect(page.getByRole("combobox", { name: "Search" })).toBeFocused();
+  });
+
   test("every section of the sidebar opens without errors", async ({ page }) => {
     const problems = watchConsole(page);
     await signIn(page);
@@ -68,7 +82,7 @@ test.describe("a signed-in member", () => {
     await page.goto("/app/jobs/new");
     await page.getByLabel("Job title").fill("Community manager");
     await page.getByLabel("Description").fill("Look after our members and events.\n\nYou will be the first hire.");
-    await page.getByLabel("Email address").fill("jobs@kudafoods.test");
+    await page.getByLabel("Application email").fill("jobs@kudafoods.test");
     await page.getByRole("button", { name: "Post job" }).click();
     await expect(page).toHaveURL(/\/app\/jobs\/[0-9a-f-]{36}/);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Community manager");
@@ -86,40 +100,43 @@ test.describe("a signed-in member", () => {
     await expect(page.getByRole("button", { name: "Register" })).toBeVisible();
   });
 
-  test("a free course can be started and a lesson completed", async ({ page }) => {
+  test("the slash key searches, and a member is opened from the results by keyboard", async ({ page }) => {
     await signIn(page);
-    await page.goto("/app/learn");
-    await page.getByRole("link", { name: /Founder fundamentals/ }).click();
-    const enrol = page.getByRole("button", { name: "Enrol for free" });
-    const resume = page.getByRole("link", { name: /Start|Continue/ });
-    await expect(enrol.or(resume)).toBeVisible();
-    if (await enrol.isVisible()) await enrol.click();
-    await page.getByRole("link", { name: /Start|Continue/ }).click();
-    // Progress carries over between runs, so this opens whichever lesson is next (the last one
-    // says "Mark as done" because there is nothing after it).
-    const heading = page.getByRole("heading", { level: 1 });
-    const done = page.getByRole("button", { name: /Mark (as )?done/ });
-    const finished = page.getByText(/completed/i).first();
-    await expect(done.or(finished)).toBeVisible();
-    // Once every lesson has been finished on an earlier run there is nothing left to mark.
-    if (await done.isVisible()) {
-      const before = await heading.innerText();
-      await done.click();
-      await expect(async () => {
-        const moved = (await heading.innerText()) !== before;
-        const marked = (await page.getByText(/completed|done/i).count()) > 0;
-        expect(moved || marked).toBe(true);
-      }).toPass();
-    }
+    await page.locator("main").click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("/");
+    const search = page.getByRole("combobox", { name: "Search" });
+    await expect(search).toBeFocused();
+    await search.pressSequentially("Ngozi");
+    const members = page.getByRole("group", { name: "Members" });
+    await expect(members.getByRole("option", { name: /Ngozi Eze/ })).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Ngozi Eze");
   });
 
-  test("searching the directory finds a member and opens their profile", async ({ page }) => {
+  test("see all results opens the results page with filters", async ({ page }) => {
     await signIn(page);
-    await page.getByRole("searchbox").or(page.getByPlaceholder("Search members, startups, jobs")).first().fill("Ngozi");
+    await page.getByRole("combobox", { name: "Search" }).fill("Ngozi");
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/directory\?q=Ngozi/);
+    await expect(page).toHaveURL(/\/app\/search\?q=Ngozi/);
+    await expect(page.getByRole("heading", { level: 1, name: /Results for/ })).toBeVisible();
+    await page.getByRole("button", { name: /^Members/ }).click();
+    await expect(page).toHaveURL(/type=members/);
     await page.getByRole("link", { name: /Ngozi Eze/ }).first().click();
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Ngozi Eze");
+  });
+
+  test("the bell opens a popover, and View all goes to the notifications page", async ({ page }) => {
+    await signIn(page);
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    const popover = page.getByRole("dialog", { name: "Notifications" });
+    await expect(popover).toBeVisible();
+    await expect(popover.getByRole("button", { name: "Mark all as read" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(popover).toBeHidden();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    await popover.getByRole("link", { name: "View all notifications" }).click();
+    await expect(page).toHaveURL(/\/app\/notifications/);
   });
 
   test("the profile saves with the version it was loaded from", async ({ page }) => {

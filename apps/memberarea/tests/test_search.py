@@ -266,11 +266,15 @@ def test_events_news_and_courses_are_found_by_their_words(make_user, searcher):
         },
     )
     module = authoring.add_module(actor=admin, course_id=course.pk, title="One")
-    authoring.add_lesson(
-        actor=admin,
-        module_id=module.pk,
-        data={"type": "reading", "title": "Intro", "body": "<p>Hello</p>"},
-    )
+    for title in ("Intro", "Basics", "Wrap up"):
+        authoring.add_lesson(
+            actor=admin,
+            module_id=module.pk,
+            data={"type": "reading", "title": title, "body": "<p>Hello</p>"},
+        )
+    from apps.learning.models import Course
+
+    Course.objects.filter(pk=course.pk).update(cover_key="media/course_cover/test")
     authoring.publish(actor=admin, course_id=course.pk)
 
     body = find(searcher, "zanzibar").json()
