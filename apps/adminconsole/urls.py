@@ -13,12 +13,15 @@ from apps.adminconsole import (
     job_views,
     lms_views,
     mentor_views,
+    oversight_views,
     reference_views,
     referral_views,
     search_views,
     support_views,
+    team_views,
     views,
 )
+from apps.jobs import application_views
 
 KINDS = "sectors|stages|skills"
 
@@ -400,6 +403,16 @@ urlpatterns = [
         )
         for decision in WIN_DECISIONS
     ],
+    path(
+        "admin/job-applications",
+        application_views.AdminApplicationsView.as_view(),
+        name="admin-job-applications",
+    ),
+    path(
+        "admin/job-applications/stats",
+        application_views.AdminApplicationStatsView.as_view(),
+        name="admin-job-application-stats",
+    ),
     path("admin/jobs", job_views.AdminJobsView.as_view(), name="admin-jobs"),
     path("admin/jobs/settings", job_views.JobSettingsView.as_view(), name="admin-job-settings"),
     path("admin/jobs/<uuid:job_id>", job_views.AdminJobView.as_view(), name="admin-job"),
@@ -502,6 +515,19 @@ urlpatterns = [
         "admin/invitations/<uuid:invitation_id>/revoke",
         invitation_views.InvitationRevokeView.as_view(),
         name="admin-invitation-revoke",
+    ),
+    path("admin/posts", oversight_views.AdminPostsView.as_view(), name="admin-posts"),
+    path(
+        "admin/posts/stats", oversight_views.AdminFeedStatsView.as_view(), name="admin-posts-stats"
+    ),
+    path("admin/posts/<uuid:post_id>", oversight_views.AdminPostView.as_view(), name="admin-post"),
+    path("admin/matches", oversight_views.AdminMatchesView.as_view(), name="admin-matches"),
+    path("admin/analytics", oversight_views.AdminAnalyticsView.as_view(), name="admin-analytics"),
+    path("admin/roles", team_views.RolesView.as_view(), name="admin-roles"),
+    path(
+        "admin/members/<uuid:user_id>/role",
+        team_views.ChangeRoleView.as_view(),
+        name="admin-member-role",
     ),
     path("admin/queues", views.QueuesView.as_view(), name="admin-queues"),
     path("admin/members", views.MemberListView.as_view(), name="admin-members"),

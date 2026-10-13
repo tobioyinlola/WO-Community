@@ -117,9 +117,15 @@ def test_mentor_is_an_allowed_role(as_admin):
     assert invite(as_admin, role="mentor").json()["role"] == "mentor"
 
 
-@pytest.mark.parametrize("role", ["super_admin", "community_admin", "content_editor", "nonsense"])
-def test_admin_and_unknown_roles_cannot_be_invited(as_admin, role):
+@pytest.mark.parametrize("role", ["super_admin", "community_admin", "content_editor"])
+def test_only_a_super_admin_can_invite_console_roles(as_admin, role):
     response = invite(as_admin, role=role)
+    assert response.status_code == 403
+    assert Invitation.objects.count() == 0
+
+
+def test_unknown_roles_cannot_be_invited(as_admin):
+    response = invite(as_admin, role="nonsense")
     assert response.status_code == 400
     assert "role" in response.json()["errors"]
     assert Invitation.objects.count() == 0

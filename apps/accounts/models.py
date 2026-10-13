@@ -221,7 +221,7 @@ class InvitationStatus(models.TextChoices):
     REVOKED = "revoked"
 
 
-# Roles an invitation may grant. Admin roles are never granted by invitation.
+# Roles any admin may invite. Console roles can be invited too, but only by a super admin.
 INVITABLE_ROLES = (Role.MEMBER.value, Role.MENTOR.value)
 
 

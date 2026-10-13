@@ -98,11 +98,15 @@ def registration_queue_counts() -> dict[str, int]:
 INVITATION_STATUSES = ("sent", "opened", "registered", "revoked", "expired")
 
 
-def list_invitations(*, q: str = "", status: str = "") -> QuerySet[Invitation]:
+def list_invitations(*, q: str = "", status: str = "", role: str = "") -> QuerySet[Invitation]:
     """Invitations newest first. ``expired`` means unused and past its expiry."""
     queryset = Invitation.objects.select_related("invited_by")
     if q:
         queryset = queryset.filter(email__icontains=q)
+    if role == "team":
+        queryset = queryset.filter(role__in=["content_editor", "community_admin", "super_admin"])
+    elif role:
+        queryset = queryset.filter(role=role)
     open_states = ["sent", "opened"]
     now = timezone.now()
     if status == "expired":

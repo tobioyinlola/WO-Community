@@ -27,6 +27,7 @@ from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.errors import ConflictError
+from apps.core.rbac import ADMIN_ROLES, permissions_for
 
 OPEN_STATUSES = (InvitationStatus.SENT, InvitationStatus.OPENED)
 CSV_COLUMNS = {"email", "role", "message"}
@@ -68,7 +69,12 @@ def clean_message(message: str) -> str:
     return cleaned.strip()
 
 
-def _validate_role(role: str) -> str:
+def _validate_role(role: str, actor: User | None = None) -> str:
+    """Members and mentors by any admin; a console role only by a super admin."""
+    if role in {r.value for r in ADMIN_ROLES}:
+        if actor is None or "roles.manage" not in permissions_for(actor.role_names()):
+            raise exceptions.PermissionDenied("Only a super admin can invite a team member.")
+        return role
     if role not in INVITABLE_ROLES:
         allowed = ", ".join(INVITABLE_ROLES)
         raise exceptions.ValidationError({"role": [f"Choose one of: {allowed}."]})
@@ -117,7 +123,7 @@ def create_invitation(
     bulk: bool = False,
 ) -> Invitation:
     address = _validate_email(email)
-    role = _validate_role(role)
+    role = _validate_role(role, actor)
     message = _validate_message(message)
     try:
         with transaction.atomic():

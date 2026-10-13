@@ -108,6 +108,13 @@ class MemberRowSerializer(MemberSerializer):
 class InvitationQuerySerializer(StrictSerializer):
     q = serializers.CharField(required=False, allow_blank=True, max_length=100, default="")
     status = serializers.ChoiceField(choices=INVITATION_STATUSES, required=False, default="")
+    role = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=20,
+        default="",
+        help_text="A role, or `team` for every console role",
+    )
     limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
     offset = serializers.IntegerField(required=False, min_value=0)
 
