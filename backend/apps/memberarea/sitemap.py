@@ -13,6 +13,17 @@ def _entries(rows: list[dict[str, Any]], prefix: str, stamp: str = "updated_at")
     return [{"path": f"{prefix}/{row['slug']}", "lastmod": row.get(stamp)} for row in rows]
 
 
+def counts() -> dict[str, int]:
+    """How many public pages of each kind there are: the same lists the sitemap is made from."""
+    people = directory.sitemap()
+    return {
+        "startups": len(people["startups"]),
+        "founders": len(people["founders"]),
+        "courses": len(learning.public_sitemap()),
+        "jobs": len(jobs.public_sitemap()),
+    }
+
+
 def build() -> dict[str, list[dict[str, Any]]]:
     people = directory.sitemap()
     return {
