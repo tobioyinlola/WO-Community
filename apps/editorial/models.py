@@ -36,6 +36,11 @@ class EditorialItem(BaseModel):
     # Announcements can also be pinned as a banner on the member home for a set period.
     banner_starts_at = models.DateTimeField(null=True, blank=True)
     banner_ends_at = models.DateTimeField(null=True, blank=True)
+    # Show the item as a moving line on the member dashboard between those two times.
+    show_banner = models.BooleanField(default=False)
+    banner_text = models.CharField(max_length=140, blank=True)  # the title when empty
+    banner_kind = models.CharField(max_length=12, default="announcement")
+    banner_link = models.CharField(max_length=300, blank=True)  # a page in the app, or https
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -184,3 +189,15 @@ class CommentReport(BaseModel):
             ),
         ]
         indexes = [models.Index(fields=["status", "created_at"], name="editorial_report_queue_idx")]
+
+
+class BannerDismissal(BaseModel):
+    """A member closed this banner; it does not come back for them."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    item = models.ForeignKey(EditorialItem, on_delete=models.CASCADE, related_name="dismissals")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "item"], name="banner_dismissal_unique")
+        ]

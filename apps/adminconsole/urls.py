@@ -372,6 +372,11 @@ urlpatterns = [
         name="admin-editorial-item",
     ),
     path(
+        "admin/editorial/<uuid:item_id>/end-banner",
+        editorial_views.EndBannerView.as_view(),
+        name="admin-editorial-end-banner",
+    ),
+    path(
         "admin/editorial/<uuid:item_id>/schedule",
         editorial_views.ScheduleItemView.as_view(),
         name="admin-editorial-schedule",

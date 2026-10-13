@@ -31,6 +31,11 @@ urlpatterns = [
         name="editorial-comment-report",
     ),
     path("banners", views.BannersView.as_view(), name="banners"),
+    path(
+        "banners/<uuid:item_id>/dismiss",
+        views.BannerDismissView.as_view(),
+        name="banner-dismiss",
+    ),
     path("win-submissions", views.WinSubmissionsView.as_view(), name="win-submissions"),
     path("public/news", views.PublicNewsView.as_view(), name="public-news"),
     path("public/news/<slug:slug>", views.PublicNewsItemView.as_view(), name="public-news-item"),

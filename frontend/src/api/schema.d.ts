@@ -1194,6 +1194,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/editorial/{item_id}/end-banner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop showing an item as a banner, now
+         * @description The story stays published. A banner that has not started is switched off.
+         */
+        post: operations["admin_editorial_end_banner_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/editorial/{item_id}/publish": {
         parameters: {
             query?: never;
@@ -3755,6 +3775,23 @@ export interface paths {
         get: operations["banners_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/banners/{item_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a banner for good */
+        post: operations["banners_dismiss_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8692,6 +8729,11 @@ export interface components {
             banner_starts_at: string | null;
             /** Format: date-time */
             banner_ends_at: string | null;
+            show_banner: boolean;
+            banner_text: string;
+            banner_kind: string;
+            banner_link: string;
+            banner_status: components["schemas"]["BannerStatusEnum"];
             /** Format: uuid */
             created_by: string | null;
             /** Format: date-time */
@@ -9467,12 +9509,29 @@ export interface components {
             /** Format: uuid */
             id: string;
             slug: string;
-            title: string;
-            excerpt: string;
-            external_url: string;
+            kind: components["schemas"]["BannerKindEnum"];
+            /** @description At most 140 characters; the title if none was written */
+            text: string;
+            /** @description A page in the app or an https address */
+            link: string;
             /** Format: date-time */
             ends_at: string;
         };
+        /**
+         * @description * `announcement` - announcement
+         *     * `news` - news
+         *     * `urgent` - urgent
+         * @enum {string}
+         */
+        BannerKindEnum: "announcement" | "news" | "urgent";
+        /**
+         * @description * `off` - off
+         *     * `scheduled` - scheduled
+         *     * `live` - live
+         *     * `expired` - expired
+         * @enum {string}
+         */
+        BannerStatusEnum: "off" | "scheduled" | "live" | "expired";
         BatchResult: {
             accepted: number;
             rejected: components["schemas"]["RejectedEvent"][];
@@ -10941,6 +11000,10 @@ export interface components {
             banner_starts_at?: string | null;
             /** Format: date-time */
             banner_ends_at?: string | null;
+            show_banner?: boolean;
+            banner_text?: string;
+            banner_kind?: string;
+            banner_link?: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -12431,6 +12494,10 @@ export interface components {
             banner_starts_at?: string | null;
             /** Format: date-time */
             banner_ends_at?: string | null;
+            show_banner?: boolean;
+            banner_text?: string;
+            banner_kind?: string;
+            banner_link?: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -19448,6 +19515,55 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_editorial_end_banner_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminItem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a banner */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26657,6 +26773,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Banner"][];
                 };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not published */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    banners_dismiss_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not authenticated */
             401: {

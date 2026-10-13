@@ -2721,6 +2721,38 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/editorial/{item_id}/end-banner:
+    post:
+      operationId: admin_editorial_end_banner_create
+      description: The story stays published. A banner that has not started is switched
+        off.
+      summary: Stop showing an item as a banner, now
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminItem'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+        '409':
+          description: Not a banner
   /api/v1/admin/editorial/{item_id}/publish:
     post:
       operationId: admin_editorial_publish_create
@@ -8187,6 +8219,30 @@ paths:
                 items:
                   $ref: '#/components/schemas/Banner'
           description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member
+        '404':
+          description: Not found, or not published
+  /api/v1/banners/{item_id}/dismiss:
+    post:
+      operationId: banners_dismiss_create
+      summary: Close a banner for good
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - editorial
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
         '401':
           description: Not authenticated
         '403':
@@ -19032,6 +19088,16 @@ components:
           type: string
           format: date-time
           nullable: true
+        show_banner:
+          type: boolean
+        banner_text:
+          type: string
+        banner_kind:
+          type: string
+        banner_link:
+          type: string
+        banner_status:
+          $ref: '#/components/schemas/BannerStatusEnum'
         created_by:
           type: string
           format: uuid
@@ -19045,7 +19111,11 @@ components:
           nullable: true
       required:
       - banner_ends_at
+      - banner_kind
+      - banner_link
       - banner_starts_at
+      - banner_status
+      - banner_text
       - body
       - comment_count
       - comments_enabled
@@ -19062,6 +19132,7 @@ components:
       - published_at
       - reaction_count
       - reactions
+      - show_banner
       - slug
       - startups
       - status
@@ -21030,22 +21101,46 @@ components:
           format: uuid
         slug:
           type: string
-        title:
+        kind:
+          $ref: '#/components/schemas/BannerKindEnum'
+        text:
           type: string
-        excerpt:
+          description: At most 140 characters; the title if none was written
+        link:
           type: string
-        external_url:
-          type: string
+          description: A page in the app or an https address
         ends_at:
           type: string
           format: date-time
       required:
       - ends_at
-      - excerpt
-      - external_url
       - id
+      - kind
+      - link
       - slug
-      - title
+      - text
+    BannerKindEnum:
+      enum:
+      - announcement
+      - news
+      - urgent
+      type: string
+      description: |-
+        * `announcement` - announcement
+        * `news` - news
+        * `urgent` - urgent
+    BannerStatusEnum:
+      enum:
+      - 'off'
+      - scheduled
+      - live
+      - expired
+      type: string
+      description: |-
+        * `off` - off
+        * `scheduled` - scheduled
+        * `live` - live
+        * `expired` - expired
     BatchResult:
       type: object
       properties:
@@ -24330,6 +24425,18 @@ components:
           type: string
           format: date-time
           nullable: true
+        show_banner:
+          type: boolean
+        banner_text:
+          type: string
+          maxLength: 140
+        banner_kind:
+          type: string
+          minLength: 1
+          maxLength: 12
+        banner_link:
+          type: string
+          maxLength: 300
       required:
       - body
       - title
@@ -27535,6 +27642,18 @@ components:
           type: string
           format: date-time
           nullable: true
+        show_banner:
+          type: boolean
+        banner_text:
+          type: string
+          maxLength: 140
+        banner_kind:
+          type: string
+          minLength: 1
+          maxLength: 12
+        banner_link:
+          type: string
+          maxLength: 300
     PatchedJobUpdateRequest:
       type: object
       description: |-

@@ -18,6 +18,10 @@ class ItemWriteMixin(serializers.Serializer):
     )
     banner_starts_at = serializers.DateTimeField(required=False, allow_null=True)
     banner_ends_at = serializers.DateTimeField(required=False, allow_null=True)
+    show_banner = serializers.BooleanField(required=False)
+    banner_text = serializers.CharField(max_length=140, required=False, allow_blank=True)
+    banner_kind = serializers.CharField(max_length=12, required=False)
+    banner_link = serializers.CharField(max_length=300, required=False, allow_blank=True)
 
 
 class ItemCreateSerializer(ItemWriteMixin, StrictSerializer):
@@ -36,6 +40,10 @@ class ItemUpdateSerializer(StrictSerializer):
     )
     banner_starts_at = serializers.DateTimeField(required=False, allow_null=True)
     banner_ends_at = serializers.DateTimeField(required=False, allow_null=True)
+    show_banner = serializers.BooleanField(required=False)
+    banner_text = serializers.CharField(max_length=140, required=False, allow_blank=True)
+    banner_kind = serializers.CharField(max_length=12, required=False)
+    banner_link = serializers.CharField(max_length=300, required=False, allow_blank=True)
 
 
 class ScheduleSerializer(StrictSerializer):
@@ -146,6 +154,11 @@ class AdminItemSerializer(EditorialItemSerializer):
     publish_at = serializers.DateTimeField(allow_null=True)
     banner_starts_at = serializers.DateTimeField(allow_null=True)
     banner_ends_at = serializers.DateTimeField(allow_null=True)
+    show_banner = serializers.BooleanField()
+    banner_text = serializers.CharField(allow_blank=True)
+    banner_kind = serializers.CharField()
+    banner_link = serializers.CharField(allow_blank=True)
+    banner_status = serializers.ChoiceField(choices=["off", "scheduled", "live", "expired"])
     created_by = serializers.UUIDField(allow_null=True)
     created_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField(allow_null=True)
@@ -154,9 +167,9 @@ class AdminItemSerializer(EditorialItemSerializer):
 class BannerSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     slug = serializers.CharField()
-    title = serializers.CharField()
-    excerpt = serializers.CharField()
-    external_url = serializers.CharField(allow_blank=True)
+    kind = serializers.ChoiceField(choices=["announcement", "news", "urgent"])
+    text = serializers.CharField(help_text="At most 140 characters; the title if none was written")
+    link = serializers.CharField(help_text="A page in the app or an https address")
     ends_at = serializers.DateTimeField()
 
 
