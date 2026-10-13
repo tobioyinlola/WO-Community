@@ -1,0 +1,296 @@
+/*
+ * The public site: floating header, hero card, call to action band, footer card, and the motion
+ * that goes with them. Every colour, radius, space and duration is a design system token, so the
+ * dark theme follows without anything here naming a colour.
+ */
+
+/* ---------- buttons: arrow in a circle ---------- */
+.wo-btn {
+  --arrow-size: 28px;
+}
+.wo-btn--sm {
+  --arrow-size: 24px;
+}
+.wo-btn--lg {
+  --arrow-size: 38px;
+}
+.wo-btn:has(.wo-btn__arrow) {
+  padding-right: var(--space-1);
+}
+.wo-btn--lg:has(.wo-btn__arrow) {
+  padding-right: var(--space-2);
+}
+.wo-btn__arrow {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--arrow-size);
+  height: var(--arrow-size);
+  margin-left: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--text-on-accent);
+  color: var(--action-accent);
+  overflow: hidden;
+}
+.wo-btn__arrow svg {
+  width: 50%;
+  height: 50%;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.wo-btn:hover .wo-btn__arrow svg {
+  transform: translate(2px, -2px);
+}
+
+/* ---------- header: a floating pill ---------- */
+.site-head.wo-nav {
+  top: var(--space-3);
+  width: calc(100% - 2 * var(--space-4));
+  max-width: calc(var(--container-max) - 2 * var(--space-4));
+  height: 64px;
+  margin: var(--space-3) auto 0;
+  padding: 0 var(--space-3) 0 var(--space-6);
+  border: var(--stroke-1) solid var(--border-on-brand);
+  border-radius: var(--radius-full);
+  transition:
+    background-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard),
+    backdrop-filter var(--duration-base) var(--ease-standard);
+}
+.site-head.wo-nav[data-scrolled="true"] {
+  background: color-mix(in srgb, var(--bg-brand) 86%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: var(--shadow-md);
+}
+.site-head > a:first-child {
+  color: var(--text-on-brand);
+  text-decoration: none;
+}
+.site-head .wo-nav__links {
+  justify-content: center;
+}
+@media (max-width: 767px) {
+  .site-head.wo-nav {
+    padding: 0 var(--space-3) 0 var(--space-4);
+  }
+  .site-head .wo-nav__panel {
+    top: calc(100% + var(--space-2));
+    border: var(--stroke-1) solid var(--border-on-brand);
+    border-radius: var(--radius-xl);
+  }
+}
+
+/* ---------- hero: one large rounded card ---------- */
+.site-hero.wo-on-brand {
+  background: transparent;
+  color: inherit;
+  padding: var(--space-4) 0 var(--space-20);
+}
+.site-hero__card {
+  position: relative;
+  padding: clamp(var(--space-8), 6vw, var(--space-20)) clamp(var(--space-6), 5vw, var(--space-20));
+  border: var(--stroke-1) solid var(--border-on-brand);
+  border-radius: var(--radius-xl);
+}
+.site-hero__grid {
+  align-items: center;
+}
+.site-hero .site-hero__title {
+  font-size: clamp(40px, 5.6vw, 84px);
+  line-height: 0.96;
+}
+.site-hero__lead {
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.55;
+}
+.site-hero .app-cluster {
+  gap: var(--space-3);
+}
+.site-hero__art {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 380px);
+  /* The picture hangs over the card's lower edge: out through the card's padding and 56px beyond. */
+  align-self: end;
+  margin-block: 0 calc(-1 * clamp(var(--space-8), 6vw, var(--space-20)) - 56px);
+}
+.site-hero__frame {
+  max-width: none;
+  box-shadow: var(--shadow-lg);
+}
+.site-hero__line {
+  position: absolute;
+  inset: calc(-1 * var(--space-4)) calc(-1 * var(--space-5));
+  width: calc(100% + 2 * var(--space-5));
+  height: calc(100% + 2 * var(--space-4));
+  pointer-events: none;
+  overflow: visible;
+}
+.site-hero__line path {
+  stroke: var(--text-highlight);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .site-hero__line path {
+    stroke-dashoffset: 1;
+    animation: site-draw 1.4s var(--ease-emphasized) 0.25s forwards;
+  }
+  .site-hero__line path:nth-child(2) {
+    animation-delay: 0.9s;
+    animation-duration: 0.8s;
+  }
+}
+@keyframes site-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (max-width: 1023px) {
+  .site-hero.wo-on-brand {
+    padding-bottom: var(--space-16);
+  }
+  .site-hero__art {
+    width: min(100%, 300px);
+    align-self: auto;
+    margin-block: var(--space-4) calc(-1 * clamp(var(--space-8), 6vw, var(--space-20)) - 56px);
+  }
+}
+
+/* ---------- sections ---------- */
+.site-band {
+  padding: clamp(var(--space-16), 8vw, var(--space-24)) 0;
+}
+.site-band--subtle {
+  background: transparent;
+  padding-block: var(--space-8);
+}
+/* On cream a highlight word sits on a forest chip instead of turning gold. */
+.site-chip {
+  padding: 0 0.22em;
+  border-radius: 0.2em;
+  background: var(--bg-brand);
+  color: var(--text-highlight);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* feature cards */
+.site-features {
+  gap: var(--space-6);
+}
+.site-feature.wo-card {
+  min-height: 240px;
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+.site-feature .site-feature__badge {
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-full);
+  background: var(--bg-brand);
+  color: var(--text-highlight);
+}
+.site-feature .wo-card__title {
+  font-size: 24px;
+  line-height: 30px;
+  margin-bottom: var(--space-2);
+}
+.site-feature .wo-card__text {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/* the membership section as a call to action band */
+.site-cta {
+  padding: clamp(var(--space-6), 5vw, var(--space-16));
+  border-radius: var(--radius-xl);
+  background: var(--bg-sunken);
+  align-items: center;
+}
+.site-cta__intro .wo-eyebrow {
+  color: var(--text-accent-strong);
+}
+.site-cta .display-sm {
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1;
+}
+.site-cta .wo-card--brand {
+  padding: var(--space-8);
+  border-radius: var(--radius-lg);
+}
+
+/* events and news */
+.site-band .wo-card {
+  border-radius: var(--radius-xl);
+}
+a.wo-card .wo-card__title {
+  margin-top: var(--space-3);
+}
+
+/* ---------- footer: a rounded forest card with a faded wordmark ---------- */
+.site-footer.wo-on-brand {
+  background: transparent;
+  color: inherit;
+  padding: var(--space-8) 0 var(--space-4);
+}
+.site-footer__card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(var(--space-8), 5vw, var(--space-16)) clamp(var(--space-6), 5vw, var(--space-16)) 0;
+  border-radius: var(--radius-xl);
+}
+/* The name shown while the logo file is missing must read on the forest card in both themes. */
+.site-footer .wo-wordmark {
+  color: var(--text-on-brand);
+}
+.site-footer__mark {
+  margin: var(--space-10) 0 0;
+  font: 800 min(8.6vw, 128px) / 0.8 var(--font-display);
+  letter-spacing: -0.045em;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--text-on-brand) 42%, transparent), transparent 94%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal[data-reveal="pending"] > * {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .reveal[data-reveal="revealing"] > * {
+    transition:
+      opacity var(--duration-slow) var(--ease-emphasized),
+      transform var(--duration-slow) var(--ease-emphasized);
+    transition-delay: calc(var(--i, 0) * 60ms);
+  }
+}
+/* Cards lift on hover only where there is a hover (not on touch). */
+@media (hover: hover) {
+  .site-feature.wo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-head.wo-nav,
+  .wo-btn__arrow svg {
+    transition: none;
+  }
+  .site-feature.wo-card:hover,
+  a.wo-card:hover {
+    transform: none;
+  }
+}

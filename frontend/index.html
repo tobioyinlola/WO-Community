@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
     <title>WO Community</title>
+    <!-- The display weight is used by every headline, so it starts downloading before the script runs. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="./node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-800-normal.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="./node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-400-normal.woff2" />
     <script>
       // Light only for now; the saved choice and the device setting are ignored.
       document.documentElement.setAttribute("data-theme", "light");

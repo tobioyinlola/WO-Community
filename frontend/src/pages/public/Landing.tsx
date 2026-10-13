@@ -14,6 +14,8 @@ import { useAuth } from "../../auth/AuthProvider";
 import { Badge, Card, CardTo, CardText, CardTitle, Logo } from "../../components";
 import { formatDate, humanise } from "../../lib/format";
 import { Section, useDocumentTitle } from "../../ui/blocks";
+import { ArrowCircle } from "../../ui/ArrowCircle";
+import { Reveal } from "../../ui/Reveal";
 
 interface Feature {
   icon: LucideIcon;
@@ -78,6 +80,7 @@ export function Landing() {
     <>
       <section className="site-hero wo-on-brand" aria-labelledby="hero-title">
         <div className="wo-container">
+          <div className="site-hero__card wo-on-brand">
           <div className="site-hero__grid">
             <div>
               <span className="wo-eyebrow">WO Community</span>
@@ -92,11 +95,13 @@ export function Landing() {
                 {signedIn ? (
                   <Link className="wo-btn wo-btn--accent wo-btn--lg" to="/app">
                     Open the app
+                    <ArrowCircle />
                   </Link>
                 ) : (
                   <>
                     <Link className="wo-btn wo-btn--accent wo-btn--lg" to="/register">
                       Request access
+                      <ArrowCircle />
                     </Link>
                     <Link className="wo-btn wo-btn--on-brand wo-btn--lg" to="/login">
                       Sign in
@@ -105,9 +110,16 @@ export function Landing() {
                 )}
               </div>
             </div>
-            <div className="site-hero__frame" aria-hidden="true">
-              <Logo on="dark" kind="mark" height={140} />
+            <div className="site-hero__art" aria-hidden="true">
+              <div className="site-hero__frame">
+                <Logo on="dark" kind="mark" height={140} />
+              </div>
+              <svg className="site-hero__line" viewBox="0 0 400 500" fill="none" focusable="false">
+                <path pathLength="1" d="M30 492 V210 A170 170 0 0 1 370 210 V492" />
+                <path pathLength="1" d="M86 498 C150 470 250 470 314 498" />
+              </svg>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -119,26 +131,26 @@ export function Landing() {
             <span className="wo-eyebrow">What you get</span>
           </div>
           <h2 className="display-md" id="why" style={{ margin: "var(--space-8) 0 var(--space-12)" }}>
-            Everything a founder needs, <span style={{ color: "var(--text-accent)" }}>in one place</span>
+            Everything a founder needs, <span className="site-chip">in one place</span>
           </h2>
-          <div className="app-grid">
+          <Reveal className="app-grid site-features">
             {FEATURES.map((feature) => (
-              <Card key={feature.title}>
-                <span className="app-tile" style={{ marginBottom: "var(--space-4)" }}>
+              <Card key={feature.title} className="site-feature">
+                <span className="app-tile site-feature__badge">
                   <feature.icon size={24} strokeWidth={1.5} aria-hidden="true" />
                 </span>
                 <CardTitle>{feature.title}</CardTitle>
                 <CardText>{feature.text}</CardText>
               </Card>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
       <section className="site-band site-band--subtle" aria-labelledby="members-get">
         <div className="wo-container">
-          <div className="app-split app-split--even">
-            <div>
+          <Reveal className="app-split app-split--even site-cta">
+            <div className="site-cta__intro">
               <span className="wo-eyebrow">Membership</span>
               <h2 className="display-sm" id="members-get" style={{ margin: "var(--space-4) 0 var(--space-6)" }}>
                 Built for people who build
@@ -152,7 +164,7 @@ export function Landing() {
                 ))}
               </ul>
             </div>
-            <Card variant="brand">
+            <Card variant="brand" className="site-cta__card">
               <span className="wo-eyebrow">Intentional</span>
               <CardTitle style={{ marginTop: "var(--space-3)" }}>Every member is reviewed</CardTitle>
               <CardText>
@@ -162,10 +174,11 @@ export function Landing() {
               <div style={{ marginTop: "var(--space-6)" }}>
                 <Link className="wo-btn wo-btn--accent" to="/register">
                   Request access
+                  <ArrowCircle />
                 </Link>
               </div>
             </Card>
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -180,7 +193,7 @@ export function Landing() {
             }
           >
             {events.data && events.data.results.length > 0 ? (
-              <div className="app-grid">
+              <Reveal className="app-grid">
                 {events.data.results.map((event) => (
                   <CardTo key={event.slug} to="/explore?tab=events">
                     <Badge variant="investor">{humanise(event.type)}</Badge>
@@ -191,7 +204,7 @@ export function Landing() {
                     </CardText>
                   </CardTo>
                 ))}
-              </div>
+              </Reveal>
             ) : (
               <p className="body app-muted">New events are announced here as soon as they are set.</p>
             )}
@@ -205,7 +218,7 @@ export function Landing() {
             }
           >
             {news.data && news.data.results.length > 0 ? (
-              <div className="app-grid">
+              <Reveal className="app-grid">
                 {news.data.results.map((item) => (
                   <CardTo key={item.slug} to={`/news/${item.slug}`}>
                     <Badge variant="operator">{humanise(item.type)}</Badge>
@@ -213,7 +226,7 @@ export function Landing() {
                     <CardText>{formatDate(item.published_at)}</CardText>
                   </CardTo>
                 ))}
-              </div>
+              </Reveal>
             ) : (
               <p className="body app-muted">Stories from members and the team appear here.</p>
             )}
