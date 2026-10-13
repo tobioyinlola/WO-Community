@@ -13,3 +13,4 @@ media/
 .coverage
 htmlcov/
 *.egg-info/
+dist-local/
