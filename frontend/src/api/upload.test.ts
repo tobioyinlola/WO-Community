@@ -25,10 +25,10 @@ describe("uploadFile", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
     await uploadFile(new File(["x"], "a.png", { type: "image/png" }), "course_cover", 1, 2);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0] as [string, { method: string; body: FormData }];
     expect(url).toBe("https://storage.test/b/k");
     expect(init.method).toBe("POST");
-    const keys = [...(init.body as FormData).keys()];
+    const keys = [...init.body.keys()];
     expect(keys).toEqual(["key", "policy", "file"]);
   });
 
@@ -38,7 +38,7 @@ describe("uploadFile", () => {
     vi.stubGlobal("fetch", fetchMock);
     const file = new File(["x"], "a.png", { type: "image/png" });
     await uploadFile(file, "course_cover", 1, 2);
-    const [, init] = fetchMock.mock.calls[0];
+    const [, init] = fetchMock.mock.calls[0] as [string, { method: string; headers: unknown; body: unknown }];
     expect(init.method).toBe("PUT");
     expect(init.headers).toEqual({ "Content-Type": "image/png" });
     expect(init.body).toBe(file);
