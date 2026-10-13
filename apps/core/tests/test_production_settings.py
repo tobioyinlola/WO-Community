@@ -87,3 +87,15 @@ def test_a_missing_or_unsafe_setting_stops_the_start_with_its_name(changes, mess
     result = start(**changes)
     assert result.returncode != 0
     assert message in result.stderr
+
+
+def test_the_local_run_switch_relaxes_only_the_https_checks():
+    result = start(
+        LOCAL_PRODUCTION_RUN="true",
+        FRONTEND_URL="http://localhost:4173",
+        API_BASE_URL="http://localhost:8001",
+        CORS_ALLOWED_ORIGINS="http://localhost:4173",
+    )
+    assert result.returncode == 0, result.stderr[-400:]
+    # The checks that are not about https still apply.
+    assert "NUM_PROXIES" in start(LOCAL_PRODUCTION_RUN="true", NUM_PROXIES="0").stderr

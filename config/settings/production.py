@@ -23,7 +23,15 @@ if DEBUG:
     raise ImproperlyConfigured("DEBUG must be false in production.")
 
 
+# For trying these settings on one machine, where there is no https and the hosts are localhost.
+# It switches off the https and localhost checks and the https redirect, and nothing else. Never set
+# it on a real deployment.
+LOCAL_PRODUCTION_RUN = env.bool("LOCAL_PRODUCTION_RUN", default=False)
+
+
 def _https_origin(name: str, value: str, allow_path: bool = False) -> None:
+    if LOCAL_PRODUCTION_RUN:
+        return
     parsed = urlparse(value)
     if parsed.scheme != "https" or not parsed.hostname or parsed.hostname == "localhost":
         raise ImproperlyConfigured(f"{name} must be a public https address, got {value!r}.")
@@ -56,7 +64,7 @@ if not REFRESH_COOKIE_SECURE:
 JWT_PRIVATE_KEY = require("JWT_PRIVATE_KEY").replace("\\n", "\n")
 JWT_PUBLIC_KEY = require("JWT_PUBLIC_KEY").replace("\\n", "\n")
 
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = not LOCAL_PRODUCTION_RUN
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = 31_536_000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
