@@ -72,9 +72,9 @@ All apply on an empty database and on a copy of the previous schema with data in
 | `ruff`, `black --check`, `mypy` (508 files), `bandit`, `pip-audit`, `import-linter` (3 contracts) | All clean. `pip-audit` reports no known vulnerabilities; it skips the project itself, which is not on PyPI. |
 | OpenAPI | Generates and validates with `--fail-on-warn` |
 | Migrations | Empty database: all apply, no pending model changes. Previous schema with legacy rows: forward, backfills verified, backward to the previous state. |
-| Back end tests | BACKEND_RESULT |
+| Back end tests | 4566 passed, 1 skipped, no errors (a full run on a fresh test database). An earlier run showed 3 errors in the concurrency tests; the cause was my concurrent booking test missing `serialized_rollback=True`, which is fixed. |
 | Front end | ESLint clean, TypeScript clean, production build succeeds, 106 unit tests pass across 10 files |
-| End to end | E2E_RESULT |
+| End to end | The last full run: 67 passed, 3 failed, and 19 did not run because they follow a failing test in a serial group. Two failures are the launch toolkit (below). The third, the approvals drawer test, passes on its own and failed only inside the full run; its click is now retried until the drawer opens, and that change has not been run again (the run was stopped when the machine ran low on memory). Several earlier failures were test data used up by earlier runs (reported posts, pending applicants, registration limit of 5 an hour), and tests that depended on where a previous run stopped; the learning tests no longer do. |
 | Visual check | 39 screens in light and dark at 1440, 1024 and 390 pixels, 234 images in `docs/changes/screenshots/` (named `screen-theme-width.jpg`) |
 
 The visual review found and fixed these before the final capture: unread dots that disappeared in dark mode,
@@ -145,9 +145,13 @@ mentor pricing; and certificates, one of them revoked.
   browser tests do not wait for them.
 - **Booking calendar preview.** `/admin/design` shows the weekly grid but not the booking calendar, which
   reads live availability from the API.
-- **Member accessibility audit.** The member audit still reports one failure on the Launch (Ventures) page,
-  from the venture prefill added earlier by another contributor. It is not part of these changes and was left
-  alone.
+- **Launch toolkit.** `launch.spec.ts` ("a venture can be started") and the 360 pixel accessibility profile,
+  which starts a venture, fail: a new venture opens showing the name of the member's startup ("Kuda Foods")
+  instead of the name typed. This comes from the venture prefill added earlier, `apps/toolkit` and the launch
+  screens are untouched by these changes, and it was left alone.
+- **Browser test data.** The browser tests use up demo data (pending applicants, reported posts) and hit the
+  sign up limit of five an hour. Run `seed_admin_demo.py` again to add more, and clear the throttle keys in
+  Redis database 1 if the sign up journeys stop at "Check your email".
 
 ## Manual smoke test
 

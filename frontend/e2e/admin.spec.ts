@@ -241,9 +241,12 @@ test.describe("the admin console", () => {
   test("a request opens in the drawer, can be stepped through, and a decision can be undone", async ({ page }) => {
     await signInAdmin(page);
     await page.goto("/admin/approvals");
-    await page.locator("tbody tr").first().click();
     const drawer = page.getByRole("dialog");
-    await expect(drawer.getByText(/^Request /)).toBeVisible();
+    // The list can still be settling right after it appears, so click again until the drawer opens.
+    await expect(async () => {
+      await page.locator("tbody tr").first().click();
+      await expect(drawer.getByText(/^Request /)).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 20_000 });
     await expect(drawer.getByRole("heading", { level: 2 })).toBeVisible();
     await page.keyboard.press("j");
     await page.keyboard.press("k");
