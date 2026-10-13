@@ -244,7 +244,8 @@ test.describe("the admin console", () => {
     const drawer = page.getByRole("dialog");
     // The list can still be settling right after it appears, so click again until the drawer opens.
     await expect(async () => {
-      await page.locator("tbody tr").first().click();
+      // The first request is the seeded pending member that the sign-in test needs, so use the second.
+      await page.locator("tbody tr").nth(1).click();
       await expect(drawer.getByText(/^Request /)).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 20_000 });
     await expect(drawer.getByRole("heading", { level: 2 })).toBeVisible();

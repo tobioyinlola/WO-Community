@@ -33,7 +33,7 @@ GOOGLE_TOKEN_VERIFIER = os.environ.get(
 SERVE_API_SCHEMA = True
 
 # The browser tests poll for notifications and search as one signed-in person from one address, so
-# the per-minute limits are loosened here. The hourly limits on registration and password reset stay.
+# the per-minute limits are loosened here. The hourly limits on registration and resets stay.
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,  # noqa: F405
     "DEFAULT_THROTTLE_RATES": {
