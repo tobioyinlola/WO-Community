@@ -87,6 +87,9 @@ jobs:
       - name: Tests
         run: npm test
       - name: Build
+        env:
+          # The build refuses to run without the API address; this one only has to look right.
+          VITE_API_URL: https://api.example.com
         run: npm run build
 
   e2e:
