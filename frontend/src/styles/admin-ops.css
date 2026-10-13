@@ -286,3 +286,36 @@
   outline: 2px solid var(--text-primary);
   outline-offset: 1px;
 }
+
+/* Tabs with a count, as on the jobs page */
+.adm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: var(--stroke-1) solid var(--border-subtle);
+  margin-bottom: var(--space-4);
+}
+.adm-tabs__tab {
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  font: 700 14px/20px var(--font-body);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.adm-tabs__tab[aria-selected="true"] {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+.adm-tabs__tab:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: -2px;
+}
+.adm-tabs__count {
+  margin-left: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  font-weight: 400;
+}

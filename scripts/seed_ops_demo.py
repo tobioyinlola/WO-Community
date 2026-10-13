@@ -1,5 +1,5 @@
 # ruff: noqa: E501, E402, S311
-"""Add job applications and mentoring sessions to the demo community, so the admin pages have
+"""Add mentoring sessions to the demo community, so the admin pages have
 something to show. Run after seed_demo.py and seed_rich_demo.py. Local only; safe to run again.
 
     python manage.py shell -c "exec(open('scripts/seed_ops_demo.py', encoding='utf8').read())"
@@ -13,45 +13,16 @@ from django.utils import timezone
 from psycopg.types.range import Range
 
 from apps.accounts.models import User
-from apps.jobs import selectors as job_selectors
-from apps.jobs.models import JobApplication
 from apps.mentorship.models import ACTIVE_SESSION_STATUSES, MentorProfile, MentorSession
 
 random.seed(11)
 now = timezone.now()
-
-NOTES = [
-    "I have spent four years building payments products in Lagos and would love to help you ship faster.",
-    "Your mission matches what I care about. I have led a small team before and enjoy the early, messy stage.",
-    "I run a community of 2,000 founders and know how to grow a product from nothing. Happy to share results.",
-    "I am finishing a degree in computer science and have shipped two apps used by real customers.",
-    "Operations is my strength: I cut onboarding time in half at my last company. I would like to do the same for you.",
-]
-STATUSES = ["submitted", "submitted", "reviewing", "shortlisted", "rejected", "hired"]
 
 members = list(
     User.objects.filter(status="active", email__endswith="@demo.test").exclude(
         email__startswith="admin"
     )
 )
-jobs = list(job_selectors.live_jobs()[:8])
-made = 0
-for job in jobs:
-    for member in random.sample(members, k=min(len(members), random.randint(1, 3))):
-        if member.pk == job.poster_id:
-            continue
-        _, created = JobApplication.objects.get_or_create(
-            job=job,
-            applicant=member,
-            defaults={
-                "note": random.choice(NOTES),
-                "link": f"https://cv.example/{member.email.split('@')[0]}",
-                "status": random.choice(STATUSES),
-            },
-        )
-        made += created
-print(f"job applications added: {made}, total {JobApplication.objects.count()}")
-
 mentors = list(MentorProfile.objects.filter(status="active").select_related("user"))
 print(f"mentors found: {len(mentors)}")
 

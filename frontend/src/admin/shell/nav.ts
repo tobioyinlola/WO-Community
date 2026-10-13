@@ -83,7 +83,6 @@ export const NAV: NavEntry[] = [
     icon: Briefcase,
     children: [
       { id: "jobs-all", label: "All jobs", to: "/admin/jobs", needs: "jobs.moderate", badge: "jobs_awaiting_review" },
-      { id: "job-applications", label: "Applications", to: "/admin/job-applications", needs: "jobs.moderate" },
     ],
   },
   {

@@ -143,6 +143,15 @@ TYPES: dict[str, Spec] = {
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
+    "job_changed": Spec(
+        "jobs",
+        lambda who, p: (
+            f"Your job \"{p.get('title', '')}\" was {p.get('what', 'changed')} by an admin"
+            + (f": {p['reason']}" if p.get("reason") else "")
+        ),
+        lambda p: f"/jobs/{p['job_id']}",
+        email=True,
+    ),
     "job_expiring": Spec(
         "jobs",
         lambda who, p: f"Your job \"{p.get('title', '')}\" expires in 3 days: renew or close",

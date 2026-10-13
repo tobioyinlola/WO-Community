@@ -74,7 +74,7 @@ const AdminApprovals = lazy(() => import("./admin/Approvals"));
 const AdminInvitations = lazy(() => import("./admin/Invitations"));
 const AdminMentors = lazy(() => import("./admin/MentorApplications"));
 const AdminReports = lazy(() => import("./admin/Reports"));
-const AdminJobs = lazy(() => import("./admin/Queues").then((m) => ({ default: m.JobsReview })));
+const AdminJobs = lazy(() => import("./admin/AdminJobs"));
 const AdminWins = lazy(() => import("./admin/Queues").then((m) => ({ default: m.WinsReview })));
 const AdminNews = lazy(() => import("./admin/News"));
 const AdminEvents = lazy(() => import("./admin/Events"));
@@ -86,7 +86,6 @@ const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
 const AuditLog = lazy(() => import("./admin/AuditLog"));
 const AdminFeed = lazy(() => import("./admin/AdminFeed"));
-const AdminJobApplications = lazy(() => import("./admin/JobApplications"));
 const AdminSessions = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringSessions })));
 const AdminMatches = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringMatches })));
 const AdminAnalytics = lazy(() => import("./admin/Analytics").then((m) => ({ default: m.AnalyticsOverview })));
@@ -160,6 +159,7 @@ export function App() {
                     <Route path="startups/:id/edit" element={<StartupForm />} />
                     <Route path="jobs" element={<Jobs />} />
                     <Route path="jobs/new" element={<NewJob />} />
+                    <Route path="jobs/:id/edit" element={<NewJob />} />
                     <Route path="jobs/:id" element={<JobDetail />} />
                     <Route path="events" element={<Events />} />
                     <Route path="events/:id" element={<EventDetail />} />
@@ -215,7 +215,6 @@ export function App() {
                     <Route path="wins" element={<AdminWins />} />
                     <Route path="feed" element={<AdminFeed />} />
                     <Route path="audit" element={<AuditLog />} />
-                    <Route path="job-applications" element={<AdminJobApplications />} />
                     <Route path="sessions" element={<AdminSessions />} />
                     <Route path="matches" element={<AdminMatches />} />
                     <Route path="analytics" element={<AdminAnalytics />} />

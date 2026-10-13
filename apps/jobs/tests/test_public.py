@@ -124,7 +124,8 @@ def test_a_public_job_has_open_graph_data_for_previews(api_client, live_job, set
         "type": "article",
         "image": None,
     }
-    assert job["apply"] == {"method": "url", "target": "https://acme.example.com/careers/1"}
+    assert job["apply"]["target"] == "https://acme.example.com/careers/1"
+    assert job["apply"]["host"] == "acme.example.com"
 
 
 def test_the_open_graph_description_is_cut_short(api_client, auto_publish, poster_client):
@@ -138,7 +139,7 @@ def test_an_apply_email_is_never_shown_publicly(
 ):
     job = post_job(poster_client, apply_method="email", apply_target="hr@acme.example.com").json()
     public = api_client.get(f"{PUBLIC}/{slug_of(job['id'])}").json()
-    assert public["apply"] == {"method": "email"}
+    assert public["apply"] == {"method": "email", "url": "", "email": "", "host": ""}
     assert "hr@acme.example.com" not in api_client.get(PUBLIC).content.decode()
     assert (
         "hr@acme.example.com"

@@ -2,11 +2,12 @@
 
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlparse
 from uuid import UUID
 
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, TrigramWordSimilarity
-from django.db.models import Q, QuerySet
+from django.db.models import Count, Q, QuerySet
 from django.db.models.functions import Greatest
 from django.utils import timezone
 from rest_framework import exceptions
@@ -94,7 +95,13 @@ def _views(viewer: Any, jobs: list[Job], *, public: bool = False) -> list[dict[s
         )
     views = []
     for job in jobs:
-        apply: dict[str, Any] = {"method": job.apply_method}
+        apply: dict[str, Any] = {
+            "method": job.apply_method,
+            "url": job.apply_url,
+            # The address is for signed in members only, so it cannot be harvested from the web.
+            "email": "" if public else job.apply_email,
+            "host": (urlparse(job.apply_url).hostname or "") if job.apply_url else "",
+        }
         if not public or job.apply_method == "url":
             apply["target"] = job.apply_target
         view: dict[str, Any] = {
@@ -237,7 +244,25 @@ def pending_count() -> int:
     return Job.objects.filter(status=Job.Status.PENDING).count()
 
 
-def admin_queryset(*, status: str, origin: str, q: str) -> QuerySet[Job]:
+TABS = {
+    "active": ("published",),
+    "pending": ("pending",),
+    "rejected": ("rejected",),
+    "closed": ("closed", "expired", "removed"),
+}
+
+
+def filter_admin(
+    *,
+    status: str = "",
+    origin: str = "",
+    q: str = "",
+    poster_id: UUID | None = None,
+    company: str = "",
+    type: str = "",  # noqa: A002 - the query parameter is called type
+    date_from: Any = None,
+    date_to: Any = None,
+) -> QuerySet[Job]:
     queryset = Job.objects.all()
     if status:
         queryset = queryset.filter(status=status)
@@ -245,7 +270,34 @@ def admin_queryset(*, status: str, origin: str, q: str) -> QuerySet[Job]:
         queryset = queryset.filter(source=origin)
     if q:
         queryset = queryset.filter(Q(title__icontains=q) | Q(organisation__icontains=q))
-    return queryset.order_by("created_at", "id")
+    if poster_id:
+        queryset = queryset.filter(poster_id=poster_id)
+    if company:
+        queryset = queryset.filter(
+            Q(organisation__icontains=company) | Q(startup__name__icontains=company)
+        )
+    if type:
+        queryset = queryset.filter(type=type)
+    if date_from:
+        queryset = queryset.filter(created_at__date__gte=date_from)
+    if date_to:
+        queryset = queryset.filter(created_at__date__lte=date_to)
+    return queryset
+
+
+def admin_queryset(*, tab: str = "", **filters: Any) -> QuerySet[Job]:
+    queryset = filter_admin(**filters)
+    if tab:
+        queryset = queryset.filter(status__in=TABS[tab])
+    # The review queue works oldest first; the other tabs show the newest.
+    oldest_first = tab == "pending" or filters.get("status") == "pending"
+    return queryset.order_by("created_at" if oldest_first else "-created_at", "id")
+
+
+def tab_counts(**filters: Any) -> dict[str, int]:
+    """How many jobs each tab holds under the other filters, in one query."""
+    counts = dict(filter_admin(**filters).values_list("status").annotate(n=Count("id")).order_by())
+    return {tab: sum(counts.get(s, 0) for s in statuses) for tab, statuses in TABS.items()}
 
 
 def admin_views(actor: Any, jobs: list[Job]) -> list[dict[str, Any]]:

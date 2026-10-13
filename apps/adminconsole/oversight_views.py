@@ -27,7 +27,7 @@ from apps.core.pagination import AdminLimitOffsetPagination
 from apps.core.serializers import StrictSerializer
 from apps.events.models import EventRegistration
 from apps.feed.models import CATEGORIES, Comment, Post, Reaction, Report
-from apps.jobs.models import Job, JobApplication
+from apps.jobs.models import Job
 from apps.learning.models import Enrolment
 from apps.mentorship.models import MentorSession
 from apps.profiles.models import FounderProfile
@@ -415,7 +415,6 @@ def build_analytics(start: date, end: date) -> dict[str, Any]:
         ("members", "New members", User.objects.all(), "created_at"),
         ("posts", "Posts", Post.objects.filter(deleted_at__isnull=True), "created_at"),
         ("comments", "Comments", Comment.objects.filter(deleted_at__isnull=True), "created_at"),
-        ("applications", "Job applications", JobApplication.objects.all(), "created_at"),
         ("sessions", "Mentoring requests", MentorSession.objects.all(), "created_at"),
         ("enrolments", "Course enrolments", Enrolment.objects.all(), "started_at"),
         ("rsvps", "Event sign ups", EventRegistration.objects.all(), "created_at"),

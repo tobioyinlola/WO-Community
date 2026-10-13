@@ -12,7 +12,7 @@ from apps.audit.models import AuditLog
 ACTION_GROUPS: dict[str, tuple[str, ...]] = {
     "members": ("member.", "members.", "role.", "invitation.", "referral."),
     "content": ("feed.", "editorial.", "news.", "announcement.", "post."),
-    "jobs": ("jobs.", "job_application.", "job."),
+    "jobs": ("jobs.", "job."),
     "events": ("events.",),
     "courses": ("courses.", "learning."),
     "certificates": ("certificates.",),

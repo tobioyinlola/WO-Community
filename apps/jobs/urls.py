@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.jobs import application_views, views
+from apps.jobs import views
 
 urlpatterns = [
     path("jobs", views.JobsView.as_view(), name="jobs"),
@@ -8,22 +8,6 @@ urlpatterns = [
     path("jobs/<uuid:job_id>/renew", views.RenewJobView.as_view(), name="job-renew"),
     path("jobs/<uuid:job_id>/close", views.CloseJobView.as_view(), name="job-close"),
     path("jobs/<uuid:job_id>/save", views.SaveJobView.as_view(), name="job-save"),
-    path("jobs/<uuid:job_id>/apply", application_views.ApplyView.as_view(), name="job-apply"),
-    path(
-        "jobs/<uuid:job_id>/applications",
-        application_views.JobApplicantsView.as_view(),
-        name="job-applications",
-    ),
-    path(
-        "job-applications/<uuid:application_id>/withdraw",
-        application_views.WithdrawView.as_view(),
-        name="job-application-withdraw",
-    ),
-    path(
-        "job-applications/<uuid:application_id>/decide",
-        application_views.DecideView.as_view(),
-        name="job-application-decide",
-    ),
     path("me/jobs", views.MyJobsView.as_view(), name="my-jobs"),
     path("me/saved-jobs", views.SavedJobsView.as_view(), name="saved-jobs"),
     path("job-alerts", views.AlertsView.as_view(), name="job-alerts"),
