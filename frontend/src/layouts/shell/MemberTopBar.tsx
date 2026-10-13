@@ -1,5 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, Menu, Monitor, Moon, Sun } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSupport } from "../../support/SupportProvider";
 import { isAdmin } from "../../admin/permissions";
@@ -8,18 +8,10 @@ import { Avatar } from "../../components";
 import { GlobalSearch } from "../../shell/GlobalSearch";
 import { MEMBER_LINKS } from "../../shell/searchModel";
 import { NotificationBell } from "../../shell/NotificationBell";
-import { useTheme, type ThemeChoice } from "../../theme/ThemeProvider";
-
-const THEMES: Array<{ value: ThemeChoice; label: string; icon: typeof Sun }> = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "Match my device", icon: Monitor },
-];
 
 function AccountMenu({ name, photo, role }: { name: string; photo?: string | null; role: string }) {
   const { me, logout } = useAuth();
   const navigate = useNavigate();
-  const { choice, setChoice } = useTheme();
   const support = useSupport();
   return (
     <DropdownMenu.Root>
@@ -57,16 +49,6 @@ function AccountMenu({ name, photo, role }: { name: string; photo?: string | nul
           <DropdownMenu.Item className="adm-menu__item" onSelect={() => support.open()}>
             Contact support
           </DropdownMenu.Item>
-          <DropdownMenu.Label className="adm-menu__label">Theme</DropdownMenu.Label>
-          <DropdownMenu.RadioGroup value={choice} onValueChange={(v) => setChoice(v as ThemeChoice)}>
-            {THEMES.map(({ value, label, icon: Icon }) => (
-              <DropdownMenu.RadioItem key={value} value={value} className="adm-menu__item adm-menu__radio">
-                <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-                <span>{label}</span>
-                <DropdownMenu.ItemIndicator className="adm-menu__tick" aria-hidden="true">{"✓"}</DropdownMenu.ItemIndicator>
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
           <DropdownMenu.Separator className="adm-menu__sep" />
           <DropdownMenu.Item
             className="adm-menu__item"

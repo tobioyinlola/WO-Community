@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Monitor, Moon, Rows3, Rows4, Sun } from "lucide-react";
+import { Rows3, Rows4 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, unwrap } from "../api/client";
@@ -9,7 +9,6 @@ import { formatDate, humanise, timeAgo } from "../lib/format";
 import { EmptyState, ErrorState, Loaded, PageHeader, SkeletonRows, useDocumentTitle } from "../ui/blocks";
 import { FormError, useSubmit } from "../ui/forms";
 import { useToast } from "../ui/Toast";
-import { useTheme, type ThemeChoice } from "../theme/ThemeProvider";
 import { mfaAgeSeconds } from "./claims";
 import { DataTable } from "./kit/DataTable";
 import { StatusChip, type Density } from "./kit/TableBits";
@@ -33,7 +32,7 @@ const SECTIONS: Section[] = [
   { id: "community", label: "Community", blurb: "How the job board and the toolkit behave for everyone.", needs: "settings.manage" },
   { id: "security", label: "Security", blurb: "Two step sign in and recovery codes." },
   { id: "team", label: "Roles and team", blurb: "Everyone who can use this console.", needs: "members.view" },
-  { id: "appearance", label: "Appearance", blurb: "Theme and how dense tables are." },
+  { id: "appearance", label: "Appearance", blurb: "How dense tables are." },
 ];
 
 /** A bar that appears only when a form has unsaved changes. */
@@ -209,14 +208,7 @@ function TeamSection() {
   );
 }
 
-const THEMES: Array<{ value: ThemeChoice; label: string; icon: typeof Sun; blurb: string }> = [
-  { value: "light", label: "Light", icon: Sun, blurb: "Cream paper and white cards." },
-  { value: "dark", label: "Dark", icon: Moon, blurb: "Deep forest, easier at night." },
-  { value: "system", label: "Match my device", icon: Monitor, blurb: "Follows your device setting." },
-];
-
 function AppearanceSection() {
-  const { choice, setChoice } = useTheme();
   const toast = useToast();
   const [density, setDensity] = usePref<Density>("members:density", "comfortable");
   const reset = () => {
@@ -229,20 +221,6 @@ function AppearanceSection() {
   };
   return (
     <div className="app-stack app-stack--lg">
-      <section className="adm-card" aria-labelledby="theme-title">
-        <h2 className="adm-card__title" id="theme-title">Theme</h2>
-        <fieldset className="adm-choices">
-          <legend className="wo-visually-hidden">Theme</legend>
-          {THEMES.map(({ value, label, icon: Icon, blurb }) => (
-            <label key={value} className="adm-choice" data-checked={choice === value}>
-              <input type="radio" name="theme" value={value} checked={choice === value} onChange={() => setChoice(value)} />
-              <Icon size={22} strokeWidth={1.5} aria-hidden="true" />
-              <strong>{label}</strong>
-              <span>{blurb}</span>
-            </label>
-          ))}
-        </fieldset>
-      </section>
       <section className="adm-card" aria-labelledby="density-title">
         <h2 className="adm-card__title" id="density-title">Table density</h2>
         <p className="adm-card__sub">How tall the rows in tables are. You can also change it on any table.</p>

@@ -244,8 +244,8 @@ test.describe("the admin console", () => {
     const drawer = page.getByRole("dialog");
     // The list can still be settling right after it appears, so click again until the drawer opens.
     await expect(async () => {
-      // The first request is the seeded pending member that the sign-in test needs, so use the second.
-      await page.locator("tbody tr").nth(1).click();
+      // Not the seeded pending member the sign-in test needs: use a named applicant.
+      await page.locator("tbody tr").filter({ hasText: "Ifeoma Eze" }).click();
       await expect(drawer.getByText(/^Request /)).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 20_000 });
     await expect(drawer.getByRole("heading", { level: 2 })).toBeVisible();
@@ -262,10 +262,11 @@ test.describe("the admin console", () => {
 
   test("a request is approved from the keyboard once the undo window has passed", async ({ page }) => {
     await signInAdmin(page);
-    await page.goto("/admin/approvals?next=1");
-    await expect(page.getByRole("dialog").getByRole("button", { name: "Approve" })).toBeVisible();
-    // The first request is the seeded pending member that the sign-in test needs, so approve the next one.
-    await page.keyboard.press("j");
+    await page.goto("/admin/approvals");
+    await expect(async () => {
+      await page.locator("tbody tr").filter({ hasText: "Kofi Annan-Boateng" }).click();
+      await expect(page.getByRole("dialog").getByRole("button", { name: "Approve" })).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 20_000 });
     await page.keyboard.press("a");
     await expect(page.getByText(/^Approving /)).toBeVisible();
     await expect(page.getByText(/ approved$/)).toBeVisible({ timeout: 30_000 });
