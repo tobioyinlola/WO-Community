@@ -109,3 +109,42 @@ class Notification(BaseModel):
             models.Index(fields=["user", "read_at", "-created_at"], name="notification_unread_idx"),
             models.Index(fields=["user", "-created_at", "-id"], name="notification_list_idx"),
         ]
+
+
+class EmailTemplate(BaseModel):
+    """An edited wording for one email template. No row means the built-in wording is used.
+
+    Only the words are stored; the layout, the brand and the variables are code
+    (see ``apps.notifications.mailtemplates``).
+    """
+
+    key = models.CharField(max_length=40, unique=True)
+    subject = models.CharField(max_length=200)
+    preheader = models.CharField(max_length=200, blank=True)
+    body = models.TextField()
+    version = models.PositiveIntegerField(default=1)
+    updated_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+
+class EmailTemplateVersion(BaseModel):
+    """Every wording a template has had, so an earlier one can be put back."""
+
+    template_key = models.CharField(max_length=40)
+    version = models.PositiveIntegerField()
+    subject = models.CharField(max_length=200)
+    preheader = models.CharField(max_length=200, blank=True)
+    body = models.TextField()
+    saved_by = models.ForeignKey(
+        "accounts.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    note = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["template_key", "version"], name="email_template_version_unique"
+            )
+        ]
+        ordering = ["-version"]

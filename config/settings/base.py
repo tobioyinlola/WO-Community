@@ -580,3 +580,9 @@ GOOGLE_MEET_CALENDAR_ID = env.str("GOOGLE_MEET_CALENDAR_ID", default="primary")
 ZOOM_ACCOUNT_ID = env.str("ZOOM_ACCOUNT_ID", default="")
 ZOOM_CLIENT_ID = env.str("ZOOM_CLIENT_ID", default="")
 ZOOM_CLIENT_SECRET = env.str("ZOOM_CLIENT_SECRET", default="")
+
+# Email look and feel. The sign off ends every email; the logo must be a hosted https PNG.
+EMAIL_SIGNOFF = env.str("EMAIL_SIGNOFF", default="Best regards,\nThe WO Community Team").replace(
+    "\n", "\n"
+)
+EMAIL_LOGO_URL = env.str("EMAIL_LOGO_URL", default=f"{FRONTEND_BASE_URL}/assets/email-logo.png")
