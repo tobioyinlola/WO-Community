@@ -41,7 +41,12 @@ test.describe("learning", () => {
     await filters.getByLabel("Search").fill("");
 
     await filters.getByLabel("Price").selectOption("paid");
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toContainText(/Financial models investors trust/);
+    await expect(cards.first()).toContainText(/₦\s?20,000/); // the promotional price, with the full price struck through
+    await filters.getByLabel("Search").fill("zzzz no such course");
     await expect(page.getByText("No courses match")).toBeVisible();
+    await filters.getByLabel("Search").fill("");
     await filters.getByLabel("Price").selectOption("free");
     await expect(cards.first()).toBeVisible();
     await filters.getByLabel("Sort by").selectOption("popular");
@@ -76,7 +81,8 @@ test.describe("learning", () => {
   test("a lecture can be completed, moved between, asked about, noted and the course reviewed", async ({ page }) => {
     await signIn(page);
     await openCourse(page);
-    await page.getByRole("link", { name: /Start learning|Continue learning|Review the course/ }).click();
+    // Start from the first lecture, not from wherever an earlier run stopped.
+    await page.getByRole("link", { name: /^Why this matters/ }).first().click();
     await expect(page).toHaveURL(/\/lecture\//);
     const title = page.getByRole("heading", { level: 1 });
     await expect(title).not.toHaveText("Founder fundamentals");
@@ -127,7 +133,9 @@ test.describe("learning", () => {
     // Finish the first lecture if it is not already, so the course is past a quarter.
     await page.getByRole("link", { name: /Start learning|Continue learning|Review the course/ }).click();
     const done = page.getByRole("button", { name: /^Completed\. Mark as not done$/ });
-    if (!(await done.isVisible())) await page.getByRole("button", { name: "Mark complete" }).click();
+    const mark = page.getByRole("button", { name: "Mark complete" });
+    await expect(done.or(mark)).toBeVisible(); // wait for the lecture to load before looking
+    if (!(await done.isVisible())) await mark.click();
     await expect(done).toBeVisible();
     await page.getByRole("tab", { name: "Reviews" }).click();
     const text = `Clear and practical ${Date.now() % 100000}`;

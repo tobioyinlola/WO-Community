@@ -134,6 +134,7 @@ test.describe("certificates", () => {
     await page.getByLabel("Signatory name").fill("Onyeka Obi");
     await page.getByRole("button", { name: "Save template" }).click();
     await expect(page.getByText(/Template saved/).first()).toBeVisible();
+    await page.waitForTimeout(600); // let the notice finish fading in before the contrast check
     const result = await new AxeBuilder({ page }).withTags(TAGS).analyze();
     expect(result.violations.map((v) => `${v.id} ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
 
