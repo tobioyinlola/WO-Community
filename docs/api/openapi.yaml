@@ -2823,6 +2823,331 @@ paths:
           description: Not found
         '409':
           description: Not in a state that allows this
+  /api/v1/admin/email-templates:
+    get:
+      operationId: admin_email_templates_list
+      summary: Every email template
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MailTemplateSummary'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email-templates/{key}:
+    get:
+      operationId: admin_email_templates_retrieve
+      summary: One template with its wording and variables
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+    put:
+      operationId: admin_email_templates_update
+      description: Only the subject, preview text and body are editable; the layout
+        and brand are fixed. The previous wording stays in the history.
+      summary: Change the wording of a template
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email-templates/{key}/preview:
+    post:
+      operationId: admin_email_templates_preview_create
+      description: Send a draft to see it without saving. The same HTML serves the
+        desktop and the mobile view; the layout adapts at 620 px.
+      summary: Preview a template with sample data
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRequestRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preview'
+          description: ''
+        '400':
+          description: Bad wording
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email-templates/{key}/reset:
+    post:
+      operationId: admin_email_templates_reset_create
+      summary: Go back to the built in wording
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email-templates/{key}/restore:
+    post:
+      operationId: admin_email_templates_restore_create
+      summary: Put an earlier wording back
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailTemplate'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email-templates/{key}/test:
+    post:
+      operationId: admin_email_templates_test_create
+      summary: Send a test of a template to yourself
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRequestRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          description: Bad wording
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email-templates/{key}/versions:
+    get:
+      operationId: admin_email_templates_versions_list
+      summary: The history of a template's wording
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Version'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such template
+  /api/v1/admin/email/health:
+    get:
+      operationId: admin_email_health_retrieve
+      description: SPF, DKIM and DMARC are read from public DNS. Whether the provider
+        has verified the domain, and the sender's reputation, cannot be seen from
+        here.
+      summary: 'Email health: DNS records, sending results and recent failures'
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+  /api/v1/admin/email/suppressions:
+    get:
+      operationId: admin_email_suppressions_list
+      description: Addresses are stored as hashes, so search with the full address.
+      summary: Addresses we no longer send broadcasts to
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          default: ''
+          maxLength: 254
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSuppressionList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+  /api/v1/admin/email/suppressions/{suppression_id}:
+    delete:
+      operationId: admin_email_suppressions_destroy
+      description: Super admin only, with a fresh two step check. Recorded in the
+        audit log.
+      summary: Allow broadcasts to an address again
+      parameters:
+      - in: path
+        name: suppression_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: No such entry
   /api/v1/admin/events:
     get:
       operationId: admin_events_list
@@ -4413,6 +4738,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAdminMatchList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/me/alerts:
+    get:
+      operationId: admin_me_alerts_list
+      description: Only the kinds this admin may approve are listed. All are on by
+        default.
+      summary: Which approval emails I get
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertPreference'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+    put:
+      operationId: admin_me_alerts_update
+      summary: Switch one kind of approval email on or off
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetAlertPreferenceRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertPreference'
           description: ''
         '401':
           description: Not authenticated
@@ -19901,6 +20275,19 @@ components:
         location:
           type: string
           maxLength: 120
+    AlertPreference:
+      type: object
+      properties:
+        kind:
+          type: string
+        title:
+          type: string
+        enabled:
+          type: boolean
+      required:
+      - enabled
+      - kind
+      - title
     Analytics:
       type: object
       properties:
@@ -21633,6 +22020,22 @@ components:
       required:
       - next_missing_field
       - score
+    Configured:
+      type: object
+      properties:
+        api_key:
+          type: boolean
+        webhook_secret:
+          type: boolean
+        reply_to:
+          type: boolean
+        logo:
+          type: boolean
+      required:
+      - api_key
+      - logo
+      - reply_to
+      - webhook_secret
     ConflictSession:
       type: object
       properties:
@@ -21670,6 +22073,33 @@ components:
       - email
       - id
       - name
+    CopyRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        preheader:
+          type: string
+          default: ''
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        note:
+          type: string
+          default: ''
+          maxLength: 120
+      required:
+      - body
+      - subject
     CountItem:
       type: object
       properties:
@@ -22336,6 +22766,52 @@ components:
       required:
       - name
       - slug
+    DnsCheck:
+      type: object
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/DnsCheckStatusEnum'
+        detail:
+          type: string
+        record:
+          type: string
+      required:
+      - detail
+      - key
+      - record
+      - status
+      - title
+    DnsCheckStatusEnum:
+      enum:
+      - ok
+      - warning
+      - missing
+      - unknown
+      type: string
+      description: |-
+        * `ok` - ok
+        * `warning` - warning
+        * `missing` - missing
+        * `unknown` - unknown
+    DomainHealth:
+      type: object
+      properties:
+        domain:
+          type: string
+        stream:
+          type: string
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DnsCheck'
+      required:
+      - checks
+      - domain
+      - stream
     EditorialItem:
       type: object
       properties:
@@ -22847,6 +23323,27 @@ components:
           default: false
       required:
       - type
+    Failure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        provider_message_id:
+          type: string
+        occurred_at:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - id
+      - kind
+      - occurred_at
+      - provider_message_id
     Featured:
       type: object
       properties:
@@ -23357,6 +23854,36 @@ components:
           format: uuid
       required:
       - user_id
+    Health:
+      type: object
+      properties:
+        provider:
+          type: string
+        configured:
+          $ref: '#/components/schemas/Configured'
+        separate_streams:
+          type: boolean
+        hourly_cap:
+          type: integer
+          nullable: true
+        domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainHealth'
+        stats:
+          $ref: '#/components/schemas/SendingStats'
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/Failure'
+      required:
+      - configured
+      - domains
+      - failures
+      - hourly_cap
+      - provider
+      - separate_streams
+      - stats
     Image:
       type: object
       description: Public addresses of the two sizes of a processed image.
@@ -24359,6 +24886,86 @@ components:
           format: uuid
       required:
       - upload_id
+    MailTemplate:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        about:
+          type: string
+        stream:
+          $ref: '#/components/schemas/StreamEnum'
+        subject:
+          type: string
+        edited:
+          type: boolean
+        version:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        preheader:
+          type: string
+        body:
+          type: string
+        default_subject:
+          type: string
+        default_preheader:
+          type: string
+        default_body:
+          type: string
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVariable'
+      required:
+      - about
+      - body
+      - default_body
+      - default_preheader
+      - default_subject
+      - edited
+      - key
+      - name
+      - preheader
+      - stream
+      - subject
+      - updated_at
+      - variables
+      - version
+    MailTemplateSummary:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        about:
+          type: string
+        stream:
+          $ref: '#/components/schemas/StreamEnum'
+        subject:
+          type: string
+        edited:
+          type: boolean
+        version:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - about
+      - edited
+      - key
+      - name
+      - stream
+      - subject
+      - updated_at
+      - version
     MarkReadRequest:
       type: object
       description: |-
@@ -26467,6 +27074,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Segment'
+    PaginatedSuppressionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Suppression'
     PaginatedTicketList:
       type: object
       required:
@@ -27541,6 +28171,41 @@ components:
               type: boolean
       required:
       - preferences
+    Preview:
+      type: object
+      properties:
+        subject:
+          type: string
+        preheader:
+          type: string
+        html:
+          type: string
+        text:
+          type: string
+      required:
+      - html
+      - preheader
+      - subject
+      - text
+    PreviewRequestRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        preheader:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
     PreviewResult:
       type: object
       properties:
@@ -29193,6 +29858,19 @@ components:
       description: |-
         * `link` - link
         * `file` - file
+    RestoreRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - version
     Resume:
       type: object
       properties:
@@ -29580,6 +30258,31 @@ components:
             you.
       required:
       - sent_to_organiser
+    SendingStats:
+      type: object
+      properties:
+        days:
+          type: integer
+        sent:
+          type: integer
+        delivered:
+          type: integer
+        bounced:
+          type: integer
+        complained:
+          type: integer
+        unsubscribed:
+          type: integer
+        suppressed_total:
+          type: integer
+      required:
+      - bounced
+      - complained
+      - days
+      - delivered
+      - sent
+      - suppressed_total
+      - unsubscribed
     Series:
       type: object
       properties:
@@ -29892,6 +30595,37 @@ components:
         * `mentor` - mentor
         * `mentee` - mentee
         * `admin` - admin
+    SetAlertPreferenceKindEnum:
+      enum:
+      - member_signup
+      - job_pending
+      - mentor_application
+      - course_access
+      - content_report
+      - support_ticket
+      type: string
+      description: |-
+        * `member_signup` - member_signup
+        * `job_pending` - job_pending
+        * `mentor_application` - mentor_application
+        * `course_access` - course_access
+        * `content_report` - content_report
+        * `support_ticket` - support_ticket
+    SetAlertPreferenceRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          $ref: '#/components/schemas/SetAlertPreferenceKindEnum'
+        enabled:
+          type: boolean
+      required:
+      - enabled
+      - kind
     SetupOptions:
       type: object
       properties:
@@ -30440,6 +31174,14 @@ components:
           type: string
       required:
       - status
+    StreamEnum:
+      enum:
+      - transactional
+      - broadcast
+      type: string
+      description: |-
+        * `transactional` - transactional
+        * `broadcast` - broadcast
     Suggestion:
       type: object
       properties:
@@ -30544,6 +31286,26 @@ components:
       - email
       - id
       - name
+    Suppression:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        reference:
+          type: string
+          readOnly: true
+          description: The first characters of the address hash
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - id
+      - reason
+      - reference
     TagsEnum:
       enum:
       - profile_complete
@@ -30644,6 +31406,25 @@ components:
       - created_at
       - id
       - name
+    TemplateVariable:
+      type: object
+      properties:
+        name:
+          type: string
+        kind:
+          type: string
+        is_required:
+          type: boolean
+        must_appear:
+          type: boolean
+        sample:
+          type: string
+      required:
+      - is_required
+      - kind
+      - must_appear
+      - name
+      - sample
     TemplateWriteRequest:
       type: object
       description: |-
@@ -33732,6 +34513,34 @@ components:
       - status
       - valid
       - verify_url
+    Version:
+      type: object
+      properties:
+        version:
+          type: integer
+        subject:
+          type: string
+        preheader:
+          type: string
+        body:
+          type: string
+        note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        saved_by:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - body
+      - created_at
+      - note
+      - preheader
+      - saved_by
+      - subject
+      - version
     Video:
       type: object
       properties:

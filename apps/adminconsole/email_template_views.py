@@ -24,7 +24,7 @@ ERRORS = {
 }
 
 
-class TemplateSummarySerializer(serializers.Serializer):
+class MailTemplateSummarySerializer(serializers.Serializer):
     key = serializers.CharField()
     name = serializers.CharField()
     about = serializers.CharField()
@@ -43,7 +43,7 @@ class TemplateVariableSerializer(serializers.Serializer):
     sample = serializers.CharField(allow_blank=True)
 
 
-class TemplateSerializer(TemplateSummarySerializer):
+class MailTemplateSerializer(MailTemplateSummarySerializer):
     preheader = serializers.CharField(allow_blank=True)
     body = serializers.CharField()
     default_subject = serializers.CharField()
@@ -116,11 +116,11 @@ class TemplatesView(APIView):
 
     @extend_schema(
         summary="Every email template",
-        responses={200: TemplateSummarySerializer(many=True), **ERRORS},
+        responses={200: MailTemplateSummarySerializer(many=True), **ERRORS},
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
-        return Response(TemplateSummarySerializer(templatestore.list_all(), many=True).data)
+        return Response(MailTemplateSummarySerializer(templatestore.list_all(), many=True).data)
 
 
 class TemplateView(APIView):
@@ -128,18 +128,18 @@ class TemplateView(APIView):
 
     @extend_schema(
         summary="One template with its wording and variables",
-        responses={200: TemplateSerializer, **ERRORS},
+        responses={200: MailTemplateSerializer, **ERRORS},
         tags=["admin"],
     )
     def get(self, request: Request, key: str) -> Response:
-        return Response(TemplateSerializer(templatestore.describe(key)).data)
+        return Response(MailTemplateSerializer(templatestore.describe(key)).data)
 
     @extend_schema(
         summary="Change the wording of a template",
         description="Only the subject, preview text and body are editable; the layout and brand "
         "are fixed. The previous wording stays in the history.",
         request=CopySerializer,
-        responses={200: TemplateSerializer, **ERRORS},
+        responses={200: MailTemplateSerializer, **ERRORS},
         tags=["admin"],
     )
     def put(self, request: Request, key: str) -> Response:
@@ -148,7 +148,7 @@ class TemplateView(APIView):
         templatestore.save(
             actor=_actor(request), key=key, ip=_ip(request), **serializer.validated_data
         )
-        return Response(TemplateSerializer(templatestore.describe(key)).data)
+        return Response(MailTemplateSerializer(templatestore.describe(key)).data)
 
 
 class PreviewView(APIView):
@@ -218,7 +218,7 @@ class RestoreView(APIView):
     @extend_schema(
         summary="Put an earlier wording back",
         request=RestoreSerializer,
-        responses={200: TemplateSerializer, **ERRORS},
+        responses={200: MailTemplateSerializer, **ERRORS},
         tags=["admin"],
     )
     def post(self, request: Request, key: str) -> Response:
@@ -230,7 +230,7 @@ class RestoreView(APIView):
             version=serializer.validated_data["version"],
             ip=_ip(request),
         )
-        return Response(TemplateSerializer(templatestore.describe(key)).data)
+        return Response(MailTemplateSerializer(templatestore.describe(key)).data)
 
 
 class ResetView(APIView):
@@ -239,9 +239,9 @@ class ResetView(APIView):
     @extend_schema(
         summary="Go back to the built in wording",
         request=None,
-        responses={200: TemplateSerializer, **ERRORS},
+        responses={200: MailTemplateSerializer, **ERRORS},
         tags=["admin"],
     )
     def post(self, request: Request, key: str) -> Response:
         templatestore.reset(actor=_actor(request), key=key, ip=_ip(request))
-        return Response(TemplateSerializer(templatestore.describe(key)).data)
+        return Response(MailTemplateSerializer(templatestore.describe(key)).data)

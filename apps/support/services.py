@@ -23,7 +23,7 @@ from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core.rbac import permissions_for
 from apps.core.text import plain, rich_post, text_of
-from apps.notifications import emails, notify
+from apps.notifications import adminalerts, emails, notify
 from apps.support import domain
 from apps.support.models import SupportAttachment, SupportCannedReply, SupportMessage, SupportTicket
 from apps.uploads import services as uploads
@@ -139,6 +139,27 @@ def create_ticket(
         properties={"category": category},
     )
     _tell_admins(ticket, "ticket_new")
+    adminalerts.raise_alert(
+        "support_ticket",
+        item_key=f"ticket:{ticket.pk}",
+        what=f"{ticket.reference}: {ticket.subject}",
+        who=email,
+        path=f"/admin/support?ticket={ticket.pk}",
+        in_app=False,
+    )
+    if member is not None:
+        emails.send_templated(
+            email,
+            "ticket_received",
+            {
+                "reference": ticket.reference,
+                "subject": ticket.subject,
+                "ticket_url": f"{settings.FRONTEND_BASE_URL}/support/{ticket.pk}",
+            },
+            category="notification_ticket_received",
+            no_reply=True,
+            with_preferences=True,
+        )
     if member is None:
         emails.send_support_mail(
             email,

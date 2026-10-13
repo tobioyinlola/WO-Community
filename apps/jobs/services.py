@@ -30,6 +30,7 @@ from apps.jobs.models import (
     JobSettings,
     SavedJob,
 )
+from apps.notifications import adminalerts
 from apps.startups import selectors as startups
 
 logger = structlog.get_logger(__name__)
@@ -246,7 +247,21 @@ def create_job(*, user_id: UUID, data: dict[str, Any], admin: bool = False) -> J
         analytics.track("job_created", actor_id=user_id, properties={"job_type": job.type})
         if job.status == Job.Status.PUBLISHED:
             _announce_published(job)
+        else:
+            _alert_review(job)
     return job
+
+
+def _alert_review(job: Job) -> None:
+    """Tell the admins who review jobs that this one is waiting (once per submission)."""
+    contact = accounts.get_contact(job.poster_id)
+    adminalerts.raise_alert(
+        "job_pending",
+        item_key=f"job:{job.pk}:{int(timezone.now().timestamp() * 1000)}",
+        what=f"Job to review: {job.title}",
+        who=contact.email if contact else "A member",
+        path="/admin/jobs?tab=pending",
+    )
 
 
 def _sensitive(job: Job) -> tuple[Any, ...]:
@@ -299,6 +314,8 @@ def update_job(
         job.edited_at = now
         job.save()
         _index(job)
+        if resubmitted and job.status == Job.Status.PENDING:
+            _alert_review(job)
         if resubmitted and job.status == Job.Status.PUBLISHED:
             _announce_published(job)
         elif resubmitted or job.status == Job.Status.PUBLISHED:

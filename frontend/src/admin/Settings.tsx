@@ -26,6 +26,7 @@ interface Section {
 const SECTIONS: Section[] = [
   { id: "profile", label: "Profile", blurb: "Who you are signed in as." },
   { id: "community", label: "Community", blurb: "How the job board and the toolkit behave for everyone.", needs: "settings.manage" },
+  { id: "notifications", label: "Notifications", blurb: "Which approval emails you get." },
   { id: "security", label: "Security", blurb: "Two step sign in and recovery codes." },
   { id: "team", label: "Roles and team", blurb: "Everyone who can use this console.", needs: "members.view" },
   { id: "appearance", label: "Appearance", blurb: "How dense tables are." },
@@ -143,6 +144,32 @@ function CommunitySection({ permissions }: { permissions: Set<string> }) {
   );
 }
 
+function NotificationsSection() {
+  const client = useQueryClient();
+  const toast = useToast();
+  const prefs = useQuery({ queryKey: ["admin", "alert-prefs"], queryFn: () => unwrap(api.GET("/api/v1/admin/me/alerts")) });
+  const set = async (kind: string, enabled: boolean) => {
+    await unwrap(api.PUT("/api/v1/admin/me/alerts", { body: { kind: kind as "member_signup", enabled } }));
+    toast.show(enabled ? "You will get these emails" : "You will not get these emails");
+    await client.invalidateQueries({ queryKey: ["admin", "alert-prefs"] });
+  };
+  return (
+    <section className="adm-card" aria-labelledby="alerts-title">
+      <h2 className="adm-card__title" id="alerts-title">Approval emails</h2>
+      <p className="adm-card__sub">When something needs your approval you get an email at once for the first one, then a summary at most every 15 minutes. You still see everything in the console.</p>
+      {prefs.isPending ? <SkeletonRows /> : prefs.isError ? <Alert tone="danger" title="Could not load">Try again in a moment.</Alert> : (
+        <ul className="app-stack" style={{ listStyle: "none", margin: "var(--space-4) 0 0", padding: 0 }}>
+          {prefs.data.map((p) => (
+            <li key={p.kind}>
+              <Switch label={p.title} checked={p.enabled} onChange={(e) => void set(p.kind, e.target.checked)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function AppearanceSection() {
   const toast = useToast();
   const [density, setDensity] = usePref<Density>("members:density", "comfortable");
@@ -206,6 +233,7 @@ export default function Settings() {
           {current ? <p className="adm-settings__blurb">{current.blurb}</p> : null}
           {current?.id === "profile" ? <ProfileSection /> : null}
           {current?.id === "community" ? <CommunitySection permissions={have} /> : null}
+          {current?.id === "notifications" ? <NotificationsSection /> : null}
           {current?.id === "security" ? <Security embedded /> : null}
           {current?.id === "team" ? <TeamSection permissions={have} /> : null}
           {current?.id === "appearance" ? <AppearanceSection /> : null}

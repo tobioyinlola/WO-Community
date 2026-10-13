@@ -1,12 +1,14 @@
 from django.urls import path, re_path
 
 from apps.adminconsole import (
+    alert_views,
     audit_views,
     campaign_views,
     certificate_views,
     course_views,
     dashboard_views,
     editorial_views,
+    email_health_views,
     email_template_views,
     event_views,
     featured_views,
@@ -564,6 +566,22 @@ urlpatterns = [
         "admin/email-templates/<slug:key>/reset",
         email_template_views.ResetView.as_view(),
         name="admin-email-template-reset",
+    ),
+    path(
+        "admin/me/alerts",
+        alert_views.AlertPreferencesView.as_view(),
+        name="admin-alert-preferences",
+    ),
+    path("admin/email/health", email_health_views.HealthView.as_view(), name="admin-email-health"),
+    path(
+        "admin/email/suppressions",
+        email_health_views.SuppressionsView.as_view(),
+        name="admin-email-suppressions",
+    ),
+    path(
+        "admin/email/suppressions/<uuid:suppression_id>",
+        email_health_views.SuppressionView.as_view(),
+        name="admin-email-suppression",
     ),
     path("admin/audit", audit_views.AuditListView.as_view(), name="admin-audit"),
     path("admin/audit/export", audit_views.AuditExportView.as_view(), name="admin-audit-export"),

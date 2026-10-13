@@ -7,7 +7,7 @@ from celery import shared_task
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
 from apps.mentorship.models import MentorApplication, MentorInterest
-from apps.notifications import notify
+from apps.notifications import adminalerts, notify
 
 logger = structlog.get_logger(__name__)
 ADMIN_ROLES = ["community_admin", "super_admin"]
@@ -29,6 +29,15 @@ def notify_admins(event_id: str) -> None:
     )
     if application is None or application.status != MentorApplication.Status.PENDING:
         return
+    contact = accounts.get_contact(application.applicant_id)
+    adminalerts.raise_alert(
+        "mentor_application",
+        item_key=f"mentor-application:{application.pk}",
+        what="New mentor application",
+        who=contact.email if contact else "A member",
+        path="/admin/mentors",
+        in_app=False,  # the loop below already tells them in the app
+    )
     for admin_id in list(accounts.ids_with_roles(ADMIN_ROLES)):
         notify.notify(
             UUID(str(admin_id)),

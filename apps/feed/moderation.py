@@ -15,6 +15,7 @@ from apps.core import events as domain_events
 from apps.core.text import plain, text_of
 from apps.feed import events, selectors, services
 from apps.feed.models import Comment, Post, Report
+from apps.notifications import adminalerts
 from apps.profiles import selectors as profiles
 
 EXCERPT = 200
@@ -66,6 +67,13 @@ def report(
             Report.objects.get(reporter_id=viewer.pk, target_type=target_type, target_id=target_id),
             False,
         )
+    adminalerts.raise_alert(
+        "content_report",
+        item_key=f"report:{created.pk}",
+        what=f"Reported {target_type}: {reason}",
+        who=getattr(viewer, "email", "A member"),
+        path="/admin/reports",
+    )
     return created, True
 
 

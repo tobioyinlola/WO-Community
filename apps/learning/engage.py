@@ -26,7 +26,7 @@ from apps.learning.models import (
     Lesson,
     WishlistItem,
 )
-from apps.notifications import notify
+from apps.notifications import adminalerts, notify
 
 STAFF_ROLES = ["content_editor", "community_admin", "super_admin"]
 MAX_NOTES_PER_LESSON = 200
@@ -92,6 +92,15 @@ def request_access(*, user_id: UUID, course_id: UUID, message: str) -> Enrolment
         )
         created = False
     if created:
+        contact = accounts.get_contact(user_id) if hasattr(accounts, "get_contact") else None
+        adminalerts.raise_alert(
+            "course_access",
+            item_key=f"course-request:{request.pk}",
+            what=f"Course access request: {course.title}",
+            who=contact.email if contact else "A member",
+            path=f"/admin/courses?course={course.pk}&tab=requests",
+            in_app=False,
+        )
         for admin_id in accounts.ids_with_roles(STAFF_ROLES).distinct():
             notify.notify(
                 admin_id,

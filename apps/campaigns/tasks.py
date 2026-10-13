@@ -14,8 +14,12 @@ logger = structlog.get_logger(__name__)
 def continue_sending(campaign_id: str) -> None:
     """Send one batch, then line up the next after a pause so the provider is never flooded."""
     if services.send_batch(UUID(campaign_id)):
+        # While the hourly allowance is used up there is no point trying again for a few minutes.
+        capped = services.hourly_room() == 0
         continue_sending.apply_async(
-            args=[campaign_id], countdown=settings.CAMPAIGN_BATCH_DELAY_SECONDS, queue="email"
+            args=[campaign_id],
+            countdown=300 if capped else settings.CAMPAIGN_BATCH_DELAY_SECONDS,
+            queue="email",
         )
 
 
