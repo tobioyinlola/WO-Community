@@ -255,6 +255,13 @@ def add_admin_message(
     if status == "resolved":
         ticket.resolved_at, ticket.resolved_by = now, admin
     ticket.save()
+    audit.record(
+        actor=admin,
+        action="support.ticket.replied",
+        target_type="support_ticket",
+        target_id=ticket.pk,
+        target_label=ticket.reference,
+    )
     if before != status:
         audit.record(
             actor=admin,

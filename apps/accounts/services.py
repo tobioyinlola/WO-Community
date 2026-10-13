@@ -444,6 +444,12 @@ def logout(*, raw_refresh_token: str) -> None:
     family = sessions.family_for_token(raw_refresh_token)
     if family is not None:
         sessions.revoke(family, "logout")
+        audit.record(
+            actor=family.user,
+            action="auth.logout",
+            target_type="user",
+            target_id=family.user_id,
+        )
 
 
 # --- Sessions ---

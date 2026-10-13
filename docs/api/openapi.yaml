@@ -615,6 +615,36 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/campaigns/{campaign_id}/audience:
+    get:
+      operationId: admin_campaigns_audience_retrieve
+      description: For the confirm step before sending. People who unsubscribed, bounced
+        or complained are already left out.
+      summary: How many people a newsletter would reach
+      parameters:
+      - in: path
+        name: campaign_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AudienceSize'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/campaigns/{campaign_id}/cancel:
     post:
       operationId: admin_campaigns_cancel_create
@@ -20853,6 +20883,14 @@ components:
       - name
       - registered_at
       - user_id
+    AudienceSize:
+      type: object
+      properties:
+        recipients:
+          type: integer
+          description: People it would go to if sent now
+      required:
+      - recipients
     AuditActor:
       type: object
       properties:

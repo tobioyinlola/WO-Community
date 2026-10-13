@@ -237,6 +237,26 @@ export interface paths {
         patch: operations["admin_campaigns_partial_update"];
         trace?: never;
     };
+    "/api/v1/admin/campaigns/{campaign_id}/audience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many people a newsletter would reach
+         * @description For the confirm step before sending. People who unsubscribed, bounced or complained are already left out.
+         */
+        get: operations["admin_campaigns_audience_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/campaigns/{campaign_id}/cancel": {
         parameters: {
             query?: never;
@@ -9409,6 +9429,10 @@ export interface components {
             /** Format: date-time */
             checked_in_at: string | null;
         };
+        AudienceSize: {
+            /** @description People it would go to if sent now */
+            recipients: number;
+        };
         AuditActor: {
             /** Format: uuid */
             id: string | null;
@@ -16692,6 +16716,48 @@ export interface operations {
             };
             /** @description If-Match header missing */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_campaigns_audience_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudienceSize"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

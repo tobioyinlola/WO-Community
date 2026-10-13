@@ -318,6 +318,11 @@ urlpatterns = [
         name="admin-campaign",
     ),
     path(
+        "admin/campaigns/<uuid:campaign_id>/audience",
+        campaign_views.CampaignAudienceView.as_view(),
+        name="admin-campaign-audience",
+    ),
+    path(
         "admin/campaigns/<uuid:campaign_id>/report",
         campaign_views.CampaignReportView.as_view(),
         name="admin-campaign-report",

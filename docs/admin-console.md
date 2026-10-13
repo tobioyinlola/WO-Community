@@ -26,9 +26,6 @@ These pages count and act on the live database, with no background job in betwee
 
 - **Posts and feed** (`AdminFeed.tsx`, `GET /admin/posts`): every post, hidden ones included, with
   filters, pin, feature, hide and remove, and each post's comments to hide, restore or remove.
-- **Job applications** (`JobApplications.tsx`, `GET /admin/job-applications`): members apply through
-  the community (`POST /jobs/{id}/apply`); the poster or an admin moves each application through
-  reviewing, shortlisted, hired or declined, and the applicant sees the status.
 - **Sessions and matches** (`MentoringSessions.tsx`): every mentoring session with cancel, and one row
   per mentor and founder pair with how many sessions they have had.
 - **Analytics** (`Analytics.tsx`, `GET /admin/analytics`): totals against the period before, a daily

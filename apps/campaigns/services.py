@@ -301,6 +301,16 @@ def _begin(campaign: Campaign) -> None:
     domain_events.publish(events.CampaignStarted(campaign_id=str(campaign.pk)))
 
 
+def audience_size(campaign_id: UUID) -> int:
+    """How many people the campaign would go to if it were sent now."""
+    campaign = Campaign.objects.filter(pk=campaign_id).select_related("segment").first()
+    if campaign is None:
+        raise NotFound()
+    if campaign.segment is None:
+        return 0
+    return len(segments.recipients(campaign.segment.definition))
+
+
 def send_now(*, actor: Any, campaign_id: UUID, ip: str = "") -> Campaign:
     with transaction.atomic():
         campaign = _lock(campaign_id)
@@ -388,13 +398,15 @@ def _build(
     token = unsubscribe_token(user_id, campaign.pk)
     page_url = f"{settings.FRONTEND_BASE_URL}/unsubscribe?token={token}"
     one_click = f"{settings.API_BASE_URL}/api/v1/unsubscribe?token={token}"
+    subject = render.MERGE_TOKEN.sub(lambda m: first_name or render.FALLBACK_NAME, campaign.subject)
     html_body, text_body = render.render(
         preheader=campaign.preheader,
         blocks=campaign.blocks,
         first_name=first_name,
         unsubscribe_url=page_url,
+        subject=subject,
+        preferences_url=f"{settings.FRONTEND_BASE_URL}/settings/notifications",
     )
-    subject = render.MERGE_TOKEN.sub(lambda m: first_name or render.FALLBACK_NAME, campaign.subject)
     key = hashlib.sha256(
         f"campaign:{campaign.pk}:{user_id}:{'test' if test else ''}".encode()
     ).hexdigest()
