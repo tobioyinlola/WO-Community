@@ -61,6 +61,18 @@ project in `backend/` and the React app in `frontend/`.
 9. **Repository layout.** The Django project sat at the repository root beside `frontend/`. It now lives
    in `backend/`, so each deploy target has a root directory of its own.
 
+## Found while checking the production run
+
+10. **No way to create the first administrator.** Nobody can invite or approve on an empty database.
+    Fixed with `python manage.py create_super_admin --email ...`.
+11. **R2 has no S3 Object Lock headers**, which the daily audit hash write used. A setting
+    (`STORAGE_ANCHOR_OBJECT_LOCK=false`) skips them, and the R2 bucket gets a retention rule instead.
+12. **No SMTP adapter**, so the real sending path could not be tried against a mail catcher. Added
+    `SmtpEmailAdapter` (local use only).
+13. **The CI deploy check** needed the newly required variables. Updated.
+14. **A browser upload to an unreachable storage host** fails with no clue. Signed links name the host,
+    so the storage address must be reachable by the browser (the R2 custom domain and endpoint are).
+
 ## Login method
 
 The API signs members in with a short lived access token (10 minutes) that the browser keeps in memory
@@ -75,4 +87,14 @@ on, and the origin list comes from `CORS_ALLOWED_ORIGINS`.
 
 ## Secrets in history
 
-Reported in `docs/deployment/go-live-checklist.md` after the history scan.
+The full git history (every branch) was searched for private keys, `re_` Resend keys, Stripe keys, AWS
+access keys, Google keys, Slack and GitHub tokens, `whsec_` webhook secrets, and database URLs with a
+password for a real host. The history also has no `.env` file; only `.env.example` files were ever
+committed, and they hold made up values.
+
+Result: **no real secret was found.** The one match is a throwaway `whsec_` value inside a Resend
+adapter test. CI also runs gitleaks over the full history on every push (`.gitleaksignore` lists
+three made up test values that an earlier run flagged).
+
+This search used patterns, not gitleaks itself, so let CI's gitleaks run be the final word. Rotate
+anything that was ever pasted into a chat or an issue, whatever the scan says.
