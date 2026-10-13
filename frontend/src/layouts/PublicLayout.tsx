@@ -1,8 +1,9 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { Logo } from "../components";
+import { ArrowCircle } from "../ui/ArrowCircle";
 
 const LINKS = [
   { to: "/", label: "Home", end: true },
@@ -14,14 +15,23 @@ const LINKS = [
 export function PublicLayout() {
   const { status } = useAuth();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const signedIn = status === "authenticated";
+
+  // The floating header turns into a blurred, slightly see-through bar once the page has moved.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <>
       <a href="#main" className="wo-visually-hidden">
         Skip to content
       </a>
-      <nav className="wo-nav wo-nav--brand wo-on-brand site-head" aria-label="Main">
+      <nav className="wo-nav wo-nav--brand wo-on-brand site-head" aria-label="Main" data-scrolled={scrolled}>
         <Link to="/" aria-label="WO Community, home">
           <Logo on="dark" height={40} />
         </Link>
@@ -54,6 +64,7 @@ export function PublicLayout() {
             {signedIn ? (
               <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/app">
                 Open the app
+                <ArrowCircle />
               </Link>
             ) : (
               <>
@@ -62,6 +73,7 @@ export function PublicLayout() {
                 </Link>
                 <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/register">
                   Request access
+                  <ArrowCircle />
                 </Link>
               </>
             )}
@@ -73,6 +85,7 @@ export function PublicLayout() {
       </main>
       <footer className="site-footer wo-on-brand">
         <div className="wo-container">
+          <div className="site-footer__card wo-on-brand">
           <div className="site-footer__grid">
             <div>
               <Logo on="dark" height={44} />
@@ -109,6 +122,10 @@ export function PublicLayout() {
           <p className="caption" style={{ marginTop: "var(--space-12)", color: "var(--text-on-brand-muted)" }}>
             &copy; {new Date().getFullYear()} WO Community, the member platform of WithOnyeka.
           </p>
+          <div className="site-footer__mark" aria-hidden="true">
+            WO COMMUNITY
+          </div>
+          </div>
         </div>
       </footer>
     </>
