@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 QUARANTINE = "quarantine"
 MEDIA = "media"
@@ -18,6 +18,9 @@ class PresignedPost:
     url: str
     fields: dict[str, str]
     expires_in: int
+    # POST sends ``fields`` and the file as a form. PUT sends only the file, with ``headers``.
+    method: str = "POST"
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

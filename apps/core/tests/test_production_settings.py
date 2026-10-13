@@ -26,6 +26,8 @@ GOOD = {
     "STORAGE_ADAPTER": "apps.integrations.storage.s3.S3Storage",
     "MALWARE_SCANNER": "apps.integrations.malware.clamd.ClamdScanner",
     "MEDIA_BASE_URL": "https://media.example.com",
+    "STORAGE_ACCESS_KEY_ID": "id",
+    "STORAGE_SECRET_ACCESS_KEY": "secret",
     "MEETING_DEFAULT_PROVIDER": "google_meet",
     "GOOGLE_MEET_CLIENT_ID": "a",
     "GOOGLE_MEET_CLIENT_SECRET": "b",
@@ -76,6 +78,9 @@ def test_a_complete_environment_starts():
         ({"NUM_PROXIES": "0"}, "NUM_PROXIES"),
         ({"DEBUG": "true"}, "DEBUG"),
         ({"JWT_PRIVATE_KEY": None}, "JWT_PRIVATE_KEY"),
+        ({"MEDIA_BASE_URL": "http://media.example.com"}, "MEDIA_BASE_URL"),
+        ({"STORAGE_SECRET_ACCESS_KEY": None}, "STORAGE_SECRET_ACCESS_KEY"),
+        ({"STORAGE_UPLOAD_METHOD": "form"}, "STORAGE_UPLOAD_METHOD"),
     ],
 )
 def test_a_missing_or_unsafe_setting_stops_the_start_with_its_name(changes, message):

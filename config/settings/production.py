@@ -23,11 +23,11 @@ if DEBUG:
     raise ImproperlyConfigured("DEBUG must be false in production.")
 
 
-def _https_origin(name: str, value: str) -> None:
+def _https_origin(name: str, value: str, allow_path: bool = False) -> None:
     parsed = urlparse(value)
     if parsed.scheme != "https" or not parsed.hostname or parsed.hostname == "localhost":
         raise ImproperlyConfigured(f"{name} must be a public https address, got {value!r}.")
-    if parsed.path not in ("", "/"):
+    if not allow_path and parsed.path not in ("", "/"):
         raise ImproperlyConfigured(f"{name} must be an origin with no path, got {value!r}.")
 
 
@@ -82,6 +82,13 @@ require("FIELD_ENCRYPTION_KEYS")
 STORAGE_ADAPTER = require("STORAGE_ADAPTER")
 MALWARE_SCANNER = require("MALWARE_SCANNER")
 MEDIA_BASE_URL = require("MEDIA_BASE_URL")
+_https_origin("MEDIA_BASE_URL", MEDIA_BASE_URL, allow_path=True)
+if STORAGE_ADAPTER.endswith("S3Storage"):
+    require("STORAGE_ACCESS_KEY_ID")
+    require("STORAGE_SECRET_ACCESS_KEY")
+    if STORAGE_UPLOAD_METHOD not in ("post", "put"):  # noqa: F405
+        raise ImproperlyConfigured("STORAGE_UPLOAD_METHOD must be 'post' or 'put'.")
+
 # Partitions are archived before they are dropped, and the audit head hash is anchored.
 ANALYTICS_REQUIRE_ARCHIVE = True
 # Google sign-in is optional, but once a client id is set the real verifier must check the tokens.

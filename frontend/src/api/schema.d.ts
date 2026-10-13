@@ -15736,6 +15736,9 @@ export interface components {
             form_data: {
                 [key: string]: string;
             };
+            headers: {
+                [key: string]: string;
+            };
             expires_in: number;
         };
         /**

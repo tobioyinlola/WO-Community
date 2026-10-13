@@ -57,6 +57,22 @@ class S3Storage(ObjectStorage):
     def presign_post(
         self, *, bucket: str, key: str, content_type: str, max_size: int, expires_in: int
     ) -> PresignedPost:
+        if settings.STORAGE_UPLOAD_METHOD == "put":
+            # Cloudflare R2 has no browser form uploads, so the file goes up with one signed PUT.
+            # The exact size and type are part of the signature, so nothing else can be sent.
+            url = self.client.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": self.bucket_name(bucket),
+                    "Key": key,
+                    "ContentType": content_type,
+                    "ContentLength": max_size,
+                },
+                ExpiresIn=expires_in,
+            )
+            return PresignedPost(
+                url, {}, expires_in, method="PUT", headers={"Content-Type": content_type}
+            )
         form = self.client.generate_presigned_post(
             Bucket=self.bucket_name(bucket),
             Key=key,
