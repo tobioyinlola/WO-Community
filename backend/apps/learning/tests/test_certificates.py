@@ -314,7 +314,7 @@ def test_long_names_and_titles_stay_on_the_page():
 
 
 def test_the_colours_are_the_design_tokens():
-    tokens = (Path(__file__).parents[3] / "frontend/src/styles/tokens.css").read_text("utf8")
+    tokens = (Path(__file__).parents[4] / "frontend/src/styles/tokens.css").read_text("utf8")
     for name, value in COLOURS.items():
         found = re.search(rf"--{re.escape(name)}:\s*(#[0-9A-Fa-f]{{6}})", tokens)
         if found:  # a few are named only in print (text-secondary has a dark value too)
