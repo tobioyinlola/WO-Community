@@ -4,10 +4,13 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
+from django.utils.html import strip_tags
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
 from apps.core.keyset import paginate
+from apps.core.rbac import ADMIN_ROLES
 from apps.feed import follows
 from apps.feed.models import Comment, Follow, Post, Reaction
 from apps.profiles import selectors as profiles
@@ -22,11 +25,35 @@ SORTS: dict[str, tuple[str, ...]] = {
 
 def visible_posts(viewer: Any) -> QuerySet[Post]:
     """Posts the viewer may open: not removed, author still active, not hidden (own ones aside)."""
-    return (
-        Post.objects.filter(deleted_at__isnull=True, author_id__in=accounts.active_user_ids())
+    roles = set(viewer.role_names()) if hasattr(viewer, "role_names") else set()
+    audience = Q(audience_roles=[]) | Q(author_id=viewer.pk)
+    for role in roles:
+        audience |= Q(audience_roles__contains=[role])
+    queryset = (
+        Post.objects.filter(
+            deleted_at__isnull=True,
+            author_id__in=accounts.active_user_ids(),
+            scheduled_for__isnull=True,  # a post written ahead is not out yet
+        )
         .filter(Q(hidden_at__isnull=True) | Q(author_id=viewer.pk))
         .select_related()
         .prefetch_related("images", "links__preview")
+    )
+    if roles & {r.value for r in ADMIN_ROLES}:
+        return queryset  # the team sees every post, whoever it is meant for
+    return queryset.filter(audience)
+
+
+def pin_is_live(post: Post, now: Any = None) -> bool:
+    """Pinned, and the pin has not lapsed."""
+    if post.pinned_at is None:
+        return False
+    return post.pinned_until is None or post.pinned_until > (now or timezone.now())
+
+
+def _live_pin() -> Q:
+    return Q(pinned_at__isnull=False) & (
+        Q(pinned_until__isnull=True) | Q(pinned_until__gt=timezone.now())
     )
 
 
@@ -51,13 +78,27 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
     views = []
     for post in posts:
         is_mine = post.author_id == viewer.pk
+        author = cards[post.author_id]
+        if post.official:
+            # The team speaks as one voice: no name, photo or profile of the admin who wrote it.
+            author = {
+                "id": post.author_id,
+                "name": "WO Community team",
+                "headline": "Official",
+                "photo": None,
+                "slug": None,
+                "hidden": False,
+                "following": False,
+            }
         views.append(
             {
                 "id": post.pk,
                 "category": post.category,
                 "body": post.body,
                 "country": post.country,
-                "author": cards[post.author_id],
+                "official": post.official,
+                "comments_enabled": post.comments_enabled,
+                "author": author,
                 "startup": startup_cards.get(post.startup_id) if post.startup_id else None,
                 "images": [
                     {"id": i.pk, "urls": uploads.image_urls(i.base_key), "alt": i.alt_text}
@@ -76,7 +117,7 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
                 ],
                 "created_at": post.created_at,
                 "edited_at": post.edited_at,
-                "pinned": post.pinned_at is not None,
+                "pinned": pin_is_live(post),
                 "featured": post.featured_at is not None,
                 "hidden": post.hidden_at is not None,
                 "comment_count": post.comment_count,
@@ -117,8 +158,8 @@ def feed(
     pinned: list[Post] = []
     if scope == "all":
         if not cursor:
-            pinned = list(queryset.filter(pinned_at__isnull=False).order_by("-pinned_at", "-id"))
-        queryset = queryset.filter(pinned_at__isnull=True)
+            pinned = list(queryset.filter(_live_pin()).order_by("-pinned_at", "-id"))
+        queryset = queryset.exclude(_live_pin())
     rows, next_cursor = paginate(
         queryset, fields=SORTS[sort], sort=f"{scope}:{sort}", cursor=cursor, limit=limit
     )
@@ -223,3 +264,69 @@ def active_author_ids(since: Any) -> Any:
         )
     )
     return posters | commenters
+
+
+def activity(viewer: Any, *, limit: int) -> list[dict[str, Any]]:
+    """The latest comments and reactions on posts the viewer may open, newest first."""
+    posts = visible_posts(viewer)
+    active = accounts.active_user_ids()
+    comment_rows = list(
+        Comment.objects.filter(
+            deleted_at__isnull=True,
+            hidden_at__isnull=True,
+            author_id__in=active,
+            post_id__in=posts.values("pk"),
+        )
+        .select_related("post")
+        .order_by("-created_at", "-id")[:limit]
+    )
+    reaction_rows = list(
+        Reaction.objects.filter(user_id__in=active, target_type=Reaction.Target.POST)
+        .filter(target_id__in=posts.values("pk"))
+        .order_by("-created_at", "-id")[:limit]
+    )
+    reacted_posts = {p.pk: p for p in posts.filter(pk__in=[r.target_id for r in reaction_rows])}
+    items: list[dict[str, Any]] = []
+    for comment in comment_rows:
+        items.append(
+            {
+                "id": comment.pk,
+                "kind": "comment",
+                "actor_id": comment.author_id,
+                "post": comment.post,
+                "detail": strip_tags(comment.body)[:160],
+                "created_at": comment.created_at,
+            }
+        )
+    for reaction in reaction_rows:
+        post = reacted_posts.get(reaction.target_id)
+        if post is not None:
+            items.append(
+                {
+                    "id": reaction.pk,
+                    "kind": "reaction",
+                    "actor_id": reaction.user_id,
+                    "post": post,
+                    "detail": reaction.kind,
+                    "created_at": reaction.created_at,
+                }
+            )
+    items.sort(key=lambda item: (item["created_at"], str(item["id"])), reverse=True)
+    items = items[:limit]
+    cards = profiles.cards_for(
+        viewer, list({i["actor_id"] for i in items} | {i["post"].author_id for i in items})
+    )
+    return [
+        {
+            "id": i["id"],
+            "kind": i["kind"],
+            "detail": i["detail"],
+            "actor": cards[i["actor_id"]],
+            "post_id": i["post"].pk,
+            "post_author": cards[i["post"].author_id]["name"],
+            "post_excerpt": i["post"].body_text[:120],
+            "mine": i["actor_id"] == viewer.pk,
+            "created_at": i["created_at"],
+        }
+        for i in items
+    ]

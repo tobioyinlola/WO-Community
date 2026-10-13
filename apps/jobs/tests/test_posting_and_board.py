@@ -38,7 +38,13 @@ def test_when_the_board_auto_publishes_the_job_is_live_at_once(
     assert [j["id"] for j in reader_client.get(JOBS).json()["results"]] == [body["id"]]
     seen = reader_client.get(job_url(body["id"])).json()
     assert seen["title"] == "Backend Engineer" and seen["mine"] is False
-    assert seen["apply"] == {"method": "url", "target": "https://acme.example.com/careers/1"}
+    assert seen["apply"] == {
+        "method": "url",
+        "target": "https://acme.example.com/careers/1",
+        "url": "https://acme.example.com/careers/1",
+        "email": "",
+        "host": "acme.example.com",
+    }
 
 
 def test_the_default_term_is_configurable(auto_publish, poster_client):
@@ -66,7 +72,13 @@ def test_a_job_can_apply_by_email(auto_publish, poster_client, reader_client):
     body = post_job(
         poster_client, apply_method="email", apply_target="Jobs@Acme.Example.com"
     ).json()
-    assert body["apply"] == {"method": "email", "target": "jobs@acme.example.com"}
+    assert body["apply"] == {
+        "method": "email",
+        "target": "jobs@acme.example.com",
+        "url": "",
+        "email": "jobs@acme.example.com",
+        "host": "",
+    }
 
 
 @pytest.mark.parametrize(

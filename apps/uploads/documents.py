@@ -10,6 +10,7 @@ launch actions in a PDF, and macros, embedded objects and archive bombs in an Of
 import io
 import re
 import zipfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -44,6 +45,12 @@ def sniff(data: bytes) -> str | None:
     """The content type the bytes really are, from their first bytes and structure."""
     if data.startswith(b"%PDF-"):
         return "application/pdf"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
     if data.startswith(b"PK\x03\x04"):
         try:
             names = zipfile.ZipFile(io.BytesIO(data)).namelist()
@@ -91,15 +98,38 @@ def _check_office(data: bytes, declared_type: str) -> None:
         raise DocumentRejected("type_mismatch")
 
 
-def inspect(data: bytes, declared_type: str) -> CheckedDocument:
+def _check_image(data: bytes) -> None:
+    """An image kept as it arrived must at least decode, and not be absurdly large."""
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        with Image.open(io.BytesIO(data)) as image:
+            width, height = image.size
+            if (
+                width * height > settings.IMAGE_MAX_PIXELS
+                or max(width, height) > settings.IMAGE_MAX_SIDE
+            ):
+                raise DocumentRejected("too_large")
+            image.verify()
+    except (UnidentifiedImageError, OSError, SyntaxError) as exc:
+        raise DocumentRejected("corrupt") from exc
+
+
+def inspect(
+    data: bytes, declared_type: str, allowed: Iterable[str] | None = None
+) -> CheckedDocument:
     """Verify an upload really is the document it claims to be, with nothing active inside."""
-    if declared_type not in settings.UPLOAD_DOCUMENT_TYPES:
+    if declared_type not in (
+        tuple(allowed) if allowed is not None else settings.UPLOAD_DOCUMENT_TYPES
+    ):
         raise DocumentRejected("type_not_allowed")
     actual = sniff(data)
     if actual != declared_type:
         raise DocumentRejected("type_mismatch")
     if declared_type == "application/pdf":
         _check_pdf(data)
+    elif declared_type.startswith("image/"):
+        _check_image(data)
     else:
         _check_office(data, declared_type)
     return CheckedDocument(declared_type, len(data))

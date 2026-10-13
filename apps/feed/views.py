@@ -16,6 +16,8 @@ from apps.feed.serializers import (
     CommentQuerySerializer,
     CommentSerializer,
     CommentUpdateSerializer,
+    FeedActivityQuerySerializer,
+    FeedActivitySerializer,
     FeedQuerySerializer,
     FeedSerializer,
     FollowingListSerializer,
@@ -402,3 +404,25 @@ class ReportView(APIView):
 
 class CommentReportView(ReportView):
     target_type = "comment"
+
+
+class ActivityView(APIView):
+    policy = policies.active_member
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "feed_read"
+
+    @extend_schema(
+        operation_id="feed_activity",
+        summary="Recent comments and reactions",
+        description="What the community just did on posts you can open, newest first.",
+        parameters=[FeedActivityQuerySerializer],
+        responses={200: FeedActivitySerializer(many=True), **ERRORS},
+        tags=["feed"],
+    )
+    def get(self, request: Request) -> Response:
+        params = FeedActivityQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        items = selectors.activity(request.user, limit=params.validated_data["limit"])
+        response = Response(FeedActivitySerializer(items, many=True).data)
+        response["Cache-Control"] = "private, no-store"
+        return response

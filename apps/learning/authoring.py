@@ -11,10 +11,12 @@ from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import exceptions
 
+from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import etag
 from apps.core.text import clean_url, plain, rich_post, text_of
 from apps.integrations import youtube
+from apps.learning import lms
 from apps.learning.models import ACCESS, LESSON_TYPES, LEVELS, Course, Lesson, Module
 from apps.uploads import services as uploads
 from apps.uploads.models import UploadPurpose
@@ -74,8 +76,39 @@ def _apply(course: Course, data: dict[str, Any]) -> None:
             setattr(course, field, value)
     if "level" in data:
         if data["level"] not in LEVELS:
-            raise _invalid("level", "Choose beginner, intermediate or advanced.")
+            raise _invalid("level", "Choose beginner, intermediate, advanced or all levels.")
         course.level = data["level"]
+    if "subtitle" in data:
+        course.subtitle = plain(data["subtitle"])[:180]
+    if "language" in data:
+        if data["language"] not in lms.LANGUAGES:
+            raise _invalid("language", "Choose one of the listed languages.")
+        course.language = data["language"]
+    for field, limit in (
+        ("learn_bullets", lms.MAX_BULLETS),
+        ("requirements", lms.MAX_REQUIREMENTS),
+    ):
+        if field in data:
+            items = [plain(str(item))[:200] for item in data[field]]
+            items = [item for item in items if item]
+            if len(items) > limit:
+                raise _invalid(field, f"Up to {limit} entries.")
+            setattr(course, field, items)
+    if "audience" in data:
+        course.audience = plain(data["audience"])[:1000]
+    if "promo_video_url" in data:
+        if not data["promo_video_url"].strip():
+            course.promo_video_id = ""
+        else:
+            try:
+                course.promo_video_id = youtube.parse(data["promo_video_url"]).video_id
+            except youtube.InvalidVideoUrl as exc:
+                raise _invalid("promo_video_url", str(exc)) from exc
+    if "enrolment_active" in data:
+        course.enrolment_active = bool(data["enrolment_active"])
+    for field in ("promo_price_minor", "promo_starts_at", "promo_ends_at"):
+        if field in data:
+            setattr(course, field, data[field])
     for field in ("open_to_visitors", "certificate_enabled"):
         if field in data:
             setattr(course, field, bool(data[field]))
@@ -88,6 +121,7 @@ def _apply(course: Course, data: dict[str, Any]) -> None:
     if "currency" in data:
         course.currency = data["currency"].upper()
     _check_pricing(course)
+    _check_promotion(course)
 
 
 def _check_pricing(course: Course) -> None:
@@ -102,12 +136,33 @@ def _check_pricing(course: Course) -> None:
         raise _invalid("open_to_visitors", "Only free courses can be opened to visitors.")
 
 
+def _check_promotion(course: Course) -> None:
+    """A promotion belongs to a paid course, costs less than the price, and ends after it starts."""
+    if course.access == "free":
+        course.promo_price_minor = course.promo_starts_at = course.promo_ends_at = None
+        return
+    if course.currency and course.currency not in lms.CURRENCIES:
+        raise _invalid("currency", "Choose one of the listed currencies.")
+    if course.promo_price_minor is None:
+        course.promo_starts_at = course.promo_ends_at = None
+        return
+    if course.price_minor and course.promo_price_minor >= course.price_minor:
+        raise _invalid("promo_price_minor", "The promotional price must be lower than the price.")
+    if (
+        course.promo_starts_at
+        and course.promo_ends_at
+        and course.promo_ends_at <= course.promo_starts_at
+    ):
+        raise _invalid("promo_ends_at", "The promotion must end after it starts.")
+
+
 def _new_slug(title: str) -> str:
     return f"{slugify(title)[:70] or 'course'}-{secrets.token_hex(3)}"
 
 
 def create_course(*, actor: Any, data: dict[str, Any], ip: str = "") -> Course:
-    course = Course(slug=_new_slug(data.get("title", "")), created_by=actor)
+    # A draft can start with just a title; the wizard fills the rest in as it goes.
+    course = Course(slug=_new_slug(data.get("title", "")), created_by=actor, level="all")
     _apply(course, data)
     with transaction.atomic():
         course.save()
@@ -132,15 +187,28 @@ def update_course(
     return course
 
 
-def publish(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
+def publish(*, actor: Any, course_id: UUID, unlisted: bool = False, ip: str = "") -> Course:
+    """Open a course for enrolment: in the catalogue, or (unlisted) by its link only."""
+    target = Course.Status.UNLISTED if unlisted else Course.Status.PUBLISHED
     with transaction.atomic():
         course = _lock_course(course_id)
-        if course.status == Course.Status.PUBLISHED:
-            raise Conflict("This course is already published.")
-        if not course.lessons.exists():
-            raise _invalid("lessons", "Add at least one lesson before publishing.")
-        course.status = Course.Status.PUBLISHED
+        if course.status == target:
+            raise Conflict(
+                "This course is already unlisted."
+                if unlisted
+                else "This course is already published."
+            )
+        missing = [item for item in lms.publish_checklist(course) if not item["done"]]
+        if missing:
+            todo = "; ".join(item["text"].lower() for item in missing)
+            raise _invalid("checklist", f"Still to do: {todo}.")
+        course.status = target
         course.published_at = course.published_at or timezone.now()
+        analytics.track(
+            "course_published",
+            actor_id=getattr(actor, "pk", None),
+            properties={"course_id": course.slug, "visibility": target.value},
+        )
         course.save(update_fields=["status", "published_at", "updated_at"])
         audit.record(
             actor=actor,
@@ -156,7 +224,7 @@ def unpublish(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
     """Hide a course from the catalogue. People already enrolled keep their progress."""
     with transaction.atomic():
         course = _lock_course(course_id)
-        if course.status != Course.Status.PUBLISHED:
+        if course.status not in (Course.Status.PUBLISHED, Course.Status.UNLISTED):
             raise Conflict("This course is not published.")
         course.status = Course.Status.DRAFT
         course.save(update_fields=["status", "updated_at"])
@@ -197,6 +265,13 @@ def duplicate(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
             currency=source.currency,
             open_to_visitors=source.open_to_visitors,
             certificate_enabled=source.certificate_enabled,
+            subtitle=source.subtitle,
+            language=source.language,
+            learn_bullets=source.learn_bullets,
+            requirements=source.requirements,
+            audience=source.audience,
+            promo_video_id=source.promo_video_id,
+            promo_price_minor=source.promo_price_minor,
             created_by=actor,
         )
         for module in source.modules.all():
@@ -220,9 +295,12 @@ def duplicate(*, actor: Any, course_id: UUID, ip: str = "") -> Course:
                     file_key=lesson.file_key,
                     file_size=lesson.file_size,
                     file_content_type=lesson.file_content_type,
+                    description=lesson.description,
+                    is_preview=lesson.is_preview,
                 )
                 for lesson in module.lessons.all()
             )
+        lms.refresh_counts(copy.pk)
         audit.record(
             actor=actor,
             action="courses.duplicated",
@@ -302,6 +380,7 @@ def delete_module(*, actor: Any, module_id: UUID, ip: str = "") -> None:
         module = _lock_module(module_id)
         course = module.course
         module.delete()
+        lms.refresh_counts(course.pk)
         # Close the gap so positions stay 0..n-1.
         for position, other in enumerate(course.modules.all()):
             if other.position != position:
@@ -351,6 +430,10 @@ def _apply_lesson(lesson: Lesson, data: dict[str, Any], *, actor: Any) -> None:
             raise _invalid("title", "This field may not be blank.")
     if "duration_seconds" in data:
         lesson.duration_seconds = data["duration_seconds"]
+    if "description" in data:
+        lesson.description = plain(data["description"])[:2000]
+    if "is_preview" in data:
+        lesson.is_preview = bool(data["is_preview"])
     if "video_url" in data:
         try:
             video = youtube.parse(data["video_url"])
@@ -441,6 +524,7 @@ def add_lesson(*, actor: Any, module_id: UUID, data: dict[str, Any], ip: str = "
         )
         _apply_lesson(lesson, data, actor=actor)
         lesson.save()
+        lms.refresh_counts(module.course_id)
         audit.record(
             actor=actor,
             action="courses.lesson_added",
@@ -470,6 +554,7 @@ def update_lesson(*, actor: Any, lesson_id: UUID, data: dict[str, Any]) -> Lesso
         previous = lesson.file_key
         _apply_lesson(lesson, data, actor=actor)
         lesson.save()
+        lms.refresh_counts(lesson.course_id)
         if previous and previous != lesson.file_key:
             _release_file(previous, still_used_by=lesson.pk)
     return lesson
@@ -481,6 +566,7 @@ def delete_lesson(*, actor: Any, lesson_id: UUID, ip: str = "") -> None:
         module, course_id = lesson.module, lesson.course_id
         key, lesson_pk = lesson.file_key, lesson.pk
         lesson.delete()
+        lms.refresh_counts(course_id)
         _release_file(key, still_used_by=lesson_pk)
         for position, other in enumerate(module.lessons.all()):
             if other.position != position:
@@ -492,3 +578,60 @@ def delete_lesson(*, actor: Any, lesson_id: UUID, ip: str = "") -> None:
             target_id=course_id,
             ip=ip,
         )
+
+
+MAX_BULK_LINKS = 30
+
+
+def add_lessons_from_links(
+    *, actor: Any, module_id: UUID, urls: list[str], ip: str = ""
+) -> list[Lesson]:
+    """Make a video lecture from each pasted YouTube link, titled from the video when it can be.
+
+    All or nothing: if any link is wrong, none is added and each wrong one is named.
+    """
+    lines = [u.strip() for u in urls if u.strip()]
+    if not lines:
+        raise _invalid("urls", "Paste at least one YouTube link.")
+    if len(lines) > MAX_BULK_LINKS:
+        raise _invalid("urls", f"Add up to {MAX_BULK_LINKS} links at a time.")
+    parsed: list[youtube.YouTubeVideo] = []
+    problems: list[str] = []
+    for number, line in enumerate(lines, start=1):
+        try:
+            parsed.append(youtube.parse(line))
+        except youtube.InvalidVideoUrl as exc:
+            problems.append(f"Link {number}: {exc}")
+    if problems:
+        raise _invalid("urls", " ".join(problems))
+    created: list[Lesson] = []
+    with transaction.atomic():
+        module = _lock_module(module_id)
+        existing = module.lessons.count()
+        if existing + len(parsed) > MAX_LESSONS_PER_MODULE:
+            raise _invalid("urls", f"A module can have up to {MAX_LESSONS_PER_MODULE} lessons.")
+        last = module.lessons.aggregate(m=Max("position"))["m"]
+        position = 0 if last is None else last + 1
+        for index, video in enumerate(parsed):
+            title = plain(youtube.title_of(video.video_id)) or f"Lecture {existing + index + 1}"
+            lesson = Lesson.objects.create(
+                module=module,
+                course=module.course,
+                type="video",
+                title=title[:160],
+                position=position + index,
+                video_provider="youtube",
+                video_id=video.video_id,
+                video_url=video.url,
+            )
+            created.append(lesson)
+        lms.refresh_counts(module.course_id)
+        audit.record(
+            actor=actor,
+            action="courses.lessons_added_from_links",
+            target_type="course",
+            target_id=module.course_id,
+            after={"count": len(created)},
+            ip=ip,
+        )
+    return created

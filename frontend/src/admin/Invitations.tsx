@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
-import { Alert, Badge, Button, Card, Input, Select, Textarea } from "../components";
+import { Alert, Badge, Button, Card, Select, Textarea } from "../components";
 import { formatDate, humanise } from "../lib/format";
 import { EmptyState, ErrorState, LoadMore, PageHeader, SkeletonRows, useDocumentTitle, TableScroll } from "../ui/blocks";
 import { FormError, useSubmit } from "../ui/forms";
@@ -10,10 +10,15 @@ import { useToast } from "../ui/Toast";
 import { ConfirmDialog } from "./dialogs";
 import { ROLE_LABELS } from "./permissions";
 import { useStepUp } from "./StepUp";
+import { EmailChips } from "./EmailChips";
+import { sendable, type Chip } from "./emailTags";
 import { useOffsetList } from "./useOffsetList";
+import { useAuth } from "../auth/AuthProvider";
+import { permissionsFor } from "./permissions";
 
 type Invitation = components["schemas"]["Invitation"];
 type Report = components["schemas"]["BulkReport"];
+type BatchResult = components["schemas"]["InvitationBatchResult"];
 
 const TONE: Record<string, "success" | "warning" | "danger" | "neutral" | "info"> = {
   sent: "info",
@@ -31,7 +36,13 @@ export default function Invitations() {
   const toast = useToast();
   const guard = useStepUp();
   const [status, setStatus] = useState("");
-  const [form, setForm] = useState({ email: "", role: "member", message: "" });
+  const { me } = useAuth();
+  const canTeam = permissionsFor(me?.roles ?? []).has("roles.manage");
+  const [chips, setChips] = useState<Chip[]>([]);
+  const [form, setForm] = useState({ role: "member", message: "" });
+  const [batchResult, setBatchResult] = useState<BatchResult | null>(null);
+  const key = useRef(crypto.randomUUID());
+  const checked = useRef(new Set<string>());
   const [csv, setCsv] = useState("");
   const [report, setReport] = useState<Report | null>(null);
   const [revoking, setRevoking] = useState<Invitation | null>(null);
@@ -41,10 +52,31 @@ export default function Invitations() {
   );
   const refresh = () => client.invalidateQueries({ queryKey: ["admin", "invitations"] });
 
+  // Ask the server who is already here, so those chips are flagged before anything is sent.
+  useEffect(() => {
+    const fresh = chips.filter((c) => !c.flag && !checked.current.has(c.email.toLowerCase())).map((c) => c.email);
+    if (fresh.length === 0) return;
+    fresh.forEach((e) => checked.current.add(e.toLowerCase()));
+    void unwrap(api.POST("/api/v1/admin/invitations/check", { body: { emails: fresh } })).then((rows) => {
+      const flags = new Map(rows.map((r) => [r.email.toLowerCase(), r.state]));
+      setChips((now) => now.map((c) => {
+        const state = flags.get(c.email.toLowerCase());
+        return state && state !== "ok" ? { ...c, flag: state } : c;
+      }));
+    }).catch(() => undefined);
+  }, [chips]);
+
+  const toSend = sendable(chips);
   const invite = useSubmit(async () => {
-    await guard(() => unwrap(api.POST("/api/v1/admin/invitations", { body: { email: form.email.trim(), role: form.role, message: form.message.trim() } })));
-    toast.show(`Invitation sent to ${form.email.trim()}`);
-    setForm({ email: "", role: "member", message: "" });
+    const result = await guard(() =>
+      unwrap(api.POST("/api/v1/admin/invitations/batch", { body: { emails: toSend, role: form.role, message: form.message.trim(), idempotency_key: key.current } })),
+    );
+    setBatchResult(result);
+    toast.show(`${result.sent} invitation${result.sent === 1 ? "" : "s"} sent`);
+    setChips([]);
+    checked.current.clear();
+    setForm({ ...form, message: "" });
+    key.current = crypto.randomUUID();
     await refresh();
   });
   const bulk = useSubmit(async () => {
@@ -69,13 +101,18 @@ export default function Invitations() {
       <PageHeader eyebrow="People" title="Invitations" lead="Invite people straight in, without waiting for them to apply." />
       <div className="app-split app-split--even">
         <Card>
-          <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Invite one person</h2>
+          <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Invite people</h2>
           <form className="app-stack" noValidate onSubmit={(e) => { e.preventDefault(); void invite.run(); }}>
             <FormError error={invite.error} />
-            <Input label="Email address" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <Select label="Role" options={INVITE_ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] ?? humanise(r) }))} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
-            <Textarea label="A personal note (optional)" rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-            <div><Button type="submit" loading={invite.busy} disabled={!form.email.trim()}>Send invitation</Button></div>
+            <EmailChips chips={chips} onChange={setChips} disabled={invite.busy} />
+            <Select label="Role" options={INVITE_ROLES.filter((r) => canTeam || !["content_editor", "community_admin"].includes(r)).map((r) => ({ value: r, label: ROLE_LABELS[r] ?? humanise(r) }))} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
+            <Textarea label="A personal note (optional)" rows={3} maxLength={500} hint={`${form.message.length} of 500. It is included in the email.`} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+            <div><Button type="submit" loading={invite.busy} disabled={toSend.length === 0}>{`Send ${toSend.length} ${toSend.length === 1 ? "invitation" : "invitations"}`}</Button></div>
+            {batchResult ? (
+              <Alert tone={batchResult.skipped ? "warning" : "success"} title={`${batchResult.sent} sent, ${batchResult.skipped} skipped`}>
+                <ul style={{ margin: 0 }}>{batchResult.results.map((r) => <li key={r.email}>{r.email}: {r.result === "sent" ? "sent" : `${r.result}, ${r.reason}`}</li>)}</ul>
+              </Alert>
+            ) : null}
           </form>
         </Card>
         <Card>

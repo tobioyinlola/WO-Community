@@ -90,3 +90,23 @@ export function humanise(slug: string): string {
   const text = slug.replace(/[-_]+/g, " ").trim();
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** A running time in words: "45 min", "1 h 20 min". Nothing for a missing or zero length. */
+export function formatDuration(seconds: number | null | undefined): string {
+  if (!seconds || seconds <= 0) return "";
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
+/** A clock for a position in a video: 1:05 or 1:02:05. */
+export function formatClock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const two = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${two(m)}:${two(s)}` : `${m}:${two(s)}`;
+}

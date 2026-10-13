@@ -4,6 +4,123 @@
  */
 
 export interface paths {
+    "/api/v1/admin/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Community analytics, counted live
+         * @description Totals for the range and the range before it, a count per day, breakdowns of who is here and what they do, and a funnel for people who signed up in the range. Defaults to the last 30 days; the range is at most 366 days.
+         */
+        get: operations["admin_analytics_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/answers/{item_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_answers_hide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/answers/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_answers_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The audit log, newest first
+         * @description Filters combine. The log starts at deployment and cannot be edited.
+         */
+        get: operations["admin_audit_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One audit entry with its before and after */
+        get: operations["admin_audit_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the filtered audit log as CSV
+         * @description Up to 50000 rows, newest first. The export is itself recorded.
+         */
+        get: operations["admin_audit_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/blocked-domains": {
         parameters: {
             query?: never;
@@ -118,6 +235,26 @@ export interface paths {
         head?: never;
         /** Edit a draft or scheduled newsletter */
         patch: operations["admin_campaigns_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/admin/campaigns/{campaign_id}/audience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many people a newsletter would reach
+         * @description For the confirm step before sending. People who unsubscribed, bounced or complained are already left out.
+         */
+        get: operations["admin_campaigns_audience_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/campaigns/{campaign_id}/cancel": {
@@ -280,6 +417,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/certificate-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What appears on every new certificate */
+        get: operations["admin_certificate_settings_retrieve"];
+        /**
+         * Change the certificate template
+         * @description Applies to certificates issued from now on. Certificates already issued keep the template they were drawn with until an administrator reissues them.
+         */
+        put: operations["admin_certificate_settings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificate-settings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw the certificate with sample details and the settings being edited
+         * @description Nothing is saved. The body can carry unsaved edits of the template.
+         */
+        post: operations["admin_certificate_settings_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Issued certificates, newest first */
+        get: operations["admin_certificates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificates/{certificate_id}/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw a certificate again with the template as it is now
+         * @description The number stays the same. The name can be corrected at the same time. The member is told. Reissuing a revoked certificate makes it valid again.
+         */
+        post: operations["admin_certificates_reissue_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/certificates/{certificate_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a certificate
+         * @description The public page then shows it as revoked and the member can no longer download it. A reason is required and goes in the audit log.
+         */
+        post: operations["admin_certificates_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/comments/{comment_id}/hide": {
         parameters: {
             query?: never;
@@ -340,6 +575,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/course-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requests for access to paid courses, across all courses
+         * @description Every open request across courses, for the nav item; or one course's, for its tab.
+         */
+        get: operations["admin_course_requests_all"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/course-requests/{request_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or decline a request for access
+         * @description Approving gives the member the course and tells them. Declining tells them too. A request is decided once.
+         */
+        post: operations["admin_course_requests_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/course-requests/{request_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or decline a request for access
+         * @description Approving gives the member the course and tells them. Declining tells them too. A request is decided once.
+         */
+        post: operations["admin_course_requests_decline_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/courses": {
         parameters: {
             query?: never;
@@ -380,6 +675,27 @@ export interface paths {
         patch: operations["admin_courses_partial_update"];
         trace?: never;
     };
+    "/api/v1/admin/courses/{course_id}/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Announcements posted to a course */
+        get: operations["admin_courses_announcements_list"];
+        put?: never;
+        /**
+         * Post an announcement
+         * @description Every enrolled learner is told, in the app and by email.
+         */
+        post: operations["admin_courses_announcements_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/courses/{course_id}/cover": {
         parameters: {
             query?: never;
@@ -412,7 +728,7 @@ export interface paths {
         put?: never;
         /**
          * Publish, unpublish or duplicate a course
-         * @description Publishing needs at least one lesson. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_duplicate_create"];
         delete?: never;
@@ -453,6 +769,60 @@ export interface paths {
          */
         post: operations["admin_courses_grant_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/learners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Learners, with their name, email and how far they have got */
+        get: operations["admin_courses_learners_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/learners.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The learners as a spreadsheet */
+        get: operations["admin_courses_learners.csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/learners/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Take a learner off a course
+         * @description Their progress goes with the enrolment. Their certificate, if issued, stays.
+         */
+        delete: operations["admin_courses_learners_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -506,9 +876,26 @@ export interface paths {
         put?: never;
         /**
          * Publish, unpublish or duplicate a course
-         * @description Publishing needs at least one lesson. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_publish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Questions on a course's lectures, with answers */
+        get: operations["admin_courses_questions_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -524,6 +911,43 @@ export interface paths {
         };
         /** Ratings and written feedback */
         get: operations["admin_courses_ratings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Requests for access to one course
+         * @description Every open request across courses, for the nav item; or one course's, for its tab.
+         */
+        get: operations["admin_course_requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every review, including hidden ones */
+        get: operations["admin_courses_reviews_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -560,7 +984,7 @@ export interface paths {
         put?: never;
         /**
          * Publish, unpublish or duplicate a course
-         * @description Publishing needs at least one lesson. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_unpublish_create"];
         delete?: never;
@@ -790,6 +1214,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/editorial/{item_id}/end-banner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop showing an item as a banner, now
+         * @description The story stays published. A banner that has not started is switched off.
+         */
+        post: operations["admin_editorial_end_banner_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/editorial/{item_id}/publish": {
         parameters: {
             query?: never;
@@ -845,6 +1289,192 @@ export interface paths {
          */
         post: operations["admin_editorial_unpublish_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every email template */
+        get: operations["admin_email_templates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One template with its wording and variables */
+        get: operations["admin_email_templates_retrieve"];
+        /**
+         * Change the wording of a template
+         * @description Only the subject, preview text and body are editable; the layout and brand are fixed. The previous wording stays in the history.
+         */
+        put: operations["admin_email_templates_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a template with sample data
+         * @description Send a draft to see it without saving. The same HTML serves the desktop and the mobile view; the layout adapts at 620 px.
+         */
+        post: operations["admin_email_templates_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Go back to the built in wording */
+        post: operations["admin_email_templates_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put an earlier wording back */
+        post: operations["admin_email_templates_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test of a template to yourself */
+        post: operations["admin_email_templates_test_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-templates/{key}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The history of a template's wording */
+        get: operations["admin_email_templates_versions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Email health: DNS records, sending results and recent failures
+         * @description SPF, DKIM and DMARC are read from public DNS. Whether the provider has verified the domain, and the sender's reputation, cannot be seen from here.
+         */
+        get: operations["admin_email_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email/suppressions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Addresses we no longer send broadcasts to
+         * @description Addresses are stored as hashes, so search with the full address.
+         */
+        get: operations["admin_email_suppressions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email/suppressions/{suppression_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Allow broadcasts to an address again
+         * @description Super admin only, with a fresh two step check. Recorded in the audit log.
+         */
+        delete: operations["admin_email_suppressions_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1122,6 +1752,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/invitations/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite a list of addresses and get a result for each
+         * @description Up to 200 at once. A repeated address is merged; an address that already has an account or a live invitation is skipped with the reason. Sending the same `idempotency_key` again returns the first answer and sends nothing new.
+         */
+        post: operations["admin_invitations_batch_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/invitations/bulk": {
         parameters: {
             query?: never;
@@ -1136,6 +1786,23 @@ export interface paths {
          * @description Send the file's contents as `csv`. The first row must name the columns: `email` (required), `role` and `message` (optional). Up to 500 rows. Rows that fail are reported and skipped; the rest are invited.
          */
         post: operations["admin_invitations_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/invitations/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say which addresses could be invited, without sending anything */
+        post: operations["admin_invitations_check_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1195,7 +1862,7 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_approve_create"];
         delete?: never;
@@ -1215,7 +1882,7 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_reject_create"];
         delete?: never;
@@ -1235,9 +1902,29 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_remove_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/{job_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review a job
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
+         */
+        post: operations["admin_jobs_reopen_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1255,9 +1942,26 @@ export interface paths {
         put?: never;
         /**
          * Review a job
-         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs) and remove (any). Audited.
+         * @description Decisions: approve and reject (pending jobs; rejecting needs a reason, which the poster is told), unpublish (live jobs), remove (any) and reopen (closed, expired or removed jobs). Audited, and the poster is told.
          */
         post: operations["admin_jobs_unpublish_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/bulk-approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve several pending jobs */
+        post: operations["admin_jobs_bulk_approve_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1278,6 +1982,26 @@ export interface paths {
          * @description `require_approval`: member jobs wait for an admin (true) or go live at once. `default_duration_days`: how long a job without a deadline stays up.
          */
         put: operations["admin_jobs_settings_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many jobs each tab holds
+         * @description Active, pending review, rejected, and closed or expired, under the same search and filters as the list (the tab itself is ignored).
+         */
+        get: operations["admin_jobs_stats_retrieve"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1343,6 +2067,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mentor and founder pairs
+         * @description Everyone who has asked a mentor for a session, one row per pair, with how many sessions they have had and whether they are still working together. `active` is a pair with a request waiting or a session coming up.
+         */
+        get: operations["admin_matches_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/me/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which approval emails I get
+         * @description Only the kinds this admin may approve are listed. All are on by default.
+         */
+        get: operations["admin_me_alerts_list"];
+        /** Switch one kind of approval email on or off */
+        put: operations["admin_me_alerts_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members": {
         parameters: {
             query?: never;
@@ -1367,8 +2132,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One member */
+        /**
+         * One member in full
+         * @description The account, profile, activity, learning, mentorship, support and the last audit entries about them, in one read. Personal details, so each read is logged.
+         */
         get: operations["admin_members_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/{user_id}/application": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a person told us when they asked to join
+         * @description Their profile, their first startup and what has happened to the account. It holds personal details, so each read is logged.
+         */
+        get: operations["admin_members_application_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1392,6 +2180,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/{user_id}/referral": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correct how someone says they heard of us
+         * @description An admin can change the source, the detail and the referring member. A member cannot be their own referrer.
+         */
+        patch: operations["admin_members_referral_partial_update"];
         trace?: never;
     };
     "/api/v1/admin/members/{user_id}/reinstate": {
@@ -1451,6 +2259,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/members/{user_id}/resend-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send the verification email again */
+        post: operations["admin_members_resend_verification_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/members/{user_id}/reset-mfa": {
         parameters: {
             query?: never;
@@ -1465,6 +2290,26 @@ export interface paths {
          * @description Super admin only. Ends the admin's sessions; they enrol again at next login.
          */
         post: operations["admin_members_reset_mfa_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give or take a console role
+         * @description Super admin only. Ends the person's sessions so the change applies at once.
+         */
+        post: operations["admin_members_role_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1643,6 +2488,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/modules/{module_id}/lessons/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a lecture for each pasted YouTube link
+         * @description All or nothing: a wrong link adds none and is named. Titles come from YouTube when it can be asked.
+         */
+        post: operations["admin_modules_lessons_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/modules/{module_id}/lessons/order": {
         parameters: {
             query?: never;
@@ -1658,6 +2523,51 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every post, for moderation
+         * @description Newest first, hidden ones included. Filter by `category`, `state` (live, hidden, pinned, featured, reported, team, scheduled) and text.
+         */
+        get: operations["admin_posts_list"];
+        put?: never;
+        /**
+         * Post as the team or as yourself
+         * @description Skips the daily allowance and is never held for review. Options: post as the WO Community team, pin (with an optional date it lapses), turn comments off, limit to members or mentors, and schedule for later.
+         */
+        post: operations["admin_posts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/posts/{post_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One post with all of its comments
+         * @description Hidden comments are included so they can be restored.
+         */
+        get: operations["admin_posts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit any post, or change how the team's post behaves */
+        patch: operations["admin_posts_partial_update"];
         trace?: never;
     };
     "/api/v1/admin/posts/{post_id}/feature": {
@@ -1800,6 +2710,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/posts/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feed totals for the moderation page */
+        get: operations["admin_posts_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/questions/{item_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_questions_hide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/questions/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_questions_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/questions/{question_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a question as course staff
+         * @description The answer carries the staff badge and the asker is told.
+         */
+        post: operations["admin_questions_answer_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/queues": {
         parameters: {
             query?: never;
@@ -1882,6 +2869,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/referrals/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Referrals this month against last month
+         * @description Sign ups, how many named a member, and where people say they heard of us.
+         */
+        get: operations["admin_referrals_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/referrals/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Members with the most approved referrals */
+        get: operations["admin_referrals_top_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/reports": {
         parameters: {
             query?: never;
@@ -1950,6 +2974,86 @@ export interface paths {
         put?: never;
         /** Mark a report as reviewed, with no action needed */
         post: operations["admin_reports_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{item_id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_reviews_hide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hide or restore a review, question or answer
+         * @description A hidden review leaves the average and the distribution.
+         */
+        post: operations["admin_reviews_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Roles and what each can do
+         * @description The permission matrix, from the same table the API enforces.
+         */
+        get: operations["admin_roles_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the console
+         * @description Members (pending ones too), approvals, courses, jobs, events, ventures and support tickets. A group is left out when the role does not hold its permission.
+         */
+        get: operations["admin_search_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2121,6 +3225,188 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/support/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** People a request can be assigned to */
+        get: operations["admin_support_agents_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/attachments/{attachment_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A short lived link to a file on a request */
+        get: operations["admin_support_attachments_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/canned-replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saved replies */
+        get: operations["admin_support_canned_replies_list"];
+        put?: never;
+        /** Save a reply */
+        post: operations["admin_support_canned_replies_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/canned-replies/{reply_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change a saved reply */
+        put: operations["admin_support_canned_replies_update"];
+        post?: never;
+        /** Delete a saved reply */
+        delete: operations["admin_support_canned_replies_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Numbers for the top of the inbox */
+        get: operations["admin_support_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The support inbox
+         * @description `status=working` means everything not resolved. `assignee` is `me`, `unassigned` or a person's id. `q` matches the ticket number (SUP-1042), subject, name and email.
+         */
+        get: operations["admin_support_tickets_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One request with its whole conversation, internal notes included */
+        get: operations["admin_support_ticket_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change status, assignee, priority or category */
+        patch: operations["admin_support_tickets_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reply to the member, or leave an internal note
+         * @description A reply moves the request to `status` (default: awaiting the member) and tells the member. An internal note changes nothing and is never shown to the member.
+         */
+        post: operations["admin_support_tickets_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a resolved request */
+        post: operations["admin_support_tickets_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/support/tickets/{ticket_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a request
+         * @description Records who resolved it and when, and tells the member.
+         */
+        post: operations["admin_support_tickets_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/win-submissions": {
         parameters: {
             query?: never;
@@ -2172,6 +3458,26 @@ export interface paths {
          * @description Approving creates a draft story (linked as `item_id`) for an editor to polish and publish. Rejecting needs a reason. The member is told either way.
          */
         post: operations["admin_win_submissions_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/youtube/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check a YouTube link and get its title and thumbnail
+         * @description Only YouTube video links are accepted. The title may be blank when YouTube could not be asked.
+         */
+        post: operations["admin_youtube_validate_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2495,6 +3801,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/banners/{item_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a banner for good */
+        post: operations["banners_dismiss_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/certificates": {
         parameters: {
             query?: never;
@@ -2526,18 +3849,25 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Choose whether a certificate is listed on your profile
+         * @description Off until you turn it on. A listed certificate shows the course, the date and a link to the verification page to members who may see your profile.
+         */
+        patch: operations["certificates_partial_update"];
         trace?: never;
     };
-    "/api/v1/certificates/{certificate_id}/pdf": {
+    "/api/v1/certificates/{certificate_id}/download": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Download your certificate as a PDF */
-        get: operations["certificates_pdf_retrieve"];
+        /**
+         * A short lived link to download your certificate as a PDF
+         * @description The file is kept privately and the link stops working after a few minutes, so ask again when you need it. A revoked certificate cannot be downloaded.
+         */
+        get: operations["certificates_download_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2661,6 +3991,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courses/{course_id}/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Announcements posted to a course */
+        get: operations["courses_announcements_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/courses/{course_id}/enrol": {
         parameters: {
             query?: never;
@@ -2701,6 +4048,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courses/{course_id}/request-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for access to a paid course
+         * @description While payments are off, an admin decides. One open request at a time.
+         */
+        post: operations["courses_request_access_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reviews of a course, newest first */
+        get: operations["courses_reviews_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/wishlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save a course for later */
+        put: operations["courses_wishlist_update"];
+        post?: never;
+        /** Take a course off your saved list */
+        delete: operations["courses_wishlist_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/courses/categories": {
         parameters: {
             query?: never;
@@ -2710,6 +4112,66 @@ export interface paths {
         };
         /** Course categories in use */
         get: operations["courses_categories_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/page/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A course landing page, by its id or its slug
+         * @description The outline and description, what you will learn, requirements, the promo video, rating distribution, related courses, and where you are in it. Lectures marked as previews are not locked.
+         */
+        get: operations["course_page"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/directory/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse members with filters
+         * @description Page by page. Filter by country and skill. Members who hide their basics from members do not appear.
+         */
+        get: operations["directory_people"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/directory/startups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse startups with filters
+         * @description Page by page, featured first. Filter by country, city, sector, stage and whether the startup has open jobs. Each card shows only what its owner shares with members.
+         */
+        get: operations["directory_startups"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2930,6 +4392,26 @@ export interface paths {
          * @description Idempotent. Not possible once the event has started.
          */
         delete: operations["events_register_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feed/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent comments and reactions
+         * @description What the community just did on posts you can open, newest first.
+         */
+        get: operations["feed_activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3162,6 +4644,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/lessons/{lesson_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your private notes on a lecture */
+        get: operations["lessons_notes_list"];
+        put?: never;
+        /** Keep a note at a moment in a lecture */
+        post: operations["lessons_notes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lessons/{lesson_id}/progress": {
         parameters: {
             query?: never;
@@ -3176,6 +4676,24 @@ export interface paths {
          */
         put: operations["lessons_progress_update"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lessons/{lesson_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Questions on a lecture, with their answers */
+        get: operations["lessons_questions_list"];
+        put?: never;
+        /** Ask a question about a lecture */
+        post: operations["lessons_questions_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3312,6 +4830,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your certificates */
+        get: operations["me_certificates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/courses": {
         parameters: {
             query?: never;
@@ -3386,6 +4921,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/learning": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your learning: all, in progress, completed, or saved */
+        get: operations["me_learning_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/marketing-consent": {
         parameters: {
             query?: never;
@@ -3441,6 +4993,111 @@ export interface paths {
          * @description `paused` hides you from the directory and recommendations without ending anything already agreed. A mentor who joined by invitation creates the section with their first save, which then needs every descriptive field.
          */
         put: operations["me_mentor_profile_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your weekly availability and days off */
+        get: operations["me_mentor_availability_retrieve"];
+        /**
+         * Replace your weekly availability
+         * @description Sends every weekly range (weekday 0 is Monday, HH:MM in your time zone). Days off and extra one off time are kept. Ranges must not overlap, each must fit one session, and accepting mentees needs at least one.
+         */
+        put: operations["me_mentor_availability_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block days off, or add extra time on one date
+         * @description `type` `blocked` takes `starts_on` and `ends_on` (dates in your time zone). `type` `extra` takes `date`, `start` and `end`. Existing bookings are never removed.
+         */
+        post: operations["me_mentor_exceptions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/exceptions/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a day off or extra time
+         * @description Removing extra time can leave agreed sessions outside your schedule: send `acknowledge=true` to keep them and remove it anyway.
+         */
+        delete: operations["me_mentor_exceptions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview your booking calendar as a mentee sees it
+         * @description The same slots a mentee gets, even while you are not accepting mentees, so you can check the schedule before turning it on. `accepting_new` says whether mentees can book now.
+         */
+        get: operations["me_mentor_preview_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/mentor/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your mentoring settings
+         * @description Everything the Mentorship section of Settings edits: the weekly schedule, days off, session lengths, buffer, notice, weekly limit, booking window, pricing, meeting provider and mentoring profile. Only approved mentors.
+         */
+        get: operations["me_mentor_settings_retrieve"];
+        /**
+         * Change your mentoring settings
+         * @description Send only what changed. Prices are in the smallest unit. While online payment is off a paid session is a request you confirm and payment is arranged directly. Accepting mentees needs at least one weekly time range.
+         */
+        put: operations["me_mentor_settings_update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3595,6 +5252,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/referrals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your referral link and the members who joined through you
+         * @description Shows only people who have been approved, and only what each of them allows you to see.
+         */
+        get: operations["me_referrals_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/saved-jobs": {
         parameters: {
             query?: never;
@@ -3707,6 +5384,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/members/{user_id}/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Certificates a member lists on their profile
+         * @description Only certificates the member chose to show, and only if you may see their profile. A withdrawn certificate is never listed.
+         */
+        get: operations["members_certificates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/referrer-by-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who a referral link belongs to
+         * @description For the sign up form after someone opens a link. `found` is false for a code that belongs to nobody active. A member who keeps their name from visitors is found, without a name. Throttled by address.
+         */
+        get: operations["members_referrer_by_code_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/search-referrer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find the member who told you about us
+         * @description For the sign up form. Needs at least three characters and answers with at most five people: members whose name is public, found by name or by their email address typed in full. Throttled by address.
+         */
+        get: operations["members_search_referrer_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mentor-applications": {
         parameters: {
             query?: never;
@@ -3808,6 +5545,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mentors/{user_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Times a mentor can be booked, in your time zone
+         * @description Slots for one session length between `from` and `to` (dates, at most 31 days), computed from the weekly schedule less days off, the buffer, minimum notice, booking window, the weekly limit, existing sessions and the mentor's calendar. `tz` is an IANA zone for the local date and time of each slot. Includes the price, if any.
+         */
+        get: operations["mentors_slots_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mentors/recommended": {
         parameters: {
             query?: never;
@@ -3823,6 +5580,23 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one of your notes */
+        delete: operations["notes_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3862,6 +5636,26 @@ export interface paths {
          * @description Send `ids` (up to 100) or `all: true`. Ids that are not yours are ignored.
          */
         post: operations["notifications_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many notifications you have not read
+         * @description For the bell. Poll every 30 to 60 seconds with the last `ETag` in `If-None-Match`; an unchanged count answers 304 with no body.
+         */
+        get: operations["notifications_unread_count_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4329,6 +6123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/questions/{question_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer a question */
+        post: operations["questions_answers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reference/countries": {
         parameters: {
             query?: never;
@@ -4412,6 +6223,28 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search/recents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your recent searches */
+        get: operations["search_recents_retrieve"];
+        put?: never;
+        /**
+         * Remember a search
+         * @description Keeps the latest eight terms. A term already there moves to the top.
+         */
+        post: operations["search_recents_create"];
+        /** Clear your recent searches */
+        delete: operations["search_recents_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4768,6 +6601,138 @@ export interface paths {
          * @description Groups: basics, description, website, team. Levels: private, members, public. Traction items carry their own level.
          */
         patch: operations["startups_visibility_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/support/attachments/{attachment_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A short lived link to a file attached to one of your requests */
+        get: operations["support_attachments_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for help without signing in
+         * @description Meant for sign in problems. We answer by email. A hidden field named `website` must stay empty.
+         */
+        post: operations["support_contact_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your support requests */
+        get: operations["support_tickets_list"];
+        put?: never;
+        /**
+         * Send a support request
+         * @description Attach up to three files (PDF or image, 5 MB each) by passing the ids of ready `support_attachment` uploads.
+         */
+        post: operations["support_tickets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One of your requests, with its conversation
+         * @description Internal notes are never included.
+         */
+        get: operations["support_tickets_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say whether the help was useful */
+        post: operations["support_tickets_feedback_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reply on one of your requests */
+        post: operations["support_tickets_messages_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support/tickets/{ticket_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a resolved request
+         * @description Allowed for 14 days after it was resolved.
+         */
+        post: operations["support_tickets_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/toolkit/admin/deck-templates": {
@@ -6555,11 +8520,22 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description * `free` - free
-         *     * `paid` - paid
-         * @enum {string}
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
          */
-        AccessEnum: "free" | "paid";
+        AccessRequestRequest: {
+            /** @default  */
+            message: string;
+        };
+        AccessRequestResult: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            /** Format: date-time */
+            created_at: string;
+        };
         AccessToken: {
             access_token: string;
             token_type: string;
@@ -6574,6 +8550,11 @@ export interface components {
             email: string;
             status: string;
         };
+        AccountSection: {
+            invited_by: components["schemas"]["PersonRef"] | null;
+            referred_by: components["schemas"]["PersonRef"] | null;
+            approved_by: components["schemas"]["PersonRef"] | null;
+        };
         Activity: {
             daily_active: number | null;
             weekly_active: number | null;
@@ -6586,15 +8567,66 @@ export interface components {
             /** Format: double */
             average_hours_to_approval: number | null;
         };
+        ActivitySection: {
+            posts: number;
+            comments: number;
+            events_attended: number;
+            jobs_posted: number;
+        };
+        AdminAccessRequest: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            message: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            decided_at: string | null;
+            course: components["schemas"]["AdminRequestCourse"];
+            user: components["schemas"]["AdminPerson"];
+        };
+        AdminAnswer: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            author: string;
+            is_staff: boolean;
+            hidden: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        AdminCertificate: {
+            /** Format: uuid */
+            id: string;
+            number: string;
+            holder_name: string;
+            email: string;
+            course_title: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: double */
+            hours: number;
+            status: components["schemas"]["CertificateStatusEnum"];
+            /** Format: date-time */
+            revoked_at: string | null;
+            revoked_reason: string;
+            template_version: number | null;
+        };
         AdminCourse: {
             /** Format: uuid */
             id: string;
             slug: string;
             title: string;
+            subtitle: string;
             excerpt: string;
             instructor: string;
             category: string;
             level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
             cover: components["schemas"]["Image"] | null;
             access: string;
             price: components["schemas"]["Price"] | null;
@@ -6604,8 +8636,21 @@ export interface components {
             lesson_count: number;
             status: string;
             progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
             /** @description Sanitised HTML */
             description: string;
+            learn_bullets: string[];
+            requirements: string[];
+            audience: string;
+            promo_video_id: string;
+            promo_price_minor: number | null;
+            /** Format: date-time */
+            promo_starts_at: string | null;
+            /** Format: date-time */
+            promo_ends_at: string | null;
+            checklist: components["schemas"]["PublishCheck"][];
+            pending_requests: number;
             price_minor: number | null;
             currency: string;
             /** Format: date-time */
@@ -6665,6 +8710,16 @@ export interface components {
             /** Format: date-time */
             edited_at: string | null;
         };
+        AdminHit: {
+            type: string;
+            /** Format: uuid */
+            id: string;
+            title: string;
+            subtitle: string;
+            status: string;
+            /** @description Path in the console */
+            url: string;
+        };
         AdminItem: {
             /** Format: uuid */
             id: string;
@@ -6694,6 +8749,11 @@ export interface components {
             banner_starts_at: string | null;
             /** Format: date-time */
             banner_ends_at: string | null;
+            show_banner: boolean;
+            banner_text: string;
+            banner_kind: string;
+            banner_link: string;
+            banner_status: components["schemas"]["BannerStatusEnum"];
             /** Format: uuid */
             created_by: string | null;
             /** Format: date-time */
@@ -6742,7 +8802,7 @@ export interface components {
             /** Format: date-time */
             reviewed_at: string | null;
         };
-        /** @description Same fields; the service insists on an external link for admin jobs. */
+        /** @description Same fields. An admin's job goes live at once. */
         AdminJobCreateRequest: {
             title: string;
             type: components["schemas"]["JobTypeEnum"];
@@ -6754,10 +8814,24 @@ export interface components {
             description: string;
             requirements?: string;
             compensation?: string;
-            apply_method: components["schemas"]["ApplyMethodEnum"];
-            apply_target: string;
+            apply_url?: string;
+            apply_email?: string;
+            apply_method?: components["schemas"]["ApplyMethodEnum"];
+            apply_target?: string;
             /** Format: date */
             deadline?: string | null;
+        };
+        AdminLearner: {
+            /** Format: uuid */
+            user_id: string;
+            name: string;
+            email: string;
+            origin: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            percent: number;
         };
         AdminLesson: {
             /** Format: uuid */
@@ -6766,6 +8840,8 @@ export interface components {
             title: string;
             position: number;
             duration_seconds: number | null;
+            description: string;
+            is_preview: boolean;
             video_url: string;
             video_id: string;
             body: string;
@@ -6778,6 +8854,26 @@ export interface components {
             size: number | null;
             content_type: string;
         };
+        AdminMatch: {
+            mentor: components["schemas"]["ConsolePerson"];
+            mentee: components["schemas"]["ConsolePerson"];
+            sessions: number;
+            completed: number;
+            upcoming: number;
+            waiting: number;
+            /** Format: date-time */
+            last_at: string;
+            /** Format: date-time */
+            next_at: string | null;
+            state: components["schemas"]["AdminMatchStateEnum"];
+        };
+        /**
+         * @description * `active` - active
+         *     * `completed` - completed
+         *     * `idle` - idle
+         * @enum {string}
+         */
+        AdminMatchStateEnum: "active" | "completed" | "idle";
         AdminMentor: {
             /**
              * Format: uuid
@@ -6840,13 +8936,15 @@ export interface components {
             /** Format: uuid */
             id: string;
             status: components["schemas"]["MentoringSessionStatusEnum"];
-            role: components["schemas"]["RoleEnum"];
+            role: components["schemas"]["SessionViewRoleEnum"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
             topic: string;
             message: string;
+            length_minutes: number;
+            price: components["schemas"]["SessionPrice"] | null;
             mentor: components["schemas"]["SessionParty"];
             mentee: components["schemas"]["SessionParty"];
             meeting: components["schemas"]["SessionMeeting"];
@@ -6868,12 +8966,104 @@ export interface components {
             mentor_email: string;
             mentee_email: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        AdminMessageRequest: {
+            body: string;
+            /** @default false */
+            internal: boolean;
+            /**
+             * @description Where the request goes after this reply. Ignored for an internal note.
+             *
+             *     * `in_progress` - in_progress
+             *     * `awaiting_member` - awaiting_member
+             *     * `resolved` - resolved
+             * @default awaiting_member
+             */
+            status: components["schemas"]["AdminMessageStatusEnum"];
+            /** @description Ready `support_attachment` uploads, at most 3. */
+            attachments?: string[];
+        };
+        /**
+         * @description * `in_progress` - in_progress
+         *     * `awaiting_member` - awaiting_member
+         *     * `resolved` - resolved
+         * @enum {string}
+         */
+        AdminMessageStatusEnum: "in_progress" | "awaiting_member" | "resolved";
         AdminModule: {
             /** Format: uuid */
             id: string;
             title: string;
             position: number;
             lessons: components["schemas"]["AdminLesson"][];
+        };
+        AdminPerson: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+        };
+        AdminPost: {
+            /** Format: uuid */
+            id: string;
+            author: components["schemas"]["ConsolePerson"];
+            category: string;
+            excerpt: string;
+            /** Format: date-time */
+            created_at: string;
+            pinned: boolean;
+            /** Format: date-time */
+            pinned_until: string | null;
+            featured: boolean;
+            hidden: boolean;
+            official: boolean;
+            comments_enabled: boolean;
+            audience_roles: string[];
+            /** Format: date-time */
+            scheduled_for: string | null;
+            comment_count: number;
+            reaction_count: number;
+            open_reports: number;
+        };
+        AdminPostComment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            parent_id: string | null;
+            author: components["schemas"]["ConsolePerson"];
+            text: string;
+            hidden: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        AdminPostDetail: {
+            /** Format: uuid */
+            id: string;
+            author: components["schemas"]["ConsolePerson"];
+            category: string;
+            excerpt: string;
+            /** Format: date-time */
+            created_at: string;
+            pinned: boolean;
+            /** Format: date-time */
+            pinned_until: string | null;
+            featured: boolean;
+            hidden: boolean;
+            official: boolean;
+            comments_enabled: boolean;
+            audience_roles: string[];
+            /** Format: date-time */
+            scheduled_for: string | null;
+            comment_count: number;
+            reaction_count: number;
+            open_reports: number;
+            text: string;
+            comments: components["schemas"]["AdminPostComment"][];
         };
         AdminPreview: {
             /** Format: uuid */
@@ -6890,6 +9080,19 @@ export interface components {
             /** @description How many posts show this card. */
             posts: number;
             blocked: boolean;
+        };
+        AdminQuestion: {
+            /** Format: uuid */
+            id: string;
+            lecture: string;
+            /** Format: uuid */
+            lesson_id: string;
+            body: string;
+            asker: string;
+            /** Format: date-time */
+            created_at: string;
+            hidden: boolean;
+            answers: components["schemas"]["AdminAnswer"][];
         };
         AdminRating: {
             /** Format: uuid */
@@ -6916,6 +9119,108 @@ export interface components {
             open_reports_on_target: number;
             target: components["schemas"]["ReportTarget"];
         };
+        AdminRequestCourse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+        };
+        AdminReview: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            user_id: string;
+            reviewer: string;
+            stars: number;
+            feedback: string;
+            /** Format: date-time */
+            created_at: string;
+            hidden: boolean;
+        };
+        AdminSearchResult: {
+            members?: components["schemas"]["AdminHit"][];
+            approvals?: components["schemas"]["AdminHit"][];
+            courses?: components["schemas"]["AdminHit"][];
+            jobs?: components["schemas"]["AdminHit"][];
+            events?: components["schemas"]["AdminHit"][];
+            ventures?: components["schemas"]["AdminHit"][];
+            tickets?: components["schemas"]["AdminHit"][];
+        };
+        AdminTicketDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+            priority: string;
+            readonly member: {
+                [key: string]: unknown;
+            };
+            readonly assignee: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            first_response_at: string;
+            readonly is_overdue: boolean;
+            readonly reopened_count: number;
+            readonly messages: {
+                [key: string]: unknown;
+            }[];
+            readonly previous_tickets: number;
+            /** Format: date-time */
+            readonly member_joined_at: string | null;
+        };
+        AdminTicketRow: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+            priority: string;
+            readonly member: {
+                [key: string]: unknown;
+            };
+            readonly assignee: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            first_response_at: string;
+            readonly is_overdue: boolean;
+            readonly reopened_count: number;
+        };
+        /**
+         * @description * `open` - open
+         *     * `in_progress` - in_progress
+         *     * `awaiting_member` - awaiting_member
+         *     * `resolved` - resolved
+         * @enum {string}
+         */
+        AdminTicketUpdateStatusEnum: "open" | "in_progress" | "awaiting_member" | "resolved";
         AdminWin: {
             /** Format: uuid */
             id: string;
@@ -6974,11 +9279,95 @@ export interface components {
             startup_id?: string;
             location?: string;
         };
+        AlertPreference: {
+            kind: string;
+            title: string;
+            enabled: boolean;
+        };
+        Analytics: {
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            days: number;
+            stats: components["schemas"]["Stat"][];
+            series: components["schemas"]["AnalyticsSeries"][];
+            breakdowns: components["schemas"]["Breakdown"][];
+            funnel: components["schemas"]["CountRow"][];
+        };
+        AnalyticsSeries: {
+            key: string;
+            title: string;
+            points: components["schemas"]["SeriesPoint"][];
+        };
+        Announcement: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @description Sanitised HTML */
+            body: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        AnnouncementCreateRequest: {
+            title: string;
+            body: string;
+        };
+        Answer: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            author: string;
+            is_staff: boolean;
+            mine: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
         Applicant: {
             /** Format: uuid */
             id: string;
             name: string;
             email: string;
+        };
+        ApplicantProfile: {
+            full_name: string;
+            headline: string;
+            country: string;
+            city: string;
+            website_url: string;
+            linkedin_url: string;
+            completeness: number;
+        };
+        ApplicantReferral: {
+            kind: string;
+            kind_label: string;
+            detail: string;
+            referrer: components["schemas"]["Referrer"] | null;
+            code_used: string;
+        };
+        ApplicantStartup: {
+            name: string;
+            country: string;
+            city: string;
+            sector: string;
+            stage: string;
+            pitch: string;
+            website_url: string;
+            completeness: number;
+        };
+        /** @description What a person told us when they asked to join, for the admin deciding on them. */
+        Application: {
+            member: components["schemas"]["Member"];
+            profile: components["schemas"]["ApplicantProfile"] | null;
+            startup: components["schemas"]["ApplicantStartup"] | null;
+            timeline: components["schemas"]["TimelineEntry"][];
+            referral: components["schemas"]["ApplicantReferral"];
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -7002,8 +9391,15 @@ export interface components {
             accept_conduct: boolean;
         };
         Apply: {
+            /** @description The first route: url or email */
             method: string;
             target?: string;
+            /** @description An https link, or empty */
+            url: string;
+            /** @description Where to send an application; empty for the public */
+            email: string;
+            /** @description The site the link leads to */
+            host: string;
         };
         /**
          * @description * `url` - url
@@ -7011,6 +9407,17 @@ export interface components {
          * @enum {string}
          */
         ApplyMethodEnum: "url" | "email";
+        Attachment: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly filename: string;
+            readonly size: number;
+            readonly content_type: string;
+        };
+        AttachmentLink: {
+            url: string;
+            expires_in: number;
+        };
         Attendee: {
             /** Format: uuid */
             user_id: string;
@@ -7021,6 +9428,65 @@ export interface components {
             registered_at: string;
             /** Format: date-time */
             checked_in_at: string | null;
+        };
+        AudienceSize: {
+            /** @description People it would go to if sent now */
+            recipients: number;
+        };
+        AuditActor: {
+            /** Format: uuid */
+            id: string | null;
+            name: string;
+            email: string;
+            roles: string[];
+        };
+        AuditChange: {
+            field: string;
+            before: unknown;
+            after: unknown;
+        };
+        AuditEntry: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            actor: components["schemas"]["AuditActor"];
+            action: string;
+            target: components["schemas"]["AuditTarget"];
+            outcome: string;
+            ip_ref: string;
+            request_id: string;
+            reason: string;
+            changes: components["schemas"]["AuditChange"][];
+        };
+        AuditEntryDetail: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            actor: components["schemas"]["AuditActor"];
+            action: string;
+            target: components["schemas"]["AuditTarget"];
+            outcome: string;
+            ip_ref: string;
+            request_id: string;
+            reason: string;
+            changes: components["schemas"]["AuditChange"][];
+            before: unknown;
+            after: unknown;
+        };
+        AuditRef: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            action: string;
+            outcome: string;
+        };
+        AuditTarget: {
+            type: string;
+            id: string;
+            title: string;
         };
         Author: {
             /** Format: uuid */
@@ -7042,6 +9508,12 @@ export interface components {
             /** @description False until that part of the platform exists */
             available: boolean;
         };
+        /**
+         * @description * `blocked` - blocked
+         *     * `extra` - extra
+         * @enum {string}
+         */
+        AvailabilityExceptionKindEnum: "blocked" | "extra";
         AvailabilityPreview: {
             timezone: string;
             session_minutes: number;
@@ -7061,12 +9533,29 @@ export interface components {
             /** Format: uuid */
             id: string;
             slug: string;
-            title: string;
-            excerpt: string;
-            external_url: string;
+            kind: components["schemas"]["BannerKindEnum"];
+            /** @description At most 140 characters; the title if none was written */
+            text: string;
+            /** @description A page in the app or an https address */
+            link: string;
             /** Format: date-time */
             ends_at: string;
         };
+        /**
+         * @description * `announcement` - announcement
+         *     * `news` - news
+         *     * `urgent` - urgent
+         * @enum {string}
+         */
+        BannerKindEnum: "announcement" | "news" | "urgent";
+        /**
+         * @description * `off` - off
+         *     * `scheduled` - scheduled
+         *     * `live` - live
+         *     * `expired` - expired
+         * @enum {string}
+         */
+        BannerStatusEnum: "off" | "scheduled" | "live" | "expired";
         BatchResult: {
             accepted: number;
             rejected: components["schemas"]["RejectedEvent"][];
@@ -7093,11 +9582,113 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        BodyRequest: {
+            body: string;
+        };
+        BookableSlot: {
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            /** Format: date */
+            local_date: string;
+            local_time: string;
+        };
         BookableTimes: {
             timezone: string;
             session_minutes: number;
             times: string[];
             sessions_left_this_week: number;
+        };
+        Breakdown: {
+            key: string;
+            title: string;
+            rows: components["schemas"]["CountRow"][];
+        };
+        BrowseJob: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+        };
+        BrowseNamed: {
+            slug: string;
+            name: string;
+        };
+        BrowsePeoplePage: {
+            count: number;
+            page: number;
+            page_size: number;
+            pages: number;
+            results: components["schemas"]["BrowsePerson"][];
+        };
+        BrowsePerson: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            headline: string;
+            photo: {
+                [key: string]: unknown;
+            } | null;
+            city: string;
+            country: string;
+            skills: components["schemas"]["BrowseNamed"][];
+        };
+        BrowseStartup: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            pitch: string;
+            logo: {
+                [key: string]: unknown;
+            } | null;
+            sector: components["schemas"]["BrowseNamed"] | null;
+            stage: components["schemas"]["BrowseNamed"] | null;
+            country: string;
+            city: string;
+            year_founded: number | null;
+            description: string;
+            website_url: string;
+            pitch_deck_url: string;
+            featured: boolean;
+            traction: components["schemas"]["BrowseTraction"][];
+            open_jobs_count: number;
+            open_jobs: components["schemas"]["BrowseJob"][];
+        };
+        BrowseStartupPage: {
+            count: number;
+            page: number;
+            page_size: number;
+            pages: number;
+            results: components["schemas"]["BrowseStartup"][];
+        };
+        BrowseTraction: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            value: unknown;
+            /** Format: date */
+            as_of_date: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        BulkApproveRequest: {
+            ids: string[];
+        };
+        BulkApproveResult: {
+            approved: number;
+            skipped: number;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -7108,6 +9699,15 @@ export interface components {
         BulkInvitationRequest: {
             csv: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        BulkLinksRequest: {
+            urls: string[];
+        };
         BulkReport: {
             created: number;
             skipped: number;
@@ -7116,9 +9716,15 @@ export interface components {
         BulkRow: {
             row: number;
             email: string;
-            result: components["schemas"]["ResultEnum"];
+            result: components["schemas"]["BulkRowResultEnum"];
             reason: string;
         };
+        /**
+         * @description * `created` - created
+         *     * `skipped` - skipped
+         * @enum {string}
+         */
+        BulkRowResultEnum: "created" | "skipped";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -7214,6 +9820,28 @@ export interface components {
             /** Format: date-time */
             scheduled_at: string;
         };
+        CannedReplyOut: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly title: string;
+            readonly body: string;
+            readonly category: string;
+            readonly active: boolean;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CannedReplyRequest: {
+            title: string;
+            body: string;
+            /** @default  */
+            category: string;
+            /** @default true */
+            active: boolean;
+        };
         Categories: {
             categories: string[];
         };
@@ -7230,12 +9858,108 @@ export interface components {
         Certificate: {
             /** Format: uuid */
             id: string;
-            code: string;
+            course_slug: string;
+            /** @description For example WO-C-2026-000341 */
+            number: string;
             holder_name: string;
             course_title: string;
             /** Format: date-time */
             issued_at: string;
+            /**
+             * Format: double
+             * @description The length of the course, in hours
+             */
+            hours: number;
+            status: components["schemas"]["CertificateStatusEnum"];
+            title_text: string;
+            signatory_name: string;
+            signatory_title: string;
+            signature_url: string | null;
             verify_url: string;
+            /** @description Whether the holder lists this certificate on their profile */
+            show_on_profile: boolean;
+        };
+        CertificateDownload: {
+            /** @description A short lived address that downloads the PDF */
+            url: string;
+            /** @description Seconds the address works for */
+            expires_in: number;
+            filename: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CertificatePreviewRequest: {
+            title_text?: string;
+            signatory_name?: string;
+            signatory_title?: string;
+            /**
+             * Format: uuid
+             * @description A ready `cert_signature` upload.
+             */
+            signature_upload_id?: string;
+            remove_signature?: boolean;
+            holder_name?: string;
+        };
+        CertificateRef: {
+            number: string;
+            course_title: string;
+            /** Format: date-time */
+            issued_at: string;
+            revoked: boolean;
+        };
+        CertificateSettings: {
+            title_text: string;
+            signatory_name: string;
+            signatory_title: string;
+            signature_url: string | null;
+            version: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CertificateSettingsWriteRequest: {
+            title_text?: string;
+            signatory_name?: string;
+            signatory_title?: string;
+            /**
+             * Format: uuid
+             * @description A ready `cert_signature` upload.
+             */
+            signature_upload_id?: string;
+            remove_signature?: boolean;
+        };
+        /**
+         * @description * `valid` - valid
+         *     * `revoked` - revoked
+         * @enum {string}
+         */
+        CertificateStatusEnum: "valid" | "revoked";
+        /**
+         * @description * `grant` - grant
+         *     * `revoke` - revoke
+         * @enum {string}
+         */
+        ChangeRoleActionEnum: "grant" | "revoke";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ChangeRoleRequest: {
+            role: components["schemas"]["TeamRoleEnum"];
+            action: components["schemas"]["ChangeRoleActionEnum"];
+            /** @default  */
+            reason: string;
         };
         /**
          * @description * `proposed` - proposed
@@ -7337,13 +10061,63 @@ export interface components {
             score: number;
             next_missing_field: string | null;
         };
+        Configured: {
+            api_key: boolean;
+            webhook_secret: boolean;
+            reply_to: boolean;
+            logo: boolean;
+        };
+        ConflictSession: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            status: string;
+            topic: string;
+        };
+        ConsolePerson: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: email */
+            email: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        CopyRequest: {
+            subject: string;
+            /** @default  */
+            preheader: string;
+            body: string;
+            /** @default  */
+            note: string;
+        };
         CountItem: {
+            name: string;
+            count: number;
+        };
+        CountRow: {
             name: string;
             count: number;
         };
         Country: {
             code: string;
             name: string;
+        };
+        Counts: {
+            open: number;
+            in_progress: number;
+            awaiting_member: number;
+            resolved: number;
+            resolved_this_week: number;
+            working: number;
+            total: number;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -7355,21 +10129,28 @@ export interface components {
             /** Format: uuid */
             upload_id: string;
         };
-        /**
-         * @description Rejects fields the serializer does not declare.
-         *
-         *     Silently ignoring unknown input hides client bugs and makes mass
-         *     assignment mistakes easy to miss.
-         */
+        /** @description What can be set on a course. Only the title is needed to start a draft. */
         CourseCreateRequest: {
             title: string;
-            description: string;
-            instructor: string;
-            category: string;
-            level: components["schemas"]["CourseLevelEnum"];
-            access?: components["schemas"]["AccessEnum"];
+            subtitle?: string;
+            description?: string;
+            instructor?: string;
+            category?: string;
+            level?: components["schemas"]["CourseLevelEnum"];
+            language?: string;
+            learn_bullets?: string[];
+            requirements?: string[];
+            audience?: string;
+            promo_video_url?: string;
+            enrolment_active?: boolean;
+            access?: components["schemas"]["PricingModeEnum"];
             price_minor?: number | null;
             currency?: string;
+            promo_price_minor?: number | null;
+            /** Format: date-time */
+            promo_starts_at?: string | null;
+            /** Format: date-time */
+            promo_ends_at?: string | null;
             open_to_visitors?: boolean;
             certificate_enabled?: boolean;
         };
@@ -7378,10 +10159,16 @@ export interface components {
             id: string;
             slug: string;
             title: string;
+            subtitle: string;
             excerpt: string;
             instructor: string;
             category: string;
             level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
             cover: components["schemas"]["Image"] | null;
             access: string;
             price: components["schemas"]["Price"] | null;
@@ -7391,6 +10178,8 @@ export interface components {
             lesson_count: number;
             status: string;
             progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
             /** @description Sanitised HTML */
             description: string;
             modules: components["schemas"]["OutlineModule"][];
@@ -7414,12 +10203,59 @@ export interface components {
          * @description * `beginner` - beginner
          *     * `intermediate` - intermediate
          *     * `advanced` - advanced
+         *     * `all` - all
          * @enum {string}
          */
-        CourseLevelEnum: "beginner" | "intermediate" | "advanced";
+        CourseLevelEnum: "beginner" | "intermediate" | "advanced" | "all";
         CoursePage: {
             results: components["schemas"]["CourseSummary"][];
             next_cursor: string | null;
+        };
+        /** @description The landing page: the outline and description plus everything that sells and explains. */
+        CoursePageDetail: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            title: string;
+            subtitle: string;
+            excerpt: string;
+            instructor: string;
+            category: string;
+            level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
+            cover: components["schemas"]["Image"] | null;
+            access: string;
+            price: components["schemas"]["Price"] | null;
+            open_to_visitors: boolean;
+            certificate_enabled: boolean;
+            rating: components["schemas"]["RatingSummary"];
+            lesson_count: number;
+            status: string;
+            progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
+            /** @description Sanitised HTML */
+            description: string;
+            modules: components["schemas"]["OutlineModule"][];
+            resume: components["schemas"]["Resume"] | null;
+            my_rating: components["schemas"]["MyRating"] | null;
+            learn_bullets: string[];
+            requirements: string[];
+            audience: string;
+            promo_video: components["schemas"]["PromoVideo"] | null;
+            rating_distribution: {
+                [key: string]: number;
+            };
+            can_review: boolean;
+            related: components["schemas"]["CourseSummary"][];
+            announcement_count: number;
+            /** Format: date-time */
+            last_updated: string;
+            section_count: number;
         };
         CourseProgress: {
             enrolled: boolean;
@@ -7429,6 +10265,7 @@ export interface components {
             /** Format: date-time */
             completed_at?: string | null;
             origin?: string;
+            time_remaining_seconds?: number;
         };
         CourseStats: {
             enrolled: number;
@@ -7443,10 +10280,16 @@ export interface components {
             id: string;
             slug: string;
             title: string;
+            subtitle: string;
             excerpt: string;
             instructor: string;
             category: string;
             level: string;
+            language: string;
+            language_label: string;
+            learners_count: number;
+            duration_seconds: number;
+            enrolment_active: boolean;
             cover: components["schemas"]["Image"] | null;
             access: string;
             price: components["schemas"]["Price"] | null;
@@ -7456,6 +10299,8 @@ export interface components {
             lesson_count: number;
             status: string;
             progress: components["schemas"]["CourseProgress"];
+            wishlisted: boolean;
+            access_request: string | null;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -7504,6 +10349,26 @@ export interface components {
         DirectorySkill: {
             slug: string;
             name: string;
+        };
+        DnsCheck: {
+            key: string;
+            title: string;
+            status: components["schemas"]["DnsCheckStatusEnum"];
+            detail: string;
+            record: string;
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `warning` - warning
+         *     * `missing` - missing
+         *     * `unknown` - unknown
+         * @enum {string}
+         */
+        DnsCheckStatusEnum: "ok" | "warning" | "missing" | "unknown";
+        DomainHealth: {
+            domain: string;
+            stream: string;
+            checks: components["schemas"]["DnsCheck"][];
         };
         EditorialItem: {
             /** Format: uuid */
@@ -7698,6 +10563,59 @@ export interface components {
          * @enum {string}
          */
         EventTypeEnum: "demo_day" | "workshop" | "meetup" | "announcement";
+        Exception: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["AvailabilityExceptionKindEnum"];
+            /** Format: date */
+            starts_on: string | null;
+            /** Format: date */
+            ends_on: string | null;
+            /** Format: date-time */
+            starts_at: string | null;
+            /** Format: date-time */
+            ends_at: string | null;
+            note: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ExceptionCreateRequest: {
+            type: components["schemas"]["AvailabilityExceptionKindEnum"];
+            /**
+             * Format: date
+             * @description blocked: the first day off
+             */
+            starts_on?: string;
+            /**
+             * Format: date
+             * @description blocked: the last day off
+             */
+            ends_on?: string;
+            /** @default  */
+            note: string;
+            /**
+             * Format: date
+             * @description extra: the day
+             */
+            date?: string;
+            start?: string;
+            end?: string;
+            /** @default false */
+            acknowledge: boolean;
+        };
+        Failure: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            provider_message_id: string;
+            occurred_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
         Featured: {
             /** Format: uuid */
             id: string;
@@ -7709,12 +10627,53 @@ export interface components {
             pinned?: components["schemas"]["Post"][];
             next_cursor: string | null;
         };
+        FeedActivity: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["FeedActivityKindEnum"];
+            /** @description The comment text, or the reaction */
+            detail: string;
+            actor: components["schemas"]["Author"];
+            /** Format: uuid */
+            post_id: string;
+            post_author: string;
+            post_excerpt: string;
+            mine: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description * `comment` - comment
+         *     * `reaction` - reaction
+         * @enum {string}
+         */
+        FeedActivityKindEnum: "comment" | "reaction";
+        FeedStats: {
+            posts: number;
+            posts_last_7_days: number;
+            comments: number;
+            reactions: number;
+            hidden: number;
+            pinned: number;
+            open_reports: number;
+        };
         FeedbackItem: {
             stars: number | null;
             comment: string;
             outcome: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        FeedbackRequest: {
+            satisfaction: components["schemas"]["SatisfactionEnum"];
+            /** @default  */
+            comment: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -7852,6 +10811,7 @@ export interface components {
             startup: components["schemas"]["SignupStartupRequest"];
             /** Format: uuid */
             anonymous_id?: string | null;
+            referral?: components["schemas"]["ReferralInputRequest"];
             /** @default  */
             invitation_token: string;
         };
@@ -7883,6 +10843,15 @@ export interface components {
         GrantRequest: {
             /** Format: uuid */
             user_id: string;
+        };
+        Health: {
+            provider: string;
+            configured: components["schemas"]["Configured"];
+            separate_streams: boolean;
+            hourly_cap: number | null;
+            domains: components["schemas"]["DomainHealth"][];
+            stats: components["schemas"]["SendingStats"];
+            failures: components["schemas"]["Failure"][];
         };
         /** @description Public addresses of the two sizes of a processed image. */
         Image: {
@@ -7919,6 +10888,60 @@ export interface components {
             /** Format: date-time */
             registered_at: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        InvitationBatchRequest: {
+            emails: string[];
+            /** @default member */
+            role: string;
+            /** @default  */
+            message: string;
+            /** @description One per submit. */
+            idempotency_key: string;
+        };
+        InvitationBatchResult: {
+            sent: number;
+            skipped: number;
+            failed: number;
+            results: components["schemas"]["InvitationBatchRow"][];
+        };
+        InvitationBatchRow: {
+            email: string;
+            result: components["schemas"]["InvitationBatchRowResultEnum"];
+            reason: string;
+        };
+        /**
+         * @description * `sent` - sent
+         *     * `skipped` - skipped
+         *     * `failed` - failed
+         * @enum {string}
+         */
+        InvitationBatchRowResultEnum: "sent" | "skipped" | "failed";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        InvitationCheckRequest: {
+            emails: string[];
+        };
+        InvitationCheckRow: {
+            email: string;
+            state: components["schemas"]["InvitationCheckRowStateEnum"];
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `invalid` - invalid
+         *     * `member` - member
+         *     * `pending` - pending
+         * @enum {string}
+         */
+        InvitationCheckRowStateEnum: "ok" | "invalid" | "member" | "pending";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -8001,6 +11024,10 @@ export interface components {
             banner_starts_at?: string | null;
             /** Format: date-time */
             banner_ends_at?: string | null;
+            show_banner?: boolean;
+            banner_text?: string;
+            banner_kind?: string;
+            banner_link?: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -8072,8 +11099,10 @@ export interface components {
             description: string;
             requirements?: string;
             compensation?: string;
-            apply_method: components["schemas"]["ApplyMethodEnum"];
-            apply_target: string;
+            apply_url?: string;
+            apply_email?: string;
+            apply_method?: components["schemas"]["ApplyMethodEnum"];
+            apply_target?: string;
             /** Format: date */
             deadline?: string | null;
         };
@@ -8109,6 +11138,12 @@ export interface components {
         JobSitemapList: {
             results: components["schemas"]["JobSitemapEntry"][];
         };
+        JobTabCounts: {
+            active: number;
+            pending: number;
+            rejected: number;
+            closed: number;
+        };
         /**
          * @description * `full_time` - full_time
          *     * `part_time` - part_time
@@ -8138,6 +11173,11 @@ export interface components {
          * @enum {string}
          */
         LanguagesEnum: "af" | "am" | "ar" | "de" | "en" | "es" | "fr" | "ha" | "hi" | "ig" | "pt" | "sw" | "yo" | "zh" | "zu";
+        LearningSection: {
+            courses_started: number;
+            courses_completed: number;
+            certificates: components["schemas"]["CertificateRef"][];
+        };
         LearningSnapshot: {
             available: boolean;
             published_courses: number;
@@ -8167,6 +11207,8 @@ export interface components {
             type: components["schemas"]["LessonTypeEnum"];
             title: string;
             duration_seconds?: number | null;
+            description?: string;
+            is_preview?: boolean;
             video_url?: string;
             body?: string;
             resource_url?: string;
@@ -8185,6 +11227,8 @@ export interface components {
             type: string;
             title: string;
             duration_seconds: number | null;
+            description: string;
+            preview: boolean;
             video: components["schemas"]["Video"] | null;
             /** @description Sanitised HTML for reading lessons */
             body: string;
@@ -8268,6 +11312,34 @@ export interface components {
             /** Format: uuid */
             upload_id: string;
         };
+        MailTemplate: {
+            key: string;
+            name: string;
+            about: string;
+            stream: components["schemas"]["StreamEnum"];
+            subject: string;
+            edited: boolean;
+            version: number;
+            /** Format: date-time */
+            updated_at: string | null;
+            preheader: string;
+            body: string;
+            default_subject: string;
+            default_preheader: string;
+            default_body: string;
+            variables: components["schemas"]["TemplateVariable"][];
+        };
+        MailTemplateSummary: {
+            key: string;
+            name: string;
+            about: string;
+            stream: components["schemas"]["StreamEnum"];
+            subject: string;
+            edited: boolean;
+            version: number;
+            /** Format: date-time */
+            updated_at: string | null;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -8344,6 +11416,65 @@ export interface components {
             last_login: string;
             /** Format: date-time */
             created_at: string;
+        };
+        /** @description The member row's account fields plus every section the drawer shows. */
+        MemberFull: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            status: string;
+            roles: string[];
+            /** Format: date-time */
+            email_verified_at: string | null;
+            /** Format: date-time */
+            approved_at: string | null;
+            approval_source: string;
+            status_reason: string;
+            /** Format: date-time */
+            status_changed_at: string | null;
+            /** Format: date-time */
+            last_login: string | null;
+            /** Format: date-time */
+            created_at: string;
+            name: string;
+            profile: components["schemas"]["ProfileSection"];
+            account: components["schemas"]["AccountSection"];
+            activity: components["schemas"]["ActivitySection"];
+            learning: components["schemas"]["LearningSection"];
+            mentorship: components["schemas"]["MentorshipSection"] | null;
+            open_tickets: components["schemas"]["TicketRef"][];
+            audit: components["schemas"]["AuditRef"][];
+        };
+        /** @description A member in the table: the account, plus what they gave on joining. */
+        MemberRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            status: string;
+            readonly roles: string[];
+            /** Format: date-time */
+            email_verified_at: string;
+            /** Format: date-time */
+            approved_at: string;
+            approval_source: string;
+            status_reason: string;
+            /** Format: date-time */
+            status_changed_at: string;
+            /** Format: date-time */
+            last_login: string;
+            /** Format: date-time */
+            created_at: string;
+            readonly name: string;
+            readonly country: string;
+            readonly startup: string;
+            readonly sector: string;
+            readonly stage: string;
+            readonly referral_source: string;
+            readonly referral_label: string;
+            readonly referral_detail: string;
+            readonly referrer: components["schemas"]["Referrer"] | null;
         };
         Mentor: {
             /**
@@ -8467,6 +11598,67 @@ export interface components {
             weekly?: components["schemas"]["WeeklyWindowRequest"][];
             one_off?: components["schemas"]["OneOffWindowRequest"][];
         };
+        MentorSetup: {
+            timezone: string;
+            accepting_new: boolean;
+            weekly: components["schemas"]["WeeklyWindow"][];
+            exceptions: components["schemas"]["Exception"][];
+            session_lengths: number[];
+            default_length: number;
+            buffer_minutes: number;
+            min_notice_hours: number;
+            max_per_week: number;
+            booking_window_days: number;
+            pricing_mode: components["schemas"]["PricingModeEnum"];
+            default_price_minor: number | null;
+            currency: string;
+            prices: components["schemas"]["PriceRow"][];
+            /** @description False while online payment is off: paid sessions are requests the mentor confirms and payment is arranged directly. */
+            payments_enabled: boolean;
+            meeting_provider: string;
+            personal_link: string;
+            meeting_providers: string[];
+            about: string;
+            expertise: string[];
+            topics: string[];
+            languages: string[];
+            stages: string[];
+            industries: string[];
+            options: components["schemas"]["SetupOptions"];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        MentorSetupUpdateRequest: {
+            session_lengths?: number[];
+            default_length?: number;
+            buffer_minutes?: number;
+            min_notice_hours?: number;
+            max_per_week?: number;
+            booking_window_days?: number;
+            accepting_new?: boolean;
+            pricing_mode?: components["schemas"]["PricingModeEnum"];
+            default_price_minor?: number | null;
+            currency?: string;
+            prices?: components["schemas"]["PriceRowWriteRequest"][];
+            meeting_provider?: string;
+            personal_link?: string;
+            about?: string;
+            expertise?: string[];
+            topics?: string[];
+            languages?: components["schemas"]["LanguagesEnum"][];
+            stages?: string[];
+            industries?: string[];
+            timezone?: string;
+            /**
+             * @description Keep sessions already agreed even though the change leaves them outside the schedule.
+             * @default false
+             */
+            acknowledge: boolean;
+        };
         MentorTag: {
             slug: string;
             name: string;
@@ -8475,13 +11667,15 @@ export interface components {
             /** Format: uuid */
             id: string;
             status: components["schemas"]["MentoringSessionStatusEnum"];
-            role: components["schemas"]["RoleEnum"];
+            role: components["schemas"]["SessionViewRoleEnum"];
             /** Format: date-time */
             starts_at: string;
             /** Format: date-time */
             ends_at: string;
             topic: string;
             message: string;
+            length_minutes: number;
+            price: components["schemas"]["SessionPrice"] | null;
             mentor: components["schemas"]["SessionParty"];
             mentee: components["schemas"]["SessionParty"];
             meeting: components["schemas"]["SessionMeeting"];
@@ -8529,6 +11723,15 @@ export interface components {
             /** @description Said they want to mentor at registration and have not applied yet. */
             prompt_to_apply: boolean;
         };
+        MentorshipSection: {
+            status: string;
+            paused: boolean;
+            capacity_per_week: number;
+            session_minutes: number;
+            default_price_minor: number | null;
+            sessions_as_mentor: number;
+            sessions_as_mentee: number;
+        };
         MentorshipSnapshot: {
             available: boolean;
             pending_applications: number;
@@ -8560,6 +11763,17 @@ export interface components {
         };
         Message: {
             detail: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        MessageCreateRequest: {
+            message: string;
+            /** @description Ready `support_attachment` uploads, at most 3. */
+            attachments?: string[];
         };
         MetricInfo: {
             metric: string;
@@ -8617,6 +11831,14 @@ export interface components {
             stars: number;
             feedback: string;
         };
+        MyReferrals: {
+            code: string;
+            /** @description The link to share. It opens the sign up page. */
+            url: string;
+            approved_count: number;
+            waiting_count: number;
+            members: components["schemas"]["ReferralEntry"][];
+        };
         Named: {
             slug: string;
             name: string;
@@ -8663,6 +11885,25 @@ export interface components {
             url: string;
             type: string;
             image: string | null;
+        };
+        Note: {
+            /** Format: uuid */
+            id: string;
+            seconds: number;
+            body: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        NoteCreateRequest: {
+            body: string;
+            /** @default 0 */
+            seconds: number;
         };
         NotificationItem: {
             /** Format: uuid */
@@ -8753,6 +11994,8 @@ export interface components {
             title: string;
             position: number;
             duration_seconds: number | null;
+            /** @description Anyone signed in may watch it before enrolling */
+            preview: boolean;
             /** @description True until you have access to open it */
             locked: boolean;
             completed: boolean;
@@ -8763,6 +12006,36 @@ export interface components {
             title: string;
             position: number;
             lessons: components["schemas"]["OutlineLesson"][];
+        };
+        PaginatedAdminAccessRequestList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminAccessRequest"][];
+        };
+        PaginatedAdminCertificateList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminCertificate"][];
         };
         PaginatedAdminCourseList: {
             /** @example 123 */
@@ -8839,6 +12112,36 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AdminJob"][];
         };
+        PaginatedAdminLearnerList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminLearner"][];
+        };
+        PaginatedAdminMatchList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminMatch"][];
+        };
         PaginatedAdminMentorApplicationList: {
             /** @example 123 */
             count: number;
@@ -8884,6 +12187,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AdminMentoringSession"][];
         };
+        PaginatedAdminPostList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminPost"][];
+        };
         PaginatedAdminPreviewList: {
             /** @example 123 */
             count: number;
@@ -8913,6 +12231,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AdminReport"][];
+        };
+        PaginatedAdminTicketRowList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["AdminTicketRow"][];
         };
         PaginatedAdminWinList: {
             /** @example 123 */
@@ -8944,6 +12277,19 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Attendee"][];
         };
+        PaginatedAuditEntryList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["AuditEntry"][];
+        };
         PaginatedCampaignList: {
             /** @example 123 */
             count: number;
@@ -8974,7 +12320,7 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Invitation"][];
         };
-        PaginatedMemberList: {
+        PaginatedMemberRowList: {
             /** @example 123 */
             count: number;
             /**
@@ -8987,7 +12333,7 @@ export interface components {
              * @example http://api.example.org/accounts/?offset=200&limit=100
              */
             previous?: string | null;
-            results: components["schemas"]["Member"][];
+            results: components["schemas"]["MemberRow"][];
         };
         PaginatedSegmentList: {
             /** @example 123 */
@@ -9003,6 +12349,49 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Segment"][];
+        };
+        PaginatedSuppressionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Suppression"][];
+        };
+        PaginatedTicketList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=400&limit=100
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?offset=200&limit=100
+             */
+            previous?: string | null;
+            results: components["schemas"]["Ticket"][];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PatchedAdminTicketUpdateRequest: {
+            status?: components["schemas"]["AdminTicketUpdateStatusEnum"];
+            /** Format: uuid */
+            assignee?: string | null;
+            priority?: components["schemas"]["PriorityEnum"];
+            category?: components["schemas"]["SupportCategoryEnum"];
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -9040,6 +12429,9 @@ export interface components {
             /** Format: uuid */
             segment_id?: string | null;
         };
+        PatchedCertificateChoiceRequest: {
+            show_on_profile?: boolean;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -9058,21 +12450,28 @@ export interface components {
         PatchedCommentWriteRequest: {
             body?: string;
         };
-        /**
-         * @description Rejects fields the serializer does not declare.
-         *
-         *     Silently ignoring unknown input hides client bugs and makes mass
-         *     assignment mistakes easy to miss.
-         */
+        /** @description What can be set on a course. Only the title is needed to start a draft. */
         PatchedCourseUpdateRequest: {
             title?: string;
+            subtitle?: string;
             description?: string;
             instructor?: string;
             category?: string;
             level?: components["schemas"]["CourseLevelEnum"];
-            access?: components["schemas"]["AccessEnum"];
+            language?: string;
+            learn_bullets?: string[];
+            requirements?: string[];
+            audience?: string;
+            promo_video_url?: string;
+            enrolment_active?: boolean;
+            access?: components["schemas"]["PricingModeEnum"];
             price_minor?: number | null;
             currency?: string;
+            promo_price_minor?: number | null;
+            /** Format: date-time */
+            promo_starts_at?: string | null;
+            /** Format: date-time */
+            promo_ends_at?: string | null;
             open_to_visitors?: boolean;
             certificate_enabled?: boolean;
         };
@@ -9119,6 +12518,10 @@ export interface components {
             banner_starts_at?: string | null;
             /** Format: date-time */
             banner_ends_at?: string | null;
+            show_banner?: boolean;
+            banner_text?: string;
+            banner_kind?: string;
+            banner_link?: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -9137,6 +12540,8 @@ export interface components {
             description?: string;
             requirements?: string;
             compensation?: string;
+            apply_url?: string;
+            apply_email?: string;
             apply_method?: components["schemas"]["ApplyMethodEnum"];
             apply_target?: string;
             /** Format: date */
@@ -9152,6 +12557,8 @@ export interface components {
             type?: components["schemas"]["LessonTypeEnum"];
             title?: string;
             duration_seconds?: number | null;
+            description?: string;
+            is_preview?: boolean;
             video_url?: string;
             body?: string;
             resource_url?: string;
@@ -9209,6 +12616,18 @@ export interface components {
          *     Silently ignoring unknown input hides client bugs and makes mass
          *     assignment mistakes easy to miss.
          */
+        PatchedReferralEditRequest: {
+            kind?: components["schemas"]["ReferralKindEnum"] | components["schemas"]["BlankEnum"];
+            detail?: string;
+            /** Format: uuid */
+            referred_by?: string | null;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
         PatchedSegmentUpdateRequest: {
             name?: string;
             definition?: components["schemas"]["SegmentDefinitionRequest"];
@@ -9224,7 +12643,25 @@ export interface components {
             year_founded?: number | null;
             description?: string;
             website_url?: string;
+            pitch_deck_url?: string;
             directory_opt_in?: boolean;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PatchedTeamPostUpdateRequest: {
+            category?: components["schemas"]["CategoryEnum"];
+            body?: string;
+            official?: boolean;
+            comments_enabled?: boolean;
+            audience_roles?: string[];
+            /** Format: date-time */
+            pinned_until?: string | null;
+            /** Format: date-time */
+            scheduled_for?: string | null;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -9324,6 +12761,11 @@ export interface components {
             photo: components["schemas"]["Image"] | null;
             slug: string | null;
         };
+        PersonRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -9375,6 +12817,9 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             edited_at: string | null;
+            /** @description Posted by the WO Community team */
+            official: boolean;
+            comments_enabled: boolean;
             pinned: boolean;
             featured: boolean;
             /** @description Only ever true for the author's own view */
@@ -9463,6 +12908,23 @@ export interface components {
                 };
             };
         };
+        Preview: {
+            subject: string;
+            preheader: string;
+            html: string;
+            text: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PreviewRequestRequest: {
+            subject?: string;
+            preheader?: string;
+            body?: string;
+        };
         PreviewResult: {
             /** @description Active members who fit the segment */
             matching: number;
@@ -9473,7 +12935,38 @@ export interface components {
             /** @description In the smallest unit (kobo, cents) */
             amount_minor: number;
             currency: string;
+            /** @description The usual price, while a promotion is running */
+            original_minor: number | null;
+            /** Format: date-time */
+            promo_ends_at: string | null;
         };
+        PriceRow: {
+            length_minutes: number;
+            price_minor: number;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PriceRowWriteRequest: {
+            length_minutes: number;
+            price_minor: number;
+        };
+        /**
+         * @description * `free` - free
+         *     * `paid` - paid
+         * @enum {string}
+         */
+        PricingModeEnum: "free" | "paid";
+        /**
+         * @description * `low` - low
+         *     * `normal` - normal
+         *     * `high` - high
+         * @enum {string}
+         */
+        PriorityEnum: "low" | "normal" | "high";
         /** @description Output shape. Every field is optional because hidden groups are left out entirely. */
         Profile: {
             /** Format: uuid */
@@ -9497,9 +12990,35 @@ export interface components {
             };
             completeness?: components["schemas"]["ProfileCompleteness"];
         };
+        ProfileCertificate: {
+            number: string;
+            course_title: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: double */
+            hours: number;
+            verify_url: string;
+        };
         ProfileCompleteness: {
             score: number;
             next_missing_field: string | null;
+        };
+        ProfileSection: {
+            full_name: string;
+            headline: string;
+            bio: string;
+            country: string;
+            city: string;
+            website_url: string;
+            linkedin_url: string;
+            x_url: string;
+            skills: string[];
+            open_to: string[];
+            completeness: number;
+            startup_name: string;
+            industry: string;
+            stage: string;
+            pitch: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -9511,12 +13030,31 @@ export interface components {
             position_seconds?: number;
             completed?: boolean;
         };
+        PromoVideo: {
+            video_id: string;
+            embed_url: string;
+        };
         /**
          * @description * `web` - web
          *     * `mobile` - mobile
          * @enum {string}
          */
         PrototypeKindEnum: "web" | "mobile";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PublicContactRequest: {
+            name: string;
+            /** Format: email */
+            email: string;
+            subject: string;
+            message: string;
+            /** @default  */
+            website: string;
+        };
         PublicCourse: {
             slug: string;
             title: string;
@@ -9664,12 +13202,43 @@ export interface components {
             /** Format: date-time */
             published_at: string;
         };
+        PublishCheck: {
+            key: string;
+            text: string;
+            done: boolean;
+            step: number;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        PublishRequestRequest: {
+            /**
+             * @description Open the course by its link only, without listing it in the catalogue.
+             * @default false
+             */
+            unlisted: boolean;
+        };
+        Question: {
+            /** Format: uuid */
+            id: string;
+            body: string;
+            asker: string;
+            mine: boolean;
+            /** Format: date-time */
+            created_at: string;
+            answers: components["schemas"]["Answer"][];
+        };
         QueueCounts: {
             registrations_awaiting_approval: number;
             registrations_unverified: number;
             open_reports: number;
             jobs_awaiting_review: number;
             wins_awaiting_review: number;
+            support_unanswered: number;
+            support_overdue: number;
         };
         Range: {
             /** Format: date-time */
@@ -9752,6 +13321,9 @@ export interface components {
         ReasonRequest: {
             reason: string;
         };
+        Recents: {
+            terms: string[];
+        };
         RecommendedMentor: {
             /**
              * Format: uuid
@@ -9820,6 +13392,73 @@ export interface components {
         ReferenceOrderRequest: {
             ids: string[];
         };
+        ReferralEntry: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            startup: string;
+            /** Format: date-time */
+            joined_at: string;
+        };
+        /** @description How the person heard of us. Every part is optional; a wrong entry never blocks sign up. */
+        ReferralInputRequest: {
+            kind?: components["schemas"]["ReferralKindEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Which platform, event or organisation; or a member's name when they could not be found in the search. */
+            detail?: string;
+            /**
+             * Format: uuid
+             * @description The member who brought them, chosen from the search. Only with source `member`.
+             */
+            referred_by?: string | null;
+            /** @description The code in the referral link they opened, if any. */
+            code?: string;
+        };
+        /**
+         * @description * `member` - member
+         *     * `social` - social
+         *     * `event` - event
+         *     * `partner` - partner
+         *     * `search` - search
+         *     * `newsletter` - newsletter
+         *     * `other` - other
+         * @enum {string}
+         */
+        ReferralKindEnum: "member" | "social" | "event" | "partner" | "search" | "newsletter" | "other";
+        ReferralSummary: {
+            this_month: components["schemas"]["Window"];
+            last_month: components["schemas"]["Window"];
+            /** @description Percent of this month's sign ups that were referred */
+            referred_share: number;
+            sources: components["schemas"]["SourceCount"][];
+        };
+        Referrer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        ReferrerByCode: {
+            found: boolean;
+            /** Format: uuid */
+            id: string | null;
+            name: string;
+            startup: string;
+            photo: {
+                [key: string]: unknown;
+            } | null;
+        };
+        ReferrerCandidate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            headline: string;
+            photo: {
+                [key: string]: unknown;
+            } | null;
+            startup: string;
+        };
+        ReferrerSearch: {
+            results: components["schemas"]["ReferrerCandidate"][];
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -9844,6 +13483,7 @@ export interface components {
             startup: components["schemas"]["SignupStartupRequest"];
             /** Format: uuid */
             anonymous_id?: string | null;
+            referral?: components["schemas"]["ReferralInputRequest"];
             /** @default  */
             invitation_token: string;
         };
@@ -9858,9 +13498,29 @@ export interface components {
             registered_count: number;
             spots_left: number | null;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ReissueRequest: {
+            holder_name?: string;
+        };
         RejectedEvent: {
             index: number;
             reason: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        RememberRequest: {
+            term: string;
+            /** @default member */
+            scope: components["schemas"]["ScopeEnum"];
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -10024,15 +13684,38 @@ export interface components {
          */
         ResourceKindEnum: "link" | "file";
         /**
-         * @description * `created` - created
-         *     * `skipped` - skipped
-         * @enum {string}
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
          */
-        ResultEnum: "created" | "skipped";
+        RestoreRequest: {
+            version: number;
+        };
         Resume: {
             /** Format: uuid */
             lesson_id: string;
             position_seconds: number;
+        };
+        Review: {
+            /** Format: uuid */
+            id: string;
+            stars: number;
+            feedback: string;
+            /** Format: date-time */
+            created_at: string;
+            reviewer: string;
+            mine: boolean;
+        };
+        ReviewPage: {
+            results: components["schemas"]["Review"][];
+            next_cursor: string | null;
+            /** Format: double */
+            average: number | null;
+            count: number;
+            distribution: {
+                [key: string]: number;
+            };
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -10045,18 +13728,42 @@ export interface components {
             reason: string;
         };
         /**
-         * @description * `mentor` - mentor
-         *     * `mentee` - mentee
-         *     * `admin` - admin
-         * @enum {string}
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
          */
-        RoleEnum: "mentor" | "mentee" | "admin";
+        RevokeRequest: {
+            reason: string;
+        };
+        Role: {
+            role: string;
+            title: string;
+            blurb: string;
+            permissions: string[];
+            people: number;
+            /** @description Whether it is a console role you can invite to */
+            team: boolean;
+        };
+        RoleHolder: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            roles: string[];
+        };
         /**
          * @description * `member` - member
          *     * `mentor` - mentor
          * @enum {string}
          */
         RolesEnum: "member" | "mentor";
+        /**
+         * @description * `up` - up
+         *     * `down` - down
+         * @enum {string}
+         */
+        SatisfactionEnum: "up" | "down";
         SaveResult: {
             /** Format: uuid */
             job_id: string;
@@ -10069,6 +13776,13 @@ export interface components {
          * @enum {string}
          */
         ScenarioEnum: "conservative" | "base" | "optimistic";
+        ScheduleConflict: {
+            status: number;
+            code: string;
+            title: string;
+            detail: string;
+            sessions: components["schemas"]["ConflictSession"][];
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -10079,6 +13793,12 @@ export interface components {
             /** Format: date-time */
             publish_at: string;
         };
+        /**
+         * @description * `member` - member
+         *     * `admin` - admin
+         * @enum {string}
+         */
+        ScopeEnum: "member" | "admin";
         SearchHit: {
             type: string;
             /** Format: uuid */
@@ -10156,6 +13876,15 @@ export interface components {
             /** @description False when the event has no organiser email and it went to you. */
             sent_to_organiser: boolean;
         };
+        SendingStats: {
+            days: number;
+            sent: number;
+            delivered: number;
+            bounced: number;
+            complained: number;
+            unsubscribed: number;
+            suppressed_total: number;
+        };
         Series: {
             metric: string;
             description: string;
@@ -10165,6 +13894,13 @@ export interface components {
              * @description Sum, or the average for averaged metrics
              */
             total: number | null;
+        };
+        SeriesPoint: {
+            /** Format: date */
+            day: string;
+            count: number;
+            /** @description The same day of the range before */
+            previous: number;
         };
         Session: {
             /** Format: uuid */
@@ -10256,6 +13992,13 @@ export interface components {
             photo: components["schemas"]["Image"] | null;
             slug: string | null;
         };
+        SessionPrice: {
+            /** @description In the smallest unit (kobo, cents) */
+            price_minor: number;
+            currency: string;
+            /** @description "arranged": payment is settled directly between mentor and mentee. */
+            payment: string;
+        };
         SessionProposal: {
             /** Format: date-time */
             starts_at: string;
@@ -10292,10 +14035,46 @@ export interface components {
              * @description One of the start times from `GET /mentors/{id}/availability`.
              */
             starts_at: string;
+            /** @description One of the lengths the mentor offers; their usual length when left out. */
+            length_minutes?: number;
             /** @description What you want help with. */
             topic: string;
             /** @description 20 to 1000 characters introducing yourself and your goal. */
             message: string;
+        };
+        /**
+         * @description * `mentor` - mentor
+         *     * `mentee` - mentee
+         *     * `admin` - admin
+         * @enum {string}
+         */
+        SessionViewRoleEnum: "mentor" | "mentee" | "admin";
+        /**
+         * @description * `member_signup` - member_signup
+         *     * `job_pending` - job_pending
+         *     * `mentor_application` - mentor_application
+         *     * `course_access` - course_access
+         *     * `content_report` - content_report
+         *     * `support_ticket` - support_ticket
+         * @enum {string}
+         */
+        SetAlertPreferenceKindEnum: "member_signup" | "job_pending" | "mentor_application" | "course_access" | "content_report" | "support_ticket";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        SetAlertPreferenceRequest: {
+            kind: components["schemas"]["SetAlertPreferenceKindEnum"];
+            enabled: boolean;
+        };
+        SetupOptions: {
+            lengths: number[];
+            buffers: number[];
+            notice_hours: number[];
+            window_days: number[];
+            currencies: string[];
         };
         /**
          * @description * `deck` - deck
@@ -10367,6 +14146,21 @@ export interface components {
             /** @default  */
             pitch_link: string;
         };
+        SlotPrice: {
+            price_minor: number;
+            currency: string;
+            payment: string;
+        };
+        Slots: {
+            mentor_timezone: string;
+            timezone: string;
+            length_minutes: number;
+            lengths: number[];
+            accepting_new: boolean;
+            price: components["schemas"]["SlotPrice"] | null;
+            slots: components["schemas"]["BookableSlot"][];
+            sessions_left_this_week: number;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -10375,6 +14169,11 @@ export interface components {
          */
         SlotsRequest: {
             slots: components["schemas"]["SlotInputRequest"][];
+        };
+        SourceCount: {
+            kind: string;
+            kind_label: string;
+            count: number;
         };
         /** @description Output shape. Fields of hidden groups are absent, not blank. */
         Startup: {
@@ -10393,6 +14192,7 @@ export interface components {
             year_founded?: number | null;
             description?: string;
             website_url?: string;
+            pitch_deck_url?: string;
             team?: components["schemas"]["TeamMember"][];
             /** Format: uuid */
             owner_id?: string;
@@ -10430,6 +14230,7 @@ export interface components {
             year_founded?: number;
             description?: string;
             website_url?: string;
+            pitch_deck_url?: string;
         };
         StartupDetail: {
             slug: string;
@@ -10460,9 +14261,27 @@ export interface components {
             name: string;
             logo: components["schemas"]["Image"] | null;
         };
+        Stat: {
+            key: string;
+            title: string;
+            value: number;
+            previous: number;
+        };
+        Stats: {
+            counts: components["schemas"]["Counts"];
+            median_first_response_seconds: number | null;
+            overdue: number;
+            sla_hours: number;
+        };
         Status: {
             status: string;
         };
+        /**
+         * @description * `transactional` - transactional
+         *     * `broadcast` - broadcast
+         * @enum {string}
+         */
+        StreamEnum: "transactional" | "broadcast";
         Suggestion: {
             /** Format: uuid */
             id: string;
@@ -10472,6 +14291,49 @@ export interface components {
             image: components["schemas"]["Image"] | null;
             score: number;
             reasons: string[];
+        };
+        /**
+         * @description * `account` - account
+         *     * `approval` - approval
+         *     * `profile` - profile
+         *     * `learning` - learning
+         *     * `mentorship` - mentorship
+         *     * `jobs_events` - jobs_events
+         *     * `payments` - payments
+         *     * `problem` - problem
+         *     * `other` - other
+         * @enum {string}
+         */
+        SupportCategoryEnum: "account" | "approval" | "profile" | "learning" | "mentorship" | "jobs_events" | "payments" | "problem" | "other";
+        SupportMessage: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly author: {
+                [key: string]: unknown;
+            };
+            readonly body: string;
+            readonly is_internal: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            attachments: components["schemas"]["Attachment"][];
+        };
+        SupportPerson: {
+            /** Format: uuid */
+            id: string | null;
+            name: string;
+            email: string;
+            avatar: {
+                [key: string]: unknown;
+            } | null;
+        };
+        Suppression: {
+            /** Format: uuid */
+            id: string;
+            reason: string;
+            /** @description The first characters of the address hash */
+            readonly reference: string;
+            /** Format: date-time */
+            created_at: string;
         };
         /**
          * @description * `profile_complete` - profile_complete
@@ -10513,6 +14375,34 @@ export interface components {
             title: string;
             is_founder: boolean;
         };
+        /** @description A post from the team: the same fields as a member's, plus the options only the team has. */
+        TeamPostRequest: {
+            category: components["schemas"]["CategoryEnum"];
+            body: string;
+            images?: components["schemas"]["ImageInputRequest"][];
+            /**
+             * @description Post as the WO Community team
+             * @default false
+             */
+            official: boolean;
+            /** @default false */
+            pin: boolean;
+            /** Format: date-time */
+            pinned_until?: string | null;
+            /** @default true */
+            comments_enabled: boolean;
+            /** @description Empty means every member */
+            audience_roles?: string[];
+            /** Format: date-time */
+            scheduled_for?: string | null;
+        };
+        /**
+         * @description * `content_editor` - content_editor
+         *     * `community_admin` - community_admin
+         *     * `super_admin` - super_admin
+         * @enum {string}
+         */
+        TeamRoleEnum: "content_editor" | "community_admin" | "super_admin";
         Template: {
             /** Format: uuid */
             id: string;
@@ -10522,6 +14412,13 @@ export interface components {
             }[];
             /** Format: date-time */
             created_at: string;
+        };
+        TemplateVariable: {
+            name: string;
+            kind: string;
+            is_required: boolean;
+            must_appear: boolean;
+            sample: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -10535,6 +14432,83 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        Ticket: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        TicketCreateRequest: {
+            category: components["schemas"]["SupportCategoryEnum"];
+            subject: string;
+            message: string;
+            /** @description Ready `support_attachment` uploads, at most 3. */
+            attachments?: string[];
+        };
+        TicketDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly number: number;
+            readonly subject: string;
+            readonly category: string;
+            readonly category_label: string;
+            readonly status: string;
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly last_activity_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly can_reopen: boolean;
+            readonly satisfaction: string;
+            readonly satisfaction_comment: string;
+            readonly messages: {
+                [key: string]: unknown;
+            }[];
+        };
+        TicketRef: {
+            /** Format: uuid */
+            id: string;
+            number: number;
+            subject: string;
+            status: string;
+        };
+        TimelineEntry: {
+            kind: components["schemas"]["TimelineEntryKindEnum"];
+            /** Format: date-time */
+            at: string;
+            note: string;
+        };
+        /**
+         * @description * `registered` - registered
+         *     * `email_verified` - email_verified
+         *     * `decided` - decided
+         *     * `last_signed_in` - last_signed_in
+         * @enum {string}
+         */
+        TimelineEntryKindEnum: "registered" | "email_verified" | "decided" | "last_signed_in";
         TkAdminDeckTemplate: {
             slug: string;
             name: string;
@@ -11662,6 +15636,12 @@ export interface components {
         TokenRequest: {
             token: string;
         };
+        TopReferrer: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            approved: number;
+        };
         Topic: {
             topic: string;
             mentors?: number;
@@ -11714,6 +15694,9 @@ export interface components {
         TractionReplaceRequest: {
             metrics: components["schemas"]["TractionItemRequest"][];
         };
+        UnreadCount: {
+            unread_count: number;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -11763,9 +15746,11 @@ export interface components {
          *     * `campaign_image` - Campaign Image
          *     * `course_cover` - Course Cover
          *     * `course_file` - Course File
+         *     * `cert_signature` - Cert Signature
+         *     * `support_attachment` - Support Attachment
          * @enum {string}
          */
-        UploadPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file";
+        UploadPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "cert_signature" | "support_attachment";
         /**
          * @description * `profile_photo` - profile_photo
          *     * `startup_logo` - startup_logo
@@ -11774,9 +15759,11 @@ export interface components {
          *     * `campaign_image` - campaign_image
          *     * `course_cover` - course_cover
          *     * `course_file` - course_file
+         *     * `cert_signature` - cert_signature
+         *     * `support_attachment` - support_attachment
          * @enum {string}
          */
-        UploadRequestPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file";
+        UploadRequestPurposeEnum: "profile_photo" | "startup_logo" | "post_image" | "editorial_cover" | "campaign_image" | "course_cover" | "course_file" | "cert_signature" | "support_attachment";
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -11802,12 +15789,26 @@ export interface components {
         UploadStatusEnum: "pending" | "processing" | "ready" | "rejected" | "expired" | "discarded";
         VerifiedCertificate: {
             valid: boolean;
-            code: string;
+            status: components["schemas"]["CertificateStatusEnum"];
+            number: string;
             holder_name: string;
             course_title: string;
             /** Format: date-time */
-            issued_at: string;
+            issued_at: string | null;
+            /** Format: double */
+            hours: number | null;
             verify_url: string;
+        };
+        Version: {
+            version: number;
+            subject: string;
+            preheader: string;
+            body: string;
+            note: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            saved_by: string | null;
         };
         Video: {
             provider: string;
@@ -11825,6 +15826,23 @@ export interface components {
         VisibilityEnum: "private" | "members" | "public";
         WebhookAck: {
             status: string;
+        };
+        Weekly: {
+            timezone: string;
+            weekly: components["schemas"]["WeeklyWindow"][];
+            exceptions: components["schemas"]["Exception"][];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        WeeklyUpdateRequest: {
+            weekly: components["schemas"]["WeeklyWindowWriteRequest"][];
+            timezone?: string;
+            /** @default false */
+            acknowledge: boolean;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -11852,6 +15870,17 @@ export interface components {
             /** @description HH:MM in the mentor time zone. */
             start: string;
             /** @description HH:MM, up to 24:00. */
+            end: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        WeeklyWindowWriteRequest: {
+            weekday: number;
+            start: string;
             end: string;
         };
         Win: {
@@ -11905,6 +15934,29 @@ export interface components {
             /** @default  */
             reason: string;
         };
+        Window: {
+            signups: number;
+            referred: number;
+            approved: number;
+        };
+        WishlistState: {
+            saved: boolean;
+        };
+        YouTubeChecked: {
+            video_id: string;
+            url: string;
+            title: string;
+            thumbnail: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        YouTubeValidateRequest: {
+            url: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -11914,6 +15966,265 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admin_analytics_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Analytics"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_answers_hide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_answers_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_audit_list: {
+        parameters: {
+            query?: {
+                action?: string;
+                actor?: string;
+                cursor?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Comma separated: members, content, jobs, events, courses, certificates, settings, security. */
+                group?: string;
+                limit?: number;
+                /**
+                 * @description * `success` - success
+                 *     * `failure` - failure
+                 */
+                outcome?: "success" | "failure" | "";
+                q?: string;
+                target_id?: string;
+                target_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditEntryList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_audit_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntryDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such entry */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_audit_export_retrieve: {
+        parameters: {
+            query?: {
+                action?: string;
+                actor?: string;
+                cursor?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Comma separated: members, content, jobs, events, courses, certificates, settings, security. */
+                group?: string;
+                limit?: number;
+                /**
+                 * @description * `success` - success
+                 *     * `failure` - failure
+                 */
+                outcome?: "success" | "failure" | "";
+                q?: string;
+                target_id?: string;
+                target_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_blocked_domains_list: {
         parameters: {
             query?: never;
@@ -12412,6 +16723,48 @@ export interface operations {
             };
         };
     };
+    admin_campaigns_audience_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudienceSize"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_campaigns_cancel_create: {
         parameters: {
             query?: never;
@@ -12874,6 +17227,281 @@ export interface operations {
             };
         };
     };
+    admin_certificate_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateSettings"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificate_settings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CertificateSettingsWriteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateSettings"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificate_settings_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CertificatePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificates_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `valid` - valid
+                 *     * `revoked` - revoked
+                 */
+                status?: "valid" | "revoked";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminCertificateList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificates_reissue_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReissueRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_certificates_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already revoked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_comments_hide_create: {
         parameters: {
             query?: never;
@@ -13012,6 +17640,148 @@ export interface operations {
             };
         };
     };
+    admin_course_requests_all: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminAccessRequestList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_course_requests_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequest"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already decided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_course_requests_decline_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAccessRequest"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already decided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_list: {
         parameters: {
             query?: {
@@ -13026,8 +17796,9 @@ export interface operations {
                 /**
                  * @description * `draft` - draft
                  *     * `published` - published
+                 *     * `unlisted` - unlisted
                  */
-                status?: "draft" | "published";
+                status?: "draft" | "published" | "unlisted";
             };
             header?: never;
             path?: never;
@@ -13255,6 +18026,94 @@ export interface operations {
             };
         };
     };
+    admin_courses_announcements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_announcements_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnouncementCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_cover_update: {
         parameters: {
             query?: never;
@@ -13352,7 +18211,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -13501,6 +18364,136 @@ export interface operations {
             };
         };
     };
+    admin_courses_learners_list: {
+        parameters: {
+            query?: {
+                /** @description Number of results to return per page. */
+                limit?: number;
+                /** @description The initial index from which to return the results. */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminLearnerList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "admin_courses_learners.csv_retrieve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_learners_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_modules_create: {
         parameters: {
             query?: never;
@@ -13609,7 +18602,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -13657,6 +18654,48 @@ export interface operations {
             };
         };
     };
+    admin_courses_questions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestion"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_courses_ratings_list: {
         parameters: {
             query?: never;
@@ -13674,6 +18713,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminRating"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_course_requests: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                status?: string;
+            };
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminAccessRequestList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_reviews_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReview"][];
                 };
             };
             /** @description Not authenticated */
@@ -13750,7 +18877,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -14457,6 +19588,55 @@ export interface operations {
             };
         };
     };
+    admin_editorial_end_banner_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminItem"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a banner */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_editorial_publish_create: {
         parameters: {
             query?: never;
@@ -14601,6 +19781,480 @@ export interface operations {
             };
             /** @description Not in a state that allows this */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplateSummary"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PreviewRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preview"];
+                };
+            };
+            /** @description Bad wording */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MailTemplate"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_test_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PreviewRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad wording */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_templates_versions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_suppressions_list: {
+        parameters: {
+            query?: {
+                email?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSuppressionList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_email_suppressions_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suppression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such entry */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15253,6 +20907,8 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 q?: string;
+                /** @description A role, or `team` for every console role */
+                role?: string;
                 /**
                  * @description * `sent` - sent
                  *     * `opened` - opened
@@ -15504,6 +21160,57 @@ export interface operations {
             };
         };
     };
+    admin_invitations_batch_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationBatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationBatchResult"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already registered, already invited, or not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_invitations_bulk_create: {
         parameters: {
             query?: never;
@@ -15555,9 +21262,63 @@ export interface operations {
             };
         };
     };
+    admin_invitations_check_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationCheckRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationCheckRow"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invitation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already registered, already invited, or not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_jobs_list: {
         parameters: {
             query?: {
+                company?: string;
+                date_from?: string | null;
+                date_to?: string | null;
                 limit?: number;
                 offset?: number;
                 /**
@@ -15565,6 +21326,7 @@ export interface operations {
                  *     * `admin` - admin
                  */
                 origin?: "member" | "admin";
+                poster_id?: string | null;
                 q?: string;
                 /**
                  * @description * `pending` - pending
@@ -15575,6 +21337,24 @@ export interface operations {
                  *     * `removed` - removed
                  */
                 status?: "pending" | "published" | "closed" | "expired" | "rejected" | "removed";
+                /**
+                 * @description Active (live), pending review, rejected, or closed, expired or removed.
+                 *
+                 *     * `active` - active
+                 *     * `pending` - pending
+                 *     * `rejected` - rejected
+                 *     * `closed` - closed
+                 */
+                tab?: "active" | "pending" | "rejected" | "closed";
+                /**
+                 * @description * `full_time` - full_time
+                 *     * `part_time` - part_time
+                 *     * `contract` - contract
+                 *     * `internship` - internship
+                 *     * `volunteer` - volunteer
+                 *     * `other` - other
+                 */
+                type?: "full_time" | "part_time" | "contract" | "internship" | "volunteer" | "other";
             };
             header?: never;
             path?: never;
@@ -15927,6 +21707,59 @@ export interface operations {
             };
         };
     };
+    admin_jobs_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminJob"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_jobs_unpublish_create: {
         parameters: {
             query?: never;
@@ -15973,6 +21806,50 @@ export interface operations {
             };
             /** @description Not in a state that allows this */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_jobs_bulk_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkApproveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkApproveResult"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16039,6 +21916,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobSettings"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_jobs_stats_retrieve: {
+        parameters: {
+            query?: {
+                company?: string;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                offset?: number;
+                /**
+                 * @description * `member` - member
+                 *     * `admin` - admin
+                 */
+                origin?: "member" | "admin";
+                poster_id?: string | null;
+                q?: string;
+                /**
+                 * @description * `pending` - pending
+                 *     * `published` - published
+                 *     * `closed` - closed
+                 *     * `expired` - expired
+                 *     * `rejected` - rejected
+                 *     * `removed` - removed
+                 */
+                status?: "pending" | "published" | "closed" | "expired" | "rejected" | "removed";
+                /**
+                 * @description Active (live), pending review, rejected, or closed, expired or removed.
+                 *
+                 *     * `active` - active
+                 *     * `pending` - pending
+                 *     * `rejected` - rejected
+                 *     * `closed` - closed
+                 */
+                tab?: "active" | "pending" | "rejected" | "closed";
+                /**
+                 * @description * `full_time` - full_time
+                 *     * `part_time` - part_time
+                 *     * `contract` - contract
+                 *     * `internship` - internship
+                 *     * `volunteer` - volunteer
+                 *     * `other` - other
+                 */
+                type?: "full_time" | "part_time" | "contract" | "internship" | "volunteer" | "other";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobTabCounts"];
                 };
             };
             /** @description Not authenticated */
@@ -16243,6 +22200,119 @@ export interface operations {
             };
         };
     };
+    admin_matches_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `active` - active
+                 *     * `completed` - completed
+                 *     * `idle` - idle
+                 */
+                state?: "active" | "completed" | "idle";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminMatchList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_me_alerts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreference"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_me_alerts_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAlertPreferenceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPreference"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_members_list: {
         parameters: {
             query?: {
@@ -16251,7 +22321,20 @@ export interface operations {
                 joined_before?: string;
                 limit?: number;
                 offset?: number;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 *     * `email` - email
+                 *     * `-email` - -email
+                 *     * `last_login` - last_login
+                 *     * `-last_login` - -last_login
+                 *     * `status` - status
+                 *     * `-status` - -status
+                 */
+                ordering?: "created_at" | "-created_at" | "email" | "-email" | "last_login" | "-last_login" | "status" | "-status";
                 q?: string;
+                referral_source?: string;
+                referred_by?: string | null;
                 role?: string;
                 /**
                  * @description * `pending` - pending
@@ -16273,7 +22356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedMemberList"];
+                    "application/json": components["schemas"]["PaginatedMemberRowList"];
                 };
             };
             /** @description Not authenticated */
@@ -16322,7 +22405,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Member"];
+                    "application/json": components["schemas"]["MemberFull"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_application_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
                 };
             };
             /** @description Not authenticated */
@@ -16397,6 +22529,59 @@ export interface operations {
             };
             /** @description The account is not in a state that allows this */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_referral_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReferralEditRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicantReferral"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16559,6 +22744,54 @@ export interface operations {
             };
         };
     };
+    admin_members_resend_verification_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_members_reset_mfa_create: {
         parameters: {
             query?: never;
@@ -16600,6 +22833,59 @@ export interface operations {
                 content?: never;
             };
             /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_role_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleHolder"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such account */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description That would leave no super admin */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17067,6 +23353,52 @@ export interface operations {
             };
         };
     };
+    admin_modules_lessons_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                module_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkLinksRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLesson"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_modules_lessons_order_update: {
         parameters: {
             query?: never;
@@ -17113,6 +23445,159 @@ export interface operations {
             };
             /** @description Not every lesson listed once */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `update` - update
+                 *     * `question` - question
+                 *     * `win` - win
+                 *     * `resource` - resource
+                 *     * `event` - event
+                 *     * `opportunity` - opportunity
+                 */
+                category?: "update" | "question" | "win" | "resource" | "event" | "opportunity";
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `live` - live
+                 *     * `hidden` - hidden
+                 *     * `pinned` - pinned
+                 *     * `featured` - featured
+                 *     * `reported` - reported
+                 *     * `scheduled` - scheduled
+                 *     * `team` - team
+                 */
+                state?: "live" | "hidden" | "pinned" | "featured" | "reported" | "scheduled" | "team";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminPostList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamPostRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPostDetail"];
+                };
+            };
+            /** @description No post */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_posts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTeamPostUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
+                };
+            };
+            /** @description No post */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17442,6 +23927,167 @@ export interface operations {
             };
         };
     };
+    admin_posts_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedStats"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_questions_hide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_questions_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_questions_answer_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQuestion"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_queues_retrieve: {
         parameters: {
             query?: never;
@@ -17747,6 +24393,74 @@ export interface operations {
             };
         };
     };
+    admin_referrals_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferralSummary"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_referrals_top_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopReferrer"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_reports_list: {
         parameters: {
             query?: {
@@ -17947,6 +24661,172 @@ export interface operations {
             };
             /** @description Already actioned */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_reviews_hide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_reviews_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_roles_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_search_retrieve: {
+        parameters: {
+            query: {
+                limit?: number;
+                q: string;
+                types?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSearchResult"];
+                };
+            };
+            /** @description Invalid query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many searches */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18492,6 +25372,620 @@ export interface operations {
             };
         };
     };
+    admin_support_agents_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportPerson"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_attachments_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentLink"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CannedReplyOut"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CannedReplyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CannedReplyOut"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CannedReplyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CannedReplyOut"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_canned_replies_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stats"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_list: {
+        parameters: {
+            query?: {
+                assignee?: string;
+                category?: string;
+                created_after?: string | null;
+                created_before?: string | null;
+                limit?: number;
+                offset?: number;
+                /**
+                 * @description * `number` - number
+                 *     * `-number` - -number
+                 *     * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 *     * `last_activity_at` - last_activity_at
+                 *     * `-last_activity_at` - -last_activity_at
+                 *     * `status` - status
+                 *     * `-status` - -status
+                 *     * `category` - category
+                 *     * `-category` - -category
+                 */
+                ordering?: "number" | "-number" | "created_at" | "-created_at" | "last_activity_at" | "-last_activity_at" | "status" | "-status" | "category" | "-category";
+                /**
+                 * @description * `low` - low
+                 *     * `normal` - normal
+                 *     * `high` - high
+                 */
+                priority?: "low" | "normal" | "high" | "";
+                q?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAdminTicketRowList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_ticket_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAdminTicketUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMessageRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportMessage"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not resolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_support_tickets_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTicketDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_win_submissions_list: {
         parameters: {
             query?: {
@@ -18640,6 +26134,57 @@ export interface operations {
             };
             /** @description Already reviewed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_youtube_validate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeValidateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeChecked"];
+                };
+            };
+            /** @description Not a YouTube video link */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19318,6 +26863,47 @@ export interface operations {
             };
         };
     };
+    banners_dismiss_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not published */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     certificates_list: {
         parameters: {
             query?: never;
@@ -19400,7 +26986,7 @@ export interface operations {
             };
         };
     };
-    certificates_pdf_retrieve: {
+    certificates_partial_update: {
         parameters: {
             query?: never;
             header?: never;
@@ -19409,14 +26995,19 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCertificateChoiceRequest"];
+            };
+        };
         responses: {
-            /** @description PDF */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Certificate"];
+                };
             };
             /** @description Not authenticated */
             401: {
@@ -19434,6 +27025,55 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    certificates_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificateDownload"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Revoked */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19696,15 +27336,30 @@ export interface operations {
                 access?: "free" | "paid";
                 category?: string;
                 cursor?: string;
+                /**
+                 * @description * `short` - short
+                 *     * `medium` - medium
+                 *     * `long` - long
+                 */
+                duration?: "short" | "medium" | "long" | "";
                 enrolled?: boolean;
+                language?: string;
                 /**
                  * @description * `beginner` - beginner
                  *     * `intermediate` - intermediate
                  *     * `advanced` - advanced
+                 *     * `all` - all
                  */
-                level?: "beginner" | "intermediate" | "advanced";
+                level?: "beginner" | "intermediate" | "advanced" | "all";
                 limit?: number;
                 q?: string;
+                rating_min?: number;
+                /**
+                 * @description * `newest` - newest
+                 *     * `popular` - popular
+                 *     * `rating` - rating
+                 */
+                sort?: "newest" | "popular" | "rating";
             };
             header?: never;
             path?: never;
@@ -19763,6 +27418,48 @@ export interface operations {
                 };
             };
             /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_announcements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"][];
+                };
+            };
+            /** @description Not logged in */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -19888,6 +27585,188 @@ export interface operations {
             };
         };
     };
+    courses_request_access_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AccessRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessRequestResult"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Free course, already enrolled, or enrolment closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_reviews_retrieve: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPage"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_wishlist_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistState"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_wishlist_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistState"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     courses_categories_retrieve: {
         parameters: {
             query?: never;
@@ -19921,6 +27800,153 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    course_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePageDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    directory_people: {
+        parameters: {
+            query?: {
+                country?: string;
+                page?: number;
+                page_size?: number;
+                q?: string;
+                skill?: string;
+                /**
+                 * @description * `newest` - newest
+                 *     * `name` - name
+                 */
+                sort?: "newest" | "name";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowsePeoplePage"];
+                };
+            };
+            /** @description Invalid filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    directory_startups: {
+        parameters: {
+            query?: {
+                city?: string;
+                country?: string;
+                hiring?: boolean;
+                page?: number;
+                page_size?: number;
+                q?: string;
+                sector?: string;
+                /**
+                 * @description * `newest` - newest
+                 *     * `name` - name
+                 */
+                sort?: "newest" | "name";
+                stage?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowseStartupPage"];
+                };
+            };
+            /** @description Invalid filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20610,6 +28636,48 @@ export interface operations {
             };
             /** @description Already started */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    feed_activity: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedActivity"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found, or not visible to you */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21332,6 +29400,94 @@ export interface operations {
             };
         };
     };
+    lessons_notes_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"][];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lessons_notes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     lessons_progress_update: {
         parameters: {
             query?: never;
@@ -21356,6 +29512,94 @@ export interface operations {
                 };
             };
             /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lessons_questions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Question"][];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lessons_questions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Question"];
+                };
+            };
+            /** @description Not logged in */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -21763,6 +30007,46 @@ export interface operations {
             };
         };
     };
+    me_certificates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Certificate"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     me_courses_retrieve: {
         parameters: {
             query?: {
@@ -21931,6 +30215,56 @@ export interface operations {
                 content?: never;
             };
             /** @description Not found, or not visible to you */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_learning_retrieve: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                /**
+                 * @description * `all` - all
+                 *     * `in_progress` - in_progress
+                 *     * `completed` - completed
+                 *     * `wishlist` - wishlist
+                 */
+                state?: "all" | "in_progress" | "completed" | "wishlist";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoursePage"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -22116,6 +30450,343 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    me_mentor_availability_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_mentor_availability_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeeklyUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
+    me_mentor_exceptions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExceptionCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
+    me_mentor_exceptions_destroy: {
+        parameters: {
+            query?: {
+                acknowledge?: boolean;
+            };
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Weekly"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
+            };
+        };
+    };
+    me_mentor_preview_retrieve: {
+        parameters: {
+            query?: {
+                from?: string;
+                length?: number;
+                to?: string;
+                tz?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Slots"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_mentor_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSetup"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_mentor_settings_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MentorSetupUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSetup"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Agreed sessions would fall outside the schedule. They are listed in `sessions`; send `acknowledge: true` to keep them and apply the change anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleConflict"];
+                };
             };
         };
     };
@@ -22536,6 +31207,39 @@ export interface operations {
             };
         };
     };
+    me_referrals_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReferrals"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     me_saved_jobs_retrieve: {
         parameters: {
             query?: {
@@ -22797,6 +31501,119 @@ export interface operations {
             };
             /** @description No such profile, or not visible to you */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    members_certificates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileCertificate"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    members_referrer_by_code_retrieve: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferrerByCode"];
+                };
+            };
+            /** @description Missing or too long */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many lookups */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    members_search_referrer_retrieve: {
+        parameters: {
+            query: {
+                /** @description 3 to 100 characters */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferrerSearch"];
+                };
+            };
+            /** @description Invalid query */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many searches */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23097,6 +31914,53 @@ export interface operations {
             };
         };
     };
+    mentors_slots_retrieve: {
+        parameters: {
+            query?: {
+                from?: string;
+                length?: number;
+                to?: string;
+                tz?: string;
+            };
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Slots"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved mentor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     mentors_recommended_list: {
         parameters: {
             query?: {
@@ -23126,6 +31990,47 @@ export interface operations {
                 content?: never;
             };
             /** @description Not an active member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    notes_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -23217,6 +32122,48 @@ export interface operations {
             };
             /** @description Not logged in */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    notifications_unread_count_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCount"];
+                };
+            };
+            /** @description Nothing changed */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24252,6 +33199,52 @@ export interface operations {
             };
         };
     };
+    questions_answers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Answer"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     reference_countries: {
         parameters: {
             query?: never;
@@ -24375,6 +33368,106 @@ export interface operations {
             };
             /** @description Too many searches */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search_recents_retrieve: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `member` - member
+                 *     * `admin` - admin
+                 */
+                scope?: "member" | "admin";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recents"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search_recents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RememberRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recents"];
+                };
+            };
+            /** @description Invalid term */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    search_recents_destroy: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `member` - member
+                 *     * `admin` - admin
+                 */
+                scope?: "member" | "admin";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -25545,6 +34638,350 @@ export interface operations {
             };
             /** @description If-Match header missing */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_attachments_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentLink"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_contact_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicContactRequest"];
+            };
+        };
+        responses: {
+            /** @description Received */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /**
+                 * @description * `open` - open
+                 *     * `in_progress` - in_progress
+                 *     * `awaiting_member` - awaiting_member
+                 *     * `resolved` - resolved
+                 */
+                status?: "open" | "in_progress" | "awaiting_member" | "resolved" | "";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTicketList"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Send the same value when retrying, so a double click opens one request. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TicketCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_feedback_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not resolved yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_messages_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportMessage"];
+                };
+            };
+            /** @description Invalid message */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request is resolved: reopen it first */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    support_tickets_reopen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketDetail"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such request (or it is not yours) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not resolved, or too long ago */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -14,8 +14,11 @@ can put in front of an investor.
 | **Feed** | Posts, comments and reactions from the community, with reporting and moderation behind it. |
 | **Jobs** | Roles and opportunities with expiry, saved jobs and alerts. |
 | **Events** | Meetups and demo days, with registration and calendar details in the member's own time zone. |
-| **Learning** | Courses with lesson progress and certificates. |
-| **Mentoring** | Find a mentor, request and book a session, give feedback; mentors apply, set availability and accept. |
+| **Learning** | A catalogue of courses with YouTube lectures, a course page, a player with notes and questions, reviews, saved courses, access requests for paid courses, and certificates anyone can verify. |
+| **Mentoring** | Find a mentor, request and book a session in your own time zone, give feedback; mentors apply, set their weekly schedule, session lengths, buffers, time off and price in Settings, and accept. |
+| **Support** | Contact support from a side drawer, follow the conversation in the app, and reopen a request for 14 days. |
+| **Search and notifications** | One search box (press `/` or Ctrl K) across members, startups, mentors, jobs, events, news and courses, and a bell that opens the latest notices. |
+| **Referrals** | Members share a link or code; new people say who told them, and members see who joined through them. |
 | **News** | Editorial stories and community wins. |
 | **Admin console** | For staff: approve or decline new members, invite people, review jobs and wins, act on reports, decide mentor applications and watch the numbers. Admin accounts must use two step sign in. |
 | **Launch toolkit** | A private workspace per venture: a validation **score**, a 44 section **business plan**, a two-year financial **forecast**, **pitch decks**, clickable **prototypes** and a **venture partner** to talk things through. Everything is written from the member's own answers, anything proposed is shown before it is applied, and anything can be shared by link or with a chosen mentor. |
@@ -85,6 +88,8 @@ npm install
 npm run dev                   # http://localhost:5173, /api is proxied to the back end
 ```
 
+`seed_demo.py` also adds a referral chain, three more courses (free, paid with a promotion, and a draft), a request for the paid course, support requests in every status, notifications, mentor pricing and certificates (one revoked). That part is `scripts/seed_change_requests.py`, which can be run again on its own.
+
 For the admin console, also run `DJANGO_SETTINGS_MODULE=config.settings.local python scripts/seed_admin_demo.py`.
 It gives `admin@demo.test` two step sign in with a known demo key (so the browser tests can work out
 the codes), adds `editor@demo.test` (a content editor who has not set up two step sign in yet), and
@@ -130,6 +135,12 @@ the API requests that were refused), and screenshots and traces are kept as an a
 `make ci` runs everything the pipeline runs: `ruff`, `black --check`, `mypy`, `bandit`,
 `pip-audit`, `import-linter`, the test suite, OpenAPI generation and `check --deploy`.
 Tests need PostgreSQL (`make up`); SQLite is not supported.
+
+Formatting has one definition: `[tool.ruff]` and `[tool.black]` in `pyproject.toml`, with the
+tool versions pinned there and again in `.pre-commit-config.yaml`. CI runs `ruff check .` and
+`black --check .` over the whole repository, scripts included, so run `make format` (not `black`
+on a few folders) before pushing. Run `make hooks` once after cloning so the same checks run on
+every commit and unformatted code never reaches CI.
 
 ## Layout
 

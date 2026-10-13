@@ -8,15 +8,23 @@ from rest_framework.response import Response
 from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 
+from apps.accounts import events as account_events
 from apps.accounts import selectors, services
+from apps.adminconsole import member_detail
 from apps.adminconsole import selectors as queues
+from apps.adminconsole.member_detail import MemberFullSerializer
 from apps.adminconsole.serializers import (
+    ApplicationSerializer,
     MemberQuerySerializer,
+    MemberRowSerializer,
     MemberSerializer,
     QueueCountsSerializer,
     ReasonSerializer,
 )
+from apps.audit import services as audit
+from apps.core import events as domain_events
 from apps.core import policies
+from apps.core.errors import ConflictError
 from apps.core.pagination import AdminLimitOffsetPagination
 
 ERRORS = {
@@ -42,7 +50,7 @@ class MemberListView(APIView):
     @extend_schema(
         summary="Search and filter members",
         parameters=[MemberQuerySerializer],
-        responses={200: MemberSerializer(many=True), **ERRORS},
+        responses={200: MemberRowSerializer(many=True), **ERRORS},
         tags=["admin"],
     )
     def get(self, request: Request) -> Response:
@@ -54,20 +62,84 @@ class MemberListView(APIView):
         queryset = selectors.list_members(**filters)
         paginator = AdminLimitOffsetPagination()
         page = paginator.paginate_queryset(queryset, request, view=self)
-        return paginator.get_paginated_response(MemberSerializer(page, many=True).data)
+        rows = list(page or [])
+        summaries = queues.applicant_summaries([m.pk for m in rows])
+        data = MemberRowSerializer(rows, many=True, context={"summaries": summaries}).data
+        return paginator.get_paginated_response(data)
 
 
 class MemberDetailView(APIView):
     policy = policies.admin_permission("members.view")
 
     @extend_schema(
-        summary="One member", responses={200: MemberSerializer, **ERRORS}, tags=["admin"]
+        summary="One member in full",
+        description="The account, profile, activity, learning, mentorship, support and the last "
+        "audit entries about them, in one read. Personal details, so each read is logged.",
+        responses={200: MemberFullSerializer, **ERRORS},
+        tags=["admin"],
     )
     def get(self, request: Request, user_id: UUID) -> Response:
         member = selectors.get_member(user_id)
         if member is None:
             raise exceptions.NotFound()
-        return Response(MemberSerializer(member).data)
+        audit.record(
+            actor=_actor(request),
+            action="members.viewed",
+            target_type="user",
+            target_id=member.pk,
+            ip=_ip(request),
+        )
+        return Response(MemberFullSerializer(member_detail.build(member)).data)
+
+
+class ResendVerificationView(APIView):
+    policy = policies.admin_permission("members.approve")
+
+    @extend_schema(
+        summary="Send the verification email again",
+        request=None,
+        responses={204: None, 409: OpenApiResponse(description="Already verified"), **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request, user_id: UUID) -> Response:
+        member = selectors.get_member(user_id)
+        if member is None:
+            raise exceptions.NotFound()
+        if member.email_verified_at:
+            raise ConflictError("This email address is already verified.", code="already_verified")
+        domain_events.publish(account_events.UserRegistered(user_id=str(member.pk)))
+        audit.record(
+            actor=_actor(request),
+            action="member.verification_resent",
+            target_type="user",
+            target_id=member.pk,
+            ip=_ip(request),
+        )
+        return Response(status=204)
+
+
+class MemberApplicationView(APIView):
+    policy = policies.admin_permission("members.view")
+
+    @extend_schema(
+        summary="What a person told us when they asked to join",
+        description="Their profile, their first startup and what has happened to the account. "
+        "It holds personal details, so each read is logged.",
+        responses={200: ApplicationSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request, user_id: UUID) -> Response:
+        member = selectors.get_member(user_id)
+        if member is None:
+            raise exceptions.NotFound()
+        audit.record(
+            actor=_actor(request),
+            action="members.application_viewed",
+            target_type="user",
+            target_id=member.pk,
+            ip=_ip(request),
+        )
+        return Response(ApplicationSerializer(queues.application_of(member)).data)
 
 
 class ApproveView(APIView):

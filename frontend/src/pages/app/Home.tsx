@@ -1,12 +1,14 @@
 import { useAuth } from "../../auth/AuthProvider";
 import { permissionsFor } from "../../admin/permissions";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Circle, Rocket } from "lucide-react";
+import { ArrowRight, CheckCircle2, Circle, MessageCircle, Rocket, ThumbsUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
-import { Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
+import { ReferralCard } from "../../referrals/ReferralCard";
+import { Alert, Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
 import { formatDate, formatTime, humanise, timeAgo } from "../../lib/format";
 import { PageHeader, RichText, Section, Skeleton } from "../../ui/blocks";
+import { BannerTicker } from "../../ui/BannerTicker";
 
 const CHECKLIST: Record<string, { label: string; to: string }> = {
   complete_profile: { label: "Complete your profile", to: "/app/me" },
@@ -14,6 +16,8 @@ const CHECKLIST: Record<string, { label: string; to: string }> = {
   add_traction: { label: "Add your traction", to: "/app/me" },
   set_notification_preferences: { label: "Choose what we email you", to: "/app/settings" },
 };
+
+const REACTION_WORDS: Record<string, string> = { like: "liked", celebrate: "celebrated", insightful: "found insightful" };
 
 function Quiet({ children }: { children: string }) {
   return <p className="body app-muted" style={{ margin: 0 }}>{children}</p>;
@@ -25,8 +29,18 @@ export default function Home() {
   const events = useQuery({ queryKey: ["home", "events"], queryFn: () => unwrap(api.GET("/api/v1/events", { params: { query: { when: "upcoming", limit: 8 } } })) });
   const sessions = useQuery({ queryKey: ["home", "sessions"], queryFn: () => unwrap(api.GET("/api/v1/sessions", { params: { query: { state: "upcoming", limit: 2 } } })) });
   const posts = useQuery({ queryKey: ["home", "posts"], queryFn: () => unwrap(api.GET("/api/v1/posts", { params: { query: { limit: 3 } } })) });
+  // Comments and reactions show up here without a reload, so the dashboard feels alive.
+  const activity = useQuery({
+    queryKey: ["home", "activity"],
+    queryFn: () => unwrap(api.GET("/api/v1/feed/activity", { params: { query: { limit: 8 } } })),
+    refetchInterval: 30_000,
+  });
   const { me } = useAuth();
   const ventures = useQuery({ queryKey: ["toolkit", "ventures"], enabled: permissionsFor(me?.roles ?? []).has("toolkit.use"), queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
+
+  const isMentor = me?.roles.includes("mentor") ?? false;
+  const mentorSetup = useQuery({ queryKey: ["me", "mentor", "settings"], enabled: isMentor, retry: false, queryFn: () => unwrap(api.GET("/api/v1/me/mentor/settings")) });
+  const needsSchedule = isMentor && mentorSetup.data !== undefined && mentorSetup.data.weekly.length === 0;
 
   // A cancelled event is not coming up. Ask for a few extra so three remain after leaving those out.
   const comingUp = (events.data?.results ?? []).filter((e) => e.status !== "cancelled").slice(0, 3);
@@ -36,7 +50,17 @@ export default function Home() {
 
   return (
     <>
+      <BannerTicker />
       <PageHeader eyebrow="Home" title={first ? `Welcome back, ${first}` : "Welcome back"} lead="Here is what is happening and what to do next." />
+
+      {needsSchedule ? (
+        <Alert tone="info" title="Set up your availability">
+          You are an approved mentor, but nobody can book you yet. Choose the times you are free and what you charge, which takes a couple of minutes.{" "}
+          <Link className="wo-linkbtn" to="/app/settings/mentorship">
+            Set up your availability
+          </Link>
+        </Alert>
+      ) : null}
 
       {onboarding.data && !onboarding.data.complete ? (
         <Card variant="brand">
@@ -93,10 +117,38 @@ export default function Home() {
                       <Badge variant="mentor" className="">{humanise(p.category)}</Badge>
                     </div>
                     <RichText html={p.body} />
+                    <p className="caption app-muted" style={{ margin: "var(--space-3) 0 0", display: "flex", gap: "var(--space-4)" }}>
+                      <span title="Reactions" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><ThumbsUp size={14} strokeWidth={1.5} aria-hidden="true" />{p.reaction_count}<span className="wo-visually-hidden"> reactions</span></span>
+                      <span title="Comments" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><MessageCircle size={14} strokeWidth={1.5} aria-hidden="true" />{p.comment_count}<span className="wo-visually-hidden"> comments</span></span>
+                    </p>
                   </Card>
                 ))}
               </div>
             ) : <Quiet>The feed is quiet. Share something to get it going.</Quiet>}
+          </Section>
+          <Section title="Latest activity" action={<Link className="app-linklike" to="/app/feed">Join in</Link>}>
+            {activity.isPending ? <Skeleton height={80} /> : activity.data && activity.data.length > 0 ? (
+              <ul className="app-list">
+                {activity.data.map((a) => (
+                  <li key={`${a.kind}-${a.id}`}>
+                    <Link className="app-list__item" to="/app/feed">
+                      <Avatar name={a.actor.name} id={a.actor.id} src={a.actor.photo?.thumb} size="sm" />
+                      <div className="app-list__main">
+                        <p className="app-list__title">
+                          {a.mine ? "You" : a.actor.name}{" "}
+                          {a.kind === "comment" ? "commented on" : `${REACTION_WORDS[a.detail] ?? "reacted to"}`}{" "}
+                          {a.post_author}&rsquo;s post
+                        </p>
+                        <p className="body-sm app-muted" style={{ margin: 0 }}>
+                          {a.kind === "comment" && a.detail ? `\u201C${a.detail}\u201D` : a.post_excerpt}
+                        </p>
+                      </div>
+                      <span className="caption app-muted">{timeAgo(a.created_at)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : <Quiet>No comments or reactions yet.</Quiet>}
           </Section>
         </div>
         <aside className="app-stack app-stack--lg">
@@ -116,6 +168,9 @@ export default function Home() {
                 ))}
               </ul>
             ) : <Quiet>No events are scheduled yet.</Quiet>}
+          </Section>
+          <Section title="Your referrals">
+            <ReferralCard />
           </Section>
           <Section title="Build your venture">
             <CardTo to="/app/launch" variant="accent">

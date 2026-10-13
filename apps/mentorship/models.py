@@ -194,6 +194,81 @@ class SeekerNeeds(BaseModel):
     languages = models.JSONField(default=list)
 
 
+class MentorSettings(BaseModel):
+    """How a mentor wants to be booked. Created the first time it is read or saved.
+
+    The weekly windows are `AvailabilitySlot` rows, the time zone, weekly limit, pause switch and
+    video provider stay on `MentorProfile`; this holds the rest of what the Settings page edits.
+    """
+
+    class Pricing(models.TextChoices):
+        FREE = "free"
+        PAID = "paid"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mentor_settings"
+    )
+    session_lengths = models.JSONField(default=list)  # minutes offered: some of 30, 45, 60
+    buffer_minutes = models.PositiveSmallIntegerField(default=0)
+    min_notice_hours = models.PositiveSmallIntegerField(default=12)
+    booking_window_days = models.PositiveSmallIntegerField(default=30)
+    pricing_mode = models.CharField(max_length=4, choices=Pricing.choices, default=Pricing.FREE)
+    default_price_minor = models.PositiveIntegerField(null=True, blank=True)
+    currency = models.CharField(max_length=3, blank=True)
+    personal_link = models.CharField(max_length=500, blank=True)
+    topics = models.JSONField(default=list)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(buffer_minutes__in=[0, 10, 15, 30]), name="mentorsettings_buffer_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(pricing_mode__in=["free", "paid"]), name="mentorsettings_pricing_valid"
+            ),
+        ]
+
+
+class MentorSessionPrice(BaseModel):
+    """A price for one session length, when it differs from the mentor's default."""
+
+    mentor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="session_prices"
+    )
+    length_minutes = models.PositiveSmallIntegerField()
+    price_minor = models.PositiveIntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["mentor", "length_minutes"], name="mentorsessionprice_unique"
+            ),
+        ]
+
+
+class AvailabilityException(BaseModel):
+    """Whole days a mentor is not available. Extra time on one date is a one off slot."""
+
+    mentor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="availability_blocks"
+    )
+    starts_on = models.DateField()  # in the mentor time zone, inclusive
+    ends_on = models.DateField()
+    note = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(ends_on__gte=models.F("starts_on")), name="availabilityblock_span_valid"
+            ),
+        ]
+        indexes = [models.Index(fields=["mentor", "ends_on"], name="availabilityblock_idx")]
+
+
+PRICING_MODES = ("free", "paid")
+SESSION_LENGTHS = (30, 45, 60)
+EXCEPTION_KINDS = ("blocked", "extra")
+
 SESSION_STATUSES = (
     "requested",
     "confirmed",
@@ -251,6 +326,13 @@ class MentorSession(BaseModel):
     cancelled_at = models.DateTimeField(null=True, blank=True)
     late_cancel = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
+
+    # What was agreed about length and price when it was requested. `payment_mode` is "arranged"
+    # while online payment is off: the price is shown and the two settle it between them.
+    length_minutes = models.PositiveSmallIntegerField(default=0)
+    price_minor = models.PositiveIntegerField(null=True, blank=True)
+    currency = models.CharField(max_length=3, blank=True)
+    payment_mode = models.CharField(max_length=8, blank=True)
 
     meeting_provider = models.CharField(max_length=12, blank=True)
     meeting_state = models.CharField(max_length=8, choices=MeetingState.choices, blank=True)

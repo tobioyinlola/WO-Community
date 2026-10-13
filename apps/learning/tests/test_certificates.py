@@ -1,12 +1,18 @@
+import io
 import re
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
+from pathlib import Path
 
 import pytest
+from pypdf import PdfReader
 
-from apps.learning import learn
-from apps.learning.models import Certificate, Enrolment
-from apps.learning.pdf import render_certificate
+from apps.analytics.models import AnalyticsEvent
+from apps.integrations.storage import PRIVATE, get_storage
+from apps.learning import certificates
+from apps.learning.models import Certificate, CertificateSettings, Enrolment
+from apps.learning.pdf import COLOURS, CertificateContent, render_certificate
 from apps.learning.tests.conftest import build_course, lesson_ids
 from apps.notifications.models import Notification
 
@@ -14,6 +20,7 @@ pytestmark = pytest.mark.django_db
 
 CERTS = "/api/v1/certificates"
 VERIFY = "/api/v1/public/certificates"
+NUMBER = re.compile(r"WO-C-\d{4}-\d{6}")
 
 
 def finish(client, course):
@@ -37,6 +44,18 @@ def certified(course, learner, learner_client, run_outbox):
     return Certificate.objects.get()
 
 
+def sample(**overrides):
+    values = {
+        "holder": "Ada Obi",
+        "course": "Fundraising basics",
+        "issued_at": datetime(2026, 10, 10, tzinfo=UTC),
+        "number": "WO-C-2026-000341",
+        "hours": Decimal("4.5"),
+    }
+    values.update(overrides)
+    return CertificateContent(**values)
+
+
 # --- issuing ---
 
 
@@ -49,8 +68,40 @@ def test_completing_a_course_issues_a_certificate_through_a_worker(
     run_outbox()
     certificate = Certificate.objects.get()
     assert certificate.holder_name == "Ada Obi" and certificate.course_title == "Fundraising basics"
-    assert re.fullmatch(r"[A-HJ-NP-Z2-9]{12}", certificate.code)
+    assert NUMBER.fullmatch(certificate.code)
+    assert certificate.code.split("-")[2] == str(certificate.issued_at.year)
     assert certificate.enrolment.user_id == learner.pk
+    assert certificate.hours == Decimal("0.1")  # five minutes of video, rounded to a tenth
+    assert certificate.revoked_at is None and certificate.is_valid
+
+
+def test_the_pdf_is_drawn_and_kept_privately_when_the_certificate_is_issued(certified):
+    assert certified.pdf_key.startswith(f"certificates/{certified.pk}-")
+    stored = get_storage().head(bucket=PRIVATE, key=certified.pdf_key)
+    assert stored is not None and stored.content_type == "application/pdf"
+
+
+def test_issuing_is_recorded_for_analytics(certified):
+    event = AnalyticsEvent.objects.get(name="certificate_issued")
+    assert event.properties == {"course_id": certified.enrolment.course.slug}
+
+
+def test_the_certificate_keeps_the_template_it_was_issued_with(
+    course, learner, learner_client, run_outbox, editor
+):
+    row = certificates.current_settings()
+    row.signatory_name, row.signatory_title = "Onyeka Obi", "Founder"
+    row.save()
+    set_name(learner, "Ada Obi")
+    finish(learner_client, course)
+    run_outbox()
+    certificate = Certificate.objects.get()
+    row.signatory_name = "Someone New"
+    row.version += 1
+    row.save()
+    one = learner_client.get(f"{CERTS}/{certificate.pk}").json()
+    assert one["signatory_name"] == "Onyeka Obi" and one["signatory_title"] == "Founder"
+    assert one["title_text"] == "Certificate of completion"
 
 
 def test_running_the_worker_again_makes_no_second_certificate_or_notice(
@@ -62,12 +113,13 @@ def test_running_the_worker_again_makes_no_second_certificate_or_notice(
     run_outbox()
     assert Certificate.objects.count() == 1
     assert Notification.objects.filter(user=learner, type="certificate_ready").count() == 1
-    assert learn.issue_certificate(certified.enrolment_id).pk == certified.pk
+    assert certificates.issue(certified.enrolment_id).pk == certified.pk
 
 
 def test_the_member_is_told_their_certificate_is_ready(certified, learner_client):
     [item] = learner_client.get("/api/v1/notifications").json()["results"]
-    assert item["type"] == "certificate_ready" and item["link"] == f"/certificates/{certified.pk}"
+    assert item["type"] == "certificate_ready"
+    assert item["link"] == f"/learn/certificates/{certified.pk}"
     assert "Fundraising basics" in item["title"]
 
 
@@ -86,7 +138,7 @@ def test_an_unfinished_course_gets_no_certificate(course, learner_client, run_ou
     )
     run_outbox()
     assert Certificate.objects.count() == 0
-    assert learn.issue_certificate(Enrolment.objects.get().pk) is None
+    assert certificates.issue(Enrolment.objects.get().pk) is None
 
 
 def test_a_name_change_later_does_not_alter_the_certificate(certified, learner):
@@ -103,58 +155,93 @@ def test_a_member_without_a_profile_name_still_gets_a_certificate(
     assert Certificate.objects.get().holder_name == "WO Community member"
 
 
+def test_a_failed_drawing_does_not_undo_the_certificate(
+    course, learner, learner_client, run_outbox, monkeypatch
+):
+    def broken(_certificate):
+        raise RuntimeError("storage is down")
+
+    monkeypatch.setattr(certificates, "store_pdf", broken)
+    set_name(learner, "Ada Obi")
+    finish(learner_client, course)
+    run_outbox()
+    certificate = Certificate.objects.get()
+    assert certificate.pdf_key == ""
+    monkeypatch.undo()
+    assert learner_client.get(f"{CERTS}/{certificate.pk}/download").status_code == 200  # drawn now
+
+
 # --- viewing and downloading ---
 
 
 def test_a_member_lists_and_opens_their_certificates(certified, learner_client):
-    [listed] = learner_client.get(CERTS).json()
-    assert listed["code"] == certified.code and listed["holder_name"] == "Ada Obi"
+    for path in (CERTS, "/api/v1/me/certificates"):
+        [listed] = learner_client.get(path).json()
+        assert listed["number"] == certified.code and listed["holder_name"] == "Ada Obi"
+        assert listed["status"] == "valid" and listed["hours"] == 0.1
     one = learner_client.get(f"{CERTS}/{certified.pk}").json()
-    assert one["id"] == str(certified.pk) and one["verify_url"].endswith(
-        f"/verify/{certified.code}"
-    )
+    assert one["id"] == str(certified.pk)
+    assert one["verify_url"] == f"https://app.test/verify/{certified.code}"
 
 
-def test_the_pdf_is_a_valid_download(certified, learner_client):
-    response = learner_client.get(f"{CERTS}/{certified.pk}/pdf")
-    assert response.status_code == 200 and response["Content-Type"] == "application/pdf"
-    assert (
-        response["Content-Disposition"]
-        == f'attachment; filename="certificate-{certified.code}.pdf"'
-    )
-    assert response["Cache-Control"] == "private, no-store"
-    body = response.content
-    assert body.startswith(b"%PDF-1.4") and body.rstrip().endswith(b"%%EOF")
-    assert b"Ada Obi" in body and certified.code.encode() in body and b"Fundraising basics" in body
+def test_the_download_is_a_short_lived_link_to_a_valid_pdf(certified, learner_client):
+    response = learner_client.get(f"{CERTS}/{certified.pk}/download")
+    assert response.status_code == 200 and response["Cache-Control"] == "private, no-store"
+    body = response.json()
+    assert body["filename"] == f"certificate-{certified.code}.pdf" and body["expires_in"] > 0
+    assert body["url"].startswith("https://") and certified.pdf_key in body["url"]
+    data, _ = get_storage().objects[(PRIVATE, certified.pdf_key)]
+    assert data.startswith(b"%PDF-") and data.rstrip().endswith(b"%%EOF")
+    event = AnalyticsEvent.objects.get(name="certificate_downloaded")
+    assert event.properties == {"course_id": certified.enrolment.course.slug}
 
 
 def test_certificates_belong_to_their_owner(certified, other_client, api_client):
     assert other_client.get(f"{CERTS}/{certified.pk}").status_code == 404
-    assert other_client.get(f"{CERTS}/{certified.pk}/pdf").status_code == 404
+    assert other_client.get(f"{CERTS}/{certified.pk}/download").status_code == 404
     assert other_client.get(CERTS).json() == []
     assert api_client.get(f"{CERTS}/{certified.pk}").status_code == 401
+    assert api_client.get(f"{CERTS}/{certified.pk}/download").status_code == 401
     assert api_client.get(CERTS).status_code == 401
+    assert api_client.get("/api/v1/me/certificates").status_code == 401
 
 
 def test_unknown_certificates_are_404(learner_client):
     assert learner_client.get(f"{CERTS}/{uuid.uuid4()}").status_code == 404
+    assert learner_client.get(f"{CERTS}/{uuid.uuid4()}/download").status_code == 404
+
+
+def test_a_revoked_certificate_cannot_be_downloaded(certified, learner_client, editor):
+    certificates.revoke(actor=editor, certificate_id=certified.pk, reason="Issued in error")
+    assert learner_client.get(f"{CERTS}/{certified.pk}/download").status_code == 409
+    [listed] = learner_client.get(CERTS).json()
+    assert listed["status"] == "revoked"
 
 
 # --- verifying ---
 
 
-def test_anyone_can_verify_a_code_without_logging_in(certified, api_client):
+def test_anyone_can_verify_a_number_without_logging_in(certified, api_client):
     body = api_client.get(f"{VERIFY}/{certified.code}").json()
-    assert body["valid"] is True and body["holder_name"] == "Ada Obi"
-    assert body["course_title"] == "Fundraising basics" and "id" not in body
-    assert (
-        api_client.get(f"{VERIFY}/{certified.code.lower()}").status_code == 200
-    )  # typed in lower case
+    assert body["valid"] is True and body["status"] == "valid"
+    assert body["holder_name"] == "Ada Obi" and body["course_title"] == "Fundraising basics"
+    assert body["number"] == certified.code and "id" not in body
+    assert api_client.get(f"{VERIFY}/{certified.code.lower()}").status_code == 200
     assert "public" in api_client.get(f"{VERIFY}/{certified.code}")["Cache-Control"]
 
 
-@pytest.mark.parametrize("code", ["ZZZZZZZZZZZZ", "short", "x" * 40, "..%2F..", "'; DROP TABLE"])
-def test_unknown_codes_are_404(api_client, code):
+def test_a_revoked_certificate_is_shown_as_revoked_and_nothing_more(certified, api_client, editor):
+    certificates.revoke(actor=editor, certificate_id=certified.pk, reason="Issued in error")
+    body = api_client.get(f"{VERIFY}/{certified.code}").json()
+    assert body["valid"] is False and body["status"] == "revoked"
+    assert body["holder_name"] == "" and body["course_title"] == "" and body["issued_at"] is None
+    assert "Issued in error" not in str(body)
+
+
+@pytest.mark.parametrize(
+    "code", ["WO-C-2026-999999", "short", "x" * 40, "..%2F..", "'; DROP TABLE"]
+)
+def test_unknown_numbers_are_404(api_client, code):
     assert api_client.get(f"{VERIFY}/{code}").status_code == 404
 
 
@@ -163,44 +250,154 @@ def test_verification_exposes_no_contact_details(certified, api_client):
     assert "learner@example.com" not in text and str(certified.enrolment.user_id) not in text
 
 
+def test_older_certificates_keep_their_short_code(certified, api_client):
+    Certificate.objects.filter(pk=certified.pk).update(code="ABCDEFGH2345")
+    assert api_client.get(f"{VERIFY}/ABCDEFGH2345").json()["valid"] is True
+
+
 # --- the PDF itself ---
 
 
-def test_the_pdf_structure_is_sound():
+def test_the_pdf_is_one_a4_landscape_page_with_embedded_fonts_and_a_small_size():
+    pdf = render_certificate(sample())
+    assert pdf.startswith(b"%PDF-") and pdf.rstrip().endswith(b"%%EOF") and pdf.count(b"%%EOF") == 1
+    assert re.search(rb"/MediaBox \[ ?0 0 842 595 ?\]", pdf)  # 297 by 210 mm
+    assert len(re.findall(rb"/Type /Page\b(?!s)", pdf)) == 1
+    assert b"/FontFile2" in pdf and b"/ToUnicode" in pdf  # embedded, and the text can be selected
+    assert len(pdf) < 500 * 1024
+
+
+def test_unusual_characters_and_long_text_do_not_break_the_file():
     pdf = render_certificate(
-        holder="Ada Obi",
-        course="Fundraising basics",
-        issued_at=datetime(2026, 10, 10, tzinfo=UTC),
-        code="ABCDEFGH2345",
-        verify_url="https://app.test/verify/ABCDEFGH2345",
+        sample(
+            holder="Ọlákúnlé Adébáyọ̀ Ṣola 李 (the) \\ Obi",
+            course="C" * 300,
+            signatory_name="S" * 120,
+        )
     )
-    start = int(re.search(rb"startxref\n(\d+)\n", pdf).group(1))
-    assert pdf[start : start + 4] == b"xref"
-    offsets = [int(m) for m in re.findall(rb"(\d{10}) 00000 n", pdf)]
-    for number, offset in enumerate(offsets, start=1):
-        assert pdf[offset:].startswith(b"%d 0 obj" % number)
-    assert b"Issued 10 October 2026" in pdf
+    assert pdf.startswith(b"%PDF-") and len(pdf) < 500 * 1024
+    assert pdf.count(b"%%EOF") == 1
 
 
-def test_text_is_escaped_and_unusual_characters_do_not_break_the_file():
-    pdf = render_certificate(
-        holder="Ada (the) \\ Obi 李 Zoë",
-        course="Course ) /Type /Catalog (",
-        issued_at=datetime(2026, 1, 1, tzinfo=UTC),
-        code="ABCDEFGH2345",
-        verify_url="https://app.test/verify/x",
+def text_of(pdf: bytes) -> str:
+    reader = PdfReader(io.BytesIO(pdf))
+    return " ".join(page.extract_text() for page in reader.pages)
+
+
+def test_the_signatory_is_a_name_only_and_defaults_to_onyeka_akumah():
+    pdf = render_certificate(sample())
+    text = text_of(pdf)
+    assert "Onyeka Akumah" in text
+    assert "http" not in text and "verify" not in text.lower()
+    assert b"/Subtype /Image" not in pdf  # no signature image and no QR code
+    assert "Dr A. Other" in text_of(render_certificate(sample(signatory_name="Dr A. Other")))
+
+
+@pytest.mark.parametrize(
+    ("holder", "course"),
+    [
+        ("Ada Obi", "Fundraising basics"),
+        ("Chidi Okonkwo", "Go to market in Lagos"),
+        ("Zoë Müller-Ndiaye", "Hiring your first ten people"),
+    ],
+)
+def test_each_certificate_shows_its_own_learner_and_course(holder, course):
+    text = text_of(render_certificate(sample(holder=holder, course=course)))
+    assert holder in text and course in text
+
+
+def test_long_names_and_titles_stay_on_the_page():
+    for holder, course in (("N" * 60, "C" * 60), ("M" * 120, "word " * 24)):
+        pdf = render_certificate(sample(holder=holder, course=course))
+        assert len(PdfReader(io.BytesIO(pdf)).pages) == 1
+        assert holder[:20] in text_of(pdf)
+
+
+def test_the_colours_are_the_design_tokens():
+    tokens = (Path(__file__).parents[3] / "frontend/src/styles/tokens.css").read_text("utf8")
+    for name, value in COLOURS.items():
+        found = re.search(rf"--{re.escape(name)}:\s*(#[0-9A-Fa-f]{{6}})", tokens)
+        if found:  # a few are named only in print (text-secondary has a dark value too)
+            assert found.group(1).upper() == value.upper(), name
+
+
+def test_an_issued_certificate_carries_the_learner_course_and_signatory(
+    course, learner, learner_client, run_outbox, editor
+):
+    assert certificates.current_settings().signatory_name == "Onyeka Akumah"
+    set_name(learner, "Ada Obi")
+    finish(learner_client, course)
+    run_outbox()
+    certificate = Certificate.objects.get()
+    data, _ = get_storage().objects[(PRIVATE, certificate.pdf_key)]
+    text = text_of(data)
+    assert "Ada Obi" in text and "Fundraising basics" in text and "Onyeka Akumah" in text
+    assert "http" not in text
+    assert CertificateSettings.objects.count() == 1
+
+
+# --- listing on the profile (opt in) ---
+
+
+def listed(client, user_id):
+    return client.get(f"/api/v1/members/{user_id}/certificates")
+
+
+def test_a_certificate_is_not_on_the_profile_until_the_holder_turns_it_on(
+    certified, learner, learner_client, other_client
+):
+    assert learner_client.get(f"{CERTS}/{certified.pk}").json()["show_on_profile"] is False
+    assert listed(other_client, learner.pk).json() == []
+
+    done = learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json")
+    assert done.status_code == 200 and done.json()["show_on_profile"] is True
+    [row] = listed(other_client, learner.pk).json()
+    assert row["number"] == certified.code
+    assert row["course_title"] == "Fundraising basics"
+    assert row["verify_url"].endswith(f"/verify/{certified.code}")
+    assert "holder_name" not in row and "id" not in row  # no more than the page already says
+
+    learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": False}, format="json")
+    assert listed(other_client, learner.pk).json() == []
+
+
+def test_a_revoked_certificate_drops_off_the_profile(
+    certified, learner, learner_client, other_client
+):
+    learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json")
+    Certificate.objects.filter(pk=certified.pk).update(revoked_at=datetime.now(UTC))
+    assert listed(other_client, learner.pk).json() == []
+
+
+def test_only_the_holder_can_change_the_choice(certified, learner, learner_client, other_client):
+    response = other_client.patch(
+        f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json"
     )
-    assert b"Ada \\(the\\) \\\\ Obi ? Zo\xeb" in pdf  # brackets escaped, Latin-1 kept, others "?"
-    assert b"Course \\) /Type /Catalog \\(" in pdf
-    assert pdf.count(b"%%EOF") == 1 and pdf.rstrip().endswith(b"%%EOF")
-
-
-def test_very_long_names_are_shortened():
-    pdf = render_certificate(
-        holder="N" * 200,
-        course="C" * 300,
-        issued_at=datetime(2026, 1, 1, tzinfo=UTC),
-        code="ABCDEFGH2345",
-        verify_url="https://app.test/verify/x",
+    assert response.status_code == 404
+    bad = learner_client.patch(
+        f"{CERTS}/{certified.pk}", {"show_on_profile": "maybe"}, format="json"
     )
-    assert b"N" * 61 not in pdf and b"C" * 71 not in pdf
+    assert bad.status_code == 400
+    certified.refresh_from_db()
+    assert certified.show_on_profile is False
+
+
+def test_a_hidden_profile_does_not_list_certificates_either(
+    certified, learner, learner_client, other_client
+):
+    from apps.profiles import services as profiles
+
+    learner_client.patch(f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json")
+    profiles.update_visibility(user_id=learner.pk, levels={"basics": "private"})
+    assert listed(other_client, learner.pk).status_code == 404
+    assert listed(learner_client, learner.pk).status_code == 200  # the owner still sees their own
+
+
+def test_listing_needs_a_signed_in_member(certified, learner, api_client):
+    assert listed(api_client, learner.pk).status_code == 401
+    assert (
+        api_client.patch(
+            f"{CERTS}/{certified.pk}", {"show_on_profile": True}, format="json"
+        ).status_code
+        == 401
+    )

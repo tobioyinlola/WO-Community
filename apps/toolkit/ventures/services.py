@@ -84,9 +84,32 @@ def create_venture(*, owner_id: UUID, name: str, from_startup_id: UUID | None = 
             after={"owner": str(owner_id)},
         )
     if from_startup_id is not None:
-        import_startup(venture=venture, user_id=owner_id, startup_id=from_startup_id)
+        # The name typed when starting the venture is the member's choice; keep it.
+        import_startup(
+            venture=venture, user_id=owner_id, startup_id=from_startup_id, keep_name=True
+        )
+        venture.refresh_from_db()
+    else:
+        _prefill_from_member(venture, owner_id)
         venture.refresh_from_db()
     return venture
+
+
+def _prefill_from_member(venture: Venture, user_id: UUID) -> None:
+    """Carry over what the member already told us at sign up, so they never type it twice."""
+    from apps.profiles import selectors as profiles
+
+    country, city = profiles.location_of(user_id)
+    patch: dict[str, Any] = {}
+    for name, value in (("country", country), ("city", city)):
+        if not value:
+            continue
+        try:
+            patch.update(schema.validate_patch({name: value}))
+        except schema.ProfileInvalid:
+            continue
+    if patch:
+        update_profile(venture=venture, patch=patch, actor="import", source="imported")
 
 
 def update_venture(*, venture: Venture, name: str | None, archived: bool | None) -> Venture:
@@ -409,25 +432,37 @@ _STAGE_MAP = {
 }
 
 
-def import_startup(*, venture: Venture, user_id: UUID, startup_id: UUID) -> VentureProfile:
-    """Copy what the member's startup profile holds. They own it or are on its team."""
+def import_startup(
+    *, venture: Venture, user_id: UUID, startup_id: UUID, keep_name: bool = False
+) -> VentureProfile:
+    """Copy what the member's startup profile holds. They own it or are on its team.
+
+    ``keep_name`` leaves the venture's own name alone (used when a venture is being started with a
+    name the member just chose).
+    """
     if startup_id not in startups.startup_ids_of_member(user_id):
         raise NotFound()
     startup = startups.get_startup(startup_id)
     if startup is None:
         raise NotFound()
     patch: dict[str, Any] = {
-        "name": startup.name,
         "one_liner": startup.pitch,
         "country": startup.country,
         "city": startup.city,
         "sector": startup.sector.slug,
     }
+    if not keep_name:
+        patch["name"] = startup.name
     stage = _STAGE_MAP.get(startup.stage.slug)
     if stage:
         patch["stage"] = stage
     if len((startup.description or "").strip()) >= 20:
         patch["business_concept"] = startup.description[:2000]
+    users = next(
+        (m.value_int for m in startup.traction.all() if m.kind == "users" and m.value_int), None
+    )
+    if users is not None:
+        patch["traction"] = {"users": users}
     # Only what validates is imported; a field that does not fit is left for the member.
     accepted: dict[str, Any] = {}
     for name, value in patch.items():

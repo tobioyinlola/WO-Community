@@ -4,7 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from django.conf import settings
-from django.db.models import Q, QuerySet
+from django.db.models import Case, QuerySet, When
 from django.utils import timezone
 from rest_framework import exceptions
 
@@ -110,25 +110,42 @@ def get_item(viewer: Any, item_id: UUID) -> tuple[EditorialItem, dict[str, Any]]
     return item, _views(viewer, [item])[0]
 
 
-def banners() -> list[dict[str, Any]]:
-    """Announcements whose banner window is open now, soonest to end first."""
+def banner_state(item: EditorialItem, now: Any = None) -> str:
+    """off, scheduled, live or expired: where an item's banner stands."""
+    now = now or timezone.now()
+    if not item.show_banner or item.banner_starts_at is None or item.banner_ends_at is None:
+        return "off"
+    if item.banner_starts_at > now:
+        return "scheduled"
+    return "live" if item.banner_ends_at > now else "expired"
+
+
+def banners(viewer: Any = None) -> list[dict[str, Any]]:
+    """Banners showing now that this member has not closed: urgent first, then newest."""
     now = timezone.now()
     rows = (
         published()
-        .filter(type="announcement", banner_ends_at__gt=now)
-        .filter(Q(banner_starts_at__isnull=True) | Q(banner_starts_at__lte=now))
-        .order_by("banner_ends_at", "id")[:5]
+        .filter(
+            show_banner=True,
+            type__in=("news", "announcement"),
+            banner_starts_at__lte=now,
+            banner_ends_at__gt=now,
+        )
+        .annotate(urgent=Case(When(banner_kind="urgent", then=0), default=1))
+        .order_by("urgent", "-published_at", "id")
     )
+    if viewer is not None:
+        rows = rows.exclude(dismissals__user_id=viewer.pk)
     return [
         {
             "id": i.pk,
             "slug": i.slug,
-            "title": i.title,
-            "excerpt": _excerpt(i),
-            "external_url": i.external_url,
+            "kind": i.banner_kind,
+            "text": i.banner_text or i.title,
+            "link": i.banner_link or f"/news/{i.slug}",
             "ends_at": i.banner_ends_at,
         }
-        for i in rows
+        for i in rows[:10]
     ]
 
 
@@ -292,6 +309,11 @@ def admin_views(actor: Any, items: list[EditorialItem]) -> list[dict[str, Any]]:
             publish_at=item.publish_at,
             banner_starts_at=item.banner_starts_at,
             banner_ends_at=item.banner_ends_at,
+            show_banner=item.show_banner,
+            banner_text=item.banner_text,
+            banner_kind=item.banner_kind,
+            banner_link=item.banner_link,
+            banner_status=banner_state(item),
             created_by=item.created_by_id,
             created_at=item.created_at,
             edited_at=item.edited_at,

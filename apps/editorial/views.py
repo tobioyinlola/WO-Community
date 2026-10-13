@@ -1,3 +1,5 @@
+import hashlib
+import json
 from typing import Any, cast
 from uuid import UUID
 
@@ -90,7 +92,30 @@ class BannersView(APIView):
         tags=["editorial"],
     )
     def get(self, request: Request) -> Response:
-        return _private(Response(BannerSerializer(selectors.banners(), many=True).data))
+        data = BannerSerializer(selectors.banners(request.user), many=True).data
+        tag = '"' + hashlib.sha256(json.dumps(data, default=str).encode()).hexdigest()[:20] + '"'
+        if request.headers.get("If-None-Match") == tag:
+            response = Response(status=304)
+        else:
+            response = Response(data)
+        response["ETag"] = tag
+        # Polled at a low rate, so a minute old is fine; it is for this member only.
+        response["Cache-Control"] = "private, max-age=60"
+        return response
+
+
+class BannerDismissView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="Close a banner for good",
+        request=None,
+        responses={204: None, **ERRORS},
+        tags=["editorial"],
+    )
+    def post(self, request: Request, item_id: UUID) -> Response:
+        services.dismiss_banner(user_id=_uid(request), item_id=item_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ItemCommentsView(APIView):

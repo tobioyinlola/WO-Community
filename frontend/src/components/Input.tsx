@@ -1,5 +1,7 @@
+import { Eye, EyeOff } from "lucide-react";
 import {
   useId,
+  useState,
   type InputHTMLAttributes,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
@@ -55,20 +57,41 @@ export interface InputProps
   extends FieldChrome,
     Omit<InputHTMLAttributes<HTMLInputElement>, "id"> {}
 
-export function Input({ label, hint, error, className, ...rest }: InputProps) {
+export function Input({ label, hint, error, className, type, ...rest }: InputProps) {
   const { id, hintId, errorId, describedBy } = useFieldIds(hint, error);
+  const [revealed, setRevealed] = useState(false);
+  const isPassword = type === "password";
+  const control = (
+    <input
+      {...rest}
+      id={id}
+      type={isPassword && revealed ? "text" : type}
+      className={cx("wo-input", isPassword && "wo-input--has-toggle", className)}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy}
+    />
+  );
   return (
     <div className="wo-field">
       <label className="wo-label" htmlFor={id}>
         {label}
       </label>
-      <input
-        {...rest}
-        id={id}
-        className={cx("wo-input", className)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-      />
+      {isPassword ? (
+        <span className="wo-input-wrap">
+          {control}
+          <button
+            type="button"
+            className="wo-input-toggle"
+            aria-label={revealed ? "Hide what you typed" : "Show what you typed"}
+            aria-pressed={revealed}
+            onClick={() => setRevealed((v) => !v)}
+          >
+            {revealed ? <EyeOff size={20} strokeWidth={1.5} /> : <Eye size={20} strokeWidth={1.5} />}
+          </button>
+        </span>
+      ) : (
+        control
+      )}
       <FieldFooter hint={hint} hintId={hintId} error={error} errorId={errorId} />
     </div>
   );

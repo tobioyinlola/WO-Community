@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck, MapPin } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../auth/AuthProvider";
+import { permissionsFor } from "../../admin/permissions";
 import { compact, useCursorList } from "../../api/hooks";
 import { api, unwrap } from "../../api/client";
 import { messageOf } from "../../api/errors";
 import type { components } from "../../api/schema";
 import { Alert, Badge, Button, Card, Input, Select, Tabs, Textarea } from "../../components";
 import { formatDate, humanise, timeAgo } from "../../lib/format";
-import { textToHtml } from "../../lib/html";
+import { htmlToText, textToHtml } from "../../lib/html";
 import { EmptyState, LoadMore, Loaded, PageHeader, RichText, SkeletonRows } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
@@ -93,6 +95,8 @@ export default function JobsPage() {
     );
   });
 
+  const { me } = useAuth();
+  const canModerate = permissionsFor(me?.roles ?? []).has("jobs.moderate");
   return (
     <>
       <PageHeader
@@ -100,7 +104,7 @@ export default function JobsPage() {
         title="Jobs and opportunities"
         lead="Roles posted by members of the community."
         actions={
-          <Link className="wo-btn wo-btn--primary" to="/app/jobs/new">
+          <Link className="wo-btn wo-btn--primary" to={canModerate ? "/admin/jobs?new=1" : "/app/jobs/new"}>
             Post a job
           </Link>
         }
@@ -148,6 +152,33 @@ export default function JobsPage() {
       ) : null}
       <LoadMore hasNext={list.hasNext} loading={list.loadingMore} onClick={list.loadMore} />
     </>
+  );
+}
+
+/** How to apply. Applications go to the employer, never to WO Community. */
+function ApplyBlock({ job }: { job: Job }) {
+  const { url, email, host } = job.apply;
+  if (!url && !email) return null;
+  return (
+    <div className="app-stack" style={{ marginTop: "var(--space-6)" }}>
+      {url ? (
+        <div className="app-stack" style={{ gap: "var(--space-1)" }}>
+          <a className="wo-btn wo-btn--primary wo-btn--lg" style={{ width: "100%" }} href={url} target="_blank" rel="noopener noreferrer">
+            Apply on the employer's site
+          </a>
+          <span className="caption app-muted">Opens {host} in a new tab</span>
+        </div>
+      ) : null}
+      {email ? (
+        <div className="app-stack" style={{ gap: "var(--space-1)" }}>
+          <a className={url ? "wo-btn wo-btn--secondary wo-btn--lg" : "wo-btn wo-btn--primary wo-btn--lg"} style={{ width: "100%" }} href={`mailto:${email}?subject=${encodeURIComponent(`Application: ${job.title}`)}`}>
+            Apply by email
+          </a>
+          <span className="caption app-muted">Writes to {email}</span>
+        </div>
+      ) : null}
+      <p className="body-sm app-muted" style={{ margin: 0 }}>Applications are handled directly by the employer.</p>
+    </div>
   );
 }
 
@@ -204,18 +235,16 @@ export function JobDetail() {
                   <dd>{formatDate(job.published_at ?? job.created_at)}</dd>
                   {job.poster ? (<><dt>By</dt><dd>{job.poster.name}</dd></>) : null}
                 </dl>
-                {job.status === "published" && job.apply.target ? (
-                  <a
-                    className="wo-btn wo-btn--primary wo-btn--lg"
-                    style={{ marginTop: "var(--space-6)", width: "100%" }}
-                    href={job.apply.method === "email" ? `mailto:${job.apply.target}` : job.apply.target}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                  >
-                    Apply
-                  </a>
-                ) : null}
+                {job.status === "published" ? <ApplyBlock job={job} /> : null}
               </Card>
+              {job.mine && (job.status === "rejected" || job.status === "pending") ? (
+                <Link className="wo-btn wo-btn--secondary" to={`/app/jobs/${job.id}/edit`}>
+                  {job.status === "rejected" ? "Edit and send back for review" : "Edit this job"}
+                </Link>
+              ) : null}
+              {job.mine && job.status === "published" ? (
+                <Link className="wo-btn wo-btn--ghost" to={`/app/jobs/${job.id}/edit`}>Edit this job</Link>
+              ) : null}
               {job.mine && job.status === "published" ? (
                 <Button variant="secondary" loading={close.isPending} onClick={() => close.mutate(undefined, { onSuccess: () => navigate("/app/jobs") })}>
                   Close this job
@@ -230,6 +259,7 @@ export function JobDetail() {
 }
 
 export function NewJob() {
+  const { id: editing = "" } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const client = useQueryClient();
@@ -244,12 +274,38 @@ export function NewJob() {
     description: "",
     requirements: "",
     compensation: "",
-    apply_method: "email" as components["schemas"]["ApplyMethodEnum"],
-    apply_target: "",
+    apply_url: "",
+    apply_email: "",
     deadline: "",
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((c) => ({ ...c, [k]: v }));
   const [missing, setMissing] = useState("");
+
+  // Editing: start from the job as it stands (a rejected job can be fixed and sent back).
+  const existing = useQuery({
+    queryKey: ["jobs", "one", editing],
+    enabled: Boolean(editing),
+    queryFn: () => unwrap(api.GET("/api/v1/jobs/{job_id}", { params: { path: { job_id: editing } } })),
+  });
+  const [loaded, setLoaded] = useState("");
+  if (existing.data && loaded !== existing.data.id) {
+    const j = existing.data;
+    setLoaded(j.id);
+    setF({
+      title: j.title,
+      type: j.type as JobType,
+      organisation: j.organisation,
+      startup_id: j.startup?.id ?? "",
+      location: j.location,
+      remote: j.remote,
+      description: htmlToText(j.description),
+      requirements: htmlToText(j.requirements),
+      compensation: j.compensation,
+      apply_url: j.apply.url,
+      apply_email: j.apply.email,
+      deadline: j.deadline ?? "",
+    });
+  }
 
   // Most members post for their own startup, so start there.
   useEffect(() => {
@@ -263,9 +319,7 @@ export function NewJob() {
       return;
     }
     setMissing("");
-    const job = await unwrap(
-      api.POST("/api/v1/jobs", {
-        body: {
+    const body = {
           title: f.title.trim(),
           type: f.type,
           organisation: f.organisation.trim(),
@@ -275,14 +329,19 @@ export function NewJob() {
           description: textToHtml(f.description),
           requirements: f.requirements.trim() ? textToHtml(f.requirements) : "",
           compensation: f.compensation.trim(),
-          apply_method: f.apply_method,
-          apply_target: f.apply_target.trim(),
+          apply_url: f.apply_url.trim(),
+          apply_email: f.apply_email.trim(),
           deadline: f.deadline || null,
-        },
-      }),
-    );
+        };
+    const job = editing
+      ? await (async () => {
+          const current = await api.GET("/api/v1/jobs/{job_id}", { params: { path: { job_id: editing } } });
+          const etag = current.response.headers.get("ETag") ?? "";
+          return unwrap(api.PATCH("/api/v1/jobs/{job_id}", { params: { path: { job_id: editing }, header: { "If-Match": etag } }, body }));
+        })()
+      : await unwrap(api.POST("/api/v1/jobs", { body }));
     await client.invalidateQueries({ queryKey: ["jobs"] });
-    toast.show(job.status === "pending" ? "Submitted. A moderator will review it before it goes live." : "Job posted");
+    toast.show(job.status === "pending" ? "Submitted. A moderator will review it before it goes live." : editing ? "Job updated" : "Job posted");
     navigate(`/app/jobs/${job.id}`);
   });
   const errors = errorsFrom(submit.error).fields;
@@ -293,7 +352,7 @@ export function NewJob() {
 
   return (
     <>
-      <PageHeader eyebrow="Jobs" title="Post a job" lead="Tell people about the role. New posts may be reviewed before they appear." />
+      <PageHeader eyebrow="Jobs" title={editing ? "Edit job" : "Post a job"} lead={editing ? "Changing the title, company, how to apply or description sends a live job back for review." : "Tell people about the role. New posts may be reviewed before they appear."} />
       <form onSubmit={onSubmit} noValidate className="wo-container--narrow app-stack app-stack--lg" style={{ maxWidth: 720 }}>
         <FormError error={submit.error} />
         <Input label="Job title" value={f.title} onChange={(e) => set("title", e.target.value)} error={errors.title} />
@@ -318,23 +377,20 @@ export function NewJob() {
         <div className="app-formgrid">
           <Input label="Pay (optional)" value={f.compensation} onChange={(e) => set("compensation", e.target.value)} error={errors.compensation} />
           <Input label="Apply by (optional)" type="date" value={f.deadline} onChange={(e) => set("deadline", e.target.value)} error={errors.deadline} />
-          <Select
-            label="How to apply"
-            value={f.apply_method}
-            onChange={(e) => set("apply_method", e.target.value as typeof f.apply_method)}
-            options={[{ value: "email", label: "By email" }, { value: "url", label: "On a website" }]}
-            error={errors.apply_method}
-          />
-          <Input
-            label={f.apply_method === "email" ? "Email address" : "Link"}
-            value={f.apply_target}
-            onChange={(e) => set("apply_target", e.target.value)}
-            error={errors.apply_target}
-          />
         </div>
+        <fieldset className="app-stack" style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend className="wo-label">How to apply</legend>
+          <p className="body-sm app-muted" style={{ margin: 0 }}>
+            People apply directly with you, not on WO Community. Give a link, an email address, or both.
+          </p>
+          <div className="app-formgrid">
+            <Input label="Application link" type="url" placeholder="https://" value={f.apply_url} onChange={(e) => set("apply_url", e.target.value)} error={errors.apply_url} />
+            <Input label="Application email" type="email" value={f.apply_email} onChange={(e) => set("apply_email", e.target.value)} error={errors.apply_email} />
+          </div>
+        </fieldset>
         <div className="app-cluster">
-          <Button size="lg" type="submit" loading={submit.busy} disabled={startups.isPending || !f.title.trim() || !f.description.trim()}>
-            Post job
+          <Button size="lg" type="submit" loading={submit.busy} disabled={startups.isPending || !f.title.trim() || !f.description.trim() || !(f.apply_url.trim() || f.apply_email.trim())}>
+            {editing ? "Save job" : "Post job"}
           </Button>
           <Link className="wo-btn wo-btn--ghost" to="/app/jobs">Cancel</Link>
         </div>

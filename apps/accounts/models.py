@@ -30,7 +30,13 @@ class UserManager(BaseUserManager["User"]):
     def create_user(self, email: str, password: str | None = None, **extra: Any) -> "User":
         if not email:
             raise ValueError("Email is required")
-        user = self.model(email=self.normalize_email(email).lower(), **extra)
+        from apps.accounts import referrals
+
+        user = self.model(
+            email=self.normalize_email(email).lower(),
+            referral_code=extra.pop("referral_code", None) or referrals.new_code(),
+            **extra,
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -54,6 +60,14 @@ class User(BaseModel, AbstractBaseUser):
     status_changed_by = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
+    # How the person heard of us, and the code that identifies them to others who join.
+    referral_code = models.CharField(max_length=12, unique=True, null=True, blank=True)
+    referral_source = models.CharField(max_length=12, blank=True)
+    referral_detail = models.CharField(max_length=200, blank=True)
+    referred_by = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="referrals"
+    )
+    referral_code_used = models.CharField(max_length=12, blank=True)
     locale = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=64, default="UTC")
     # Bumped on role change or suspension so already issued access tokens stop working.
@@ -207,7 +221,7 @@ class InvitationStatus(models.TextChoices):
     REVOKED = "revoked"
 
 
-# Roles an invitation may grant. Admin roles are never granted by invitation.
+# Roles any admin may invite. Console roles can be invited too, but only by a super admin.
 INVITABLE_ROLES = (Role.MEMBER.value, Role.MENTOR.value)
 
 

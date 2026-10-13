@@ -66,6 +66,15 @@ def add_lesson(client, module, **body):
     return client.post(f"{ADMIN}/modules/{module['id']}/lessons", body, format="json")
 
 
+def make_publishable(client, course, lessons=3):
+    """Give a draft what the publish checklist asks for: a section, three lectures, a thumbnail."""
+    module = add_module(client, course)
+    for i in range(lessons):
+        add_lesson(client, module, title=f"L{i}")
+    Course.objects.filter(pk=course["id"]).update(cover_key="media/course_cover/test")
+    return module
+
+
 # --- courses ---
 
 
@@ -107,7 +116,12 @@ def test_invalid_courses_are_refused(as_editor, overrides):
 def test_a_paid_course_keeps_its_price_and_a_free_one_has_none(as_editor):
     paid = create(as_editor, access="paid", price_minor=2500000, currency="usd")
     assert (paid["price_minor"], paid["currency"]) == (2500000, "USD")
-    assert paid["price"] == {"amount_minor": 2500000, "currency": "USD"}
+    assert paid["price"] == {
+        "amount_minor": 2500000,
+        "currency": "USD",
+        "original_minor": None,
+        "promo_ends_at": None,
+    }
     free = create(as_editor, title="Free one", price_minor=999, currency="NGN")
     assert free["price_minor"] is None and free["currency"] == ""
 
@@ -294,8 +308,14 @@ def test_module_and_lesson_ids_from_other_courses_are_just_unknown(as_editor):
 def test_publishing_needs_a_lesson_and_unpublishing_hides_the_course(as_editor, member_client):
     course = create(as_editor)
     base = f"{ADMIN}/courses/{course['id']}"
-    assert as_editor.post(f"{base}/publish").status_code == 400
-    add_lesson(as_editor, add_module(as_editor, course))
+    refused = as_editor.post(f"{base}/publish")
+    assert refused.status_code == 400 and "section" in str(refused.json()).lower()
+    module = add_module(as_editor, course)
+    add_lesson(as_editor, module)
+    assert as_editor.post(f"{base}/publish").status_code == 400  # one lecture, no thumbnail
+    for i in range(2):
+        add_lesson(as_editor, module, title=f"More {i}")
+    Course.objects.filter(pk=course["id"]).update(cover_key="media/course_cover/test")
     live = as_editor.post(f"{base}/publish")
     assert live.status_code == 200 and live.json()["status"] == "published"
     assert as_editor.post(f"{base}/publish").status_code == 409
@@ -311,9 +331,8 @@ def test_publishing_needs_a_lesson_and_unpublishing_hides_the_course(as_editor, 
 
 def test_duplicating_makes_a_draft_copy_of_the_structure_only(as_editor, member_client):
     course = create(as_editor, access="paid", price_minor=100, currency="USD")
-    module = add_module(as_editor, course, "Basics")
-    add_lesson(as_editor, module, title="One")
-    as_editor.post(f"{ADMIN}/courses/{course['id']}/publish")
+    module = make_publishable(as_editor, course)
+    assert as_editor.post(f"{ADMIN}/courses/{course['id']}/publish").status_code == 200
     member_client.post(f"/api/v1/courses/{course['id']}/enrol")
     copy = as_editor.post(f"{ADMIN}/courses/{course['id']}/duplicate")
     assert copy.status_code == 201
@@ -324,8 +343,8 @@ def test_duplicating_makes_a_draft_copy_of_the_structure_only(as_editor, member_
         and body["status"] == "draft"
     )
     assert body["access"] == "paid" and body["price_minor"] == 100
-    assert [m["title"] for m in body["modules"]] == ["Basics"]
-    assert [x["title"] for x in body["modules"][0]["lessons"]] == ["One"]
+    assert [m["title"] for m in body["modules"]] == ["Module"]
+    assert [x["title"] for x in body["modules"][0]["lessons"]] == ["L0", "L1", "L2"]
     assert body["modules"][0]["id"] != module["id"]
     assert Enrolment.objects.filter(course_id=body["id"]).count() == 0
     assert Course.objects.get(pk=body["id"]).slug != Course.objects.get(pk=course["id"]).slug
@@ -352,12 +371,10 @@ def test_a_cover_is_set_and_cleared_from_a_finished_upload(as_editor, editor, re
 # --- people and results ---
 
 
-def published_with_lessons(client, lessons=2):
+def published_with_lessons(client, lessons=3):
     course = create(client)
-    module = add_module(client, course)
-    for i in range(lessons):
-        add_lesson(client, module, title=f"L{i}")
-    client.post(f"{ADMIN}/courses/{course['id']}/publish")
+    make_publishable(client, course, lessons)
+    assert client.post(f"{ADMIN}/courses/{course['id']}/publish").status_code == 200
     return course
 
 
@@ -383,10 +400,10 @@ def test_stats_enrolments_and_ratings(as_editor, member_client, member, make_use
     stats = as_editor.get(f"{ADMIN}/courses/{course['id']}/stats").json()
     assert (stats["enrolled"], stats["completed"], stats["completion_rate"]) == (2, 1, 0.5)
     assert stats["rating"] == {"average": 4.0, "count": 1}
-    assert [x["completed_by"] for x in stats["lessons"]] == [2, 1]
+    assert [x["completed_by"] for x in stats["lessons"]] == [2, 1, 1]
     people = as_editor.get(f"{ADMIN}/courses/{course['id']}/enrolments").json()
     by_user = {p["user_id"]: p for p in people["results"]}
-    assert by_user[str(member.pk)]["percent"] == 100 and by_user[str(other.pk)]["percent"] == 50
+    assert by_user[str(member.pk)]["percent"] == 100 and by_user[str(other.pk)]["percent"] == 33
     ratings = as_editor.get(f"{ADMIN}/courses/{course['id']}/ratings").json()
     assert ratings[0]["feedback"] == "Useful" and ratings[0]["user_id"] == str(member.pk)
 
@@ -395,9 +412,8 @@ def test_an_admin_can_give_a_member_access_to_a_paid_course(
     as_editor, member_client, member, run_outbox
 ):
     paid = create(as_editor, access="paid", price_minor=100000, currency="NGN")
-    module = add_module(as_editor, paid)
-    add_lesson(as_editor, module)
-    as_editor.post(f"{ADMIN}/courses/{paid['id']}/publish")
+    make_publishable(as_editor, paid)
+    assert as_editor.post(f"{ADMIN}/courses/{paid['id']}/publish").status_code == 200
     assert member_client.post(f"/api/v1/courses/{paid['id']}/enrol").status_code == 402
     granted = as_editor.post(
         f"{ADMIN}/courses/{paid['id']}/grant", {"user_id": str(member.pk)}, format="json"
@@ -418,7 +434,7 @@ def test_an_admin_can_give_a_member_access_to_a_paid_course(
     assert (
         member_client.get(f"/api/v1/courses/{paid['id']}").json()["progress"]["origin"] == "grant"
     )
-    lesson = Lesson.objects.get(course_id=paid["id"])
+    lesson = Lesson.objects.filter(course_id=paid["id"]).order_by("position").first()
     assert (
         member_client.get(f"/api/v1/lessons/{lesson.pk}").json()["video"]["video_id"]
         == "dQw4w9WgXcQ"

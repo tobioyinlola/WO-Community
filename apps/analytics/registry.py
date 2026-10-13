@@ -103,6 +103,13 @@ EVENTS: dict[str, Spec] = {
     "course_completed": Spec(props={"course_id": slug()}),
     "course_checkout_started": Spec(props={"course_id": slug()}),
     "course_purchased": Spec(props={"course_id": slug()}),
+    "course_published": Spec(
+        props={"course_id": slug(), "visibility": enum("published", "unlisted")}
+    ),
+    "certificate_issued": Spec(props={"course_id": slug()}),
+    "certificate_downloaded": Spec(props={"course_id": slug()}),
+    "certificate_revoked": Spec(props={"course_id": slug()}),
+    "certificate_reissued": Spec(props={"course_id": slug()}),
     # Mentorship
     "mentor_application_submitted": Spec(),
     "mentor_application_approved": Spec(),
@@ -127,9 +134,25 @@ EVENTS: dict[str, Spec] = {
     # Admin
     "member_removed": Spec(),
     "member_suspended": Spec(),
-    "invitation_sent": Spec(props={"role": enum("member", "mentor"), "bulk": flag()}),
-    "invitation_registered": Spec(props={"role": enum("member", "mentor")}),
+    "invitation_sent": Spec(
+        props={
+            "role": enum("member", "mentor", "content_editor", "community_admin", "super_admin"),
+            "bulk": flag(),
+        }
+    ),
+    "invitation_registered": Spec(
+        props={"role": enum("member", "mentor", "content_editor", "community_admin", "super_admin")}
+    ),
     "report_actioned": Spec(props={"outcome": enum("reviewed", "actioned")}),
+    # Referrals
+    "referral_captured": Spec(
+        props={
+            "kind": enum("member", "social", "event", "partner", "search", "newsletter", "other")
+        }
+    ),
+    # Support
+    "support_ticket_created": Spec(props={"category": slug()}),
+    "support_ticket_resolved": Spec(props={"category": slug(), "hours": number(high=100_000)}),
 }
 
 

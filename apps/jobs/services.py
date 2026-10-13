@@ -7,6 +7,7 @@ from uuid import UUID
 
 import structlog
 from django.contrib.postgres.search import SearchVector
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
@@ -15,6 +16,7 @@ from django.utils.text import slugify
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.accounts.models import User
 from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import etag, ratelimit
@@ -29,6 +31,7 @@ from apps.jobs.models import (
     JobSettings,
     SavedJob,
 )
+from apps.notifications import adminalerts
 from apps.startups import selectors as startups
 
 logger = structlog.get_logger(__name__)
@@ -78,21 +81,29 @@ def _clean_rich(value: str, field: str, limit: int, *, required: bool) -> tuple[
     return html, text
 
 
-def _clean_apply(method: str, target: str) -> str:
+def _clean_link(target: str) -> str:
+    """An https link on a public site, or blank. Other schemes such as javascript: are refused."""
     target = target.strip()
-    if method == "url":
-        try:
-            cleaned = clean_url(target)
-        except exceptions.ValidationError as exc:
-            raise _invalid("apply_target", " ".join(str(m) for m in exc.detail)) from exc
-        if not cleaned:
-            raise _invalid("apply_target", "Enter a full https:// link.")
-        return cleaned
+    if not target:
+        return ""
+    try:
+        return clean_url(target)
+    except exceptions.ValidationError as exc:
+        raise _invalid("apply_url", " ".join(str(m) for m in exc.detail)) from exc
+
+
+def _clean_email(target: str) -> str:
+    target = target.strip()
+    if not target:
+        return ""
     try:
         validate_email(target)
-    except Exception as exc:
-        raise _invalid("apply_target", "Enter a valid email address.") from exc
+    except DjangoValidationError as exc:
+        raise _invalid("apply_email", "Enter a valid email address.") from exc
     return target.lower()
+
+
+SENSITIVE_FIELDS = ("title", "organisation", "startup_id", "description", "apply")
 
 
 def _check_deadline(deadline: date | None) -> None:
@@ -188,18 +199,29 @@ def _apply_fields(job: Job, data: dict[str, Any], user_id: UUID, *, is_admin: bo
             if startup_id not in startups.startup_ids_of_member(user_id):
                 raise _invalid("startup_id", "You can only post for a startup you belong to.")
         job.startup_id = startup_id
-    if "apply_method" in data or "apply_target" in data:
-        method = data.get("apply_method", job.apply_method)
-        target = data.get("apply_target", job.apply_target)
-        if is_admin and method != "url":
-            raise _invalid("apply_method", "Jobs added by admins need an external link.")
-        job.apply_method, job.apply_target = method, _clean_apply(method, target)
+    if any(k in data for k in ("apply_url", "apply_email", "apply_method", "apply_target")):
+        url, email = job.apply_url, job.apply_email
+        if "apply_method" in data or "apply_target" in data:  # the older single-route form
+            method = data.get("apply_method", job.apply_method)
+            target = data.get("apply_target", job.apply_target)
+            url, email = (target, "") if method == "url" else ("", target)
+        if "apply_url" in data:
+            url = data["apply_url"]
+        if "apply_email" in data:
+            email = data["apply_email"]
+        url, email = _clean_link(url), _clean_email(email)
+        if not url and not email:
+            raise _invalid("apply_url", "Give a link or an email address for applications.")
+        job.apply_url, job.apply_email = url, email
+        job.apply_method, job.apply_target = ("url", url) if url else ("email", email)
     if "deadline" in data:
         _check_deadline(data["deadline"])
         job.deadline = data["deadline"]
 
 
 def _check_complete(job: Job) -> None:
+    if not job.apply_url and not job.apply_email:
+        raise _invalid("apply_url", "Give a link or an email address for applications.")
     if not job.startup_id and not job.organisation:
         raise _invalid("organisation", "Name the startup or the organisation that is hiring.")
 
@@ -224,30 +246,88 @@ def create_job(*, user_id: UUID, data: dict[str, Any], admin: bool = False) -> J
         job.save()
         _index(job)
         analytics.track("job_created", actor_id=user_id, properties={"job_type": job.type})
+        audit.record(
+            actor=User.objects.filter(pk=user_id).first(),
+            action="jobs.created",
+            target_type="job",
+            target_id=job.pk,
+            target_label=job.title,
+            after={"status": job.status, "origin": job.source},
+        )
         if job.status == Job.Status.PUBLISHED:
             _announce_published(job)
+        else:
+            _alert_review(job)
     return job
+
+
+def _alert_review(job: Job) -> None:
+    """Tell the admins who review jobs that this one is waiting (once per submission)."""
+    contact = accounts.get_contact(job.poster_id)
+    adminalerts.raise_alert(
+        "job_pending",
+        item_key=f"job:{job.pk}:{int(timezone.now().timestamp() * 1000)}",
+        what=f"Job to review: {job.title}",
+        who=contact.email if contact else "A member",
+        path="/admin/jobs?tab=pending",
+    )
+
+
+def _sensitive(job: Job) -> tuple[Any, ...]:
+    """What a reviewer approved: change any of these and a member's live job is looked at again."""
+    return (
+        job.title,
+        job.organisation,
+        job.startup_id,
+        job.description,
+        job.apply_url,
+        job.apply_email,
+    )
 
 
 def update_job(
     *, user_id: UUID, job_id: UUID, data: dict[str, Any], if_match: str | None, admin: bool = False
 ) -> Job:
+    """Edit a job. A rejected job can be fixed and sent back; a live member job goes back to
+    review only when a sensitive field changes (title, company, how to apply, description)."""
     with transaction.atomic():
         job = _lock(job_id) if admin else _lock_own(user_id, job_id)
-        if job.status in (Job.Status.CLOSED, Job.Status.EXPIRED, Job.Status.REJECTED):
+        if job.status in (Job.Status.CLOSED, Job.Status.EXPIRED):
             raise Conflict("Renew or repost this job before editing it.")
         if job.status == Job.Status.REMOVED:
             raise NotFound()
+        if job.status == Job.Status.REJECTED and admin:
+            raise Conflict("Reopen this job before editing it.")
         etag.assert_matches(if_match, job)
+        before = _sensitive(job)
         _apply_fields(job, data, user_id, is_admin=admin and job.source == Job.Source.ADMIN)
         _check_complete(job)
+        now = timezone.now()
+        resubmitted = False
+        if job.status == Job.Status.REJECTED:  # the poster fixed it: back to the queue
+            job.status, resubmitted = Job.Status.PENDING, True
+            job.review_note = ""
+            if not JobSettings.load().require_approval:
+                _publish(job, now)
+        elif (
+            not admin
+            and job.status == Job.Status.PUBLISHED
+            and job.source == Job.Source.MEMBER
+            and JobSettings.load().require_approval
+            and _sensitive(job) != before
+        ):
+            job.status, resubmitted = Job.Status.PENDING, True
         if "deadline" in data and job.status == Job.Status.PUBLISHED:
-            job.expires_at = _expiry(job.deadline, timezone.now())
+            job.expires_at = _expiry(job.deadline, now)
             job.expiry_warned_at = None
-        job.edited_at = timezone.now()
+        job.edited_at = now
         job.save()
         _index(job)
-        if job.status == Job.Status.PUBLISHED:
+        if resubmitted and job.status == Job.Status.PENDING:
+            _alert_review(job)
+        if resubmitted and job.status == Job.Status.PUBLISHED:
+            _announce_published(job)
+        elif resubmitted or job.status == Job.Status.PUBLISHED:
             transaction.on_commit(lambda: _purge_cdn(job))
     return job
 
@@ -289,7 +369,7 @@ def renew_job(*, user_id: UUID, job_id: UUID, deadline: date | None = None) -> J
 
 
 def review_job(*, actor: Any, job_id: UUID, decision: str, note: str = "", ip: str = "") -> Job:
-    """Approve or reject a pending job; remove or unpublish a live one."""
+    """Approve or reject a pending job; unpublish or remove a live one; reopen a closed one."""
     with transaction.atomic():
         job = _lock(job_id)
         now = timezone.now()
@@ -305,6 +385,9 @@ def review_job(*, actor: Any, job_id: UUID, decision: str, note: str = "", ip: s
         elif decision == "remove":
             if job.status == Job.Status.REMOVED:
                 raise Conflict("This job is already removed.")
+        elif decision == "reopen":
+            if job.status not in (Job.Status.CLOSED, Job.Status.EXPIRED, Job.Status.REMOVED):
+                raise Conflict("Only a closed, expired or removed job can be reopened.")
         else:
             raise ValueError(decision)
         was_published = job.status == Job.Status.PUBLISHED
@@ -315,6 +398,9 @@ def review_job(*, actor: Any, job_id: UUID, decision: str, note: str = "", ip: s
             job.status = Job.Status.REJECTED
         elif decision == "unpublish":
             job.status, job.closed_at = Job.Status.CLOSED, now
+        elif decision == "reopen":
+            job.deadline = None if job.deadline and job.deadline < now.date() else job.deadline
+            _publish(job, now)
         else:
             job.status, job.closed_at = Job.Status.REMOVED, now
         job.save()
@@ -333,9 +419,29 @@ def review_job(*, actor: Any, job_id: UUID, decision: str, note: str = "", ip: s
             domain_events.publish(
                 events.JobReviewed(job_id=str(job.pk), approved=False, note=clean_note)
             )
+        elif decision == "reopen":
+            _announce_published(job)
         elif was_published:
             transaction.on_commit(lambda: _purge_cdn(job))
+        if decision in ("unpublish", "remove", "reopen"):
+            what = {"unpublish": "closed", "remove": "removed", "reopen": "reopened"}[decision]
+            domain_events.publish(
+                events.JobStatusChanged(job_id=str(job.pk), what=what, note=clean_note)
+            )
     return job
+
+
+def bulk_approve(*, actor: Any, ids: list[UUID], ip: str = "") -> dict[str, int]:
+    """Approve every pending job in the list. Jobs no longer pending are skipped, not failed."""
+    approved = skipped = 0
+    for job_id in ids:
+        try:
+            review_job(actor=actor, job_id=job_id, decision="approve", ip=ip)
+        except (Conflict, NotFound):
+            skipped += 1
+        else:
+            approved += 1
+    return {"approved": approved, "skipped": skipped}
 
 
 # --- scheduled work ---

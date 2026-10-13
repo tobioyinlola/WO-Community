@@ -1,254 +1,122 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Bell,
-  Briefcase,
-  CalendarDays,
-  GraduationCap,
-  Home,
-  LogOut,
-  Megaphone,
-  Menu,
-  MessageSquare,
-  Rocket,
-  Search,
-  Settings,
-  ShieldCheck,
-  UserCircle,
-  UserCheck,
-  Users,
-  X,
-  type LucideIcon,
-} from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, unwrap } from "../api/client";
-import { isAdmin, permissionsFor } from "../admin/permissions";
+import { ROLE_LABELS, permissionsFor } from "../admin/permissions";
+import { isTyping, useMediaQuery, usePref } from "../admin/shell/prefs";
+import { Sidebar } from "../admin/shell/Sidebar";
+import { visibleNav } from "../admin/shell/nav";
 import { useAuth } from "../auth/AuthProvider";
-import { Avatar, Logo } from "../components";
 import { PendingNotice } from "../pages/app/Pending";
+import "../styles/admin.css";
+import "../styles/member-shell.css";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
+import { MemberTopBar } from "./shell/MemberTopBar";
+import { SupportProvider, useSupport } from "../support/SupportProvider";
+import { MEMBER_NAV } from "./shell/memberNav";
 
-interface NavItem {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  end?: boolean;
-}
-
-const MAIN: NavItem[] = [
-  { to: "/app", label: "Home", icon: Home, end: true },
-  { to: "/app/feed", label: "Feed", icon: MessageSquare },
-  { to: "/app/directory", label: "Directory", icon: Users },
-  { to: "/app/jobs", label: "Jobs", icon: Briefcase },
-  { to: "/app/events", label: "Events", icon: CalendarDays },
-  { to: "/app/learn", label: "Learn", icon: GraduationCap },
-  { to: "/app/mentors", label: "Mentors", icon: UserCheck },
-  { to: "/app/news", label: "News", icon: Megaphone },
-];
-const BUILD: NavItem[] = [{ to: "/app/launch", label: "Launch toolkit", icon: Rocket }];
-
-function NavList({ items, unread }: { items: NavItem[]; unread: number }) {
+/**
+ * The signed-in frame, built the same way as the admin console: a floating sidebar that collapses
+ * to a rail (a drawer on narrow screens), a floating top bar with search, and the page.
+ */
+export function AppLayout() {
   return (
-    <ul className="app-nav">
-      {items.map((item) => (
-        <li key={item.to}>
-          <NavLink to={item.to} end={item.end} className="app-nav__link">
-            <item.icon size={20} strokeWidth={1.5} aria-hidden="true" />
-            {item.label}
-            {item.to === "/app/notifications" && unread > 0 ? (
-              <span className="app-nav__badge">{unread}</span>
-            ) : null}
-          </NavLink>
-        </li>
-      ))}
-    </ul>
+    <SupportProvider>
+      <Frame />
+    </SupportProvider>
   );
 }
 
-export function UserMenu() {
-  const { me, logout } = useAuth();
+function Frame() {
+  const support = useSupport();
+  const { isPending, me } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const narrow = useMediaQuery("(max-width: 1023px)");
+  const [collapsed, setCollapsed] = usePref("sidebar-collapsed", false);
+  const [drawer, setDrawer] = useState(false);
+
+  const roles = useMemo(() => me?.roles ?? [], [me?.roles]);
+  const entries = useMemo(() => visibleNav(permissionsFor(roles), MEMBER_NAV), [roles]);
+
   const profile = useQuery({
     queryKey: ["me", "profile"],
     queryFn: () => unwrap(api.GET("/api/v1/me/profile")),
   });
   const name = profile.data?.full_name || me?.email || "Account";
+  const role = ROLE_LABELS[roles.includes("mentor") ? "mentor" : "member"] ?? "Member";
+
+  useEffect(() => setDrawer(false), [location.pathname, location.search]);
 
   useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent) {
-        if (event.key === "Escape") setOpen(false);
-      } else if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+    if (isPending) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (isTyping(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key === "[" && !narrow) setCollapsed((c) => !c);
     };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isPending, narrow, setCollapsed]);
 
-  return (
-    <div className="app-menu" ref={ref}>
-      <button
-        type="button"
-        className="app-iconbtn"
-        aria-label="Account menu"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <Avatar name={name} id={me?.id} src={profile.data?.photo?.thumb} size="sm" />
-      </button>
-      {open ? (
-        <div className="app-menu__panel" role="menu">
-          <div className="app-menu__who">
-            <p className="body-strong" style={{ margin: 0 }}>
-              {name}
-            </p>
-            <p className="body-sm app-muted" style={{ margin: 0 }}>
-              {me?.email}
-            </p>
-          </div>
-          {isAdmin(me?.roles ?? []) ? (
-            <Link className="app-menu__item" role="menuitem" to="/admin" onClick={() => setOpen(false)}>
-              <ShieldCheck size={20} strokeWidth={1.5} aria-hidden="true" />
-              Admin console
-            </Link>
-          ) : null}
-          <Link className="app-menu__item" role="menuitem" to="/app/me" onClick={() => setOpen(false)}>
-            <UserCircle size={20} strokeWidth={1.5} aria-hidden="true" />
-            Your profile
-          </Link>
-          <Link
-            className="app-menu__item"
-            role="menuitem"
-            to="/app/settings"
-            onClick={() => setOpen(false)}
-          >
-            <Settings size={20} strokeWidth={1.5} aria-hidden="true" />
-            Settings
-          </Link>
-          <button
-            type="button"
-            className="app-menu__item"
-            role="menuitem"
-            onClick={async () => {
-              setOpen(false);
-              // Go to the sign in page first, so ending the session cannot race the route guard.
-              navigate("/login", { replace: true });
-              await logout();
-            }}
-          >
-            <LogOut size={20} strokeWidth={1.5} aria-hidden="true" />
-            Sign out
-          </button>
-        </div>
-      ) : null}
-    </div>
+  // location.key is "default" on the first page of a tab, where there is nothing to go back to.
+  const goBack = () => (location.key === "default" ? navigate("/app") : navigate(-1));
+
+  const sidebar = (inDrawer: boolean) => (
+    <Sidebar
+      entries={entries}
+      counts={{}}
+      collapsed={inDrawer ? false : collapsed}
+      onToggle={() => (inDrawer ? setDrawer(false) : setCollapsed((c) => !c))}
+      onNavigate={inDrawer ? () => setDrawer(false) : undefined}
+      onHelp={() => undefined}
+      inDrawer={inDrawer}
+      person={{ id: me?.id, name, role: roles.includes("mentor") ? "mentor" : "member" }}
+      home={{ to: "/app", label: "WO Community, home" }}
+      navLabel="Main"
+      help={{ label: "Contact support", onClick: () => support.open() }}
+    />
   );
-}
-
-/** The signed-in frame: sidebar, header with search and notifications, and the page. */
-export function AppLayout() {
-  const { isPending, me } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [drawer, setDrawer] = useState(false);
-  const [term, setTerm] = useState("");
-
-  const notifications = useQuery({
-    queryKey: ["notifications", "unread"],
-    queryFn: () => unwrap(api.GET("/api/v1/notifications", { params: { query: { limit: 1 } } })),
-    enabled: !isPending,
-    refetchInterval: 60_000,
-  });
-  const unread = notifications.data?.unread_count ?? 0;
-
-  useEffect(() => setDrawer(false), [location.pathname]);
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const q = term.trim();
-    if (q) navigate(`/app/directory?q=${encodeURIComponent(q)}`);
-  };
 
   return (
-    <div className="app-shell">
-      <aside className="app-side" data-open={drawer} aria-label="Sections">
-        <Link to="/app" className="app-side__logo" aria-label="WO Community, home">
-          <Logo height={40} />
-        </Link>
-        {isPending ? null : (
-          <nav aria-label="Main">
-            <NavList items={MAIN} unread={unread} />
-            {permissionsFor(me?.roles ?? []).has("toolkit.use") ? (
-              <>
-                <p className="app-nav__group">Build</p>
-                <NavList items={BUILD} unread={unread} />
-              </>
-            ) : null}
-          </nav>
-        )}
-      </aside>
-      <div className="app-scrim" data-open={drawer} onClick={() => setDrawer(false)} aria-hidden="true" />
-      <header className="app-head">
-        <button
-          type="button"
-          className="app-iconbtn app-head__menu"
-          aria-label={drawer ? "Close menu" : "Open menu"}
-          aria-expanded={drawer}
-          onClick={() => setDrawer((value) => !value)}
-        >
-          {drawer ? <X size={22} strokeWidth={1.5} /> : <Menu size={22} strokeWidth={1.5} />}
-        </button>
-        {isPending ? null : (
-          <form className="app-head__search" role="search" onSubmit={submit}>
-            <label className="wo-visually-hidden" htmlFor="app-search">
-              Search the community
-            </label>
-            <div style={{ position: "relative" }}>
-              <Search
-                size={18}
-                strokeWidth={1.5}
-                aria-hidden="true"
-                style={{ position: "absolute", left: 14, top: 14, color: "var(--text-tertiary)" }}
-              />
-              <input
-                id="app-search"
-                className="wo-input"
-                style={{ height: "var(--control-md)", paddingLeft: 40 }}
-                placeholder="Search members, startups, jobs"
-                value={term}
-                onChange={(event) => setTerm(event.target.value)}
-              />
-            </div>
-          </form>
-        )}
-        <div className="app-head__tail">
-          {isPending ? null : (
-            <Link
-              to="/app/notifications"
-              className="app-iconbtn"
-              aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-            >
-              <Bell size={22} strokeWidth={1.5} aria-hidden="true" />
-              {unread > 0 ? <span className="app-iconbtn__dot">{unread > 9 ? "9+" : unread}</span> : null}
-            </Link>
+    <div className="adm" data-collapsed={!isPending && !narrow && collapsed} data-narrow={narrow || isPending}>
+      <a className="adm-skip" href="#main">Skip to content</a>
+      {!isPending && !narrow ? (
+        <aside className="adm-side" aria-label="Sidebar">
+          {sidebar(false)}
+        </aside>
+      ) : null}
+      {!isPending && narrow ? (
+        <Dialog.Root open={drawer} onOpenChange={setDrawer}>
+          <Dialog.Portal>
+            <Dialog.Overlay className="adm-scrim" />
+            <Dialog.Content className="adm-drawer" aria-describedby={undefined}>
+              <Dialog.Title className="wo-visually-hidden">Menu</Dialog.Title>
+              {sidebar(true)}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      ) : null}
+      <div className="adm-main">
+        <MemberTopBar
+          limited={isPending}
+          narrow={narrow}
+          onMenu={() => setDrawer(true)}
+          name={name}
+          photo={profile.data?.photo?.thumb}
+          role={role}
+        />
+        <main className="adm-content" id="main" tabIndex={-1}>
+          {isPending || location.pathname === "/app" ? null : (
+            <button type="button" className="adm-back" onClick={goBack}>
+              <ArrowLeft size={18} strokeWidth={1.5} aria-hidden="true" />
+              Back
+            </button>
           )}
-          <UserMenu />
-        </div>
-      </header>
-      <main className="app-main" id="main">
-        <div className="app-main__inner">
           <ErrorBoundary resetKey={location.pathname}>{isPending ? <PendingNotice /> : <Outlet />}</ErrorBoundary>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

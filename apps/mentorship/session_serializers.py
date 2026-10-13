@@ -10,6 +10,12 @@ class SessionRequestSerializer(StrictSerializer):
     starts_at = serializers.DateTimeField(
         help_text="One of the start times from `GET /mentors/{id}/availability`."
     )
+    length_minutes = serializers.IntegerField(
+        min_value=30,
+        max_value=60,
+        required=False,
+        help_text="One of the lengths the mentor offers; their usual length when left out.",
+    )
     topic = serializers.CharField(max_length=120, help_text="What you want help with.")
     message = serializers.CharField(
         max_length=1000, help_text="20 to 1000 characters introducing yourself and your goal."
@@ -93,14 +99,27 @@ class SessionActionsSerializer(serializers.Serializer):
     add_link = serializers.BooleanField()
 
 
+class SessionPriceSerializer(serializers.Serializer):
+    price_minor = serializers.IntegerField(help_text="In the smallest unit (kobo, cents)")
+    currency = serializers.CharField()
+    payment = serializers.CharField(
+        help_text='"arranged": payment is settled directly between mentor and mentee.'
+    )
+
+
+SESSION_VIEW_ROLES = ["mentor", "mentee", "admin"]
+
+
 class MentoringSessionSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=SESSION_STATUSES)
-    role = serializers.ChoiceField(choices=["mentor", "mentee", "admin"])
+    role = serializers.ChoiceField(choices=SESSION_VIEW_ROLES)
     starts_at = serializers.DateTimeField()
     ends_at = serializers.DateTimeField()
     topic = serializers.CharField()
     message = serializers.CharField()
+    length_minutes = serializers.IntegerField()
+    price = SessionPriceSerializer(allow_null=True)
     mentor = SessionPartySerializer()
     mentee = SessionPartySerializer()
     meeting = SessionMeetingSerializer()

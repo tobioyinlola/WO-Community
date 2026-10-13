@@ -17,6 +17,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
+from django.db.models.functions import Lower
 from django.utils import timezone
 from rest_framework import exceptions
 
@@ -27,6 +28,7 @@ from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core.errors import ConflictError
+from apps.core.rbac import ADMIN_ROLES, permissions_for
 
 OPEN_STATUSES = (InvitationStatus.SENT, InvitationStatus.OPENED)
 CSV_COLUMNS = {"email", "role", "message"}
@@ -68,7 +70,12 @@ def clean_message(message: str) -> str:
     return cleaned.strip()
 
 
-def _validate_role(role: str) -> str:
+def _validate_role(role: str, actor: User | None = None) -> str:
+    """Members and mentors by any admin; a console role only by a super admin."""
+    if role in {r.value for r in ADMIN_ROLES}:
+        if actor is None or "roles.manage" not in permissions_for(actor.role_names()):
+            raise exceptions.PermissionDenied("Only a super admin can invite a team member.")
+        return role
     if role not in INVITABLE_ROLES:
         allowed = ", ".join(INVITABLE_ROLES)
         raise exceptions.ValidationError({"role": [f"Choose one of: {allowed}."]})
@@ -117,7 +124,7 @@ def create_invitation(
     bulk: bool = False,
 ) -> Invitation:
     address = _validate_email(email)
-    role = _validate_role(role)
+    role = _validate_role(role, actor)
     message = _validate_message(message)
     try:
         with transaction.atomic():
@@ -368,7 +375,7 @@ def bulk_create(*, actor: User, csv_text: str, ip: str = "") -> BulkReport:
                 ip=ip,
                 bulk=True,
             )
-        except (exceptions.ValidationError, ConflictError) as exc:
+        except (exceptions.ValidationError, exceptions.PermissionDenied, ConflictError) as exc:
             report.skipped += 1
             entry.update(result="skipped", reason=_message_of(exc))
         else:
@@ -382,3 +389,89 @@ def bulk_create(*, actor: User, csv_text: str, ip: str = "") -> BulkReport:
         ip=ip,
     )
     return report
+
+
+BATCH_MAX = 200
+
+
+def check_addresses(emails: list[str]) -> list[dict[str, str]]:
+    """What would happen to each address if it were invited now, without sending anything.
+
+    ``state`` is ``ok``, ``invalid``, ``member`` (has an account) or ``pending`` (a live invite).
+    """
+    seen: set[str] = set()
+    cleaned: list[str] = []
+    for raw in emails[:BATCH_MAX]:
+        address = raw.strip().lower()
+        if address and address not in seen:
+            seen.add(address)
+            cleaned.append(address)
+    members = set(
+        User.objects.annotate(lowered=Lower("email"))
+        .filter(lowered__in=cleaned)
+        .values_list("lowered", flat=True)
+    )
+    pending = set(
+        Invitation.objects.annotate(lowered=Lower("email"))
+        .filter(lowered__in=cleaned, status__in=OPEN_STATUSES, expires_at__gt=timezone.now())
+        .values_list("lowered", flat=True)
+    )
+    out = []
+    for address in cleaned:
+        try:
+            validate_email(address)
+        except DjangoValidationError:
+            out.append({"email": address, "state": "invalid"})
+            continue
+        state = "member" if address in members else "pending" if address in pending else "ok"
+        out.append({"email": address, "state": state})
+    return out
+
+
+def batch_create(
+    *, actor: User, emails: list[str], role: str = "member", message: str = "", ip: str = ""
+) -> dict[str, Any]:
+    """Invite a list of addresses. Each gets its own result: sent, skipped (with why) or failed.
+
+    A bad address or one that already has an account or invitation is skipped and does not stop
+    the others. The role and note are checked once, up front, because they apply to everyone.
+    """
+    if len(emails) > BATCH_MAX:
+        raise exceptions.ValidationError({"emails": [f"Send at most {BATCH_MAX} at a time."]})
+    _validate_role(role, actor)
+    message = _validate_message(message)
+    results: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for raw in emails:
+        address = raw.strip().lower()
+        if not address:
+            continue
+        if address in seen:
+            continue  # merged: one invitation per address, however often it was listed
+        seen.add(address)
+        try:
+            create_invitation(
+                actor=actor, email=address, role=role, message=message, ip=ip, bulk=True
+            )
+        except ConflictError as exc:
+            reason = {"already_registered": "Already a member", "already_invited": "Invite pending"}
+            results.append(
+                {
+                    "email": address,
+                    "result": "skipped",
+                    "reason": reason.get(str(exc.get_codes()), _message_of(exc)),
+                }
+            )
+        except exceptions.ValidationError as exc:
+            results.append({"email": address, "result": "skipped", "reason": _message_of(exc)})
+        else:
+            results.append({"email": address, "result": "sent", "reason": ""})
+    counts = {k: sum(1 for r in results if r["result"] == k) for k in ("sent", "skipped")}
+    audit.record(
+        actor=actor,
+        action="invitation.batch_sent",
+        target_type="invitation",
+        after={"role": role, **counts},
+        ip=ip,
+    )
+    return {**counts, "failed": 0, "results": results}

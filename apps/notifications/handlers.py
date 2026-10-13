@@ -7,6 +7,14 @@ from apps.notifications import events as notification_events
 
 def register() -> None:
     outbox.register_handler(
+        notification_events.AdminAlertRaised.topic, "notifications.deliver_admin_alert", "default"
+    )
+    outbox.register_handler(
+        account_events.RegistrationAwaitingApproval.topic,
+        "notifications.alert_signup",
+        "default",
+    )
+    outbox.register_handler(
         notification_events.WebhookReceived.topic, "notifications.process_webhook", "default"
     )
     outbox.register_handler(

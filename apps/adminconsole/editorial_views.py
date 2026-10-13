@@ -78,6 +78,25 @@ class AdminEditorialView(APIView):
         return _one(request, item, 201)
 
 
+class EndBannerView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        summary="Stop showing an item as a banner, now",
+        description="The story stays published. A banner that has not started is switched off.",
+        request=None,
+        responses={
+            200: AdminItemSerializer,
+            **ERRORS,
+            409: OpenApiResponse(description="Not a banner"),
+        },
+        tags=["admin"],
+    )
+    def post(self, request: Request, item_id: UUID) -> Response:
+        item = services.end_banner(actor=_actor(request), item_id=item_id, ip=_ip(request))
+        return _one(request, item)
+
+
 class AdminEditorialItemView(APIView):
     policy = MANAGE
 

@@ -191,13 +191,15 @@ def test_an_admin_posts_a_job_that_goes_live_at_once(as_editor, member_client):
     assert seen["poster"] is None and seen["organisation"] == "Partner Org"
 
 
-def test_admin_jobs_always_need_an_external_link(as_editor):
-    assert (
-        as_editor.post(
-            ADMIN, body(apply_method="email", apply_target="hr@x.example.com"), format="json"
-        ).status_code
-        == 400
+def test_admin_jobs_can_apply_by_email_but_never_by_a_script_link(as_editor):
+    email = as_editor.post(
+        ADMIN, body(apply_method="email", apply_target="hr@x.example.com"), format="json"
     )
+    assert email.status_code == 201 and email.json()["apply"]["email"] == "hr@x.example.com"
+    script = as_editor.post(
+        ADMIN, body(apply_method="url", apply_target="javascript:alert(1)"), format="json"
+    )
+    assert script.status_code == 400
     assert (
         as_editor.post(
             ADMIN, body(apply_target="http://insecure.example.com"), format="json"
@@ -240,7 +242,7 @@ def test_one_job_can_be_read(as_editor, pending):
 def test_a_super_admin_can_switch_the_board_to_auto_publish(as_super, member_client):
     assert as_super.get(f"{ADMIN}/settings").json() == {
         "require_approval": True,
-        "default_duration_days": 60,
+        "default_duration_days": 30,
     }
     saved = as_super.put(
         f"{ADMIN}/settings", {"require_approval": False, "default_duration_days": 30}, format="json"

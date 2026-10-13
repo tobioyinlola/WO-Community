@@ -183,6 +183,8 @@ def test_queue_counts_split_verified_and_unverified(as_admin, make_user, pending
         "open_reports": 0,
         "jobs_awaiting_review": 0,
         "wins_awaiting_review": 0,
+        "support_unanswered": 0,
+        "support_overdue": 0,
     }
 
 
@@ -411,3 +413,100 @@ def test_simultaneous_approvals_succeed_exactly_once(make_user, client_for):
         thread.join()
     assert sorted(results) == [200, 409]
     assert AuditLog.objects.filter(action="member.approve").count() == 1
+
+
+def test_list_sorts_by_an_allowed_column_and_puts_people_who_never_signed_in_last(
+    as_admin, make_user
+):
+    make_user(email="b@example.com", last_login=timezone.now() - timedelta(days=1))
+    make_user(email="a@example.com", last_login=timezone.now())
+    make_user(email="c@example.com")
+
+    def emails(ordering):
+        rows = as_admin.get(MEMBERS, {"ordering": ordering}).json()["results"]
+        return [
+            r["email"]
+            for r in rows
+            if r["email"].endswith("@example.com") and r["email"] != "admin@example.com"
+        ]
+
+    assert emails("email") == ["a@example.com", "b@example.com", "c@example.com"]
+    assert emails("-email") == ["c@example.com", "b@example.com", "a@example.com"]
+    assert emails("-last_login") == ["a@example.com", "b@example.com", "c@example.com"]
+    assert emails("last_login") == ["b@example.com", "a@example.com", "c@example.com"]
+
+
+def test_list_refuses_a_sort_that_is_not_on_the_list(as_admin):
+    assert as_admin.get(MEMBERS, {"ordering": "password"}).status_code == 400
+
+
+def test_application_shows_what_the_person_gave_and_logs_the_read(as_admin, pending):
+    from apps.profiles import services as profile_services
+    from apps.startups import services as startup_services
+
+    profile_services.create_from_signup(
+        pending.pk, {"full_name": "Ife Bello", "country": "NG", "city": "Lagos"}
+    )
+    startup_services.create_from_signup(
+        pending.pk,
+        {
+            "name": "Kuda Foods",
+            "country": "NG",
+            "city": "Lagos",
+            "sector": "agritech",
+            "stage": "seed",
+            "pitch": "Fresh produce in a day.",
+        },
+    )
+    response = as_admin.get(url(pending, "application"))
+    assert response.status_code == 200
+    body = response.json()
+    assert body["member"]["email"] == "pending@example.com"
+    assert body["profile"]["full_name"] == "Ife Bello"
+    assert body["startup"]["name"] == "Kuda Foods"
+    assert [e["kind"] for e in body["timeline"]][:2] == ["registered", "email_verified"]
+    assert AuditLog.objects.filter(
+        action="members.application_viewed", target_id=str(pending.pk)
+    ).exists()
+
+
+def test_application_needs_the_members_permission_and_a_real_member(
+    as_admin, make_user, client_for
+):
+    editor = make_user(roles=("content_editor",), email="editor@example.com")
+    target = make_user(email="someone@example.com")
+    assert client_for(editor, mfa_age=5).get(url(target, "application")).status_code == 403
+    missing = f"{MEMBERS}/00000000-0000-0000-0000-000000000000/application"
+    assert as_admin.get(missing).status_code == 404
+
+
+def test_list_rows_carry_name_country_and_startup_without_a_query_each(
+    as_admin, make_user, django_assert_max_num_queries
+):
+    from apps.profiles import services as profile_services
+    from apps.startups import services as startup_services
+
+    person = make_user(email="founder@example.com", email_verified_at=timezone.now())
+    profile_services.create_from_signup(
+        person.pk, {"full_name": "Ife Bello", "country": "NG", "city": "Lagos"}
+    )
+    startup_services.create_from_signup(
+        person.pk,
+        {
+            "name": "Kuda Foods",
+            "country": "NG",
+            "city": "Lagos",
+            "sector": "agritech",
+            "stage": "seed",
+            "pitch": "Fresh produce in a day.",
+        },
+    )
+    for i in range(5):
+        make_user(email=f"extra{i}@example.com")
+    with django_assert_max_num_queries(15):
+        rows = as_admin.get(MEMBERS, {"q": "example.com"}).json()["results"]
+    mine = next(r for r in rows if r["email"] == "founder@example.com")
+    assert (mine["name"], mine["country"], mine["startup"]) == ("Ife Bello", "NG", "Kuda Foods")
+    assert mine["sector"] and mine["stage"]
+    other = next(r for r in rows if r["email"] == "extra0@example.com")
+    assert other["name"] == "" and other["startup"] == ""

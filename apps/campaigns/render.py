@@ -14,6 +14,7 @@ from django.utils.html import escape
 from rest_framework import exceptions
 
 from apps.core.text import clean_url, plain, rich_comment, text_of
+from apps.notifications import mailtemplates
 from apps.uploads import services as uploads
 
 MERGE_FIELDS = ("first_name",)
@@ -119,20 +120,14 @@ def _merge(text: str, values: dict[str, str], *, escape_values: bool) -> str:
     return MERGE_TOKEN.sub(replace, text)
 
 
-def _button_html(label: str, url: str) -> str:
-    return (
-        '<p style="margin:24px 0"><a href="' + escape(url) + '" style="background:#1a56db;'
-        "color:#ffffff;padding:12px 22px;border-radius:6px;text-decoration:none;"
-        'display:inline-block;font-weight:600">' + escape(label) + "</a></p>"
-    )
-
-
 def render(
     *,
     preheader: str,
     blocks: list[dict[str, Any]],
     first_name: str,
     unsubscribe_url: str,
+    subject: str = "",
+    preferences_url: str = "",
 ) -> tuple[str, str]:
     """The email as (html, plain text) for one recipient."""
     values = {"first_name": first_name or FALLBACK_NAME}
@@ -150,7 +145,7 @@ def render(
             body_text.append(_merge(text_of(block["html"]), values, escape_values=False))
         elif kind == "button":
             label = _merge(block["label"], values, escape_values=False)
-            body_html.append(_button_html(label, block["url"]))
+            body_html.append(mailtemplates.button_html(label, block["url"]))
             body_text.append(f"{label}: {block['url']}")
         elif kind == "image":
             image = uploads.image_urls(block["image_key"])
@@ -167,24 +162,22 @@ def render(
         else:
             body_html.append('<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">')
             body_text.append("-----")
+    page = mailtemplates.layout(
+        subject=subject or "WO Community",
+        preheader=preheader,
+        body_html=(
+            f'<div style="font-family:{mailtemplates.FONT};font-size:16px;line-height:24px;'
+            f'color:{mailtemplates.FOREST}">' + "".join(body_html) + "</div>"
+        ),
+        broadcast=True,
+        unsubscribe_url=unsubscribe_url,
+        preferences_url=preferences_url,
+    )
     footer_text = (
         f"{settings.CAMPAIGN_FOOTER}\n"
         "You are receiving this because you opted in to news from WO Community.\n"
         f"Unsubscribe: {unsubscribe_url}"
     )
-    hidden_preheader = (
-        f'<div style="display:none;max-height:0;overflow:hidden">{escape(preheader)}</div>'
-        if preheader
-        else ""
-    )
-    page = (
-        '<!doctype html><html><body style="margin:0;background:#f3f4f6;font-family:Arial,'
-        'sans-serif;color:#111827"><div style="max-width:600px;margin:0 auto;background:#ffffff;'
-        f'padding:24px">{hidden_preheader}{"".join(body_html)}'
-        '<hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0 16px">'
-        f'<p style="font-size:12px;color:#6b7280">{escape(settings.CAMPAIGN_FOOTER)}<br>'
-        "You are receiving this because you opted in to news from WO Community.<br>"
-        f'<a href="{escape(unsubscribe_url)}">Unsubscribe</a></p></div></body></html>'
-    )
-    text = "\n\n".join(body_text) + "\n\n--\n" + footer_text
+    sign_off = "\n".join(mailtemplates.signoff_lines())
+    text = "\n\n".join(body_text) + "\n\n" + sign_off + "\n\n--\n" + footer_text
     return page, text

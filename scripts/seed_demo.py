@@ -36,6 +36,8 @@ from apps.feed import services as feed  # noqa: E402
 from apps.jobs import services as jobs  # noqa: E402
 from apps.jobs.models import JobSettings  # noqa: E402
 from apps.learning import authoring as learning  # noqa: E402
+from apps.learning import certificates, learn, lms  # noqa: E402
+from apps.learning.models import Course, Enrolment, Lesson  # noqa: E402
 from apps.mentorship import availability  # noqa: E402
 from apps.mentorship.models import MentorProfile  # noqa: E402
 from apps.profiles import services as profiles  # noqa: E402
@@ -408,7 +410,30 @@ def main() -> None:
                     "body": f"<p>{lesson_title}. Lesson text for {title}.</p>",
                 },
             )
-        learning.publish(actor=admin, course_id=course.pk)
+        # Demo courses go live without thumbnails (their cards have a fallback), so they skip the
+        # checklist that real courses must pass.
+        Course.objects.filter(pk=course.pk).update(status="published", published_at=timezone.now())
+        lms.refresh_counts(course.pk)
+
+    # One finished course with its certificate, made now rather than by the worker, so the
+    # certificate screens and the verification page have something to show.
+    template = certificates.current_settings()
+    template.signatory_name = "Onyeka Obi"
+    template.signatory_title = "Founder, WO Community"
+    template.save(update_fields=["signatory_name", "signatory_title", "updated_at"])
+    amaka = User.objects.get(email="amaka@demo.test")
+    finished = Course.objects.get(title="Fundraising for African startups")
+    learn.enrol(user_id=amaka.pk, course_id=finished.pk)
+    for lesson in Lesson.objects.filter(course=finished).order_by("module__position", "position"):
+        learn.update_progress(
+            user_id=amaka.pk, lesson_id=lesson.pk, position_seconds=None, completed=True
+        )
+    certificates.issue(Enrolment.objects.get(user=amaka, course=finished).pk)
+
+    # Referrals, more courses, support requests, notifications and mentor pricing.
+    import seed_change_requests
+
+    seed_change_requests.main()
 
     counts = directory.reconcile()
     print(f"Directory: {counts}")

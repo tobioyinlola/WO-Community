@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Rocket } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
 import { Badge, Button, CardTitle, CardText, CardTo, Input, Modal, Select } from "../../components";
@@ -18,6 +18,15 @@ function NewVenture({ onClose }: { onClose: () => void }) {
   const startups = useQuery({ queryKey: ["me", "startups"], queryFn: () => unwrap(api.GET("/api/v1/me/startups")) });
   const [name, setName] = useState("");
   const [from, setFrom] = useState("");
+  const [touched, setTouched] = useState(false);
+  // What the member already told us about their startup is the default, so they never type it twice.
+  useEffect(() => {
+    const first = startups.data?.[0];
+    if (!touched && first) {
+      setFrom(first.id);
+      setName((current) => current || (first.name ?? ""));
+    }
+  }, [startups.data, touched]);
   const submit = useSubmit(async () => {
     const venture = await unwrap(api.POST("/api/v1/toolkit/ventures", { body: { name: name.trim(), ...(from ? { from_startup_id: from } : {}) } }));
     await client.invalidateQueries({ queryKey: VENTURES_KEY });
@@ -47,10 +56,11 @@ function NewVenture({ onClose }: { onClose: () => void }) {
             hint="We copy its details so you do not type them twice."
             value={from}
             onChange={(e) => {
+              setTouched(true);
               setFrom(e.target.value);
               if (!name.trim()) setName(startups.data?.find((s) => s.id === e.target.value)?.name ?? "");
             }}
-            options={[{ value: "", label: "Start empty" }, ...startups.data.map((s) => ({ value: s.id, label: s.name ?? "Startup" }))]}
+            options={[{ value: "", label: "Start empty (your country and city are still filled in)" }, ...startups.data.map((s) => ({ value: s.id, label: s.name ?? "Startup" }))]}
           />
         ) : null}
       </div>

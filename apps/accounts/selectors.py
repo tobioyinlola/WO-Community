@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 from typing import Any
 
-from django.db.models import Count, OuterRef, Q, QuerySet, Subquery
+from django.db.models import Count, F, OuterRef, Q, QuerySet, Subquery
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -31,8 +31,11 @@ def list_members(
     email_verified: bool | None = None,
     joined_after: date | None = None,
     joined_before: date | None = None,
+    referral_source: str = "",
+    referred_by: Any = None,
+    ordering: str = "-created_at",
 ) -> QuerySet[User]:
-    """Members matching an allow-listed set of filters, newest first."""
+    """Members matching an allow-listed set of filters, newest first unless told otherwise."""
     queryset = _base()
     if q:
         queryset = queryset.filter(Q(email__icontains=q))
@@ -48,7 +51,36 @@ def list_members(
         queryset = queryset.filter(created_at__date__gte=joined_after)
     if joined_before:
         queryset = queryset.filter(created_at__date__lte=joined_before)
-    return queryset.order_by("-created_at", "-id")
+    if referral_source == "none":
+        queryset = queryset.filter(referral_source="")
+    elif referral_source:
+        queryset = queryset.filter(referral_source=referral_source)
+    if referred_by:
+        queryset = queryset.filter(referred_by_id=referred_by)
+    return queryset.order_by(*_ordering(ordering))
+
+
+MEMBER_ORDERINGS = (
+    "created_at",
+    "-created_at",
+    "email",
+    "-email",
+    "last_login",
+    "-last_login",
+    "status",
+    "-status",
+)
+
+
+def _ordering(name: str) -> tuple[Any, ...]:
+    """The sort for a name from the allow-list. People who never signed in sort last either way."""
+    if name not in MEMBER_ORDERINGS:
+        name = "-created_at"
+    field = name.lstrip("-")
+    expression = (
+        F(field).desc(nulls_last=True) if name.startswith("-") else F(field).asc(nulls_last=True)
+    )
+    return (expression, "-id")
 
 
 def get_member(user_id: Any) -> User | None:
@@ -66,11 +98,15 @@ def registration_queue_counts() -> dict[str, int]:
 INVITATION_STATUSES = ("sent", "opened", "registered", "revoked", "expired")
 
 
-def list_invitations(*, q: str = "", status: str = "") -> QuerySet[Invitation]:
+def list_invitations(*, q: str = "", status: str = "", role: str = "") -> QuerySet[Invitation]:
     """Invitations newest first. ``expired`` means unused and past its expiry."""
     queryset = Invitation.objects.select_related("invited_by")
     if q:
         queryset = queryset.filter(email__icontains=q)
+    if role == "team":
+        queryset = queryset.filter(role__in=["content_editor", "community_admin", "super_admin"])
+    elif role:
+        queryset = queryset.filter(role=role)
     open_states = ["sent", "opened"]
     now = timezone.now()
     if status == "expired":

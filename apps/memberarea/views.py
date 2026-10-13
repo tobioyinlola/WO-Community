@@ -9,7 +9,7 @@ from apps.core import policies
 from apps.core.public import PublicView
 from apps.core.serializers import StrictSerializer
 from apps.editorial.serializers import EditorialItemPageSerializer
-from apps.memberarea import news, onboarding, search, sitemap
+from apps.memberarea import browse, news, onboarding, search, sitemap
 
 
 class ChecklistItemSerializer(serializers.Serializer):
@@ -171,5 +171,147 @@ class FollowingNewsView(APIView):
             request.user, type=data["type"], cursor=data["cursor"], limit=data["limit"]
         )
         response = Response(EditorialItemPageSerializer(page).data)
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+class BrowseQuerySerializer(StrictSerializer):
+    q = serializers.CharField(required=False, allow_blank=True, default="", max_length=100)
+    country = serializers.CharField(required=False, allow_blank=True, default="", max_length=2)
+    sort = serializers.ChoiceField(choices=["newest", "name"], required=False, default="newest")
+    page = serializers.IntegerField(required=False, min_value=1, default=1)
+    page_size = serializers.IntegerField(required=False, min_value=1, max_value=48, default=12)
+
+
+class StartupBrowseQuerySerializer(BrowseQuerySerializer):
+    city = serializers.CharField(required=False, allow_blank=True, default="", max_length=100)
+    sector = serializers.CharField(required=False, allow_blank=True, default="", max_length=80)
+    stage = serializers.CharField(required=False, allow_blank=True, default="", max_length=80)
+    hiring = serializers.BooleanField(required=False, default=False)
+
+
+class PeopleBrowseQuerySerializer(BrowseQuerySerializer):
+    skill = serializers.CharField(required=False, allow_blank=True, default="", max_length=80)
+
+
+class PageMetaSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    page = serializers.IntegerField()
+    page_size = serializers.IntegerField()
+    pages = serializers.IntegerField()
+
+
+class BrowseJobSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+
+
+class BrowseTractionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    kind = serializers.CharField()
+    value = serializers.JSONField(allow_null=True)
+    as_of_date = serializers.DateField()
+
+
+class BrowseNamedSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    name = serializers.CharField()
+
+
+class BrowseStartupSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    pitch = serializers.CharField(allow_blank=True)
+    logo = serializers.DictField(allow_null=True)
+    sector = BrowseNamedSerializer(allow_null=True)
+    stage = BrowseNamedSerializer(allow_null=True)
+    country = serializers.CharField(allow_blank=True)
+    city = serializers.CharField(allow_blank=True)
+    year_founded = serializers.IntegerField(allow_null=True)
+    description = serializers.CharField(allow_blank=True)
+    website_url = serializers.CharField(allow_blank=True)
+    pitch_deck_url = serializers.CharField(allow_blank=True)
+    featured = serializers.BooleanField()
+    traction = BrowseTractionSerializer(many=True)
+    open_jobs_count = serializers.IntegerField()
+    open_jobs = BrowseJobSerializer(many=True)
+
+
+class BrowseStartupPageSerializer(PageMetaSerializer):
+    results = BrowseStartupSerializer(many=True)
+
+
+class BrowsePersonSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    headline = serializers.CharField(allow_blank=True)
+    photo = serializers.DictField(allow_null=True)
+    city = serializers.CharField(allow_blank=True)
+    country = serializers.CharField(allow_blank=True)
+    skills = BrowseNamedSerializer(many=True)
+
+
+class BrowsePeoplePageSerializer(PageMetaSerializer):
+    results = BrowsePersonSerializer(many=True)
+
+
+BROWSE_ERRORS = {
+    400: OpenApiResponse(description="Invalid filter"),
+    401: OpenApiResponse(description="Not logged in"),
+    403: OpenApiResponse(description="Not an active member"),
+}
+
+
+class BrowseStartupsView(APIView):
+    policy = policies.active_member
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "search"
+
+    @extend_schema(
+        operation_id="directory_startups",
+        summary="Browse startups with filters",
+        description="Page by page, featured first. Filter by country, city, sector, stage and "
+        "whether the startup has open jobs. Each card shows only what its owner shares "
+        "with members.",
+        parameters=[StartupBrowseQuerySerializer],
+        responses={200: BrowseStartupPageSerializer, **BROWSE_ERRORS},
+        tags=["member area"],
+    )
+    def get(self, request: Request) -> Response:
+        params = StartupBrowseQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        response = Response(
+            BrowseStartupPageSerializer(
+                browse.browse_startups(request.user, **params.validated_data)
+            ).data
+        )
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+class BrowsePeopleView(APIView):
+    policy = policies.active_member
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "search"
+
+    @extend_schema(
+        operation_id="directory_people",
+        summary="Browse members with filters",
+        description="Page by page. Filter by country and skill. Members who hide their basics "
+        "from members do not appear.",
+        parameters=[PeopleBrowseQuerySerializer],
+        responses={200: BrowsePeoplePageSerializer, **BROWSE_ERRORS},
+        tags=["member area"],
+    )
+    def get(self, request: Request) -> Response:
+        params = PeopleBrowseQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        response = Response(
+            BrowsePeoplePageSerializer(
+                browse.browse_people(request.user, **params.validated_data)
+            ).data
+        )
         response["Cache-Control"] = "private, no-store"
         return response

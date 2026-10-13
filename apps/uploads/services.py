@@ -32,7 +32,13 @@ from apps.integrations.storage import (
     get_storage,
 )
 from apps.uploads import documents, events, images
-from apps.uploads.models import DOCUMENT_PURPOSES, Upload, UploadPurpose, UploadStatus
+from apps.uploads.models import (
+    DOCUMENT_PURPOSES,
+    STAFF_DOCUMENT_PURPOSES,
+    Upload,
+    UploadPurpose,
+    UploadStatus,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -60,16 +66,20 @@ def request_upload(
     if purpose not in UploadPurpose.values:
         raise exceptions.ValidationError({"purpose": ["Unknown purpose."]})
     is_document = purpose in DOCUMENT_PURPOSES
-    if is_document and not can_upload_documents:
+    if purpose in STAFF_DOCUMENT_PURPOSES and not can_upload_documents:
         raise exceptions.PermissionDenied("You cannot upload documents.")
-    allowed_types = tuple(
-        settings.UPLOAD_DOCUMENT_TYPES if is_document else settings.UPLOAD_ALLOWED_TYPES
-    )
-    max_bytes = settings.UPLOAD_DOCUMENT_MAX_BYTES if is_document else settings.UPLOAD_MAX_BYTES
+    if purpose == UploadPurpose.SUPPORT_ATTACHMENT:
+        allowed_types = tuple(settings.SUPPORT_ATTACHMENT_TYPES)
+        max_bytes = settings.SUPPORT_ATTACHMENT_MAX_BYTES
+    else:
+        allowed_types = tuple(
+            settings.UPLOAD_DOCUMENT_TYPES if is_document else settings.UPLOAD_ALLOWED_TYPES
+        )
+        max_bytes = settings.UPLOAD_DOCUMENT_MAX_BYTES if is_document else settings.UPLOAD_MAX_BYTES
     if content_type not in allowed_types:
         kinds = (
             ", ".join(sorted(set(settings.UPLOAD_DOCUMENT_TYPES.values())))
-            if is_document
+            if is_document and purpose != UploadPurpose.SUPPORT_ATTACHMENT
             else ", ".join(allowed_types)
         )
         raise exceptions.ValidationError({"content_type": [f"Allowed types: {kinds}."]})
@@ -224,7 +234,12 @@ def process_upload(upload_id: UUID) -> None:
 def _publish_document(upload: Upload, data: bytes, storage: Any) -> None:
     """Check a scanned document and move it to the private bucket, unchanged."""
     try:
-        checked = documents.inspect(data, upload.declared_content_type)
+        allowed = (
+            tuple(settings.SUPPORT_ATTACHMENT_TYPES)
+            if upload.purpose == UploadPurpose.SUPPORT_ATTACHMENT
+            else tuple(settings.UPLOAD_DOCUMENT_TYPES)
+        )
+        checked = documents.inspect(data, upload.declared_content_type, allowed)
     except documents.DocumentRejected as exc:
         _finish(upload, UploadStatus.REJECTED, exc.code)
         return
