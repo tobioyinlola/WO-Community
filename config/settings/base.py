@@ -399,6 +399,8 @@ STORAGE_ENDPOINT_URL = env.str("STORAGE_ENDPOINT_URL", default="")  # set for Mi
 STORAGE_REGION = env.str("STORAGE_REGION", default="us-east-1")  # "auto" for Cloudflare R2
 # "post" for S3 and MinIO. "put" for Cloudflare R2, which cannot take a browser form upload.
 STORAGE_UPLOAD_METHOD = env.str("STORAGE_UPLOAD_METHOD", default="post")
+# S3 Object Lock headers on the audit anchor. R2 has none: switch off, use a bucket retention rule.
+STORAGE_ANCHOR_OBJECT_LOCK = env.bool("STORAGE_ANCHOR_OBJECT_LOCK", default=True)
 STORAGE_ACCESS_KEY_ID = env.str("STORAGE_ACCESS_KEY_ID", default="")
 STORAGE_SECRET_ACCESS_KEY = env.str("STORAGE_SECRET_ACCESS_KEY", default="")
 STORAGE_QUARANTINE_BUCKET = env.str("STORAGE_QUARANTINE_BUCKET", default="wo-quarantine")

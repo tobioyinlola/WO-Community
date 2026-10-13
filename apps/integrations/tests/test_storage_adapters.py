@@ -183,3 +183,29 @@ def test_the_default_upload_is_a_form_post(settings):
         bucket=QUARANTINE, key="k", content_type="image/png", max_size=10, expires_in=60
     )
     assert form.method == "POST" and form.fields["key"] == "k"
+
+
+def test_the_anchor_is_written_with_object_lock_unless_switched_off(settings):
+    from unittest.mock import MagicMock
+
+    from apps.integrations.storage import ANCHOR
+
+    settings.STORAGE_ACCESS_KEY_ID = "k"
+    settings.STORAGE_SECRET_ACCESS_KEY = "s"  # noqa: S105
+    storage = S3Storage()
+    fake_client = MagicMock()
+    fake_client.head_object.side_effect = __import__("botocore.exceptions").exceptions.ClientError(
+        {"Error": {"Code": "404"}}, "HeadObject"
+    )
+    storage.__dict__["client"] = fake_client
+    assert storage.write_once(
+        bucket=ANCHOR, key="d", data=b"x", content_type="text/plain", retain_days=5
+    )
+    assert fake_client.put_object.call_args.kwargs["ObjectLockMode"] == "COMPLIANCE"
+
+    settings.STORAGE_ANCHOR_OBJECT_LOCK = False
+    fake_client.put_object.reset_mock()
+    assert storage.write_once(
+        bucket=ANCHOR, key="d2", data=b"x", content_type="text/plain", retain_days=5
+    )
+    assert "ObjectLockMode" not in fake_client.put_object.call_args.kwargs
