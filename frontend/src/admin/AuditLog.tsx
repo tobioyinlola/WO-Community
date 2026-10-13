@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Check, Copy, Download, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { api, authFetch, unwrap } from "../api/client";
+import { API_BASE, api, authFetch, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { Button, Input, Select } from "../components";
 import { formatDateTime, humanise, timeAgo } from "../lib/format";
@@ -184,7 +184,7 @@ export default function AuditLog() {
   const [exportError, setExportError] = useState(false);
   const download = async () => {
     setExportError(false);
-    const response = await authFetch(new Request(new URL(exportHref, window.location.origin)));
+    const response = await authFetch(new Request(new URL(API_BASE + exportHref, window.location.origin)));
     if (!response.ok) {
       setExportError(true);
       return;

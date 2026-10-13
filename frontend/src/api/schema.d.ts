@@ -667,7 +667,7 @@ export interface paths {
         get: operations["admin_courses_retrieve"];
         put?: never;
         post?: never;
-        /** Remove a course */
+        /** Delete a course (409 if members are enrolled; archive it instead) */
         delete: operations["admin_courses_destroy"];
         options?: never;
         head?: never;
@@ -690,6 +690,26 @@ export interface paths {
          * @description Every enrolled learner is told, in the app and by email.
          */
         post: operations["admin_courses_announcements_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/courses/{course_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish, unpublish, archive or duplicate a course
+         * @description Publishing needs a title, description, category, at least one module with one lesson, valid YouTube links and a price (or free); a cover image is welcome but not required. Send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         */
+        post: operations["admin_courses_archive_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -727,8 +747,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish, unpublish or duplicate a course
-         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * Publish, unpublish, archive or duplicate a course
+         * @description Publishing needs a title, description, category, at least one module with one lesson, valid YouTube links and a price (or free); a cover image is welcome but not required. Send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_duplicate_create"];
         delete?: never;
@@ -875,8 +895,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish, unpublish or duplicate a course
-         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * Publish, unpublish, archive or duplicate a course
+         * @description Publishing needs a title, description, category, at least one module with one lesson, valid YouTube links and a price (or free); a cover image is welcome but not required. Send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_publish_create"];
         delete?: never;
@@ -983,8 +1003,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish, unpublish or duplicate a course
-         * @description Publishing needs a title, description, category, thumbnail, a section with three lectures, valid YouTube links and a price (or free); send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
+         * Publish, unpublish, archive or duplicate a course
+         * @description Publishing needs a title, description, category, at least one module with one lesson, valid YouTube links and a price (or free); a cover image is welcome but not required. Send `unlisted: true` to open it by link only. Unpublishing hides the course from the catalogue; people already enrolled keep their access and progress. Duplicating makes a draft copy of the modules and lessons (not enrolments, ratings or the cover).
          */
         post: operations["admin_courses_unpublish_create"];
         delete?: never;
@@ -4080,6 +4100,26 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/unenrol": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Leave a course
+         * @description Progress is kept; enrolling again picks up where you left off.
+         */
+        delete: operations["courses_unenrol_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -15736,6 +15776,9 @@ export interface components {
             form_data: {
                 [key: string]: string;
             };
+            headers: {
+                [key: string]: string;
+            };
             expires_in: number;
         };
         /**
@@ -18107,6 +18150,67 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_courses_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PublishRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCourse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCourse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not in a state that allows this */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27661,6 +27765,47 @@ export interface operations {
                 };
             };
             /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an active member, or not enrolled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    courses_unenrol_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left the course */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
             401: {
                 headers: {
                     [name: string]: unknown;

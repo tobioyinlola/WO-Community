@@ -49,12 +49,19 @@ export function Announcements({ courseId }: { courseId: string }) {
 type ActionCourse = Pick<Page, "slug" | "access" | "enrolment_active" | "access_request" | "resume"> & { progress: Pick<Page["progress"], "enrolled" | "completed_at"> };
 
 /** The one button that moves a person forward on a course, whatever state they and the course are in. */
-export function CourseAction({ course, target, enrolling = false, onEnrol, onAsk }: { course: ActionCourse; target?: string; enrolling?: boolean; onEnrol: () => void; onAsk: () => void }) {
+export function CourseAction({ course, target, enrolling = false, onEnrol, onAsk, onLeave }: { course: ActionCourse; target?: string; enrolling?: boolean; onEnrol: () => void; onAsk: () => void; onLeave?: () => void }) {
   if (course.progress.enrolled)
     return target ? (
-      <Link className="wo-btn wo-btn--primary wo-btn--lg" to={lectureLink(course.slug, target)}>
-        {course.progress.completed_at ? "Review the course" : course.resume ? "Continue learning" : "Start learning"}
-      </Link>
+      <>
+        <Link className="wo-btn wo-btn--primary wo-btn--lg" to={lectureLink(course.slug, target)}>
+          {course.progress.completed_at ? "Review the course" : course.resume ? "Continue learning" : "Start learning"}
+        </Link>
+        {onLeave ? (
+          <Button variant="ghost" onClick={onLeave}>
+            Leave course
+          </Button>
+        ) : null}
+      </>
     ) : null;
   if (!course.enrolment_active)
     return (
@@ -109,6 +116,13 @@ export default function Landing() {
       await refresh();
     },
   });
+  const leave = useMutation({
+    mutationFn: () => unwrap(api.DELETE("/api/v1/courses/{course_id}/unenrol", { params: { path: { course_id: course?.id ?? "" } } })),
+    onSuccess: async () => {
+      toast.show("You left the course. Your progress is kept.");
+      await refresh();
+    },
+  });
   const request = useMutation({
     mutationFn: () => unwrap(api.POST("/api/v1/courses/{course_id}/request-access", { params: { path: { course_id: course?.id ?? "" } }, body: { message } })),
     onSuccess: async () => {
@@ -149,7 +163,7 @@ export default function Landing() {
     }
   };
 
-  const cta = <CourseAction course={course} target={target} enrolling={enrol.isPending} onEnrol={() => enrol.mutate()} onAsk={() => setAsking(true)} />;
+  const cta = <CourseAction course={course} target={target} enrolling={enrol.isPending} onEnrol={() => enrol.mutate()} onAsk={() => setAsking(true)} onLeave={() => { if (window.confirm("Leave this course? Your progress is kept if you join again.")) leave.mutate(); }} />;
 
   return (
     <>

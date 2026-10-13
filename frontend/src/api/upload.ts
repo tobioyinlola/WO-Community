@@ -39,12 +39,17 @@ export async function uploadFile(file: File, purpose: UploadPurpose, pollMs = 70
   }
   const { upload, form } = reserved.data;
 
-  const data = new FormData();
-  for (const [key, value] of Object.entries(form.form_data)) data.append(key, value);
-  data.append("file", file); // the file must be the last field
   let sent: Response;
   try {
-    sent = await fetch(form.url, { method: "POST", body: data });
+    if (form.method === "PUT") {
+      // Storage that cannot take a form (Cloudflare R2): the file is the whole request body.
+      sent = await fetch(form.url, { method: "PUT", headers: form.headers, body: file });
+    } else {
+      const data = new FormData();
+      for (const [key, value] of Object.entries(form.form_data)) data.append(key, value);
+      data.append("file", file); // the file must be the last field
+      sent = await fetch(form.url, { method: "POST", body: data });
+    }
   } catch {
     throw new UploadError(`We could not upload ${label}. Check your connection and try again.`);
   }
