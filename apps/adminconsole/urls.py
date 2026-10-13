@@ -7,6 +7,7 @@ from apps.adminconsole import (
     course_views,
     dashboard_views,
     editorial_views,
+    email_template_views,
     event_views,
     featured_views,
     feed_views,
@@ -529,6 +530,41 @@ urlpatterns = [
     path("admin/posts/<uuid:post_id>", oversight_views.AdminPostView.as_view(), name="admin-post"),
     path("admin/matches", oversight_views.AdminMatchesView.as_view(), name="admin-matches"),
     path("admin/analytics", oversight_views.AdminAnalyticsView.as_view(), name="admin-analytics"),
+    path(
+        "admin/email-templates",
+        email_template_views.TemplatesView.as_view(),
+        name="admin-email-templates",
+    ),
+    path(
+        "admin/email-templates/<slug:key>",
+        email_template_views.TemplateView.as_view(),
+        name="admin-email-template",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/preview",
+        email_template_views.PreviewView.as_view(),
+        name="admin-email-template-preview",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/test",
+        email_template_views.SendTestView.as_view(),
+        name="admin-email-template-test",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/versions",
+        email_template_views.VersionsView.as_view(),
+        name="admin-email-template-versions",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/restore",
+        email_template_views.RestoreView.as_view(),
+        name="admin-email-template-restore",
+    ),
+    path(
+        "admin/email-templates/<slug:key>/reset",
+        email_template_views.ResetView.as_view(),
+        name="admin-email-template-reset",
+    ),
     path("admin/audit", audit_views.AuditListView.as_view(), name="admin-audit"),
     path("admin/audit/export", audit_views.AuditExportView.as_view(), name="admin-audit-export"),
     path(

@@ -35,6 +35,7 @@ def _send(
     no_reply: bool = False,
     html: str = "",
     headers: dict[str, str] | None = None,
+    nonce: str = "",
 ) -> None:
     """Send one email.
 
@@ -47,7 +48,7 @@ def _send(
     if stream == MARKETING and services.is_suppressed(to):
         logger.info("email_skipped_suppressed", category=category)
         return
-    key = hashlib.sha256(f"{to}\n{subject}\n{body}".encode()).hexdigest()
+    key = hashlib.sha256(f"{to}\n{subject}\n{body}\n{nonce}".encode()).hexdigest()
     message = EmailMessage(
         to=to,
         subject=subject,
@@ -83,6 +84,29 @@ def render_template(
         values,
         copy=templatestore.effective_copy(key),
         preferences_url=preferences_url() if with_preferences else "",
+    )
+
+
+def send_rendered(
+    to: str,
+    rendered: mt.Rendered,
+    *,
+    category: str,
+    subject_prefix: str = "",
+    nonce: str = "",
+    stream: str = TRANSACTIONAL,
+    headers: dict[str, str] | None = None,
+) -> None:
+    """Send an email that was already rendered (a test, or a digest built elsewhere)."""
+    _send(
+        to,
+        subject_prefix + rendered.subject,
+        rendered.text,
+        category=category,
+        html=rendered.html,
+        stream=stream,
+        headers=headers,
+        nonce=nonce,
     )
 
 
