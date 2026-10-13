@@ -44,7 +44,7 @@ test.describe("course administration", () => {
     await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeEnabled();
 
     // The curriculum has the two lectures; every other tab opens.
-    await expect(page.getByText("Section 1: Section 1")).toBeVisible();
+    await expect(page.getByText("Section 1: Module 1")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Edit lecture/ })).toHaveCount(2);
     for (const name of ["Learners", "Requests", "Reviews", "Q&A", "Announcements", "Settings"]) {
       await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
