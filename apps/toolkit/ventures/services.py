@@ -84,7 +84,10 @@ def create_venture(*, owner_id: UUID, name: str, from_startup_id: UUID | None = 
             after={"owner": str(owner_id)},
         )
     if from_startup_id is not None:
-        import_startup(venture=venture, user_id=owner_id, startup_id=from_startup_id)
+        # The name typed when starting the venture is the member's choice; keep it.
+        import_startup(
+            venture=venture, user_id=owner_id, startup_id=from_startup_id, keep_name=True
+        )
         venture.refresh_from_db()
     else:
         _prefill_from_member(venture, owner_id)
@@ -429,20 +432,27 @@ _STAGE_MAP = {
 }
 
 
-def import_startup(*, venture: Venture, user_id: UUID, startup_id: UUID) -> VentureProfile:
-    """Copy what the member's startup profile holds. They own it or are on its team."""
+def import_startup(
+    *, venture: Venture, user_id: UUID, startup_id: UUID, keep_name: bool = False
+) -> VentureProfile:
+    """Copy what the member's startup profile holds. They own it or are on its team.
+
+    ``keep_name`` leaves the venture's own name alone (used when a venture is being started with a
+    name the member just chose).
+    """
     if startup_id not in startups.startup_ids_of_member(user_id):
         raise NotFound()
     startup = startups.get_startup(startup_id)
     if startup is None:
         raise NotFound()
     patch: dict[str, Any] = {
-        "name": startup.name,
         "one_liner": startup.pitch,
         "country": startup.country,
         "city": startup.city,
         "sector": startup.sector.slug,
     }
+    if not keep_name:
+        patch["name"] = startup.name
     stage = _STAGE_MAP.get(startup.stage.slug)
     if stage:
         patch["stage"] = stage
