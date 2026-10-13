@@ -8,6 +8,7 @@ import { ReferralCard } from "../../referrals/ReferralCard";
 import { Alert, Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
 import { formatDate, formatTime, humanise, timeAgo } from "../../lib/format";
 import { PageHeader, RichText, Section, Skeleton } from "../../ui/blocks";
+import { BannerTicker } from "../../ui/BannerTicker";
 
 const CHECKLIST: Record<string, { label: string; to: string }> = {
   complete_profile: { label: "Complete your profile", to: "/app/me" },
@@ -49,6 +50,7 @@ export default function Home() {
 
   return (
     <>
+      <BannerTicker />
       <PageHeader eyebrow="Home" title={first ? `Welcome back, ${first}` : "Welcome back"} lead="Here is what is happening and what to do next." />
 
       {needsSchedule ? (

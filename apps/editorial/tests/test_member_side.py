@@ -233,35 +233,86 @@ def test_only_the_three_reactions_exist_and_only_on_published_items(
 # --- banners ---
 
 
-def test_announcements_show_as_banners_only_during_their_window(editor, member_client):
+def banner(editor, title, start, end, **extra):
+    return story(
+        editor,
+        type=extra.pop("type", "announcement"),
+        title=title,
+        show_banner=True,
+        banner_starts_at=start,
+        banner_ends_at=end,
+        **extra,
+    )
+
+
+def test_banners_show_only_during_their_window_and_when_switched_on(editor, member_client):
     now = timezone.now()
-    live = story(
+    live = banner(editor, "Maintenance tonight", now - timedelta(hours=1), now + timedelta(days=1))
+    banner(editor, "Not yet", now + timedelta(days=1), now + timedelta(days=2))
+    story(editor, type="announcement", title="No banner")
+    story(
         editor,
         type="announcement",
-        title="Maintenance tonight",
+        title="Switched off",
+        show_banner=False,
         banner_starts_at=now - timedelta(hours=1),
         banner_ends_at=now + timedelta(days=1),
     )
     story(
         editor,
         type="announcement",
-        title="Not yet",
-        banner_starts_at=now + timedelta(days=1),
-        banner_ends_at=now + timedelta(days=2),
-    )
-    story(editor, type="announcement", title="No banner")
-    story(
-        editor,
-        type="announcement",
         title="Draft banner",
         _draft=True,
+        show_banner=True,
+        banner_starts_at=now - timedelta(hours=1),
         banner_ends_at=now + timedelta(days=1),
     )
     banners = member_client.get(BANNERS).json()
     assert [b["id"] for b in banners] == [str(live.pk)]
-    assert set(banners[0]) == {"id", "slug", "title", "excerpt", "external_url", "ends_at"}
+    assert set(banners[0]) == {"id", "slug", "kind", "text", "link", "ends_at"}
+    assert banners[0]["text"] == "Maintenance tonight"  # the title when no text was written
     EditorialItem.objects.filter(pk=live.pk).update(banner_ends_at=now - timedelta(minutes=1))
     assert member_client.get(BANNERS).json() == []
+
+
+def test_news_can_be_a_banner_too_and_urgent_comes_first(editor, member_client):
+    now = timezone.now()
+    start, end = now - timedelta(hours=1), now + timedelta(days=1)
+    banner(editor, "Older news", start, end, type="news", banner_text="Older headline")
+    banner(editor, "Urgent notice", start, end, banner_kind="urgent", banner_link="/jobs")
+    banner(editor, "Newest news", start, end, type="news", banner_link="https://example.com/x")
+    rows = member_client.get(BANNERS).json()
+    assert [r["kind"] for r in rows][0] == "urgent"
+    assert [r["text"] for r in rows] == ["Urgent notice", "Newest news", "Older headline"]
+    assert rows[0]["link"] == "/jobs" and rows[1]["link"] == "https://example.com/x"
+    assert rows[2]["link"].startswith("/news/")
+
+
+def test_a_member_can_dismiss_a_banner_for_good_and_others_still_see_it(
+    editor, member_client, make_user, client_for
+):
+    now = timezone.now()
+    item = banner(editor, "Hello", now - timedelta(hours=1), now + timedelta(days=1))
+    other = client_for(make_user(email="o@example.com", approved_at=now, email_verified_at=now))
+    url = f"{BANNERS}/{item.pk}/dismiss"
+    assert member_client.post(url).status_code == 204
+    assert member_client.post(url).status_code == 204  # closing twice changes nothing
+    assert member_client.get(BANNERS).json() == []
+    assert len(other.get(BANNERS).json()) == 1
+
+
+def test_dismissing_something_that_is_not_a_banner_is_404(editor, member_client):
+    plain = story(editor)
+    assert member_client.post(f"{BANNERS}/{plain.pk}/dismiss").status_code == 404
+
+
+def test_the_banner_list_has_an_etag_and_is_cached_for_a_minute(editor, member_client):
+    now = timezone.now()
+    banner(editor, "Hello", now - timedelta(hours=1), now + timedelta(days=1))
+    first = member_client.get(BANNERS)
+    assert first["Cache-Control"] == "private, max-age=60" and first["ETag"]
+    again = member_client.get(BANNERS, HTTP_IF_NONE_MATCH=first["ETag"])
+    assert again.status_code == 304
 
 
 def test_banners_need_an_active_member(api_client):
