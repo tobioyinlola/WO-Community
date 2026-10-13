@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
 from apps.adminconsole import (
+    audit_views,
     campaign_views,
     certificate_views,
     course_views,
@@ -523,6 +524,13 @@ urlpatterns = [
     path("admin/posts/<uuid:post_id>", oversight_views.AdminPostView.as_view(), name="admin-post"),
     path("admin/matches", oversight_views.AdminMatchesView.as_view(), name="admin-matches"),
     path("admin/analytics", oversight_views.AdminAnalyticsView.as_view(), name="admin-analytics"),
+    path("admin/audit", audit_views.AuditListView.as_view(), name="admin-audit"),
+    path("admin/audit/export", audit_views.AuditExportView.as_view(), name="admin-audit-export"),
+    path(
+        "admin/audit/<uuid:entry_id>",
+        audit_views.AuditEntryView.as_view(),
+        name="admin-audit-entry",
+    ),
     path("admin/roles", team_views.RolesView.as_view(), name="admin-roles"),
     path(
         "admin/members/<uuid:user_id>/role",

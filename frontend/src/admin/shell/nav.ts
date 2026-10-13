@@ -145,7 +145,7 @@ export const NAV: NavEntry[] = [
     children: [
       { id: "settings-main", label: "Settings", to: "/admin/settings" },
       { id: "lists", label: "Lists", to: "/admin/lists", needs: "reference.manage" },
-      { id: "audit", label: "Audit log", to: "/admin/audit", needs: "audit.read", soon: true },
+      { id: "audit", label: "Audit log", to: "/admin/audit", needs: "audit.read" },
     ],
   },
 ];

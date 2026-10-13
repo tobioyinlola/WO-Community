@@ -87,6 +87,208 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/audit:
+    get:
+      operationId: admin_audit_list
+      description: Filters combine. The log starts at deployment and cannot be edited.
+      summary: The audit log, newest first
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          default: ''
+          maxLength: 300
+      - in: query
+        name: actor
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: group
+        schema:
+          type: string
+          default: ''
+          maxLength: 200
+        description: 'Comma separated: members, content, jobs, events, courses, certificates,
+          settings, security.'
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: outcome
+        schema:
+          enum:
+          - success
+          - failure
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `success` - success
+          * `failure` - failure
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      - in: query
+        name: target_id
+        schema:
+          type: string
+          maxLength: 64
+      - in: query
+        name: target_type
+        schema:
+          type: string
+          maxLength: 100
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditEntryList'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+  /api/v1/admin/audit/{entry_id}:
+    get:
+      operationId: admin_audit_retrieve
+      summary: One audit entry with its before and after
+      parameters:
+      - in: path
+        name: entry_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEntryDetail'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such entry
+  /api/v1/admin/audit/export:
+    get:
+      operationId: admin_audit_export_retrieve
+      description: Up to 50000 rows, newest first. The export is itself recorded.
+      summary: Download the filtered audit log as CSV
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          default: ''
+          maxLength: 300
+      - in: query
+        name: actor
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      - in: query
+        name: cursor
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: group
+        schema:
+          type: string
+          default: ''
+          maxLength: 200
+        description: 'Comma separated: members, content, jobs, events, courses, certificates,
+          settings, security.'
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: outcome
+        schema:
+          enum:
+          - success
+          - failure
+          - ''
+          type: string
+          default: ''
+        description: |-
+          * `success` - success
+          * `failure` - failure
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      - in: query
+        name: target_id
+        schema:
+          type: string
+          maxLength: 64
+      - in: query
+        name: target_type
+        schema:
+          type: string
+          maxLength: 100
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: CSV file
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/blocked-domains:
     get:
       operationId: admin_blocked_domains_list
@@ -20031,6 +20233,134 @@ components:
       - name
       - registered_at
       - user_id
+    AuditActor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+      required:
+      - email
+      - id
+      - name
+      - roles
+    AuditChange:
+      type: object
+      properties:
+        field:
+          type: string
+        before:
+          nullable: true
+        after:
+          nullable: true
+      required:
+      - after
+      - before
+      - field
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        actor:
+          $ref: '#/components/schemas/AuditActor'
+        action:
+          type: string
+        target:
+          $ref: '#/components/schemas/AuditTarget'
+        outcome:
+          type: string
+        ip_ref:
+          type: string
+        request_id:
+          type: string
+        reason:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditChange'
+      required:
+      - action
+      - actor
+      - changes
+      - created_at
+      - id
+      - ip_ref
+      - outcome
+      - reason
+      - request_id
+      - target
+    AuditEntryDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        actor:
+          $ref: '#/components/schemas/AuditActor'
+        action:
+          type: string
+        target:
+          $ref: '#/components/schemas/AuditTarget'
+        outcome:
+          type: string
+        ip_ref:
+          type: string
+        request_id:
+          type: string
+        reason:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditChange'
+        before:
+          nullable: true
+        after:
+          nullable: true
+      required:
+      - action
+      - actor
+      - after
+      - before
+      - changes
+      - created_at
+      - id
+      - ip_ref
+      - outcome
+      - reason
+      - request_id
+      - target
+    AuditTarget:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        title:
+          type: string
+      required:
+      - id
+      - title
+      - type
     Author:
       type: object
       properties:
@@ -25733,6 +26063,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Attendee'
+    PaginatedAuditEntryList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
     PaginatedCampaignList:
       type: object
       required:

@@ -84,6 +84,7 @@ const AdminCourseRequests = lazy(() => import("./admin/CourseRequests"));
 const AdminEmail = lazy(() => import("./admin/Email"));
 const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
+const AuditLog = lazy(() => import("./admin/AuditLog"));
 const AdminFeed = lazy(() => import("./admin/AdminFeed"));
 const AdminJobApplications = lazy(() => import("./admin/JobApplications"));
 const AdminSessions = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringSessions })));
@@ -211,6 +212,7 @@ export function App() {
                     <Route path="jobs" element={<AdminJobs />} />
                     <Route path="wins" element={<AdminWins />} />
                     <Route path="feed" element={<AdminFeed />} />
+                    <Route path="audit" element={<AuditLog />} />
                     <Route path="job-applications" element={<AdminJobApplications />} />
                     <Route path="sessions" element={<AdminSessions />} />
                     <Route path="matches" element={<AdminMatches />} />

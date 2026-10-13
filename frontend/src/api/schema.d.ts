@@ -64,6 +64,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The audit log, newest first
+         * @description Filters combine. The log starts at deployment and cannot be edited.
+         */
+        get: operations["admin_audit_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One audit entry with its before and after */
+        get: operations["admin_audit_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the filtered audit log as CSV
+         * @description Up to 50000 rows, newest first. The export is itself recorded.
+         */
+        get: operations["admin_audit_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/blocked-domains": {
         parameters: {
             query?: never;
@@ -9101,6 +9158,53 @@ export interface components {
             /** Format: date-time */
             checked_in_at: string | null;
         };
+        AuditActor: {
+            /** Format: uuid */
+            id: string | null;
+            name: string;
+            email: string;
+            roles: string[];
+        };
+        AuditChange: {
+            field: string;
+            before: unknown;
+            after: unknown;
+        };
+        AuditEntry: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            actor: components["schemas"]["AuditActor"];
+            action: string;
+            target: components["schemas"]["AuditTarget"];
+            outcome: string;
+            ip_ref: string;
+            request_id: string;
+            reason: string;
+            changes: components["schemas"]["AuditChange"][];
+        };
+        AuditEntryDetail: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            actor: components["schemas"]["AuditActor"];
+            action: string;
+            target: components["schemas"]["AuditTarget"];
+            outcome: string;
+            ip_ref: string;
+            request_id: string;
+            reason: string;
+            changes: components["schemas"]["AuditChange"][];
+            before: unknown;
+            after: unknown;
+        };
+        AuditTarget: {
+            type: string;
+            id: string;
+            title: string;
+        };
         Author: {
             /** Format: uuid */
             id: string;
@@ -11707,6 +11811,19 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Attendee"][];
+        };
+        PaginatedAuditEntryList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["AuditEntry"][];
         };
         PaginatedCampaignList: {
             /** @example 123 */
@@ -15322,6 +15439,147 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_audit_list: {
+        parameters: {
+            query?: {
+                action?: string;
+                actor?: string;
+                cursor?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Comma separated: members, content, jobs, events, courses, certificates, settings, security. */
+                group?: string;
+                limit?: number;
+                /**
+                 * @description * `success` - success
+                 *     * `failure` - failure
+                 */
+                outcome?: "success" | "failure" | "";
+                q?: string;
+                target_id?: string;
+                target_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditEntryList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_audit_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntryDetail"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such entry */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_audit_export_retrieve: {
+        parameters: {
+            query?: {
+                action?: string;
+                actor?: string;
+                cursor?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Comma separated: members, content, jobs, events, courses, certificates, settings, security. */
+                group?: string;
+                limit?: number;
+                /**
+                 * @description * `success` - success
+                 *     * `failure` - failure
+                 */
+                outcome?: "success" | "failure" | "";
+                q?: string;
+                target_id?: string;
+                target_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
