@@ -532,3 +532,87 @@ def test_a_retried_event_does_not_send_a_second_email(as_admin, run_outbox, sent
     run_outbox()
     send_invitation_email.apply(args=[str(OutboxEvent.objects.get().pk)], throw=True)
     assert len(sent_emails) == 1
+
+
+# --- a list of addresses at once ---
+
+BATCH = f"{INVITES}/batch"
+CHECK = f"{INVITES}/check"
+
+
+def batch(client, emails, key="k1", **extra):
+    return client.post(BATCH, {"emails": emails, "idempotency_key": key, **extra}, format="json")
+
+
+def test_a_batch_reports_each_address(as_admin, make_user):
+    make_user(email="member@example.com")
+    invite(as_admin, "pending@example.com")
+    body = batch(
+        as_admin,
+        ["new@example.com", "NEW@example.com", "member@example.com", "pending@example.com", "bad"],
+    ).json()
+    by = {r["email"]: r for r in body["results"]}
+    assert by["new@example.com"]["result"] == "sent"
+    assert by["member@example.com"] == {
+        "email": "member@example.com",
+        "result": "skipped",
+        "reason": "Already a member",
+    }
+    assert by["pending@example.com"]["reason"] == "Invite pending"
+    assert by["bad"]["result"] == "skipped" and "valid" in by["bad"]["reason"]
+    assert (body["sent"], body["skipped"], len(body["results"])) == (1, 3, 4)  # duplicate merged
+    assert Invitation.objects.filter(email="new@example.com").count() == 1
+
+
+def test_a_batch_carries_the_role_and_note_and_is_audited(as_admin):
+    batch(as_admin, ["a@example.com"], role="mentor", message="Welcome aboard")
+    sent = Invitation.objects.get(email="a@example.com")
+    assert sent.role == "mentor" and sent.message == "Welcome aboard"
+    assert AuditLog.objects.filter(action="invitation.batch_sent").count() == 1
+
+
+def test_sending_a_batch_twice_with_one_key_sends_once(as_admin):
+    first = batch(as_admin, ["once@example.com"], key="same").json()
+    again = batch(as_admin, ["once@example.com"], key="same").json()
+    assert first == again and first["sent"] == 1
+    assert Invitation.objects.filter(email="once@example.com").count() == 1
+    assert AuditLog.objects.filter(action="invitation.batch_sent").count() == 1
+
+
+def test_a_batch_is_limited_and_validated(as_admin):
+    assert batch(as_admin, [f"u{n}@example.com" for n in range(201)]).status_code == 400
+    assert batch(as_admin, []).status_code == 400
+    assert batch(as_admin, ["a@example.com"], message="x" * 501).status_code == 400
+    assert batch(as_admin, ["a@example.com"], role="wizard").status_code == 400
+
+
+def test_a_community_admin_cannot_batch_invite_console_roles(as_admin):
+    assert batch(as_admin, ["a@example.com"], role="community_admin").status_code == 403
+
+
+def test_the_check_flags_members_pending_and_invalid_without_sending(as_admin, make_user):
+    make_user(email="member@example.com")
+    invite(as_admin, "pending@example.com")
+    before = Invitation.objects.count()
+    rows = as_admin.post(
+        CHECK,
+        {"emails": ["ok@example.com", "Member@example.com", "pending@example.com", "nope"]},
+        format="json",
+    ).json()
+    assert {r["email"]: r["state"] for r in rows} == {
+        "ok@example.com": "ok",
+        "member@example.com": "member",
+        "pending@example.com": "pending",
+        "nope": "invalid",
+    }
+    assert Invitation.objects.count() == before
+
+
+def test_batch_and_check_need_the_permission(make_user, client_for, api_client):
+    member = client_for(make_user())
+    for url, body in (
+        (BATCH, {"emails": ["a@example.com"], "idempotency_key": "k"}),
+        (CHECK, {"emails": ["a@example.com"]}),
+    ):
+        assert api_client.post(url, body, format="json").status_code == 401
+        assert member.post(url, body, format="json").status_code == 403

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from django.core.cache import cache
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import exceptions, status
 from rest_framework.request import Request
@@ -11,6 +12,10 @@ from apps.accounts import selectors, services
 from apps.adminconsole.serializers import (
     BulkInvitationSerializer,
     BulkReportSerializer,
+    InvitationBatchResultSerializer,
+    InvitationBatchSerializer,
+    InvitationCheckRowSerializer,
+    InvitationCheckSerializer,
     InvitationCreateSerializer,
     InvitationQuerySerializer,
     InvitationSerializer,
@@ -90,6 +95,57 @@ class InvitationBulkView(APIView):
             actor=_actor(request), csv_text=serializer.validated_data["csv"], ip=_ip(request)
         )
         return Response(BulkReportSerializer(report).data)
+
+
+class InvitationBatchView(APIView):
+    policy = MANAGE
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "admin_bulk"
+
+    @extend_schema(
+        summary="Invite a list of addresses and get a result for each",
+        description="Up to 200 at once. A repeated address is merged; an address that already "
+        "has an account or a live invitation is skipped with the reason. Sending the same "
+        "`idempotency_key` again returns the first answer and sends nothing new.",
+        request=InvitationBatchSerializer,
+        responses={200: InvitationBatchResultSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = InvitationBatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        actor = _actor(request)
+        key = f"invite-batch:{actor.pk}:{data['idempotency_key']}"
+        earlier = cache.get(key)
+        if earlier is not None:
+            return Response(earlier)
+        result = services.batch_create(
+            actor=actor,
+            emails=data["emails"],
+            role=data["role"],
+            message=data["message"],
+            ip=_ip(request),
+        )
+        body = InvitationBatchResultSerializer(result).data
+        cache.set(key, body, 24 * 3600)
+        return Response(body)
+
+
+class InvitationCheckView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        summary="Say which addresses could be invited, without sending anything",
+        request=InvitationCheckSerializer,
+        responses={200: InvitationCheckRowSerializer(many=True), **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request) -> Response:
+        serializer = InvitationCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rows = services.check_addresses(serializer.validated_data["emails"])
+        return Response(InvitationCheckRowSerializer(rows, many=True).data)
 
 
 class InvitationResendView(APIView):

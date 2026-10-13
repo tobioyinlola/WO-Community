@@ -498,6 +498,16 @@ urlpatterns = [
         name="admin-invitations",
     ),
     path(
+        "admin/invitations/batch",
+        invitation_views.InvitationBatchView.as_view(),
+        name="admin-invitations-batch",
+    ),
+    path(
+        "admin/invitations/check",
+        invitation_views.InvitationCheckView.as_view(),
+        name="admin-invitations-check",
+    ),
+    path(
         "admin/invitations/bulk",
         invitation_views.InvitationBulkView.as_view(),
         name="admin-invitations-bulk",
