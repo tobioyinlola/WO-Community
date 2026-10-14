@@ -1,8 +1,9 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Instagram, Linkedin, Menu, Twitter, X, Youtube, type LucideIcon } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { Logo } from "../components";
+import { useSideMenu } from "../lib/useSideMenu";
 import { SOCIAL_LINKS } from "../pages/public/landingContent";
 import { ArrowCircle } from "../ui/ArrowCircle";
 
@@ -25,6 +26,8 @@ export function PublicLayout() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const signedIn = status === "authenticated";
+  const closeMenu = useCallback(() => setOpen(false), []);
+  useSideMenu(open, closeMenu);
 
   // The floating header turns into a blurred, slightly see-through bar once the page has moved.
   useEffect(() => {
@@ -53,6 +56,7 @@ export function PublicLayout() {
         >
           {open ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
         </button>
+        <div className="wo-nav__scrim" data-open={open} onClick={closeMenu} aria-hidden="true" />
         <div id="site-panel" className="wo-nav__panel" data-open={open}>
           <ul className="wo-nav__links">
             {LINKS.map((link) => (
@@ -61,7 +65,7 @@ export function PublicLayout() {
                   to={link.to}
                   end={link.end}
                   className="wo-nav__link"
-                  onClick={() => setOpen(false)}
+                  onClick={closeMenu}
                 >
                   {link.label}
                 </NavLink>
@@ -70,16 +74,16 @@ export function PublicLayout() {
           </ul>
           <div className="wo-nav__tail">
             {signedIn ? (
-              <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/app">
+              <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/app" onClick={closeMenu}>
                 Open the app
                 <ArrowCircle />
               </Link>
             ) : (
               <>
-                <Link className="wo-btn wo-btn--on-brand wo-btn--sm" to="/login">
+                <Link className="wo-btn wo-btn--on-brand wo-btn--sm" to="/login" onClick={closeMenu}>
                   Sign in
                 </Link>
-                <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/register">
+                <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/register" onClick={closeMenu}>
                   Request access
                   <ArrowCircle />
                 </Link>

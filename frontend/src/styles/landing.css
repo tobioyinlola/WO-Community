@@ -56,11 +56,25 @@
     box-shadow var(--duration-base) var(--ease-standard),
     backdrop-filter var(--duration-base) var(--ease-standard);
 }
+.site-head.wo-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--bg-brand);
+  transition:
+    background-color var(--duration-base) var(--ease-standard),
+    backdrop-filter var(--duration-base) var(--ease-standard);
+}
 .site-head.wo-nav[data-scrolled="true"] {
+  background: transparent;
+  box-shadow: var(--shadow-md);
+}
+.site-head.wo-nav[data-scrolled="true"]::before {
   background: color-mix(in srgb, var(--bg-brand) 86%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   backdrop-filter: blur(14px) saturate(1.2);
-  box-shadow: var(--shadow-md);
 }
 .site-head > a:first-child {
   color: var(--text-on-brand);
@@ -72,11 +86,6 @@
 @media (max-width: 767px) {
   .site-head.wo-nav {
     padding: 0 var(--space-3) 0 var(--space-4);
-  }
-  .site-head .wo-nav__panel {
-    top: calc(100% + var(--space-2));
-    border: var(--stroke-1) solid var(--border-on-brand);
-    border-radius: var(--radius-xl);
   }
 }
 
@@ -257,6 +266,7 @@ a.wo-card .wo-card__title {
 }
 @media (prefers-reduced-motion: reduce) {
   .site-head.wo-nav,
+  .site-head.wo-nav::before,
   .wo-btn__arrow svg {
     transition: none;
   }

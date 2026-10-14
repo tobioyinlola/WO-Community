@@ -53,7 +53,8 @@
 
 /* Top nav under 768px: the mark alone and the links behind a menu button. */
 .wo-nav__logo--mark,
-.wo-nav__menu {
+.wo-nav__menu,
+.wo-nav__scrim {
   display: none;
 }
 .wo-nav__panel {
@@ -71,34 +72,87 @@
   .wo-nav__logo--mark {
     display: block;
   }
+  /* The menu button stays put and sits above the drawer, so the same button opens and closes it. */
   .wo-nav__menu {
     display: inline-flex;
     margin-left: auto;
+    position: relative;
+    z-index: calc(var(--z-overlay) + 2);
   }
+  /* The menu slides in from the right edge over a dimmed page. Closed, it is off screen and hidden
+     from keyboards and screen readers. */
   .wo-nav__panel {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
+    display: flex;
+    position: fixed;
+    top: 0;
     right: 0;
+    bottom: 0;
+    left: auto;
+    width: min(86vw, 360px);
     flex-direction: column;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--page-margin) var(--space-6);
+    gap: var(--space-6);
+    padding: 88px var(--space-6) var(--space-8);
+    overflow-y: auto;
     background: var(--bg-canvas);
-    border-bottom: var(--stroke-1) solid var(--border-default);
-    box-shadow: var(--shadow-md);
-    z-index: var(--z-dropdown);
+    border-left: var(--stroke-1) solid var(--border-default);
+    box-shadow: var(--shadow-lg);
+    z-index: calc(var(--z-overlay) + 1);
+    transform: translateX(100%);
+    visibility: hidden;
+    transition:
+      transform var(--duration-base) var(--ease-standard),
+      visibility 0s linear var(--duration-base);
   }
   .wo-nav--brand .wo-nav__panel {
     background: var(--bg-brand);
-    border-bottom-color: var(--border-on-brand);
+    border-left-color: var(--border-on-brand);
   }
   .wo-nav__panel[data-open="true"] {
-    display: flex;
+    transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .wo-nav__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: var(--bg-overlay);
+    z-index: var(--z-overlay);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--duration-base) var(--ease-standard),
+      visibility 0s linear var(--duration-base);
+  }
+  .wo-nav__scrim[data-open="true"] {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
   }
   .wo-nav__links {
     flex-direction: column;
-    gap: var(--space-2);
+    flex: none;
+    gap: var(--space-1);
+  }
+  .wo-nav__link {
+    display: block;
+    padding: var(--space-3) 0;
+    font-size: 18px;
+    line-height: 24px;
+  }
+  .wo-nav__tail {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+  .wo-nav__tail .wo-btn {
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wo-nav__panel,
+  .wo-nav__scrim {
+    transition: none;
   }
 }
 @media (max-width: 640px) {
