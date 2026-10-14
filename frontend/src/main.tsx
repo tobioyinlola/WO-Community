@@ -9,6 +9,7 @@ import "./styles/components.css";
 import "./styles/extras.css";
 import "./styles/app.css";
 import "./styles/landing.css";
+import "./styles/landing-sections.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { cx } from "../lib/cx";
 
 type Phase = "pending" | "revealing" | "done";
@@ -7,8 +7,8 @@ type Phase = "pending" | "revealing" | "done";
  * Fades its children in with a 12px rise the first time it scrolls into view, each child 60ms after
  * the one before. With reduced motion, or no IntersectionObserver, everything is simply shown.
  */
-export function Reveal({ className, children }: { className?: string; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
+export function Reveal({ className, children, as = "div" }: { className?: string; children: ReactNode; as?: "div" | "ol" | "ul" }) {
+  const ref = useRef<HTMLElement>(null);
   const [phase, setPhase] = useState<Phase>("pending");
 
   useEffect(() => {
@@ -38,9 +38,5 @@ export function Reveal({ className, children }: { className?: string; children: 
     };
   }, []);
 
-  return (
-    <div ref={ref} className={cx("reveal", className)} data-reveal={phase}>
-      {children}
-    </div>
-  );
+  return createElement(as, { ref, className: cx("reveal", className), "data-reveal": phase }, children);
 }
