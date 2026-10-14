@@ -39,7 +39,7 @@ EMAIL_ADAPTERS = (
 TOOLKIT_TOOLS = ("score", "plan", "forecast", "decks", "prototypes", "partner")
 
 SECRET_HINT = (
-    'python -c "import secrets; print(secrets.token_urlsafe(64))"'  # noqa: S105 - a command
+    'python -c "import secrets; print(secrets.token_urlsafe(64))"'  # noqa: S105  # nosec B105
 )
 FERNET_HINT = (
     'python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
