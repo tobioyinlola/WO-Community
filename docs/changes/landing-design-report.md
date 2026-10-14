@@ -32,7 +32,7 @@ layout; fluid type; reveals and drawing are off under `prefers-reduced-motion`.
   `frontend/tools/landing-capture.mjs`, `frontend/tools/landing-contrast.mjs`.
 - Docs: this report, the plan, the media list, and `landing-screenshots/`.
 
-## Structure check
+## Structure check (the first restyle; round two adds sections, see below)
 
 `tools/landing-capture.mjs` records every heading, link, button and paragraph of the header, the page
 and the footer. Before and after are **identical**
@@ -78,22 +78,45 @@ moved when the display font swapped in. Preloading the font fixed it.
 `after-360-menu-open.png`. The app is light only (a decision in `ThemeProvider`), so the dark theme is
 checked by setting `data-theme="dark"` directly; no visitor can reach it today.
 
-## Not applied (no matching section, and nothing was added)
+## Round two: the treatments that had no section, and the suggestions
 
-Stats bento, problem and solution cards, steps with a connecting line, testimonials, FAQ accordion,
-carousel with round arrows, round social icon buttons. The six feature cards have no links, so they do
-not get the tag chip and pill button of the reference list cards. This also means the carousel,
-accordion and count-up code the brief mentions does not exist, and so has no tests.
+Added at the request of the owner, in page order: hero, **numbers**, **what you get (carousel)**,
+**steps**, **on your own or in the community**, membership band, **member quotes (when there are
+any)**, events and news, **questions**, footer (with **social buttons** when there are links).
 
-## Suggestions (structural, not made)
+| Addition | What it is | Where the content comes from |
+|----------|------------|------------------------------|
+| Numbers bento | Four rounded tiles with very large numerals: one soft gradient tile, one white, two sand. They count up once when scrolled into view (the real figure is always in the page for screen readers; static with reduced motion). Each tile links to what it counts. | A new public endpoint, `GET /api/v1/public/stats`, that counts what a visitor can see: startups listed, founders listed, courses open to visitors and open roles (the same lists as the sitemap). Nothing about individual members. A zero count is left out, and the block disappears if fewer than two remain. |
+| Feature carousel | The six cards are now a scroll-snap row with a partly visible next card, round Previous and Next buttons, arrow keys and touch. Each card has a picture slot, a tag chip, a circular icon badge, the same title and text, and a pill button with an arrow that goes to the page it is about: Explore founders, courses, jobs or events, and Request access for mentors and the toolkit (which are for members). | The existing card copy. Tags are the area names (Directory, Mentors, Launch toolkit, Courses, Jobs, Events). |
+| Steps | Four numbered steps joined by a thin line (vertical on phones). | Restates the sign up and approval flow the site already describes. |
+| On your own, or in the community | Three rows: a muted dark card with a number and a red cross, an arrow, and a bright gold card with a number and a check; stacked on phones. | The right hand side is the existing feature copy. **The left hand side (the three "on your own" sentences) is new wording and should be read and approved by the owner.** |
+| Questions | A rounded accordion: circular chevrons, a dark filled chevron on the open one, one open at a time, smooth height, `button`, `aria-expanded` and `aria-controls`. | Six answers, each restating something the site already says (who can join, what happens after a request, profile control, mentors, jobs, support). No timings, prices or promises were invented. |
+| Member quotes | A carousel of rounded quote cards. | **Nothing is shown yet.** There are no real quotes to use and none were invented. The section appears when real, approved quotes are added to `TESTIMONIALS` in `frontend/src/pages/public/landingContent.ts`. |
+| Footer social buttons | Round icon buttons that open in a new tab. | **Nothing is shown yet.** The community's own addresses were not available. Add them to `SOCIAL_LINKS` in the same file (LinkedIn, X, Instagram, YouTube are supported). |
+| Meta description | A description for search results in `index.html`. | Taken from the README's own description. |
+| `robots.txt` | Allows the public site; keeps crawlers out of `/app`, `/admin` and shared links. | |
 
-- A stats row (members, mentors, events) would suit the bento treatment, if real figures can be shown.
-- A short FAQ would use the accordion treatment and could answer how admission works.
-- Social links in the footer, if the community has channels, for the round icon buttons.
-- Link each feature card to the page it describes (Explore, Learn, Jobs, Events) so they can carry the
-  pill button with an arrow.
-- SEO is 82 before and after. Lighthouse names two causes: the page has no meta description, and there is
-  no valid `robots.txt` (the site answers that address with the app's page). Adding both would raise it.
+Tests added: unit tests for the accordion, carousel, count-up, the numbers (shown, linked, hidden at
+zero), the feature links, quotes and social links (absent, then present), and a content guard that any
+future quote or link is complete and https; browser tests for the numbers, the carousel with buttons
+and arrow keys, the feature links, the one-at-a-time questions, and the meta description and
+`robots.txt`. The width, axe and contrast tests cover the new sections in both themes.
+
+Measured again after round two (Lighthouse mobile, median of five runs): performance **93** (91
+before the redesign), accessibility **100** (100), best practices **96** (96), SEO **100** (82; the
+meta description and `robots.txt` fixed it), layout shift **0** (0.012), largest contentful paint
+2787 ms (2786 ms). Axe color-contrast: 0 violations and 134 pairings passed in each theme. The
+undecided ones are decorative (the hero frame wordmark, the faded footer wordmark) or sit on the soft
+gradient tile, which was worked out by hand: text on that tile is at least 6.3:1 in the light theme and
+6.9:1 in the dark theme.
+
+The original page is intact: every heading, link, button and paragraph of the first version is still
+present, and the title is unchanged. The additions are listed by `tools/landing-capture.mjs`.
+
+## Still not done
+
+- Round social icon buttons and member quotes need real content (see above).
+- Picture slots on the feature cards still show the placeholder (see the media list).
 
 ## Unfinished
 

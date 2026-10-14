@@ -53,3 +53,11 @@ treatments are not applied and nothing is added in their place.
 
 Stats bento, problem and solution cards, steps with a connecting line, testimonials, FAQ accordion,
 carousel with arrows, round social icon buttons (the footer has no social links to restyle).
+
+## Round two (added on request)
+
+The treatments listed above as not applied were added afterwards, along with the suggestions: stats
+bento (from a new public counts endpoint), the feature cards as a linked carousel, steps, on your own
+or in the community, a questions accordion, member quotes and footer social buttons (both shown only
+when real content is supplied), a meta description and `robots.txt`. See the report for details and
+for which words are new and need the owner's approval.
