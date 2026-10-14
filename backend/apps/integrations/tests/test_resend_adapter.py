@@ -359,3 +359,49 @@ def test_every_recipient_gets_its_own_event(adapter):
 )
 def test_unknown_or_incomplete_events_are_ignored(adapter, payload):
     assert adapter.parse_event(payload) == []
+
+
+# --- configuration messages, and the key stays out of logs ---
+
+
+def test_the_missing_key_message_names_the_variable_and_the_adapter(settings):
+    settings.RESEND_API_KEY = ""
+    with pytest.raises(ImproperlyConfigured, match="RESEND_API_KEY.*Resend adapter"):
+        ResendEmailAdapter()
+
+
+def test_a_sender_that_is_not_an_address_says_which_variables_to_set(settings):
+    settings.EMAIL_FROM_TRANSACTIONAL = "WO Community"
+    with pytest.raises(EmailMisconfigured, match="DEFAULT_FROM_EMAIL"):
+        make(Recorder()).send(MESSAGE)
+
+
+def test_a_missing_webhook_secret_is_logged_by_name_and_nothing_verifies(adapter, settings):
+    from structlog.testing import capture_logs
+
+    settings.RESEND_WEBHOOK_SECRET = ""
+    with capture_logs() as logs:
+        assert adapter.verify_webhook(b"{}", {"svix-id": "a", "svix-timestamp": "1"}) is False
+    assert any(
+        entry["event"] == "email_webhook_secret_missing"
+        and entry["variable"] == "RESEND_WEBHOOK_SECRET"
+        for entry in logs
+    )
+
+
+def test_the_api_key_never_appears_in_logs_or_errors(settings):
+    from structlog.testing import capture_logs
+
+    key = "re_super_secret_key_value"  # noqa: S105 - a made up value
+    settings.RESEND_API_KEY = key
+    seen: list[str] = []
+    recorder = Recorder(
+        lambda request: httpx.Response(401, json={"name": "restricted_api_key", "message": "no"})
+    )
+    with capture_logs() as logs:
+        try:
+            make(recorder).send(MESSAGE)
+        except EmailMisconfigured as exc:
+            seen.append(str(exc))
+    seen.append(repr(logs))
+    assert all(key not in text for text in seen)

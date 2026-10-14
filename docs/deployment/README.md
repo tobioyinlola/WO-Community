@@ -7,6 +7,7 @@ Resend and files sit in Cloudflare R2. The app is at `app.<domain>` and the API 
 |------|-----|
 | [audit.md](audit.md) | What assumed a developer machine, and what was changed |
 | [railway.md](railway.md) | API, worker (Celery and scheduler), PostgreSQL, Redis, ClamAV, variables |
+| [railway-variables.md](railway-variables.md) | Every variable for the API and the worker, how to generate the secrets and keys, `check_env` |
 | [vercel.md](vercel.md) | The front end and `VITE_API_URL` |
 | [cloudflare-r2.md](cloudflare-r2.md) | Buckets, public images, private files, CORS |
 | [resend.md](resend.md) | Sending, webhook, suppression, warm up |

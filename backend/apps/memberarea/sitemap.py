@@ -13,6 +13,21 @@ def _entries(rows: list[dict[str, Any]], prefix: str, stamp: str = "updated_at")
     return [{"path": f"{prefix}/{row['slug']}", "lastmod": row.get(stamp)} for row in rows]
 
 
+def counts() -> dict[str, Any]:
+    """How many public pages of each kind there are: the same lists the sitemap is made from.
+
+    Also the countries listed founders are in (up to ten), so the landing page can show them.
+    """
+    people = directory.sitemap()
+    return {
+        "startups": len(people["startups"]),
+        "founders": len(people["founders"]),
+        "courses": len(learning.public_sitemap()),
+        "jobs": len(jobs.public_sitemap()),
+        "countries": directory.founder_countries(10),
+    }
+
+
 def build() -> dict[str, list[dict[str, Any]]]:
     people = directory.sitemap()
     return {
