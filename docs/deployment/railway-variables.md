@@ -52,9 +52,8 @@ It prints four lines, `NAME=value`, and writes nothing to disk:
 **JWT key format.** The code reads each key as PEM text. In Railway paste it as **one line with a
 literal backslash and `n` between the lines**, with no quotes:
 
-```
------BEGIN PRIVATE KEY-----\nMC4CAQAw...\n-----END PRIVATE KEY-----
-```
+The pieces, in order, with nothing between them but a written `\n`: the BEGIN line, the key text,
+the END line. The generator prints it ready to paste; you never have to join the lines yourself.
 
 The settings turn each `\n` back into a line break. A value with real line breaks also works where the
 Railway editor keeps them, but the one line form is the safe one. It is not base64: do not encode it.
@@ -77,8 +76,8 @@ to rotate, put the new key in front and keep the old one after a comma, or store
 | `API_BASE_URL` | This API, https, no path. Used in unsubscribe links. | `https://api.example.com` | Your API domain |
 | `CORS_ALLOWED_ORIGINS` | Origins the browser may call the API from, comma separated, https only. | `https://app.example.com` | Your front end domain |
 | `NUM_PROXIES` | Proxy hops before the API. Must be at least 1 or every visitor shares one rate limit. | `1` | Always `1` on Railway |
-| `JWT_PRIVATE_KEY` | Signs access tokens (EdDSA). See the format above. | `-----BEGIN PRIVATE KEY-----\n...` | `scripts/generate_secrets.py` |
-| `JWT_PUBLIC_KEY` | Verifies them. Must match the private key. | `-----BEGIN PUBLIC KEY-----\n...` | `scripts/generate_secrets.py` |
+| `JWT_PRIVATE_KEY` | Signs access tokens (EdDSA). See the format above. | one line, starting with the BEGIN line | `scripts/generate_secrets.py` |
+| `JWT_PUBLIC_KEY` | Verifies them. Must match the private key. | one line, starting with the BEGIN line | `scripts/generate_secrets.py` |
 | `FIELD_ENCRYPTION_KEYS` | Encrypts sensitive fields at rest. | (44 characters) | `scripts/generate_secrets.py` |
 | `EMAIL_ADAPTER` | Which email sender is used. See "Email" below. | `apps.integrations.email.resend.ResendEmailAdapter` | The list below |
 | `STORAGE_ADAPTER` | File storage class. | `apps.integrations.storage.s3.S3Storage` | [cloudflare-r2.md](cloudflare-r2.md) |
