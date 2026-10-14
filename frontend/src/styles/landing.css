@@ -168,8 +168,8 @@
   }
 }
 
-/* On a phone the hero text and buttons are centred over the picture. */
-@media (max-width: 767px) {
+/* Wherever the hero folds to one column (phones and tablets), its text and buttons are centred. */
+@media (max-width: 1023px) {
   .site-hero__copy {
     text-align: center;
   }
