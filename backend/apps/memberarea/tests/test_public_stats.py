@@ -24,8 +24,9 @@ def test_counts_what_a_visitor_can_see_and_nothing_else(api_client, make_user):
 
 
 def test_countries_come_only_from_founders_who_made_their_location_public(
-    api_client, listed
-):  # noqa: F811
+    api_client,
+    listed,  # noqa: F811
+):
     listed("Acme", country="NG", founder_location_public=True)
     listed("Beta", country="NG", founder_location_public=True)
     listed("Cedar", country="GH", founder_location_public=True)
