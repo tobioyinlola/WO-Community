@@ -293,3 +293,51 @@ def test_the_secrets_script_prints_values_the_check_accepts():
     checked = check(lambda name: values.get(name, ""))
     assert not [f for f in checked.problems if f.name in values]
     assert not [f for f in checked.warnings if f.name in values]
+
+
+def test_one_default_from_address_stands_in_for_both_senders():
+    both_gone = {"EMAIL_FROM_TRANSACTIONAL": None, "EMAIL_FROM_MARKETING": None}
+    missing = report(**both_gone)
+    assert {"EMAIL_FROM_TRANSACTIONAL", "EMAIL_FROM_MARKETING"} <= named(missing)
+    assert "DEFAULT_FROM_EMAIL" in render(missing)
+    covered = report(**both_gone, DEFAULT_FROM_EMAIL="WO Community <hello@mail.example.com>")
+    assert covered.ok, render(covered)
+
+
+def test_a_from_address_without_an_at_sign_is_refused():
+    assert "EMAIL_FROM_TRANSACTIONAL" in named(report(EMAIL_FROM_TRANSACTIONAL="WO Community"))
+    assert "EMAIL_FROM_TRANSACTIONAL" in named(
+        report(EMAIL_FROM_TRANSACTIONAL=None, DEFAULT_FROM_EMAIL="hello")
+    )
+
+
+def test_every_resend_variable_is_reported_together_with_the_adapter_chosen():
+    result = report(
+        RESEND_API_KEY=None,
+        RESEND_WEBHOOK_SECRET=None,
+        EMAIL_FROM_TRANSACTIONAL=None,
+        EMAIL_FROM_MARKETING=None,
+    )
+    assert named(result) == {
+        "RESEND_API_KEY",
+        "RESEND_WEBHOOK_SECRET",
+        "EMAIL_FROM_TRANSACTIONAL",
+        "EMAIL_FROM_MARKETING",
+    }
+
+
+def test_the_settings_take_the_default_from_address_when_a_stream_has_none(monkeypatch):
+    import importlib
+
+    monkeypatch.delenv("EMAIL_FROM_TRANSACTIONAL", raising=False)
+    monkeypatch.delenv("EMAIL_FROM_MARKETING", raising=False)
+    monkeypatch.setenv("DEFAULT_FROM_EMAIL", "WO Community <hello@mail.example.com>")
+    from config.settings import base
+
+    reloaded = importlib.reload(base)
+    try:
+        assert reloaded.EMAIL_FROM_TRANSACTIONAL == "WO Community <hello@mail.example.com>"
+        assert reloaded.EMAIL_FROM_MARKETING == "WO Community <hello@mail.example.com>"
+    finally:
+        monkeypatch.delenv("DEFAULT_FROM_EMAIL")
+        importlib.reload(base)

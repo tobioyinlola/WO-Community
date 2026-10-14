@@ -64,7 +64,10 @@ class ResendEmailAdapter(EmailAdapter):
     def __init__(self, client: httpx.Client | None = None) -> None:
         if client is None:
             if not settings.RESEND_API_KEY:
-                raise ImproperlyConfigured("RESEND_API_KEY is not set")
+                raise ImproperlyConfigured(
+                    "RESEND_API_KEY is not set. "
+                    "It is required when EMAIL_ADAPTER is the Resend adapter."
+                )
             client = _shared_client(settings.RESEND_API_KEY)
         self.client = client
 
@@ -77,6 +80,12 @@ class ResendEmailAdapter(EmailAdapter):
             if message.stream == MARKETING
             else settings.EMAIL_FROM_TRANSACTIONAL
         )
+        if "@" not in sender:
+            raise EmailMisconfigured(
+                "The sending address is not an email address. Set EMAIL_FROM_TRANSACTIONAL and "
+                "EMAIL_FROM_MARKETING, or DEFAULT_FROM_EMAIL, to a verified Resend domain, "
+                "for example WO Community <hello@mail.example.com>."
+            )
         payload: dict[str, Any] = {
             "from": sender,
             "to": [message.to],
@@ -148,7 +157,10 @@ class ResendEmailAdapter(EmailAdapter):
         delivery_id = headers.get("svix-id", "")
         timestamp = headers.get("svix-timestamp", "")
         signatures = headers.get("svix-signature", "")
-        if not (secret and delivery_id and timestamp and signatures):
+        if not secret:
+            logger.error("email_webhook_secret_missing", variable="RESEND_WEBHOOK_SECRET")
+            return False
+        if not (delivery_id and timestamp and signatures):
             return False
         try:
             if abs(time.time() - int(timestamp)) > WEBHOOK_TOLERANCE_SECONDS:
