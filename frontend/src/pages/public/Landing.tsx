@@ -128,7 +128,7 @@ export function Landing() {
         <div className="wo-container">
           <div className="site-hero__card wo-on-brand">
           <div className="site-hero__grid">
-            <div>
+            <div className="site-hero__copy">
               <span className="wo-eyebrow">WO Community</span>
               <h1 className="display-xl site-hero__title" id="hero-title">
                 The future of Africa is being <span className="wo-hl">built</span> here.
