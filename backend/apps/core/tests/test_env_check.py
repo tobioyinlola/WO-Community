@@ -112,7 +112,6 @@ def test_an_empty_environment_lists_all_the_required_variables():
         "STORAGE_ADAPTER",
         "MALWARE_SCANNER",
         "MEDIA_BASE_URL",
-        "MEETING_GOOGLE_MEET_ADAPTER",
         "AI_PROVIDER",
         "RESEARCH_PROVIDER",
     ):
@@ -150,7 +149,6 @@ def test_an_empty_environment_lists_all_the_required_variables():
         ({"EMAIL_FROM_MARKETING": "community"}, "EMAIL_FROM_MARKETING", "email address"),
         ({"STORAGE_SECRET_ACCESS_KEY": None}, "STORAGE_SECRET_ACCESS_KEY", "required"),
         ({"STORAGE_UPLOAD_METHOD": "form"}, "STORAGE_UPLOAD_METHOD", "'post' or 'put'"),
-        ({"MEETING_GOOGLE_MEET_ADAPTER": None}, "MEETING_GOOGLE_MEET_ADAPTER", "fake"),
         ({"GOOGLE_MEET_REFRESH_TOKEN": None}, "GOOGLE_MEET_REFRESH_TOKEN", "required"),
         ({"AI_PROVIDER": "fake"}, "AI_PROVIDER", "real provider"),
         ({"AI_API_KEY": None}, "AI_API_KEY", "required"),
@@ -174,6 +172,20 @@ def test_the_public_key_must_belong_to_the_private_key():
 
 def test_keys_may_also_be_written_with_real_line_breaks():
     assert report(JWT_PRIVATE_KEY=_PRIVATE, JWT_PUBLIC_KEY=_PUBLIC).ok
+
+
+def test_google_meet_is_optional_and_only_warns_when_left_out():
+    gone = dict.fromkeys(
+        (
+            "MEETING_GOOGLE_MEET_ADAPTER",
+            "GOOGLE_MEET_CLIENT_ID",
+            "GOOGLE_MEET_CLIENT_SECRET",
+            "GOOGLE_MEET_REFRESH_TOKEN",
+        )
+    )
+    result = report(**gone)
+    assert result.ok, render(result)
+    assert any(w.name == "MEETING_GOOGLE_MEET_ADAPTER" for w in result.warnings)
 
 
 def test_the_fake_email_adapter_starts_but_warns_that_nothing_is_sent():

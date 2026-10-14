@@ -84,7 +84,6 @@ to rotate, put the new key in front and keep the old one after a comma, or store
 | `STORAGE_ADAPTER` | File storage class. | `apps.integrations.storage.s3.S3Storage` | [cloudflare-r2.md](cloudflare-r2.md) |
 | `MALWARE_SCANNER` | Upload virus scanner class. | `apps.integrations.malware.clamd.ClamdScanner` | [railway.md](railway.md) step 4 |
 | `MEDIA_BASE_URL` | Public https address of the media bucket. | `https://media.example.com` | [cloudflare-r2.md](cloudflare-r2.md) |
-| `MEETING_GOOGLE_MEET_ADAPTER` | The default meeting provider must be a real one (the fake is refused). | `apps.integrations.meetings.google.GoogleMeetProvider` | Fixed value; or use Zoom (below) |
 | `AI_PROVIDER`, or the six `TOOLKIT_FEATURE_*` switched off | The launch toolkit needs a real model, or every tool off. | `http`, or `TOOLKIT_FEATURE_SCORE=false` and five more | See "Launch toolkit" below |
 | `RESEARCH_PROVIDER` (unless every tool is off) | Source for toolkit research. | `apps.toolkit.ai.research.web.WebResearchProvider` | Fixed value |
 
@@ -97,8 +96,6 @@ to rotate, put the new key in front and keep the old one after a comma, or store
 | `EMAIL_FROM_TRANSACTIONAL` | Resend | From address for account mail. | `WO Community <no-reply@mail.example.com>` on a verified domain |
 | `EMAIL_FROM_MARKETING` | Resend | From address for newsletters (a different subdomain). | `WO Community <community@news.example.com>` |
 | `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` | `S3Storage` | Bucket credentials. | Cloudflare R2, API tokens |
-| `GOOGLE_MEET_CLIENT_ID`, `GOOGLE_MEET_CLIENT_SECRET`, `GOOGLE_MEET_REFRESH_TOKEN` | Google Meet adapter | Makes meeting links for mentoring sessions. | Google Cloud console |
-| `MEETING_DEFAULT_PROVIDER=zoom`, `MEETING_ZOOM_ADAPTER=apps.integrations.meetings.zoom.ZoomProvider`, `ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET` | Zoom instead of Google Meet | Same job. | Zoom marketplace, Server-to-Server OAuth |
 | `AI_BASE_URL`, `AI_API_KEY` | `AI_PROVIDER=http` | An OpenAI compatible API. | Your model provider |
 | `RESEARCH_ALLOWED_DOMAINS` | `WebResearchProvider` | Sites research may read, comma separated. | You choose, for example `data.example.org` |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, `CDN_ORIGIN_URL` | `CDN_PURGER` is `apps.integrations.cdn.cloudflare.CloudflarePurger` | Clears the cached copy of a changed public page. | Cloudflare dashboard |
@@ -125,6 +122,7 @@ to rotate, put the new key in front and keep the old one after a comma, or store
 | `WEB_CONCURRENCY`, `GUNICORN_THREADS`, `GUNICORN_TIMEOUT`, `FORWARDED_ALLOW_IPS` | CPU based, `2`, `30`, `*` | Gunicorn tuning (API only). `PORT` is set by Railway. |
 | `ADMIN_PASSWORD` | asked for | Read by `manage.py create_super_admin`. Set it only for that one command. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_TRACE_SAMPLE_RATIO` | empty, `0.1` | Tracing. |
+| `MEETING_DEFAULT_PROVIDER`, `MEETING_GOOGLE_MEET_ADAPTER`, `GOOGLE_MEET_CLIENT_ID`, `GOOGLE_MEET_CLIENT_SECRET`, `GOOGLE_MEET_REFRESH_TOKEN` (or the `MEETING_ZOOM_ADAPTER` and `ZOOM_*` ones) | none: made-up links | Video links for mentoring sessions. Not needed to start. Without them booked sessions get made-up meeting links (the check warns); set a real provider and its credentials when mentoring goes live. |
 | `LOCAL_PRODUCTION_RUN` | `false` | Trial run on one machine only (see [local-production-run.md](local-production-run.md)). Never on a real deployment. |
 
 The remaining tuning values (`AI_MODEL_*`, `FEED_*_PER_DAY`, `CAMPAIGN_BATCH_*`, `DECK_*`, `PLAN_VERSIONS_KEPT`,

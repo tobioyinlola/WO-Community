@@ -90,7 +90,7 @@ lists everything that is missing at once.
 | `STORAGE_ADAPTER` | `apps.integrations.storage.s3.S3Storage` |
 | `STORAGE_ENDPOINT_URL`, `STORAGE_REGION`, `STORAGE_UPLOAD_METHOD`, keys, buckets, `MEDIA_BASE_URL` | from [cloudflare-r2.md](cloudflare-r2.md) |
 | `MALWARE_SCANNER`, `CLAMD_HOST`, `CLAMD_PORT` | from step 4 |
-| `MEETING_DEFAULT_PROVIDER` and its credentials | a real provider; the fake one is refused |
+| `MEETING_DEFAULT_PROVIDER` and its credentials | optional: without a real provider booked sessions get made-up meeting links |
 | `AI_PROVIDER` and its keys, or `TOOLKIT_FEATURE_<NAME>=false` for each tool | the toolkit needs one or the other |
 | `SENTRY_DSN`, `ENVIRONMENT=production`, `RELEASE` | optional |
 
