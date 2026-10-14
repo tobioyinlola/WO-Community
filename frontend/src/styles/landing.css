@@ -119,9 +119,9 @@
   position: relative;
   justify-self: center;
   width: min(100%, 380px);
-  /* The picture hangs over the card's lower edge: out through the card's padding and 56px beyond. */
-  align-self: end;
-  margin-block: 0 calc(-1 * clamp(var(--space-8), 6vw, var(--space-20)) - 56px);
+  /* The picture sits inside the card, centred beside the text, with its outline clear of the edge. */
+  align-self: center;
+  margin-block: var(--space-4);
 }
 .site-hero__frame {
   max-width: none;
@@ -129,9 +129,10 @@
 }
 .site-hero__line {
   position: absolute;
-  inset: calc(-1 * var(--space-4)) calc(-1 * var(--space-5));
-  width: calc(100% + 2 * var(--space-5));
-  height: calc(100% + 2 * var(--space-4));
+  /* Exactly over the frame (both are 4:5), so the gold outline sits inside it on every side. */
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   overflow: visible;
 }
@@ -164,7 +165,7 @@
   .site-hero__art {
     width: min(100%, 300px);
     align-self: auto;
-    margin-block: var(--space-4) calc(-1 * clamp(var(--space-8), 6vw, var(--space-20)) - 56px);
+    margin-block: var(--space-4) 0;
   }
 }
 
