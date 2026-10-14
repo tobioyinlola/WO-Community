@@ -168,6 +168,19 @@
   }
 }
 
+/* On a phone the hero text and buttons are centred over the picture. */
+@media (max-width: 767px) {
+  .site-hero__copy {
+    text-align: center;
+  }
+  .site-hero__lead {
+    margin-inline: auto;
+  }
+  .site-hero__copy .app-cluster {
+    justify-content: center;
+  }
+}
+
 /* ---------- sections ---------- */
 .site-band {
   padding: clamp(var(--space-16), 8vw, var(--space-24)) 0;
