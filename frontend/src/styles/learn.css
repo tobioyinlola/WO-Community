@@ -1214,3 +1214,20 @@ a.wo-curriculum__row[data-done="true"] svg {
   font-weight: 700;
   overflow-wrap: anywhere;
 }
+
+/* Add course: modules can be dragged into order. Up and Down buttons do the same without a mouse. */
+.wo-module__grip {
+  display: inline-flex;
+  align-items: center;
+  margin-right: var(--space-2);
+  color: var(--text-secondary);
+  cursor: grab;
+  vertical-align: middle;
+}
+.wo-module[data-dragging="true"] {
+  opacity: 0.5;
+}
+.wo-module[data-over="true"] {
+  outline: var(--stroke-2) dashed var(--border-strong);
+  outline-offset: 2px;
+}

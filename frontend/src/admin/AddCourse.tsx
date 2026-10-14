@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { GripVertical } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { api, unwrap } from "../api/client";
 import { messageOf } from "../api/errors";
 import { Alert, Badge, Button, Checkbox, Input, Select, Textarea } from "../components";
@@ -89,7 +90,63 @@ function move<T>(items: T[], index: number, by: -1 | 1): T[] {
   return next;
 }
 
+/** Takes the module with key `from` out and puts it where the module with key `to` is. */
+function moveTo(items: ModuleDraft[], from: number, to: number): ModuleDraft[] {
+  const source = items.findIndex((m) => m.key === from);
+  const target = items.findIndex((m) => m.key === to);
+  if (source < 0 || target < 0 || source === target) return items;
+  const next = [...items];
+  const [taken] = next.splice(source, 1);
+  next.splice(target, 0, taken as ModuleDraft);
+  return next;
+}
+
 const linesOf = (text: string) => text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+/** The wizard keeps what has been typed on this device, so a closed drawer or a reload loses nothing. */
+const SAVE_KEY = "wo.add-course.draft.v1";
+
+interface SavedDraft {
+  step: number;
+  draft: Omit<Draft, "cover">;
+  modules: ModuleDraft[];
+  /** A file cannot be kept, so only its name is, to ask for it again. */
+  coverName?: string;
+}
+
+function readSaved(): (Omit<SavedDraft, "draft"> & { draft: Draft }) | null {
+  try {
+    const raw = window.localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as Partial<SavedDraft>;
+    if (!saved.draft || !Array.isArray(saved.modules) || saved.modules.length === 0) return null;
+    const used = new Set<number>();
+    const modules = saved.modules.map((m, i) => {
+      const key = typeof m.key === "number" && !used.has(m.key) ? m.key : i + 1 + saved.modules!.length;
+      used.add(key);
+      return { key, title: typeof m.title === "string" ? m.title : `Module ${i + 1}`, links: typeof m.links === "string" ? m.links : "" };
+    });
+    return {
+      step: Math.min(Math.max(Number(saved.step) || 0, 0), STEPS.length - 1),
+      draft: { ...BLANK, ...saved.draft, cover: null },
+      modules,
+      coverName: saved.coverName,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Stores the draft, or clears it when `saved` is null. Says whether it worked (private windows can refuse). */
+function writeSaved(saved: SavedDraft | null): boolean {
+  try {
+    if (saved) window.localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+    else window.localStorage.removeItem(SAVE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The Add course wizard, in a right-hand drawer: basics, lectures from pasted YouTube links, price and
@@ -99,14 +156,63 @@ const linesOf = (text: string) => text.split(/\r?\n/).map((l) => l.trim()).filte
 export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const toast = useToast();
   const guard = useStepUp();
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<Draft>(BLANK);
-  const [modules, setModules] = useState<ModuleDraft[]>([firstModule()]);
+  const [restored] = useState(readSaved);
+  const [step, setStep] = useState(restored?.step ?? 0);
+  const [draft, setDraft] = useState<Draft>(restored?.draft ?? BLANK);
+  const [modules, setModules] = useState<ModuleDraft[]>(restored?.modules ?? [firstModule()]);
+  const [showRestored, setShowRestored] = useState(restored !== null);
+  const [stored, setStored] = useState(true);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+  const [announce, setAnnounce] = useState("");
+  const finished = useRef(false);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const dirty =
     JSON.stringify({ ...draft, cover: draft.cover?.name }) !== JSON.stringify({ ...BLANK, cover: undefined }) ||
     modules.length > 1 ||
-    modules.some((m) => m.links.trim() !== "");
+    modules.some((m) => m.links.trim() !== "" || m.title !== "Module 1");
+
+  // Keep the draft on this device as it changes. Nothing is stored for an untouched form.
+  useEffect(() => {
+    if (finished.current) return;
+    if (!dirty) {
+      writeSaved(null);
+      setStored(true);
+      return;
+    }
+    const { cover, ...rest } = draft;
+    setStored(writeSaved({ step, draft: rest, modules, coverName: cover?.name }));
+  }, [dirty, step, draft, modules]);
+
+  const startOver = () => {
+    writeSaved(null);
+    setShowRestored(false);
+    setStep(0);
+    setDraft(BLANK);
+    setModules([firstModule()]);
+  };
+
+  const reorder = (from: number, to: number) => {
+    const next = moveTo(modules, from, to);
+    if (next === modules) return;
+    setModules(next);
+    setAnnounce(`Module moved to position ${next.findIndex((m) => m.key === from) + 1} of ${next.length}.`);
+  };
+  const stepOver = (index: number, by: -1 | 1) => {
+    setModules((all) => move(all, index, by));
+    setAnnounce(`Module moved to position ${index + by + 1} of ${modules.length}.`);
+  };
+  const dragStart = (event: DragEvent<HTMLElement>, key: number) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(key));
+    const box = event.currentTarget.closest("fieldset");
+    if (box) event.dataTransfer.setDragImage(box, 24, 24);
+    setDragging(key);
+  };
+  const dragEnd = () => {
+    setDragging(null);
+    setOver(null);
+  };
 
   const categories = useQuery({ queryKey: ["course-categories"], queryFn: () => unwrap(api.GET("/api/v1/courses/categories")) });
   // Each module's links, checked as they are typed: the line number and what is wrong.
@@ -161,6 +267,9 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
         }),
       ),
     );
+    // The course exists now, so the saved draft has done its job.
+    finished.current = true;
+    writeSaved(null);
     try {
       if (draft.cover) {
         const cover = await uploadFile(draft.cover, "course_cover");
@@ -192,7 +301,7 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
       eyebrow="Courses"
       title="Add course"
       subtitle={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}
-      dirty={dirty}
+      dirty={dirty && !stored}
       footer={
         <>
           {step > 0 ? (
@@ -226,6 +335,24 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
       </ol>
       <div className="app-stack">
         <FormError error={create.error} />
+        {showRestored ? (
+          <div className="app-cluster" role="status">
+            <span className="body-sm">
+              Picked up the draft you had saved.
+              {restored?.coverName ? ` Choose the thumbnail (${restored.coverName}) again.` : ""}
+            </span>
+            <Button variant="ghost" size="sm" onClick={startOver}>
+              Start over
+            </Button>
+          </div>
+        ) : dirty && stored ? (
+          <p className="body-sm app-muted" role="status" style={{ margin: 0 }}>
+            Saved on this device. You can close this and come back to it.
+          </p>
+        ) : null}
+        <p className="wo-visually-hidden" role="status">
+          {announce}
+        </p>
         {problem ? (
           <p className="body-sm app-muted" role="status" style={{ margin: 0 }}>
             {problem}
@@ -266,8 +393,33 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
               with one link is a complete course. You can reorder, retitle and add notes on the course page afterwards.
             </p>
             {checkedModules.map((m, index) => (
-              <fieldset key={m.key} className="wo-box" style={{ display: "grid", gap: "var(--space-3)", margin: 0 }}>
-                <legend className="wo-learn__h3">Module {index + 1}</legend>
+              <fieldset
+                key={m.key}
+                className="wo-box wo-module"
+                data-dragging={dragging === m.key}
+                data-over={over === m.key && dragging !== m.key}
+                style={{ display: "grid", gap: "var(--space-3)", margin: 0 }}
+                onDragOver={(e) => {
+                  if (dragging === null) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (over !== m.key) setOver(m.key);
+                }}
+                onDrop={(e) => {
+                  if (dragging === null) return;
+                  e.preventDefault();
+                  reorder(dragging, m.key);
+                  dragEnd();
+                }}
+              >
+                <legend className="wo-learn__h3">
+                  {modules.length > 1 ? (
+                    <span className="wo-module__grip" draggable aria-hidden="true" title="Drag to reorder" onDragStart={(e) => dragStart(e, m.key)} onDragEnd={dragEnd}>
+                      <GripVertical size={16} strokeWidth={1.75} />
+                    </span>
+                  ) : null}
+                  Module {index + 1}
+                </legend>
                 <Input label="Module title" value={m.title} maxLength={120} onChange={(e) => setModules((all) => all.map((x) => (x.key === m.key ? { ...x, title: e.target.value } : x)))} />
                 <Textarea
                   label={`YouTube links for module ${index + 1}`}
@@ -281,10 +433,10 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
                   <span className="body-sm app-muted">
                     {m.lines.length === 0 ? "No lessons yet" : `${m.lines.length} ${m.lines.length === 1 ? "lesson" : "lessons"}`}
                   </span>
-                  <Button variant="ghost" size="sm" disabled={index === 0} aria-label={`Move module ${index + 1} up`} onClick={() => setModules((all) => move(all, index, -1))}>
+                  <Button variant="ghost" size="sm" disabled={index === 0} aria-label={`Move module ${index + 1} up`} onClick={() => stepOver(index, -1)}>
                     Up
                   </Button>
-                  <Button variant="ghost" size="sm" disabled={index === modules.length - 1} aria-label={`Move module ${index + 1} down`} onClick={() => setModules((all) => move(all, index, 1))}>
+                  <Button variant="ghost" size="sm" disabled={index === modules.length - 1} aria-label={`Move module ${index + 1} down`} onClick={() => stepOver(index, 1)}>
                     Down
                   </Button>
                   {modules.length > 1 ? (
