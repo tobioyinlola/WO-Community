@@ -177,35 +177,6 @@
   box-decoration-break: clone;
 }
 
-/* feature cards */
-.site-features {
-  gap: var(--space-6);
-}
-.site-feature.wo-card {
-  min-height: 240px;
-  padding: var(--space-8);
-  border-radius: var(--radius-xl);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-sm);
-}
-.site-feature .site-feature__badge {
-  width: 56px;
-  height: 56px;
-  margin-bottom: var(--space-6);
-  border-radius: var(--radius-full);
-  background: var(--bg-brand);
-  color: var(--text-highlight);
-}
-.site-feature .wo-card__title {
-  font-size: 24px;
-  line-height: 30px;
-  margin-bottom: var(--space-2);
-}
-.site-feature .wo-card__text {
-  font-size: 16px;
-  line-height: 24px;
-}
-
 /* the membership section as a call to action band */
 .site-cta {
   padding: clamp(var(--space-6), 5vw, var(--space-16));

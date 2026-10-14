@@ -1,9 +1,17 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Instagram, Linkedin, Menu, Twitter, X, Youtube, type LucideIcon } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { Logo } from "../components";
+import { SOCIAL_LINKS } from "../pages/public/landingContent";
 import { ArrowCircle } from "../ui/ArrowCircle";
+
+const SOCIAL: Record<(typeof SOCIAL_LINKS)[number]["kind"], { label: string; icon: LucideIcon }> = {
+  linkedin: { label: "LinkedIn", icon: Linkedin },
+  x: { label: "X", icon: Twitter },
+  instagram: { label: "Instagram", icon: Instagram },
+  youtube: { label: "YouTube", icon: Youtube },
+};
 
 const LINKS = [
   { to: "/", label: "Home", end: true },
@@ -92,6 +100,20 @@ export function PublicLayout() {
               <p className="body" style={{ maxWidth: "36ch", marginTop: "var(--space-4)", color: "var(--text-on-brand-muted)" }}>
                 Africa&rsquo;s most intentional founder, operator and investor ecosystem.
               </p>
+              {SOCIAL_LINKS.length > 0 ? (
+                <ul className="site-footer__social" aria-label="WO Community on social media">
+                  {SOCIAL_LINKS.map((link) => {
+                    const { label, icon: Icon } = SOCIAL[link.kind];
+                    return (
+                      <li key={link.kind}>
+                        <a className="site-roundbtn" href={link.href} target="_blank" rel="noopener noreferrer" aria-label={`${label} (opens in a new tab)`}>
+                          <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
             </div>
             <div>
               <span className="wo-eyebrow">Community</span>
