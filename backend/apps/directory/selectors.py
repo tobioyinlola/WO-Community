@@ -3,7 +3,7 @@
 from typing import Any
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, TrigramSimilarity
-from django.db.models import F, Q, QuerySet
+from django.db.models import Count, F, Q, QuerySet
 
 from apps.accounts import services as accounts
 from apps.directory.models import PublicFounder, PublicStartup
@@ -109,6 +109,18 @@ def startup_detail(slug: str) -> dict[str, Any] | None:
 def founder_detail(slug: str) -> dict[str, Any] | None:
     row = _founders().filter(slug=slug).first()
     return row.detail if row else None
+
+
+def founder_countries(limit: int = 10) -> list[dict[str, Any]]:
+    """The countries listed founders are in, most founders first. Only the code and a count."""
+    rows = (
+        _founders()
+        .exclude(country="")
+        .values("country")
+        .annotate(founders=Count("id"))
+        .order_by("-founders", "country")[:limit]
+    )
+    return [{"code": row["country"], "founders": row["founders"]} for row in rows]
 
 
 def sitemap() -> dict[str, list[dict[str, Any]]]:

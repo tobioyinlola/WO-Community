@@ -6163,6 +6163,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How much is on the public site
+         * @description Counts of what a visitor can see: startups and founders listed, courses open to visitors and open roles, and up to ten countries listed founders are in (code and founder count only). Counted from the same lists as the sitemap, so every number is something a visitor can click through to. Nothing about individual members.
+         */
+        get: operations["public_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/questions/{question_id}/answers": {
         parameters: {
             query?: never;
@@ -13232,6 +13252,17 @@ export interface components {
         PublicPage: {
             results: components["schemas"]["PublicSummary"][];
             next_cursor: string | null;
+        };
+        PublicStats: {
+            startups: number;
+            founders: number;
+            courses: number;
+            jobs: number;
+            countries: components["schemas"]["PublicStatsCountry"][];
+        };
+        PublicStatsCountry: {
+            code: string;
+            founders: number;
         };
         PublicSummary: {
             slug: string;
@@ -33341,6 +33372,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    public_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicStats"];
+                };
             };
         };
     };

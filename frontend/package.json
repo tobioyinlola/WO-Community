@@ -24,6 +24,7 @@
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-table": "^8.21.3",
     "dompurify": "^3.4.16",
+    "flag-icons": "^7.2.3",
     "lucide-react": "^0.454.0",
     "openapi-fetch": "^0.17.0",
     "qrcode": "^1.5.4",

@@ -13378,6 +13378,24 @@ paths:
           description: ''
         '404':
           description: Not listed
+  /api/v1/public/stats:
+    get:
+      operationId: public_stats_retrieve
+      description: 'Counts of what a visitor can see: startups and founders listed,
+        courses open to visitors and open roles, and up to ten countries listed founders
+        are in (code and founder count only). Counted from the same lists as the sitemap,
+        so every number is something a visitor can click through to. Nothing about
+        individual members.'
+      summary: How much is on the public site
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicStats'
+          description: ''
   /api/v1/questions/{question_id}/answers:
     post:
       operationId: questions_answers_create
@@ -29243,6 +29261,37 @@ components:
       required:
       - next_cursor
       - results
+    PublicStats:
+      type: object
+      properties:
+        startups:
+          type: integer
+        founders:
+          type: integer
+        courses:
+          type: integer
+        jobs:
+          type: integer
+        countries:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicStatsCountry'
+      required:
+      - countries
+      - courses
+      - founders
+      - jobs
+      - startups
+    PublicStatsCountry:
+      type: object
+      properties:
+        code:
+          type: string
+        founders:
+          type: integer
+      required:
+      - code
+      - founders
     PublicSummary:
       type: object
       properties:

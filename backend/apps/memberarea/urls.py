@@ -9,4 +9,5 @@ urlpatterns = [
     path("directory/members", views.BrowsePeopleView.as_view(), name="directory-members"),
     path("me/news/following", views.FollowingNewsView.as_view(), name="news-following"),
     path("public/sitemaps", views.FullSitemapView.as_view(), name="public-sitemaps"),
+    path("public/stats", views.PublicStatsView.as_view(), name="public-stats"),
 ]

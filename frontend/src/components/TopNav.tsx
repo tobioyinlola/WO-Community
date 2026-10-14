@@ -1,6 +1,7 @@
-import { useId, useState, type ReactNode } from "react";
+import { useCallback, useId, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { cx } from "../lib/cx";
+import { useSideMenu } from "../lib/useSideMenu";
 
 export interface NavLinkItem {
   label: string;
@@ -41,6 +42,8 @@ function Logo({ src, mark, className }: { src: string; mark?: boolean; className
 export function TopNav({ logo, links, tail, variant = "default" }: TopNavProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const closeMenu = useCallback(() => setOpen(false), []);
+  useSideMenu(open, closeMenu);
   const brand = variant === "brand";
 
   return (
@@ -73,6 +76,7 @@ export function TopNav({ logo, links, tail, variant = "default" }: TopNavProps) 
       >
         {open ? <X size={20} strokeWidth={1.5} aria-hidden="true" /> : <Menu size={20} strokeWidth={1.5} aria-hidden="true" />}
       </button>
+      <div className="wo-nav__scrim" data-open={open} onClick={closeMenu} aria-hidden="true" />
       <div id={panelId} className="wo-nav__panel" data-open={open}>
         <ul className="wo-nav__links">
           {links.slice(0, 5).map((link) => (

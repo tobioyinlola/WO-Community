@@ -6,8 +6,12 @@ import sys
 from pathlib import Path
 
 import pytest
+from cryptography.fernet import Fernet
+
+from config.settings.keys import ephemeral_jwt_keys
 
 ROOT = Path(__file__).resolve().parents[3]
+_PRIVATE, _PUBLIC = ephemeral_jwt_keys()
 
 GOOD = {
     "DJANGO_SETTINGS_MODULE": "config.settings.production",
@@ -19,10 +23,10 @@ GOOD = {
     "FRONTEND_URL": "https://app.example.com",
     "API_BASE_URL": "https://api.example.com",
     "NUM_PROXIES": "1",
-    "JWT_PRIVATE_KEY": "private\nkey",
-    "JWT_PUBLIC_KEY": "public\nkey",
+    "JWT_PRIVATE_KEY": _PRIVATE.replace("\n", "\\n"),
+    "JWT_PUBLIC_KEY": _PUBLIC.replace("\n", "\\n"),
     "EMAIL_ADAPTER": "apps.integrations.email.fake.FakeEmailAdapter",
-    "FIELD_ENCRYPTION_KEYS": "k",
+    "FIELD_ENCRYPTION_KEYS": Fernet.generate_key().decode(),
     "STORAGE_ADAPTER": "apps.integrations.storage.s3.S3Storage",
     "MALWARE_SCANNER": "apps.integrations.malware.clamd.ClamdScanner",
     "MEDIA_BASE_URL": "https://media.example.com",
