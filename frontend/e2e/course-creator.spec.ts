@@ -134,4 +134,39 @@ test.describe("course creator", () => {
       await expect(page.getByRole("link", { name: title })).toHaveCount(0);
     }
   });
+
+  test("the drawer keeps an unfinished draft, and modules can be dragged into order", async ({ page }) => {
+    // Tall enough that both modules are on screen at once, as a drag needs.
+    await page.setViewportSize({ width: 1280, height: 1600 });
+    await signInAdmin(page);
+    const drawer = await details(page, `Creator draft ${stamp}`);
+    await drawer.getByLabel("YouTube links for module 1").fill(VIDEOS[0]);
+    await drawer.getByRole("button", { name: "Add module" }).click();
+    await drawer.getByLabel("YouTube links for module 2").fill(VIDEOS[1]);
+
+    // Dragging the second module's handle onto the first puts it first. The buttons still work.
+    await drawer.locator(".wo-module__grip").nth(1).dragTo(drawer.locator("fieldset.wo-module").first());
+    await expect(drawer.getByLabel("YouTube links for module 1")).toHaveValue(VIDEOS[1]);
+    await expect(drawer.getByText("Module moved to position 1 of 2.")).toBeAttached();
+    await drawer.getByRole("button", { name: "Move module 1 down" }).click();
+    await expect(drawer.getByLabel("YouTube links for module 1")).toHaveValue(VIDEOS[0]);
+
+    // It is saved as it is typed, so closing loses nothing and asks nothing.
+    await expect(drawer.getByText("Saved on this device")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "Add course" })).toHaveCount(0);
+
+    await page.reload();
+    await page.getByRole("button", { name: "Add course" }).first().click();
+    const again = page.getByRole("dialog", { name: "Add course" });
+    await expect(again.getByText("Picked up the draft you had saved.")).toBeVisible();
+    await expect(again.getByLabel("YouTube links for module 2")).toHaveValue(VIDEOS[1]);
+
+    // Start over clears it, and the next opening is a blank form.
+    await again.getByRole("button", { name: "Start over" }).click();
+    await expect(again.getByLabel("Title", { exact: true })).toHaveValue("");
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Add course" }).first().click();
+    await expect(page.getByRole("dialog", { name: "Add course" }).getByText("Picked up the draft you had saved.")).toHaveCount(0);
+  });
 });

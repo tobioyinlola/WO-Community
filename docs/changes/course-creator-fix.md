@@ -57,9 +57,13 @@ Front end:
 - The earlier wizard already created modules, lessons from links, reorder, cover upload, and the access rules: video ids are
   only sent to enrolled members (and visitors on courses opened to them), and lesson endpoints answer 403 or 404 to
   everyone else. These were kept.
-- Reordering in the drawer uses Up and Down buttons. Drag and drop is not built.
-- The drawer does not autosave. Nothing is created until the last step; closing it asks before discarding. After
-  creation, everything is edited on the course page and saved as you go.
+- Modules in the drawer can be dragged into order by their handle, and the Up and Down buttons do the same without a
+  mouse. A move is announced to screen readers.
+- The drawer saves what has been typed on this device (browser storage) as it changes, so closing it or reloading loses
+  nothing; it says so, and reopening offers the saved draft with a Start over button. A thumbnail file cannot be kept,
+  so it is asked for again. Nothing is created on the server until the last step. If the browser refuses storage, closing
+  asks before discarding, as before. After creation, everything is edited on the course page and saved as you go.
+- `backend/scripts/seed_sample_courses.py` adds three local samples: one video, three modules, and a draft.
 - Lesson notes and per-lesson durations are edited on the course page, not in the drawer.
 - Existing names stay: the screens say "lecture" and "section" in places, and the code says module and lesson.
 - YouTube links can still be shared by anyone who has one. Use unlisted videos on YouTube for anything you do not want
