@@ -234,12 +234,110 @@
     grid-column: 1 / -1;
   }
 }
+/* On a phone the numbers are a row that swipes sideways, not a tall stack. */
 @media (max-width: 559px) {
   .site-stats {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    gap: var(--space-4);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    padding-bottom: var(--space-2);
+    margin-inline: calc(-1 * var(--space-4));
+    padding-inline: var(--space-4);
+    scroll-padding-inline: var(--space-4);
+  }
+  .site-stats::-webkit-scrollbar {
+    display: none;
   }
   .site-stats .site-stat:nth-child(n) {
-    grid-column: 1 / -1;
+    flex: 0 0 min(78%, 300px);
+    min-height: 220px;
+    scroll-snap-align: start;
+  }
+  .site-stat--feature .site-stat__num {
+    font-size: clamp(72px, 24vw, 110px);
+  }
+}
+
+/* ---------- countries marquee ---------- */
+.site-band--marquee {
+  padding-block: var(--space-8);
+  overflow: hidden;
+}
+.site-marquee__title {
+  margin: 0 0 var(--space-5);
+  font: 700 14px/20px var(--font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.site-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.site-marquee__track {
+  display: flex;
+  width: max-content;
+}
+.site-marquee__row {
+  display: flex;
+  flex: none;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 var(--space-3) 0 0;
+  list-style: none;
+}
+.site-marquee__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-3);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: 600 16px/24px var(--font-body);
+  white-space: nowrap;
+}
+.site-marquee__flag {
+  width: 28px;
+  height: 20px;
+  flex: none;
+  border-radius: 3px;
+  background-size: cover;
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .site-marquee__track {
+    animation: site-marquee 40s linear infinite;
+  }
+  .site-marquee:hover .site-marquee__track {
+    animation-play-state: paused;
+  }
+}
+@keyframes site-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* Without motion it is a still, wrapped row of each country once. */
+@media (prefers-reduced-motion: reduce) {
+  .site-marquee {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .site-marquee__track {
+    width: auto;
+    padding-inline: var(--space-4);
+  }
+  .site-marquee__row {
+    flex-wrap: wrap;
+  }
+  .site-marquee__row[aria-hidden="true"],
+  .site-marquee__item[data-repeat] {
+    display: none;
   }
 }
 

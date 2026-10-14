@@ -117,11 +117,17 @@ class SitemapPageSerializer(serializers.Serializer):
     lastmod = serializers.DateTimeField(allow_null=True)
 
 
+class PublicStatsCountrySerializer(serializers.Serializer):
+    code = serializers.CharField()
+    founders = serializers.IntegerField()
+
+
 class PublicStatsSerializer(serializers.Serializer):
     startups = serializers.IntegerField()
     founders = serializers.IntegerField()
     courses = serializers.IntegerField()
     jobs = serializers.IntegerField()
+    countries = PublicStatsCountrySerializer(many=True)
 
 
 class PublicStatsView(PublicView):
@@ -130,7 +136,8 @@ class PublicStatsView(PublicView):
     @extend_schema(
         summary="How much is on the public site",
         description="Counts of what a visitor can see: startups and founders listed, courses "
-        "open to visitors and open roles. Counted from the same lists as the sitemap, so every "
+        "open to visitors and open roles, and up to ten countries listed founders are in (code and "
+        "founder count only). Counted from the same lists as the sitemap, so every "
         "number is something a visitor can click through to. Nothing about individual members.",
         responses={200: PublicStatsSerializer},
         tags=["public"],

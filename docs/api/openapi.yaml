@@ -13382,9 +13382,10 @@ paths:
     get:
       operationId: public_stats_retrieve
       description: 'Counts of what a visitor can see: startups and founders listed,
-        courses open to visitors and open roles. Counted from the same lists as the
-        sitemap, so every number is something a visitor can click through to. Nothing
-        about individual members.'
+        courses open to visitors and open roles, and up to ten countries listed founders
+        are in (code and founder count only). Counted from the same lists as the sitemap,
+        so every number is something a visitor can click through to. Nothing about
+        individual members.'
       summary: How much is on the public site
       tags:
       - public
@@ -29271,11 +29272,26 @@ components:
           type: integer
         jobs:
           type: integer
+        countries:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicStatsCountry'
       required:
+      - countries
       - courses
       - founders
       - jobs
       - startups
+    PublicStatsCountry:
+      type: object
+      properties:
+        code:
+          type: string
+        founders:
+          type: integer
+      required:
+      - code
+      - founders
     PublicSummary:
       type: object
       properties:

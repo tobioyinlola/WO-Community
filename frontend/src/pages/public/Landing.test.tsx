@@ -3,7 +3,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const stats = vi.hoisted(() => ({ value: { startups: 10, founders: 8, courses: 4, jobs: 12 } as Record<string, number> }));
+const stats = vi.hoisted(() => ({
+  value: { startups: 10, founders: 8, courses: 4, jobs: 12, countries: [] } as Record<string, unknown>,
+}));
 const content = vi.hoisted(() => ({ testimonials: [] as unknown[], social: [] as unknown[] }));
 
 vi.mock("../../api/client", () => ({
@@ -42,7 +44,7 @@ function page(element = <Landing />) {
 }
 
 beforeEach(() => {
-  stats.value = { startups: 10, founders: 8, courses: 4, jobs: 12 };
+  stats.value = { startups: 10, founders: 8, courses: 4, jobs: 12, countries: [] };
   content.testimonials = [];
   content.social = [];
 });
@@ -60,11 +62,33 @@ describe("the numbers", () => {
   });
 
   it("leaves out a count that is zero, and the whole block when fewer than two are left", async () => {
-    stats.value = { startups: 0, founders: 0, courses: 0, jobs: 5 };
+    stats.value = { startups: 0, founders: 0, courses: 0, jobs: 5, countries: [] };
     page();
     await screen.findByRole("heading", { level: 1 });
     await waitFor(() => expect(screen.queryByRole("link", { name: /Open roles/ })).toBeNull());
     expect(screen.queryByRole("heading", { name: "The community in numbers" })).toBeNull();
+  });
+});
+
+describe("the countries strip", () => {
+  it("names each country once for a screen reader, with up to ten shown", async () => {
+    stats.value = {
+      startups: 10, founders: 8, courses: 4, jobs: 12,
+      countries: ["NG", "GH", "KE", "ZA", "EG", "RW", "SN", "TZ", "UG", "ET", "MA"].map((code) => ({ code, founders: 1 })),
+    };
+    page();
+    const list = await screen.findByRole("list", { name: "Countries our founders are in" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(10);
+    expect(within(list).getByText("Nigeria")).toBeInTheDocument();
+    expect(within(list).queryByText("Morocco")).toBeNull();
+    // The second copy that makes the loop seamless is hidden from assistive technology.
+    expect(document.querySelectorAll(".site-marquee__row[aria-hidden='true']")).toHaveLength(1);
+  });
+
+  it("is left out when no founder has a public country", async () => {
+    page();
+    await screen.findByRole("link", { name: /Startups listed/ });
+    expect(screen.queryByRole("list", { name: "Countries our founders are in" })).toBeNull();
   });
 });
 
