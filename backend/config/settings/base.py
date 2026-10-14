@@ -364,10 +364,14 @@ RESEND_API_KEY = env.str("RESEND_API_KEY", default="")
 RESEND_WEBHOOK_SECRET = env.str("RESEND_WEBHOOK_SECRET", default="")
 # Transactional and marketing mail use different sending addresses (ideally different
 # subdomains) so a marketing complaint cannot damage the standing of password resets.
-EMAIL_FROM_TRANSACTIONAL = env.str(
-    "EMAIL_FROM_TRANSACTIONAL", default="WO Community <no-reply@localhost>"
+# DEFAULT_FROM_EMAIL is one address for both, used when a stream has none of its own.
+EMAIL_FROM_TRANSACTIONAL = first(
+    "EMAIL_FROM_TRANSACTIONAL", "DEFAULT_FROM_EMAIL", default="WO Community <no-reply@localhost>"
 )
-EMAIL_FROM_MARKETING = env.str("EMAIL_FROM_MARKETING", default="WO Community <community@localhost>")
+EMAIL_FROM_MARKETING = first(
+    "EMAIL_FROM_MARKETING", "DEFAULT_FROM_EMAIL", default="WO Community <community@localhost>"
+)
+DEFAULT_FROM_EMAIL = EMAIL_FROM_TRANSACTIONAL
 EMAIL_REPLY_TO = env.str("EMAIL_REPLY_TO", default="")
 # Only for SmtpEmailAdapter, a local mail catcher (Mailpit listens on 1025 inside Docker).
 EMAIL_SMTP_HOST = env.str("EMAIL_SMTP_HOST", default="localhost")

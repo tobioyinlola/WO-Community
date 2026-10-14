@@ -365,7 +365,12 @@ def _email(c: _Checker) -> None:
             ("EMAIL_FROM_TRANSACTIONAL", "WO Community <no-reply@mail.example.com>"),
             ("EMAIL_FROM_MARKETING", "WO Community <community@news.example.com>"),
         ):
-            value = c.need(name, f"A verified Resend domain, for example {example}")
+            value = c.need(
+                name,
+                f"A verified Resend domain, for example {example}. "
+                "DEFAULT_FROM_EMAIL sets both at once.",
+                "DEFAULT_FROM_EMAIL",
+            )
             if value and "@" not in value:
                 c.problem(
                     name,

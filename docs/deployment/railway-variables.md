@@ -95,6 +95,7 @@ to rotate, put the new key in front and keep the old one after a comma, or store
 | `RESEND_WEBHOOK_SECRET` | Resend | Verifies bounce and complaint webhooks. Starts with `whsec_`. | Resend, Webhooks, Signing Secret |
 | `EMAIL_FROM_TRANSACTIONAL` | Resend | From address for account mail. | `WO Community <no-reply@mail.example.com>` on a verified domain |
 | `EMAIL_FROM_MARKETING` | Resend | From address for newsletters (a different subdomain). | `WO Community <community@news.example.com>` |
+| `DEFAULT_FROM_EMAIL` | Resend, instead of the two above | One address used for both streams when a stream has none of its own. Simpler, but a newsletter complaint then affects the same address as password resets. | `WO Community <hello@mail.example.com>` on a verified domain |
 | `STORAGE_ACCESS_KEY_ID`, `STORAGE_SECRET_ACCESS_KEY` | `S3Storage` | Bucket credentials. | Cloudflare R2, API tokens |
 | `AI_BASE_URL`, `AI_API_KEY` | `AI_PROVIDER=http` | An OpenAI compatible API. | Your model provider |
 | `RESEARCH_ALLOWED_DOMAINS` | `WebResearchProvider` | Sites research may read, comma separated. | You choose, for example `data.example.org` |
@@ -141,6 +142,20 @@ of them is needed to start.
 
 Any other value is refused with the list above.
 
+**Sending addresses.** Set `EMAIL_FROM_TRANSACTIONAL` and `EMAIL_FROM_MARKETING` (the better setup), or
+just `DEFAULT_FROM_EMAIL`, which both then use. The format is `WO Community <hello@mail.yourdomain.com>`
+and the domain must be verified in Resend, or Resend answers 403 and the send is reported as a
+misconfiguration.
+
+**The key is never logged.** The adapter sends it only in the `Authorization` header. Errors and log
+lines name the variable, never the value, and `check_env` prints only variable names.
+
+**Webhook.** In Resend, Webhooks, add `https://<your API host>/api/v1/webhooks/email/resend` and tick
+sent, delivered, delivery delayed, bounced, complained and failed. Every delivery is checked against
+`RESEND_WEBHOOK_SECRET` (a Svix signature over the id, timestamp and exact body; deliveries older than five
+minutes are refused). A wrong or missing signature answers 401. If the secret is missing the API logs
+`email_webhook_secret_missing` and refuses every delivery.
+
 **To get the app booting before Resend is ready**, set `EMAIL_ADAPTER=apps.integrations.email.fake.FakeEmailAdapter`
 and leave the four Resend variables out. The check passes with a warning:
 
@@ -168,3 +183,87 @@ The toolkit needs one of two things, or the API will not start:
 | **Worker** (`railway.worker.json`, runs Celery with the scheduler) | The same required variables as the API, because it loads the same production settings and the same check runs when it starts. Functionally it uses the database, Redis, email, storage, scanner, AI and CDN variables; the address and CORS variables are set only so the check passes. Not needed: `PORT` and the gunicorn variables. |
 
 Set every variable once as a Railway shared variable and attach it to both services.
+
+## Copy and paste: Railway variables
+
+Open each service, Variables, **Raw Editor**, and paste. Replace every `<...>` yourself in the Railway
+dashboard; nothing here is a real value. Generate the four secrets with `python scripts/generate_secrets.py`
+(in `backend`) on your own machine.
+
+### API service
+
+```
+ENVIRONMENT=production
+DJANGO_SECRET_KEY=<PASTE_FROM_generate_secrets>
+DJANGO_ALLOWED_HOSTS=api.<yourdomain>
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+REDIS_URL=${{Redis.REDIS_URL}}
+FRONTEND_URL=https://app.<yourdomain>
+API_BASE_URL=https://api.<yourdomain>
+CORS_ALLOWED_ORIGINS=https://app.<yourdomain>
+NUM_PROXIES=1
+JWT_PRIVATE_KEY=<PASTE_FROM_generate_secrets_ONE_LINE_WITH_
+>
+JWT_PUBLIC_KEY=<PASTE_FROM_generate_secrets_ONE_LINE_WITH_
+>
+FIELD_ENCRYPTION_KEYS=<PASTE_FROM_generate_secrets>
+EMAIL_ADAPTER=apps.integrations.email.resend.ResendEmailAdapter
+RESEND_API_KEY=<PASTE_RESEND_API_KEY_HERE>
+RESEND_WEBHOOK_SECRET=<PASTE_RESEND_WEBHOOK_SIGNING_SECRET_HERE>
+DEFAULT_FROM_EMAIL=WO Community <hello@mail.<yourdomain>>
+STORAGE_ADAPTER=apps.integrations.storage.s3.S3Storage
+STORAGE_ACCESS_KEY_ID=<PASTE_R2_ACCESS_KEY_ID_HERE>
+STORAGE_SECRET_ACCESS_KEY=<PASTE_R2_SECRET_HERE>
+STORAGE_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com
+STORAGE_REGION=auto
+STORAGE_UPLOAD_METHOD=put
+STORAGE_ANCHOR_OBJECT_LOCK=false
+MEDIA_BASE_URL=https://media.<yourdomain>
+MALWARE_SCANNER=apps.integrations.malware.clamd.ClamdScanner
+CLAMD_HOST=clamav.railway.internal
+TOOLKIT_FEATURE_SCORE=false
+TOOLKIT_FEATURE_PLAN=false
+TOOLKIT_FEATURE_FORECAST=false
+TOOLKIT_FEATURE_DECKS=false
+TOOLKIT_FEATURE_PROTOTYPES=false
+TOOLKIT_FEATURE_PARTNER=false
+```
+
+The last six lines switch the launch toolkit off so the API boots without an AI provider; replace them with
+`AI_PROVIDER`, `AI_BASE_URL`, `AI_API_KEY`, `RESEARCH_PROVIDER` and `RESEARCH_ALLOWED_DOMAINS` when you have one.
+Use `MALWARE_SCANNER=apps.integrations.malware.fake.FakeScanner` only until the ClamAV service exists (the check
+warns). `PORT` is set by Railway.
+
+### Worker service
+
+The worker loads the same settings and runs the same check at start, so it needs **all of the API's
+variables above**, with the same values. It needs no `PORT` and none of the gunicorn variables. Fastest:
+make the variables shared variables and attach them to both services, or in the worker write each as a
+reference to the API service:
+
+```
+DJANGO_SECRET_KEY=${{api.DJANGO_SECRET_KEY}}
+JWT_PRIVATE_KEY=${{api.JWT_PRIVATE_KEY}}
+JWT_PUBLIC_KEY=${{api.JWT_PUBLIC_KEY}}
+FIELD_ENCRYPTION_KEYS=${{api.FIELD_ENCRYPTION_KEYS}}
+EMAIL_ADAPTER=${{api.EMAIL_ADAPTER}}
+RESEND_API_KEY=${{api.RESEND_API_KEY}}
+RESEND_WEBHOOK_SECRET=${{api.RESEND_WEBHOOK_SECRET}}
+DEFAULT_FROM_EMAIL=${{api.DEFAULT_FROM_EMAIL}}
+```
+
+and the same for every other line of the API block (replace `api` with the API service's name in your
+project). The worker is the service that actually sends mail, so `EMAIL_ADAPTER`, `RESEND_API_KEY` and the
+sender addresses matter most there. `RESEND_WEBHOOK_SECRET` is only used by the API's webhook, but the check
+requires it on both.
+
+### Railway CLI (optional), run by you
+
+```
+railway link
+railway variables --service <api-service> --set "EMAIL_ADAPTER=apps.integrations.email.resend.ResendEmailAdapter"
+railway variables --service <api-service> --set "RESEND_API_KEY=<PASTE_RESEND_API_KEY_HERE>"
+railway run --service <api-service> python manage.py check_env
+```
+
+Typing a secret into a command line leaves it in your shell history; the dashboard is safer.
