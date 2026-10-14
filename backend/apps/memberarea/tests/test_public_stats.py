@@ -1,5 +1,6 @@
 import pytest
 
+from apps.directory.tests.conftest import listed  # noqa: F401
 from apps.learning.tests.conftest import build_course
 
 pytestmark = pytest.mark.django_db
@@ -13,7 +14,28 @@ def test_counts_what_a_visitor_can_see_and_nothing_else(api_client, make_user):
     build_course(editor, title="Members only course")
     response = api_client.get(URL)
     assert response.status_code == 200
-    assert response.json() == {"startups": 0, "founders": 0, "courses": 1, "jobs": 0}
+    assert response.json() == {
+        "startups": 0,
+        "founders": 0,
+        "courses": 1,
+        "jobs": 0,
+        "countries": [],
+    }
+
+
+def test_countries_come_only_from_founders_who_made_their_location_public(api_client, listed):  # noqa: F811
+    listed("Acme", country="NG", founder_location_public=True)
+    listed("Beta", country="NG", founder_location_public=True)
+    listed("Cedar", country="GH", founder_location_public=True)
+    listed("Hidden", country="KE", founder_location_public=False)
+    countries = api_client.get(URL).json()["countries"]
+    assert countries == [{"code": "NG", "founders": 2}, {"code": "GH", "founders": 1}]
+
+
+def test_at_most_ten_countries(api_client, listed):  # noqa: F811
+    for code in ["NG", "GH", "KE", "ZA", "EG", "RW", "SN", "TZ", "UG", "ET", "MA", "CI"]:
+        listed(f"Co {code}", country=code, founder_location_public=True)
+    assert len(api_client.get(URL).json()["countries"]) == 10
 
 
 def test_it_is_public_cacheable_and_sets_no_cookie(api_client):

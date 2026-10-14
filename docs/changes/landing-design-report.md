@@ -122,3 +122,10 @@ present, and the title is unchanged. The additions are listed by `tools/landing-
 
 - The reference screenshots were not available, so proportions were set from the written brief.
 - The hero picture and the logo files still need to be supplied (see the media list).
+
+## Round three: phone rows and the countries strip
+
+- **Numbers on a phone:** below 560 px the numbers are a row that swipes sideways with snapping, instead of a tall stack. The feature cards were already a sideways carousel at every width.
+- **Countries strip:** directly under the hero, up to ten countries with their flags drift sideways (40 s loop, paused under the pointer, still and wrapped when motion is reduced). The countries are real: the public numbers endpoint now also returns the countries of listed founders (code and count, most founders first, at most ten). A founder's country counts only when they made their location public. The section is left out when there are none.
+- **Flags:** SVG flags from `flag-icons`, because Windows has no flag emoji. Country names come from the browser's own region names.
+- **Checks:** axe 0 violations in both themes at 360 px; the reduced-motion and phone tests are in `e2e/landing.spec.ts`. The dev data has no founder with a public country, so the browser tests answer the numbers request with ten sample countries.

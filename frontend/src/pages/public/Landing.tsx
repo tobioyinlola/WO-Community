@@ -19,6 +19,7 @@ import { formatDate, humanise } from "../../lib/format";
 import { Section, useDocumentTitle } from "../../ui/blocks";
 import { ArrowCircle } from "../../ui/ArrowCircle";
 import { Carousel } from "../../ui/Carousel";
+import { CountryMarquee } from "../../ui/CountryMarquee";
 import { CountUp } from "../../ui/CountUp";
 import { Faq } from "../../ui/Faq";
 import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
@@ -168,6 +169,17 @@ export function Landing() {
           </div>
         </div>
       </section>
+
+      {(stats.data?.countries ?? []).length > 0 ? (
+        <section className="site-band site-band--marquee" aria-labelledby="countries">
+          <div className="wo-container">
+            <h2 className="site-marquee__title" id="countries">
+              Founders in our community are from
+            </h2>
+          </div>
+          <CountryMarquee countries={stats.data?.countries ?? []} />
+        </section>
+      ) : null}
 
       {tiles.length >= 2 ? (
         <section className="site-band site-band--tight" aria-labelledby="numbers">

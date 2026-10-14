@@ -16,6 +16,16 @@ async function open(page: Page, theme: "light" | "dark" = "light") {
   await showEverything(page);
 }
 
+const COUNTRIES = ["NG", "GH", "KE", "ZA", "EG", "RW", "SN", "TZ", "UG", "ET"];
+
+/** The dev data has no founder with a public country, so the numbers answer with some. */
+async function withCountries(page: Page) {
+  await page.route("**/api/v1/public/stats", async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({ json: { ...real, countries: COUNTRIES.map((code) => ({ code, founders: 1 })) } });
+  });
+}
+
 /** Scrolls down in steps so every section has been revealed, then back to the top. */
 async function showEverything(page: Page) {
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -120,8 +130,8 @@ test.describe("reduced motion", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 3, name: "Meet in person" })).toBeVisible();
     // No card waits for a scroll to appear.
-    const pending = await page.locator(".reveal[data-reveal='pending']").count();
-    expect(pending).toBe(0);
+    // The numbers arrive from the server, so a block may mount a moment after the rest; it settles at once.
+    await expect(page.locator(".reveal[data-reveal='pending']")).toHaveCount(0);
     const drawn = await page.locator(".site-hero__line path").first().evaluate((el) => getComputedStyle(el).strokeDashoffset);
     expect(parseFloat(drawn)).toBe(0);
     const animated = await page.locator(".site-hero__line path").first().evaluate((el) => getComputedStyle(el).animationName);
@@ -156,6 +166,49 @@ test("the feature cards scroll sideways with the round buttons and the arrow key
   await track.focus();
   await page.keyboard.press("ArrowLeft");
   await expect.poll(() => track.evaluate((el) => el.scrollLeft)).toBeLessThan(before);
+});
+
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  test("the feature cards and the numbers sit in rows that swipe sideways, not in a tall stack", async ({ page }) => {
+    await open(page);
+    const rows = [page.getByRole("list", { name: /What you get/ }), page.locator(".site-stats")];
+    for (const row of rows) {
+      const info = await row.evaluate((el) => {
+        const kids = [...el.children].map((c) => c.getBoundingClientRect());
+        return { scrolls: el.scrollWidth > el.clientWidth + 20, sameRow: kids.every((k) => Math.abs(k.top - (kids[0]?.top ?? 0)) < 2) };
+      });
+      expect(info).toEqual({ scrolls: true, sameRow: true });
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("the countries drift sideways, each with a flag", async ({ page }) => {
+    await withCountries(page);
+    await open(page);
+    const list = page.getByRole("list", { name: "Countries our founders are in" });
+    await expect(list.getByRole("listitem")).toHaveCount(COUNTRIES.length);
+    await expect(list.locator(".fi").first()).toBeVisible();
+    const track = page.locator(".site-marquee__track");
+    const x1 = await track.evaluate((el) => el.getBoundingClientRect().left);
+    await page.waitForTimeout(700);
+    const x2 = await track.evaluate((el) => el.getBoundingClientRect().left);
+    expect(x2).toBeLessThan(x1);
+  });
+});
+
+test.describe("reduced motion, countries", () => {
+  test.use({ reducedMotion: "reduce" });
+  test("the strip is still and shows each country once", async ({ page }) => {
+    await withCountries(page);
+    await page.goto("/");
+    const track = page.locator(".site-marquee__track");
+    await expect(track).toBeVisible();
+    expect(await track.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+    await expect(page.locator(".site-marquee__row:visible .site-marquee__item:visible")).toHaveCount(COUNTRIES.length);
+  });
 });
 
 test("a feature card opens the page it is about", async ({ page }) => {

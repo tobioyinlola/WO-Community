@@ -6172,7 +6172,7 @@ export interface paths {
         };
         /**
          * How much is on the public site
-         * @description Counts of what a visitor can see: startups and founders listed, courses open to visitors and open roles. Counted from the same lists as the sitemap, so every number is something a visitor can click through to. Nothing about individual members.
+         * @description Counts of what a visitor can see: startups and founders listed, courses open to visitors and open roles, and up to ten countries listed founders are in (code and founder count only). Counted from the same lists as the sitemap, so every number is something a visitor can click through to. Nothing about individual members.
          */
         get: operations["public_stats_retrieve"];
         put?: never;
@@ -13258,6 +13258,11 @@ export interface components {
             founders: number;
             courses: number;
             jobs: number;
+            countries: components["schemas"]["PublicStatsCountry"][];
+        };
+        PublicStatsCountry: {
+            code: string;
+            founders: number;
         };
         PublicSummary: {
             slug: string;
