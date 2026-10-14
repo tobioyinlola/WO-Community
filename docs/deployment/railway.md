@@ -67,7 +67,9 @@ CLAMD_PORT=3310
 ## 5. Variables
 
 Set these on the API and the worker. `${{Postgres.DATABASE_URL}}` is Railway's reference syntax.
-Every variable, with a comment, is in `backend/.env.example`.
+Every variable, with a comment, is in `backend/.env.example`. The full table (what each value is and
+where to get it) is in [railway-variables.md](railway-variables.md), and `python manage.py check_env`
+lists everything that is missing at once.
 
 | Variable | Value |
 |----------|-------|
