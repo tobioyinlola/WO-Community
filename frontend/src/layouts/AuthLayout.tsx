@@ -1,7 +1,7 @@
 import { Link, Outlet } from "react-router-dom";
 import { Logo } from "../components";
 
-/** Two panels: the brand on forest, and the form on cream. The brand panel folds away on phones. */
+/** Two panels: the brand on forest, and the form on cream. On phones the forest panel is gone and the logo sits above the form. */
 export function AuthLayout() {
   return (
     <div className="auth-page">
@@ -22,6 +22,9 @@ export function AuthLayout() {
         </p>
       </aside>
       <main className="auth-panel" id="main">
+        <Link to="/" className="auth-panel__logo" aria-label="WO Community, home">
+          <Logo on="auto" height={40} />
+        </Link>
         <div className="auth-card">
           <Outlet />
         </div>
