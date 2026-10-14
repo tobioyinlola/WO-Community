@@ -450,10 +450,10 @@ def _meetings(c: _Checker) -> None:
     name, real = adapters[provider]
     adapter = c.get(name).strip() or FAKE_MEETINGS
     if adapter == FAKE_MEETINGS:
-        c.problem(
+        c.warn(
             name,
-            f"The default meeting provider ({provider}) must not be the fake one in production.",
-            f"Set {name}={real}",
+            f"No real meeting provider ({provider}): booked sessions get made-up links.",
+            f"Optional. For real video links set {name}={real} and its credentials.",
         )
     elif adapter.endswith("GoogleMeetProvider"):
         c.need("GOOGLE_MEET_CLIENT_ID", "Google Cloud console, OAuth client")
