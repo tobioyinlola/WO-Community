@@ -637,19 +637,30 @@ a.app-list__item:hover {
   max-width: 460px;
   margin: 0 auto;
 }
+/* The logo above the form is for phones and tablets; the forest panel carries it on desktop. */
+.auth-panel__logo {
+  display: none;
+}
 @media (max-width: 1023px) {
   .auth-page {
     grid-template-columns: minmax(0, 1fr);
   }
   .auth-brand {
-    padding: var(--space-6) var(--space-4);
-    gap: var(--space-4);
-  }
-  .auth-brand__quote {
     display: none;
   }
   .auth-panel {
-    padding: var(--space-8) var(--space-4);
+    justify-content: flex-start;
+    gap: var(--space-8);
+    padding: var(--space-8) var(--space-4) var(--space-12);
+  }
+  .auth-panel__logo {
+    display: block;
+    text-decoration: none;
+    width: fit-content;
+    max-width: 460px;
+    margin: 0 auto;
+    /* Same left edge as the form below it. */
+    align-self: center;
   }
 }
 .app-steps {
