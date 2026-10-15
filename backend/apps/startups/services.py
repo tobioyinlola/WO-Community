@@ -78,6 +78,8 @@ def create_startup(*, owner_id: UUID, data: dict[str, Any]) -> Startup:
                     slug=_new_slug(data["name"]),
                     sector=sector,
                     stage=stage,
+                    # Listed in the directory from the start; the owner can take it out.
+                    directory_opt_in=True,
                     **{k: data[k] for k in (*BASIC_FIELDS, *TEXT_FIELDS) if k in data},
                 )
                 startup.save()
@@ -175,11 +177,9 @@ def set_visibility(
         _require_editor(user_id, startup)
         etag.assert_matches(if_match, startup)
         merged = {**startup.visibility, **levels}
-        if startup.directory_opt_in and merged.get("basics") != "public":
-            raise ConflictError(
-                "The basics must stay public while the startup is listed in the directory.",
-                code="listed_in_directory",
-            )
+        if startup.directory_opt_in and merged.get("basics", "public") != "public":
+            # Startups start listed; hiding the card takes the startup out of the directory.
+            startup.directory_opt_in = False
         startup.visibility = merged
         startup.save()
         _publish(startup)

@@ -9,6 +9,7 @@ from apps.startups.tests.conftest import (
     etag_of,
     new_startup_body,
     patch,
+    set_levels,
 )
 
 pytestmark = pytest.mark.django_db
@@ -25,7 +26,8 @@ def test_an_approved_member_can_create_a_startup(owner_client, owner):
     assert body["sector"] == {"slug": "fintech", "name": "Fintech"}
     assert body["stage"]["slug"] == "seed"
     assert body["owner_id"] == str(owner.pk)
-    assert body["directory_opt_in"] is False
+    assert body["directory_opt_in"] is True  # listed, and visible to anyone, from the start
+    assert set(body["visibility"].values()) == {"public"}
     assert body["featured"] is False
     assert response["ETag"]
     assert body["slug"].startswith("zzstartup-pay-")
@@ -203,9 +205,9 @@ def test_a_founder_on_the_team_can_edit_but_not_toggle_the_directory(
 ):
     owner_client.post(f"{detail(startup_id)}/team", {"email": stranger.email, "is_founder": True})
     assert patch(stranger_client, startup_id, {"pitch": "co-founder edit"}).status_code == 200
-    denied = patch(stranger_client, startup_id, {"directory_opt_in": True})
+    denied = patch(stranger_client, startup_id, {"directory_opt_in": False})
     assert denied.status_code == 403
-    assert Startup.objects.get().directory_opt_in is False
+    assert Startup.objects.get().directory_opt_in is True
 
 
 def test_an_ordinary_team_member_can_read_everything_but_not_edit(
@@ -252,21 +254,24 @@ def test_the_year_can_be_cleared(owner_client, startup_id):
 
 
 def test_listing_in_the_directory_makes_the_basics_public(owner_client, startup_id):
+    patch(owner_client, startup_id, {"directory_opt_in": False})
+    set_levels(owner_client, startup_id, {"basics": "members", "description": "members"})
     body = patch(owner_client, startup_id, {"directory_opt_in": True}).json()
     assert body["directory_opt_in"] is True
     assert body["visibility"]["basics"] == "public"
     assert body["visibility"]["description"] == "members"  # nothing else changes
 
 
-def test_a_listed_startup_cannot_hide_its_basics(owner_client, startup_id):
-    patch(owner_client, startup_id, {"directory_opt_in": True})
+def test_hiding_the_basics_of_a_listed_startup_takes_it_out_of_the_directory(
+    owner_client, startup_id
+):
     response = owner_client.patch(
         f"{detail(startup_id)}/visibility",
         {"basics": "private"},
         HTTP_IF_MATCH=etag_of(owner_client, startup_id),
     )
-    assert response.status_code == 409
-    assert response.json()["code"] == "listed_in_directory"
+    assert response.status_code == 200
+    assert Startup.objects.get().directory_opt_in is False
 
 
 def test_unlisting_lets_the_basics_be_hidden_again(owner_client, startup_id):

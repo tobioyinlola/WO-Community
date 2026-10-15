@@ -4,9 +4,9 @@ export function nameFromEmail(email: string | undefined): string {
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : "";
 }
 
-/** The dashboard greeting, with a wave when the hour is not late and a moon when it is. */
+/** The dashboard greeting for the time of day where the member is: morning, afternoon or evening. */
 export function welcomeTitle(name: string, now: Date = new Date()): string {
   const hour = now.getHours();
-  const mark = hour >= 5 && hour < 18 ? "👋" : "🌙";
-  return name ? `Welcome back, ${name} ${mark}` : `Welcome back ${mark}`;
+  const [words, mark] = hour >= 5 && hour < 12 ? ["Good morning", "☀️"] : hour >= 12 && hour < 17 ? ["Good afternoon", "🌤️"] : ["Good evening", "🌙"];
+  return name ? `${words}, ${name} ${mark}` : `${words} ${mark}`;
 }

@@ -209,12 +209,11 @@ def test_invited_staff_join_with_only_a_name_and_a_password(
     user = User.objects.get(email=EMAIL)
     assert user.status == "active" and user.email_verified_at is not None
     assert "community_admin" in user.role_names()
-    run_outbox()  # the profile is filled and no startup is created
-    from apps.profiles.models import FounderProfile
-    from apps.startups.models import Startup
-
-    assert FounderProfile.objects.get(user=user).full_name == "Grace Admin"
-    assert not Startup.objects.filter(owner=user).exists()
+    run_outbox()  # the profile is filled from the name, and no startup is made
+    login = api_client.post(LOGIN_URL, {"email": EMAIL, "password": PASSWORD}).json()
+    auth = {"HTTP_AUTHORIZATION": f"Bearer {login['access_token']}"}
+    assert api_client.get("/api/v1/me/profile", **auth).json()["full_name"] == "Grace Admin"
+    assert api_client.get("/api/v1/me/startups", **auth).json() == []
 
 
 def test_a_member_invitation_still_needs_the_founder_details(api_client, invite):

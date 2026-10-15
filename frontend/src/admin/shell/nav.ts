@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type QueueKey = "registrations_awaiting_approval" | "open_reports" | "jobs_awaiting_review" | "wins_awaiting_review" | "support_unanswered";
+export type QueueKey = "registrations_awaiting_approval" | "open_reports" | "jobs_awaiting_review" | "wins_awaiting_review" | "support_unanswered" | "mentor_applications_pending";
 
 export interface NavLeaf {
   id: string;
@@ -53,7 +53,7 @@ export const NAV: NavEntry[] = [
       { id: "members-all", label: "All members", to: "/admin/members", needs: "members.view" },
       { id: "approvals", label: "Approvals", to: "/admin/approvals", needs: "members.approve", badge: "registrations_awaiting_approval" },
       { id: "invitations", label: "Invitations", to: "/admin/invitations", needs: "invitations.manage" },
-      { id: "mentors", label: "Mentors", to: "/admin/mentors", needs: "mentors.decide" },
+      { id: "mentors", label: "Mentors", to: "/admin/mentors", needs: "mentors.decide", badge: "mentor_applications_pending" },
       { id: "reports", label: "Moderation reports", to: "/admin/reports", needs: "reports.handle", badge: "open_reports" },
     ],
   },

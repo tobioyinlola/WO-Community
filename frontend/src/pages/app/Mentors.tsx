@@ -310,7 +310,13 @@ export function BecomeMentor() {
             {s.is_mentor ? (
               <Alert tone="success" title="You are a mentor">Set your times and profile in your settings.</Alert>
             ) : s.application_status && s.application_status !== "declined" && s.application_status !== "withdrawn" ? (
-              <Alert tone="info" title={`Your application: ${humanise(s.application_status)}`}>An admin will email you when there is a decision.</Alert>
+              s.application_status === "pending" ? (
+                <Alert tone="success" title="Your application has been received">
+                  An admin will review it and approve it if you are eligible, within 3 to 5 working days. We will email you the decision.
+                </Alert>
+              ) : (
+                <Alert tone="info" title={`Your application: ${humanise(s.application_status)}`}>An admin will email you when there is a decision.</Alert>
+              )
             ) : s.can_apply ? (
               <MentorApplicationForm />
             ) : (
@@ -384,7 +390,7 @@ function MentorApplicationForm() {
       motivation: f.motivation.trim(),
       accept_conduct: f.accept,
     } }));
-    toast.show("Application sent");
+    toast.show("Application received");
     await client.invalidateQueries({ queryKey: ["me", "mentoring"] });
   });
   // The server's word wins over the local check when both have something to say.

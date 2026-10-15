@@ -431,6 +431,26 @@ def review_job(*, actor: Any, job_id: UUID, decision: str, note: str = "", ip: s
     return job
 
 
+def delete_job(*, actor: Any, job_id: UUID, reason: str = "", ip: str = "") -> None:
+    """Delete a job for good, with its saves. Unlike remove, it cannot be reopened."""
+    with transaction.atomic():
+        job = _lock(job_id)
+        was_published = job.status == Job.Status.PUBLISHED
+        title, pk = job.title, job.pk
+        audit.record(
+            actor=actor,
+            action="jobs.delete",
+            target_type="job",
+            target_id=pk,
+            before={"title": title, "status": job.status},
+            reason=plain(reason),
+            ip=ip,
+        )
+        if was_published:
+            transaction.on_commit(lambda: _purge_cdn(job))
+        job.delete()
+
+
 def bulk_approve(*, actor: Any, ids: list[UUID], ip: str = "") -> dict[str, int]:
     """Approve every pending job in the list. Jobs no longer pending are skipped, not failed."""
     approved = skipped = 0

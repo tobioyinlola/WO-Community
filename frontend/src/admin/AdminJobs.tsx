@@ -18,7 +18,7 @@ import { useOffsetList } from "./useOffsetList";
 
 type Job = components["schemas"]["AdminJob"];
 type Tab = "active" | "pending" | "rejected" | "closed";
-type Decision = "approve" | "reject" | "unpublish" | "remove" | "reopen";
+type Decision = "approve" | "reject" | "unpublish" | "remove" | "reopen" | "delete";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "active", label: "Active" },
@@ -29,7 +29,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
 const TYPES = ["full_time", "part_time", "contract", "internship", "volunteer", "other"];
 const TONE: Record<string, Tone> = { published: "success", pending: "warning", rejected: "danger", removed: "danger", closed: "neutral", expired: "neutral" };
 const STATUS_LABEL: Record<string, string> = { published: "Live" };
-const DONE: Record<Decision, string> = { approve: "Job approved and live", reject: "Job rejected", unpublish: "Job closed", remove: "Job removed", reopen: "Job reopened" };
+const DONE: Record<Decision, string> = { approve: "Job approved and live", reject: "Job rejected", unpublish: "Job closed", remove: "Job removed", reopen: "Job reopened", delete: "Job deleted" };
 
 /** The form for a new job or an edit of one. Applications are never taken here: the employer gets them. */
 function JobForm({ job, onClose, onSaved }: { job?: Job; onClose: () => void; onSaved: () => Promise<void> }) {
@@ -158,6 +158,7 @@ function Drawer({ job, onClose, onDecide, onEdit }: { job: Job; onClose: () => v
               {["closed", "expired", "removed"].includes(job.status) ? <Button onClick={() => onDecide("reopen")}>Reopen</Button> : null}
               {["pending", "published"].includes(job.status) ? <Button variant="secondary" onClick={onEdit}>Edit</Button> : null}
               {job.status !== "removed" ? <Button variant="ghost" onClick={() => onDecide("remove")}>Remove</Button> : null}
+              <Button variant="ghost" onClick={() => onDecide("delete")}>Delete permanently</Button>
             </div>
           </footer>
         </Dialog.Content>
@@ -208,7 +209,8 @@ export default function AdminJobs() {
   };
   const decide = async (job: Job, decision: Decision, reason: string) => {
     await guard(async () => {
-      await unwrap(api.POST(`/api/v1/admin/jobs/{job_id}/${decision}`, { params: { path: { job_id: job.id } }, body: { reason } }));
+      if (decision === "delete") await unwrap(api.DELETE("/api/v1/admin/jobs/{job_id}", { params: { path: { job_id: job.id } } }));
+      else await unwrap(api.POST(`/api/v1/admin/jobs/{job_id}/${decision}`, { params: { path: { job_id: job.id } }, body: { reason } }));
     });
     toast.show(DONE[decision]);
     setOpen(null);
@@ -305,11 +307,11 @@ export default function AdminJobs() {
       {open ? <Drawer job={open} onClose={() => setOpen(null)} onDecide={(d) => setActing({ job: open, decision: d })} onEdit={() => { setForm({ job: open }); setOpen(null); }} /> : null}
       {acting ? (
         <ReasonDialog
-          title={{ approve: "Approve this job?", reject: "Reject this job?", unpublish: "Close this job?", remove: "Remove this job?", reopen: "Reopen this job?" }[acting.decision]}
-          confirmLabel={{ approve: "Approve", reject: "Reject", unpublish: "Close", remove: "Remove", reopen: "Reopen" }[acting.decision]}
+          title={{ approve: "Approve this job?", reject: "Reject this job?", unpublish: "Close this job?", remove: "Remove this job?", reopen: "Reopen this job?", delete: "Delete this job for good?" }[acting.decision]}
+          confirmLabel={{ approve: "Approve", reject: "Reject", unpublish: "Close", remove: "Remove", reopen: "Reopen", delete: "Delete permanently" }[acting.decision]}
           tone={acting.decision === "approve" || acting.decision === "reopen" ? "primary" : "danger"}
           required={acting.decision === "reject"}
-          intro={acting.decision === "approve" ? "It goes live to members at once and the poster is told." : acting.decision === "reject" ? "The person who posted it is told why, and can fix it and send it back." : acting.decision === "reopen" ? "It goes back on the board for a new term." : "The person who posted it is told."}
+          intro={acting.decision === "approve" ? "It goes live to members at once and the poster is told." : acting.decision === "reject" ? "The person who posted it is told why, and can fix it and send it back." : acting.decision === "reopen" ? "It goes back on the board for a new term." : acting.decision === "delete" ? "It is erased with its saves and cannot be reopened. Use Remove instead if you may want it back." : "The person who posted it is told."}
           onConfirm={(reason) => decide(acting.job, acting.decision, reason)}
           onClose={() => setActing(null)}
         />
