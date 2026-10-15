@@ -21,12 +21,14 @@ import { Explore } from "./pages/public/Explore";
 import { Landing } from "./pages/public/Landing";
 import { Legal } from "./pages/public/Legal";
 import { Unsubscribe } from "./pages/public/Unsubscribe";
+import { NewsletterConfirm } from "./pages/public/NewsletterConfirm";
 import { NewsItem, NewsList } from "./pages/public/News";
 import { Skeleton } from "./ui/blocks";
 import { ToastProvider } from "./ui/Toast";
 
 const Home = lazy(() => import("./pages/app/Home"));
 const Feed = lazy(() => import("./pages/app/Feed"));
+const LeaderboardPage = lazy(() => import("./pages/app/Leaderboard"));
 const Directory = lazy(() => import("./pages/app/Directory"));
 const MemberPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.MemberPage })));
 const StartupPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.StartupPage })));
@@ -140,6 +142,7 @@ export function App() {
                   <Route path="legal/:doc" element={<Legal />} />
                   <Route path="help" element={<HelpPage />} />
                   <Route path="unsubscribe" element={<Unsubscribe />} />
+                  <Route path="newsletter/confirm" element={<NewsletterConfirm />} />
                   <Route path="verify/:code" element={<VerifyCertificate />} />
                   <Route path="design" element={<Design />} />
                 </Route>
@@ -158,6 +161,7 @@ export function App() {
                   <Route path="app" element={<AppLayout />}>
                     <Route index element={<Home />} />
                     <Route path="feed" element={<Feed />} />
+                    <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="directory" element={<Directory />} />
                     <Route path="members/:id" element={<MemberPage />} />
                     <Route path="startups/new" element={<StartupForm />} />

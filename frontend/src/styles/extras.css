@@ -277,3 +277,23 @@
 .tag {
   text-transform: uppercase;
 }
+
+/* Explore: the invitation to join after the ten-item preview. */
+.explore-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+}
+.explore-more .h3 {
+  color: var(--text-on-brand);
+}
+@media (max-width: 767px) {
+  .explore-more {
+    padding: var(--space-6);
+  }
+}

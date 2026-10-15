@@ -190,6 +190,7 @@ REST_FRAMEWORK = {
         "uploads": "30/hour",
         "analytics": "120/min",
         "support_contact": "5/hour",
+        "newsletter": "10/hour",
         "referrer_search": "30/hour",
         "course_request": "20/hour",
         "support_write": "30/hour",
@@ -265,7 +266,11 @@ INVITATION_MAX_MESSAGE_LENGTH = 500
 INVITATION_BULK_MAX_ROWS = 500
 INVITATION_BULK_MAX_BYTES = 256_000
 # An admin session must have passed MFA within this window, however often it refreshes.
-MFA_SESSION_MAX_AGE_SECONDS = 43200
+MFA_SESSION_MAX_AGE_SECONDS = 86400
+# After a code is entered, the same browser signs in with the password alone for this long
+# (a signed, HttpOnly cookie). Changing the password or the authenticator ends it at once.
+MFA_REMEMBER_SECONDS = 86400
+MFA_TRUST_COOKIE_NAME = "wo_mfa_trust"
 MFA_ISSUER = "WO Community"
 MFA_CHALLENGE_TTL_SECONDS = 300
 MFA_MAX_FAILURES = 5

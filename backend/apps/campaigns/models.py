@@ -51,6 +51,8 @@ class Campaign(BaseModel):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     recipient_count = models.PositiveIntegerField(default=0)
+    # Also send to people who signed up for the newsletter on the website and are not members.
+    include_subscribers = models.BooleanField(default=False, db_default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -75,6 +77,16 @@ class CampaignRecipient(BaseModel):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
     )
+    # A newsletter subscriber who is not a member; exactly one of user and subscriber is set.
+    # Not indexed: rows are only read by campaign, and each subscriber is queued once per send.
+    subscriber = models.ForeignKey(
+        "NewsletterSubscriber",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        db_index=False,
+    )
     status = models.CharField(max_length=8, choices=Status.choices, default=Status.QUEUED)
     provider_message_id = models.CharField(max_length=100, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -93,3 +105,25 @@ class CampaignRecipient(BaseModel):
             models.Index(fields=["campaign", "status"], name="campaign_recipient_status_idx"),
             models.Index(fields=["provider_message_id"], name="campaign_message_idx"),
         ]
+
+
+class NewsletterSubscriber(BaseModel):
+    """Someone who asked for the newsletter on the website. Confirmed by a link in their inbox
+    before anything is sent (double opt-in)."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending"
+        CONFIRMED = "confirmed"
+        UNSUBSCRIBED = "unsubscribed"
+
+    email = models.EmailField(max_length=254, unique=True)  # stored in lower case
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    source = models.CharField(max_length=40, default="website_footer")
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["status", "-created_at"], name="newsletter_status_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.status} subscriber"

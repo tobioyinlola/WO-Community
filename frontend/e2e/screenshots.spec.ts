@@ -214,8 +214,10 @@ test("public screens", async ({ browser }, info) => {
         await p.getByLabel("Full name").fill("Preview Person");
         await p.getByLabel("Country").selectOption({ label: "Nigeria" });
         await p.getByLabel("City").fill("Lagos");
+        await p.getByLabel("LinkedIn profile").fill("linkedin.com/in/new-member");
         await p.getByRole("button", { name: "Continue" }).click();
-        await p.getByLabel("Startup name").fill("Preview Labs");
+        await p.getByLabel("Company name").fill("Preview Labs");
+        await p.getByLabel("Company website").fill("newcompany.example.com");
         await p.getByLabel("Sector").selectOption({ label: "Fintech" });
         await p.getByLabel("Stage").selectOption({ index: 1 });
         await p.getByLabel("What does it do?").fill("Payments for small shops.");

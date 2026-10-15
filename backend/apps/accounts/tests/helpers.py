@@ -17,7 +17,12 @@ def registration_payload(**overrides):
         "accepted_terms": True,
         "accepted_privacy": True,
         "accepted_conduct": True,
-        "profile": {"full_name": "Ada Founder", "country": "NG", "city": "Lagos"},
+        "profile": {
+            "full_name": "Ada Founder",
+            "country": "NG",
+            "city": "Lagos",
+            "linkedin_url": "https://www.linkedin.com/in/ada-founder",
+        },
         "startup": {
             "name": "Ada Pay",
             "country": "NG",
@@ -25,6 +30,7 @@ def registration_payload(**overrides):
             "sector": "fintech",
             "stage": "seed",
             "pitch": "Payments for small traders",
+            "website_url": "https://adapay.example.com",
         },
     }
     payload.update(overrides)

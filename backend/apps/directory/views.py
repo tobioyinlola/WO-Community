@@ -33,16 +33,16 @@ class StartupListView(PublicView):
         operation_id="public_startups_list",
         summary="Browse and search the startup directory",
         description="Listed startups only, with what their owners made public. Featured startups "
-        "come first. Without `q` results are paged by `cursor`; with `q` you get the best "
-        "matches only (no cursor), so refine the search instead of paging.",
+        "come first. Visitors see at most 10; `has_more` says there are more for members.",
         parameters=[StartupQuerySerializer],
         responses={200: StartupPageSerializer, **ERRORS},
         tags=["public"],
     )
     def get(self, request: Request) -> Response:
         params = clean_query(StartupQuerySerializer, request.query_params.dict())
-        results, next_cursor = selectors.search_startups(**params)
-        return self.cached(request, startup_page(results, next_cursor))
+        limit = params.pop("limit")
+        results, _ = selectors.search_startups(**params, limit=limit + 1)
+        return self.cached(request, startup_page(results[:limit], len(results) > limit))
 
 
 class StartupDetailView(PublicView):
@@ -69,8 +69,9 @@ class FounderListView(PublicView):
     )
     def get(self, request: Request) -> Response:
         params = clean_query(FounderQuerySerializer, request.query_params.dict())
-        results, next_cursor = selectors.search_founders(**params)
-        return self.cached(request, founder_page(results, next_cursor))
+        limit = params.pop("limit")
+        results, _ = selectors.search_founders(**params, limit=limit + 1)
+        return self.cached(request, founder_page(results[:limit], len(results) > limit))
 
 
 class FounderDetailView(PublicView):

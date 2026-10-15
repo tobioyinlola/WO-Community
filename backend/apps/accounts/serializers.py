@@ -7,7 +7,7 @@ from rest_framework import serializers
 from apps.accounts import referrals
 from apps.accounts.models import RefreshTokenFamily, User
 from apps.core.serializers import StrictSerializer
-from apps.core.text import plain
+from apps.core.text import clean_url, plain
 from apps.reference import selectors as reference
 
 
@@ -19,13 +19,33 @@ def validate_new_password(password: str, email: str = "") -> str:
     return password
 
 
+def https_link(value: str, *, hosts: tuple[str, ...] = ()) -> str:
+    """A link as people type it ("acme.com", "linkedin.com/in/ada"), made a full https:// link."""
+    value = value.strip()
+    if value and "://" not in value:
+        value = f"https://{value}"
+    elif value.startswith("http://"):
+        value = "https://" + value[len("http://") :]
+    return clean_url(value, hosts=hosts)
+
+
 class SignupProfileSerializer(StrictSerializer):
     full_name = serializers.CharField(min_length=2, max_length=120)
     country = serializers.CharField(min_length=2, max_length=2)
     city = serializers.CharField(min_length=1, max_length=100)
+    linkedin_url = serializers.CharField(
+        max_length=300,
+        help_text="Their LinkedIn profile. Admins approve applications only with one.",
+    )
 
     def validate_full_name(self, value: str) -> str:
         return _plain_required(value)
+
+    def validate_linkedin_url(self, value: str) -> str:
+        link = https_link(value, hosts=("linkedin.com",))
+        if not link:
+            raise serializers.ValidationError("Add your LinkedIn profile link.")
+        return link
 
     def validate_city(self, value: str) -> str:
         return _plain_required(value)
@@ -43,9 +63,13 @@ class RegisterProfileSerializer(SignupProfileSerializer):
 
     country = serializers.CharField(min_length=2, max_length=2, required=False, allow_blank=True)
     city = serializers.CharField(min_length=1, max_length=100, required=False, allow_blank=True)
+    linkedin_url = serializers.CharField(max_length=300, required=False, allow_blank=True)
 
     def validate_city(self, value: str) -> str:
         return _plain_required(value) if value else value
+
+    def validate_linkedin_url(self, value: str) -> str:
+        return super().validate_linkedin_url(value) if value.strip() else ""
 
     def validate_country(self, value: str) -> str:
         return super().validate_country(value) if value else value
@@ -58,9 +82,16 @@ class SignupStartupSerializer(StrictSerializer):
     sector = serializers.CharField(max_length=80)
     stage = serializers.CharField(max_length=80)
     pitch = serializers.CharField(min_length=1, max_length=160)
+    website_url = serializers.CharField(max_length=300, help_text="The company website.")
 
     def validate_name(self, value: str) -> str:
         return _plain_required(value)
+
+    def validate_website_url(self, value: str) -> str:
+        link = https_link(value)
+        if not link:
+            raise serializers.ValidationError("Add your company website.")
+        return link
 
     def validate_city(self, value: str) -> str:
         return _plain_required(value)

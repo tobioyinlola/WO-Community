@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from apps.accounts import referrals, services
 from apps.accounts.selectors import INVITATION_STATUSES, MEMBER_ORDERINGS, STATUSES
+from apps.accounts.serializers import https_link
 from apps.core.serializers import StrictSerializer
 
 
@@ -215,6 +216,16 @@ class ApplicantProfileSerializer(serializers.Serializer):
     website_url = serializers.CharField()
     linkedin_url = serializers.CharField()
     completeness = serializers.IntegerField()
+
+
+class ApplicantLinkedInSerializer(StrictSerializer):
+    linkedin_url = serializers.CharField(max_length=300)
+
+    def validate_linkedin_url(self, value: str) -> str:
+        link = https_link(value, hosts=("linkedin.com",))
+        if not link:
+            raise serializers.ValidationError("Add the LinkedIn profile link.")
+        return link
 
 
 class ApplicantStartupSerializer(serializers.Serializer):

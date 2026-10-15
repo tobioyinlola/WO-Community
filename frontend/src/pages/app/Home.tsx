@@ -11,6 +11,7 @@ import { formatDate, formatTime, humanise, timeAgo } from "../../lib/format";
 import { nameFromEmail, welcomeTitle } from "../../lib/greeting";
 import { PageHeader, RichText, Section, Skeleton } from "../../ui/blocks";
 import { BannerTicker } from "../../ui/BannerTicker";
+import { LeaderList, useLeaderboard } from "./Leaderboard";
 
 const CHECKLIST: Record<string, { label: string; to: string }> = {
   complete_profile: { label: "Complete your profile", to: "/app/me" },
@@ -46,6 +47,7 @@ export default function Home() {
   });
   const myStartups = useQuery({ queryKey: ["me", "startups"], queryFn: () => unwrap(api.GET("/api/v1/me/startups")) });
   const stats = useQuery({ queryKey: ["me", "stats"], queryFn: () => unwrap(api.GET("/api/v1/me/stats")) });
+  const leaders = useLeaderboard();
   const { me } = useAuth();
   const ventures = useQuery({ queryKey: ["toolkit", "ventures"], enabled: permissionsFor(me?.roles ?? []).has("toolkit.use"), queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
 
@@ -165,6 +167,18 @@ export default function Home() {
           </Section>
         </div>
         <aside className="app-stack app-stack--lg">
+          <Section title="Top members this month" action={<Link className="app-linklike" to="/app/leaderboard">See the leaderboard</Link>}>
+            {leaders.isPending ? <Skeleton height={120} /> : leaders.data ? (
+              <Card>
+                <LeaderList board={{ ...leaders.data, entries: leaders.data.entries.slice(0, 5) }} compact />
+                {leaders.data.me.rank ? (
+                  <p className="body-sm app-muted" style={{ margin: "var(--space-3) 0 0" }}>
+                    You&rsquo;re #{leaders.data.me.rank} with {leaders.data.me.points} points.
+                  </p>
+                ) : null}
+              </Card>
+            ) : null}
+          </Section>
           <Section title="Coming up" action={<Link className="app-linklike" to="/app/events">All events</Link>}>
             {comingUp.length > 0 ? (
               <ul className="app-list">

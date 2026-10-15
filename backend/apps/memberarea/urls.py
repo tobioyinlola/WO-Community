@@ -5,6 +5,7 @@ from apps.memberarea import views
 urlpatterns = [
     path("me/onboarding", views.OnboardingView.as_view(), name="onboarding"),
     path("me/stats", views.MyStatsView.as_view(), name="my-stats"),
+    path("leaderboard", views.LeaderboardView.as_view(), name="leaderboard"),
     path("search", views.SearchView.as_view(), name="search"),
     path("directory/startups", views.BrowseStartupsView.as_view(), name="directory-startups"),
     path("directory/members", views.BrowsePeopleView.as_view(), name="directory-members"),

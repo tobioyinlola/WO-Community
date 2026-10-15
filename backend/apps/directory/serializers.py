@@ -11,6 +11,7 @@ from rest_framework import serializers
 from apps.core.serializers import ImageSerializer, StrictSerializer
 
 MAX_SKILL_FILTERS = 5
+PUBLIC_PREVIEW = 10
 
 
 class _Query(StrictSerializer):
@@ -18,8 +19,8 @@ class _Query(StrictSerializer):
     country = serializers.CharField(min_length=2, max_length=2, required=False, default="")
     skills = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     sort = serializers.ChoiceField(choices=["newest", "alphabetical"], default="newest")
-    limit = serializers.IntegerField(min_value=1, max_value=50, default=20)
-    cursor = serializers.CharField(max_length=400, required=False, allow_blank=True, default="")
+    # Visitors see a preview: at most this many, and no further pages. Members see everyone.
+    limit = serializers.IntegerField(min_value=1, max_value=PUBLIC_PREVIEW, default=PUBLIC_PREVIEW)
 
     def validate_q(self, value: str) -> str:
         return " ".join(value.split())
@@ -129,22 +130,22 @@ class FounderDetailSerializer(FounderCardSerializer):
     structured_data = serializers.JSONField()
 
 
-def startup_page(results: list[dict[str, Any]], next_cursor: str | None) -> dict[str, Any]:
-    return {"results": StartupCardSerializer(results, many=True).data, "next_cursor": next_cursor}
+def startup_page(results: list[dict[str, Any]], has_more: bool) -> dict[str, Any]:
+    return {"results": StartupCardSerializer(results, many=True).data, "has_more": has_more}
 
 
-def founder_page(results: list[dict[str, Any]], next_cursor: str | None) -> dict[str, Any]:
-    return {"results": FounderCardSerializer(results, many=True).data, "next_cursor": next_cursor}
+def founder_page(results: list[dict[str, Any]], has_more: bool) -> dict[str, Any]:
+    return {"results": FounderCardSerializer(results, many=True).data, "has_more": has_more}
 
 
 class StartupPageSerializer(serializers.Serializer):
     results = StartupCardSerializer(many=True)
-    next_cursor = serializers.CharField(allow_null=True)
+    has_more = serializers.BooleanField(help_text="More are listed: members can see them all.")
 
 
 class FounderPageSerializer(serializers.Serializer):
     results = FounderCardSerializer(many=True)
-    next_cursor = serializers.CharField(allow_null=True)
+    has_more = serializers.BooleanField(help_text="More are listed: members can see them all.")
 
 
 class SitemapEntrySerializer(serializers.Serializer):

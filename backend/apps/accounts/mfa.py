@@ -10,6 +10,7 @@ import hashlib
 import hmac
 import secrets
 import time
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pyotp
@@ -248,3 +249,54 @@ def burn_challenge(nonce: str) -> None:
     ttl = settings.MFA_CHALLENGE_TTL_SECONDS + 60
     if not cache.add(f"mfa:nonce:{nonce}", 1, ttl):
         raise InvalidMfaChallenge()
+
+
+# --- remembering a browser for a day ---
+
+TRUST_SALT = "accounts.mfa.trust"
+
+
+def _device_id(user: User) -> str:
+    device = (
+        MfaDevice.objects.filter(user=user, confirmed_at__isnull=False)
+        .order_by("-confirmed_at")
+        .values_list("pk", flat=True)
+        .first()
+    )
+    return str(device or "")
+
+
+def trust_token(user: User, verified_at: datetime) -> str:
+    """A signed note that this browser passed MFA at ``verified_at``. Kept in an HttpOnly cookie."""
+    return signing.dumps(
+        {
+            "u": str(user.pk),
+            "v": user.token_version,
+            "d": _device_id(user),
+            "t": int(verified_at.timestamp()),
+        },
+        salt=TRUST_SALT,
+        compress=True,
+    )
+
+
+def trusted_since(user: User, raw: str) -> datetime | None:
+    """When this browser last passed MFA, if that was in the last day for this same account,
+    password and authenticator. Anything else (tampered, expired, another account) is None."""
+    if not raw:
+        return None
+    try:
+        data = signing.loads(raw, salt=TRUST_SALT, max_age=settings.MFA_REMEMBER_SECONDS)
+    except signing.BadSignature:
+        return None
+    if (
+        not isinstance(data, dict)
+        or data.get("u") != str(user.pk)
+        or data.get("v") != user.token_version
+        or data.get("d") != _device_id(user)
+        or not data.get("d")
+    ):
+        return None
+    verified = datetime.fromtimestamp(int(data.get("t", 0)), tz=UTC)
+    age = (timezone.now() - verified).total_seconds()
+    return verified if 0 <= age < settings.MFA_REMEMBER_SECONDS else None

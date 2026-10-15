@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
@@ -241,7 +241,7 @@ describe("ApprovalDrawer", () => {
     return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   }
 
-  function setup(overrides: Partial<React.ComponentProps<typeof ApprovalDrawer>> = {}) {
+  function setup(overrides: Partial<React.ComponentProps<typeof ApprovalDrawer>> = {}, linkedin = "https://www.linkedin.com/in/ife-bello") {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: Request) => {
@@ -249,7 +249,7 @@ describe("ApprovalDrawer", () => {
         if (url.pathname.endsWith("/application")) {
           return json({
             member,
-            profile: { full_name: "Ife Bello", headline: "", country: "NG", city: "Lagos", website_url: "", linkedin_url: "", completeness: 70 },
+            profile: { full_name: "Ife Bello", headline: "", country: "NG", city: "Lagos", website_url: "", linkedin_url: linkedin, completeness: 70 },
             startup: { name: "Kuda Foods", country: "NG", city: "Lagos", sector: "Agritech", stage: "Seed", pitch: "Fresh produce in a day.", website_url: "", completeness: 55 },
             timeline: [{ kind: "registered", at: "2026-10-11T07:00:00Z", note: "" }],
             referral: { kind: "member", kind_label: "A WO Community member", detail: "", referrer: { id: "r1", name: "Amaka Obi" }, code_used: "" },
@@ -289,6 +289,21 @@ describe("ApprovalDrawer", () => {
     expect(await within(dialog).findByText("Kuda Foods")).toBeInTheDocument();
     expect(await within(dialog).findByText("Nigeria")).toBeInTheDocument();
     expect(within(dialog).getByText("Fresh produce in a day.")).toBeInTheDocument();
+  });
+
+  it("shows the LinkedIn profile, and without one asks for it and holds back approval", async () => {
+    setup();
+    const dialog = screen.getByRole("dialog");
+    expect(await within(dialog).findByRole("link", { name: "linkedin.com/in/ife-bello" })).toHaveAttribute(
+      "href",
+      "https://www.linkedin.com/in/ife-bello",
+    );
+    cleanup();
+    setup({}, "");
+    const missing = screen.getByRole("dialog");
+    expect(await within(missing).findByText(/Missing. Needed before approval/)).toBeInTheDocument();
+    expect(within(missing).getByLabelText("LinkedIn profile")).toBeInTheDocument();
+    expect(within(missing).getByRole("button", { name: "Approve" })).toBeDisabled();
   });
 
   it("says how they heard of us, with the member who brought them, and offers to edit it", async () => {

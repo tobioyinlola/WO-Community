@@ -57,6 +57,21 @@ def _set_refresh_cookie(response: HttpResponse, token: str, max_age: int) -> Non
     )
 
 
+def _set_mfa_trust_cookie(response: HttpResponse, result: services.LoginResult) -> None:
+    """Remember this browser for a day after a code is entered, so the next sign in skips it."""
+    if result.mfa_verified_at is None:
+        return
+    response.set_cookie(
+        settings.MFA_TRUST_COOKIE_NAME,
+        services.mfa_trust_token(result.user, result.mfa_verified_at),
+        max_age=settings.MFA_REMEMBER_SECONDS,
+        path=settings.REFRESH_COOKIE_PATH,
+        secure=settings.REFRESH_COOKIE_SECURE,
+        httponly=True,
+        samesite=settings.REFRESH_COOKIE_SAMESITE,
+    )
+
+
 def _clear_refresh_cookie(response: HttpResponse) -> None:
     response.delete_cookie(
         settings.REFRESH_COOKIE_NAME,
@@ -81,6 +96,7 @@ def _token_response(result: services.LoginResult) -> Response:
     response["Cache-Control"] = "no-store"
     max_age = int(settings.REFRESH_SLIDING_LIFETIME.total_seconds())
     _set_refresh_cookie(response, result.refresh_token, max_age)
+    _set_mfa_trust_cookie(response, result)
     return response
 
 
@@ -199,6 +215,7 @@ class LoginView(PublicAuthView):
             password=serializer.validated_data["password"],
             ip=client_ip(request),
             user_agent=user_agent(request),
+            mfa_trust=request.COOKIES.get(settings.MFA_TRUST_COOKIE_NAME, ""),
         )
         if isinstance(result, services.MfaChallenge):
             challenge = Response(

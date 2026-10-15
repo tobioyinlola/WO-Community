@@ -46,7 +46,10 @@ def enrolled(make_user):
     return user, secret, mfa._issue_recovery_codes(user)
 
 
-def password_step(client, email="admin@example.com"):
+def password_step(client, email="admin@example.com", *, remembered=False):
+    """The password form. Unless ``remembered``, as from a browser that never entered a code."""
+    if not remembered:
+        client.cookies.pop(settings.MFA_TRUST_COOKIE_NAME, None)
     return client.post(LOGIN_URL, {"email": email, "password": PASSWORD})
 
 
@@ -250,7 +253,7 @@ def test_refresh_keeps_the_mfa_claim(api_client, enrolled):
 def test_refreshing_does_not_make_an_old_mfa_check_look_new(api_client, enrolled):
     _, secret, _ = enrolled
     login = full_login(api_client, secret)
-    RefreshTokenFamily.objects.update(mfa_verified_at=timezone.now() - timedelta(hours=13))
+    RefreshTokenFamily.objects.update(mfa_verified_at=timezone.now() - timedelta(hours=25))
     api_client.cookies[COOKIE] = login.cookies[COOKIE].value
     token = api_client.post(REFRESH_URL, **AJAX).json()["access_token"]
     response = api_client.get(MEMBERS, HTTP_AUTHORIZATION=f"Bearer {token}")

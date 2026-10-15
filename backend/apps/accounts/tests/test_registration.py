@@ -246,3 +246,25 @@ def test_bad_details_look_the_same_for_new_and_existing_addresses(api_client, ma
     )
     assert fresh.status_code == taken.status_code == 400
     assert fresh.json()["errors"] == taken.json()["errors"]
+
+
+# --- company website and LinkedIn ---
+
+
+@pytest.mark.parametrize(
+    ("section", "field"), [("profile", "linkedin_url"), ("startup", "website_url")]
+)
+def test_sign_up_needs_a_linkedin_profile_and_a_company_website(api_client, section, field):
+    payload = registration_payload()
+    del payload[section][field]
+    response = api_client.post(REGISTER_URL, payload, format="json")
+    assert response.status_code == 400
+    assert field in response.json()["errors"][section]
+
+
+def test_a_linkedin_link_must_be_on_linkedin(api_client):
+    payload = registration_payload()
+    payload["profile"]["linkedin_url"] = "https://example.com/ada"
+    response = api_client.post(REGISTER_URL, payload, format="json")
+    assert response.status_code == 400
+    assert "linkedin_url" in response.json()["errors"]["profile"]

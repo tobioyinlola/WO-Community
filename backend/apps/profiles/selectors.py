@@ -216,3 +216,10 @@ def ids_by_name(text: str) -> Any:
     return FounderProfile.objects.filter(full_name__icontains=text).values_list(
         "user_id", flat=True
     )
+
+
+def names_for(user_ids: list[UUID]) -> dict[UUID, str]:
+    """Full names as entered, for staff views that are not bound by profile visibility."""
+    return dict(
+        FounderProfile.objects.filter(user_id__in=user_ids).values_list("user_id", "full_name")
+    )

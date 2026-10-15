@@ -4,6 +4,7 @@ import pytest
 
 from apps.feed.tests.conftest import POSTS, active, comments_url, write_post
 from apps.notifications.models import Notification
+from apps.profiles import services as profiles
 
 pytestmark = pytest.mark.django_db
 
@@ -135,6 +136,7 @@ def test_an_approved_member_gets_a_welcome_notice(make_user, client_for, run_out
         email="new@example.com",
         email_verified_at="2026-01-01T00:00:00Z",
     )
+    profiles.set_linkedin(user_id=pending.pk, url="https://www.linkedin.com/in/new")
     admin = client_for(make_user(roles=("community_admin",), email="admin@example.com"), mfa_age=5)
     admin.post(f"/api/v1/admin/members/{pending.pk}/approve")
     run_outbox()

@@ -77,6 +77,7 @@ def create_from_signup(user_id: UUID, details: dict[str, Any]) -> FounderProfile
     profile.full_name = details["full_name"]
     profile.country = details.get("country", "")
     profile.city = details.get("city", "")
+    profile.linkedin_url = details.get("linkedin_url", "")
     if profile.slug.startswith("member-"):
         profile.slug = _new_slug(details["full_name"])
     _refresh_completeness(profile)
@@ -162,3 +163,26 @@ def country_of(user_id: UUID) -> str:
         FounderProfile.objects.filter(user_id=user_id).values_list("country", flat=True).first()
         or ""
     )
+
+
+def linkedin_of(user_id: UUID) -> str:
+    """The LinkedIn link on the member's profile, or blank."""
+    return (
+        FounderProfile.objects.filter(user_id=user_id)
+        .values_list("linkedin_url", flat=True)
+        .first()
+        or ""
+    )
+
+
+def set_linkedin(*, user_id: UUID, url: str) -> FounderProfile:
+    """Record a LinkedIn link found by an admin reviewing the application. ``url`` is cleaned."""
+    get_or_create_profile(user_id)
+    with transaction.atomic():
+        profile = FounderProfile.objects.select_for_update().get(user_id=user_id)
+        profile.linkedin_url = url
+        _refresh_completeness(profile)
+        profile.save()
+    # The member did not do this, so it is not counted as their activity in analytics.
+    domain_events.publish(events.ProfileUpdated(user_id=str(user_id)))
+    return profile

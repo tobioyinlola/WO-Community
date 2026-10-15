@@ -12,7 +12,7 @@ import { rememberRefCode, storedRefCode } from "../../referrals/ref";
 import { useDocumentTitle } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 
-const STEPS = ["Account", "About you", "Your startup", "Agree"] as const;
+const STEPS = ["Account", "About you", "Your company", "Agree"] as const;
 
 interface Draft {
   email: string;
@@ -20,8 +20,10 @@ interface Draft {
   full_name: string;
   country: string;
   city: string;
+  linkedin: string;
   also_mentor: boolean;
   s_name: string;
+  s_website: string;
   s_country: string;
   s_city: string;
   s_sector: string;
@@ -40,8 +42,10 @@ const EMPTY: Draft = {
   full_name: "",
   country: "",
   city: "",
+  linkedin: "",
   also_mentor: false,
   s_name: "",
+  s_website: "",
   s_country: "",
   s_city: "",
   s_sector: "",
@@ -129,7 +133,12 @@ export function Register() {
         also_mentor: draft.also_mentor,
         invitation_token: invitation,
         referral: referralBody(draft.referral),
-        profile: { full_name: draft.full_name.trim(), country: draft.country, city: draft.city.trim() },
+        profile: {
+          full_name: draft.full_name.trim(),
+          country: draft.country,
+          city: draft.city.trim(),
+          linkedin_url: draft.linkedin.trim(),
+        },
         startup: {
           name: draft.s_name.trim(),
           country: draft.s_country || draft.country,
@@ -137,6 +146,7 @@ export function Register() {
           sector: draft.s_sector,
           stage: draft.s_stage,
           pitch: draft.s_pitch.trim(),
+          website_url: draft.s_website.trim(),
         },
     };
     const { response, error } = await api.POST("/api/v1/auth/register", { body });
@@ -192,8 +202,12 @@ export function Register() {
       if (draft.full_name.trim().length < 2) out["profile.full_name"] = "Enter your full name.";
       if (!draft.country) out["profile.country"] = "Choose your country.";
       if (!draft.city.trim()) out["profile.city"] = "Enter your city.";
+      if (!/linkedin\.com\/./i.test(draft.linkedin.trim()))
+        out["profile.linkedin_url"] = "Add the link to your LinkedIn profile, like linkedin.com/in/your-name.";
     } else if (index === 2) {
-      if (!draft.s_name.trim()) out["startup.name"] = "Enter the name.";
+      if (!draft.s_name.trim()) out["startup.name"] = "Enter the company name.";
+      if (!/^(https?:\/\/)?[^\s/]+\.[^\s]{2,}/i.test(draft.s_website.trim()))
+        out["startup.website_url"] = "Add your company website, like yourcompany.com.";
       if (!draft.s_sector) out["startup.sector"] = "Choose a sector.";
       if (!draft.s_stage) out["startup.stage"] = "Choose a stage.";
       if (!draft.s_pitch.trim()) out["startup.pitch"] = "Describe it in a sentence.";
@@ -291,6 +305,17 @@ export function Register() {
               error={err("profile.city")}
             />
           </div>
+          <Input
+            label="LinkedIn profile"
+            type="url"
+            inputMode="url"
+            autoComplete="url"
+            placeholder="linkedin.com/in/your-name"
+            hint="Required. Our team uses it to review your application."
+            value={draft.linkedin}
+            onChange={(e) => set("linkedin", e.target.value)}
+            error={err("profile.linkedin_url")}
+          />
           <Checkbox
             label="I am also interested in mentoring other founders"
             checked={draft.also_mentor}
@@ -302,10 +327,20 @@ export function Register() {
       {step === 2 ? (
         <>
           <Input
-            label="Startup name"
+            label="Company name"
+            autoComplete="organization"
             value={draft.s_name}
             onChange={(e) => set("s_name", e.target.value)}
             error={err("startup.name")}
+          />
+          <Input
+            label="Company website"
+            type="url"
+            inputMode="url"
+            placeholder="yourcompany.com"
+            value={draft.s_website}
+            onChange={(e) => set("s_website", e.target.value)}
+            error={err("startup.website_url")}
           />
           <div className="app-formgrid">
             <Select

@@ -14,6 +14,8 @@ import structlog
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError, transaction
+from django.db.models import QuerySet
+from django.db.models.functions import Lower
 from django.utils import timezone
 from rest_framework import exceptions
 
@@ -70,6 +72,8 @@ class LoginResult:
     user: User
     access_token: str
     refresh_token: str
+    # Set when a code was just entered: the browser is then remembered for a day.
+    mfa_verified_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -201,7 +205,11 @@ def _require_founder_details(signup: dict[str, Any]) -> None:
     """Members join with their location and startup; only invited staff may leave them out."""
     profile = signup.get("profile") or {}
     errors: dict[str, Any] = {}
-    missing = {f: ["This field is required."] for f in ("country", "city") if not profile.get(f)}
+    missing = {
+        f: ["This field is required."]
+        for f in ("country", "city", "linkedin_url")
+        if not profile.get(f)
+    }
     if missing:
         errors["profile"] = missing
     if not signup.get("startup"):
@@ -343,7 +351,9 @@ def _failure_keys(address: str, ip: str) -> tuple[str, str]:
     return f"loginfail:acct:{_token_digest(address)}", f"loginfail:ip:{_token_digest(ip)}"
 
 
-def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult | MfaChallenge:
+def login(
+    *, email: str, password: str, ip: str, user_agent: str, mfa_trust: str = ""
+) -> LoginResult | MfaChallenge:
     address = normalise_email(email)
     account_key, ip_key = _failure_keys(address, ip)
     window = settings.LOGIN_FAILURE_WINDOW_SECONDS
@@ -376,18 +386,22 @@ def login(*, email: str, password: str, ip: str, user_agent: str) -> LoginResult
         raise EmailNotVerified()
 
     ratelimit.reset(account_key)
-    return begin_session(user, ip=ip, user_agent=user_agent)
+    return begin_session(user, ip=ip, user_agent=user_agent, mfa_trust=mfa_trust)
 
 
 def begin_session(
-    user: User, *, ip: str, user_agent: str, method: str = "password"
+    user: User, *, ip: str, user_agent: str, method: str = "password", mfa_trust: str = ""
 ) -> LoginResult | MfaChallenge:
     """Start a session for someone who has just proved who they are.
 
-    Accounts with a second factor get a challenge to finish instead.
+    Accounts with a second factor get a challenge to finish instead, unless this browser
+    entered a code in the last day (``mfa_trust``, the remembered-browser cookie).
     """
     if mfa.has_confirmed_device(user):
-        return MfaChallenge(user, mfa.issue_challenge(user))
+        since = mfa.trusted_since(user, mfa_trust)
+        if since is None:
+            return MfaChallenge(user, mfa.issue_challenge(user))
+        return _remembered_session(user, since, ip=ip, user_agent=user_agent)
     user.mark_login()
     refresh_token, family = sessions.start(user, user_agent=user_agent, ip=ip)
     audit.record(
@@ -400,6 +414,26 @@ def begin_session(
         user_agent=user_agent,
     )
     access = tokens.issue_access_token(user, session_id=family.pk)
+    return LoginResult(user, access, refresh_token)
+
+
+def _remembered_session(user: User, since: datetime, *, ip: str, user_agent: str) -> LoginResult:
+    """A session for a browser that passed MFA within the last day: it keeps that time, so the
+    admin console asks again once the day is up."""
+    user.mark_login()
+    refresh_token, family = sessions.start(
+        user, user_agent=user_agent, ip=ip, mfa_verified_at=since
+    )
+    audit.record(
+        actor=user,
+        action="auth.login",
+        target_type="session",
+        target_id=family.pk,
+        after={"mfa": "remembered_browser"},
+        ip=ip,
+        user_agent=user_agent,
+    )
+    access = tokens.issue_access_token(user, mfa_at=since.timestamp(), session_id=family.pk)
     return LoginResult(user, access, refresh_token)
 
 
@@ -421,7 +455,7 @@ def complete_mfa_login(*, mfa_token: str, code: str, ip: str, user_agent: str) -
         user_agent=user_agent,
     )
     access = tokens.issue_access_token(user, mfa_at=now.timestamp(), session_id=family.pk)
-    return LoginResult(user, access, refresh_token)
+    return LoginResult(user, access, refresh_token, mfa_verified_at=now)
 
 
 def refresh(*, raw_refresh_token: str, ip: str) -> LoginResult:
@@ -642,6 +676,16 @@ def ids_last_active(after: Any = None, before: Any = None) -> Any:
     return selectors.ids_last_active(after, before)
 
 
+def user_id_for_email(email: str) -> UUID | None:
+    """The account with this address, if there is one."""
+    return User.objects.filter(email__iexact=email.strip()).values_list("pk", flat=True).first()
+
+
+def all_member_emails() -> QuerySet[User, str]:
+    """Every account's address, lower-cased, as a subquery."""
+    return User.objects.annotate(lower_email=Lower("email")).values_list("lower_email", flat=True)
+
+
 def emails_for(user_ids: list[UUID]) -> dict[UUID, str]:
     return dict(User.objects.filter(pk__in=user_ids).values_list("pk", "email"))
 
@@ -682,3 +726,7 @@ def revoke_role(user_id: UUID, role: str) -> None:
 
 def has_role(user_id: UUID, role: str) -> bool:
     return UserRole.objects.filter(user_id=user_id, role=Role(role).value).exists()
+
+
+def mfa_trust_token(user: User, verified_at: datetime) -> str:
+    return mfa.trust_token(user, verified_at)

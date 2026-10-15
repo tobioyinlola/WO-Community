@@ -221,7 +221,7 @@ def test_a_member_invitation_still_needs_the_founder_details(api_client, invite)
     response = api_client.post(REGISTER_URL, staff_payload(invite()), format="json")
     assert response.status_code == 400
     errors = response.json()["errors"]
-    assert "startup" in errors and set(errors["profile"]) == {"country", "city"}
+    assert "startup" in errors and set(errors["profile"]) == {"country", "city", "linkedin_url"}
     assert not User.objects.filter(email=EMAIL).exists()
 
 

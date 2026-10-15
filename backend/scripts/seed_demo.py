@@ -205,6 +205,15 @@ def make_waiting(email: str, *, email_confirmed: bool) -> User:
     user.save()
     if email_confirmed:
         UserRole.objects.get_or_create(user=user, role="member")
+        # An application carries the LinkedIn profile admins check before approving.
+        handle = email.split("@")[0]
+        profiles.create_from_signup(
+            user.pk,
+            {
+                "full_name": handle.replace(".", " ").title(),
+                "linkedin_url": f"https://www.linkedin.com/in/{handle}",
+            },
+        )
     return user
 
 

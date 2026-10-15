@@ -2033,6 +2033,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The 10 most engaged members
+         * @description The same ranking members see, with real names and email addresses.
+         */
+        get: operations["admin_leaderboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/lessons/{lesson_id}": {
         parameters: {
             query?: never;
@@ -2200,6 +2220,26 @@ export interface paths {
         put?: never;
         /** Approve a pending registration */
         post: operations["admin_members_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/members/{user_id}/linkedin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add the LinkedIn profile to a pending application
+         * @description For applications sent before LinkedIn was asked for, or with a wrong link. The link must be on linkedin.com.
+         */
+        post: operations["admin_members_linkedin_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2542,6 +2582,46 @@ export interface paths {
         get?: never;
         /** Reorder the lessons in a module */
         put: operations["admin_modules_lessons_order_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/newsletter/subscribers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * People who signed up for the newsletter on the website
+         * @description Newest first. Only confirmed subscribers who are not members can be added to a newsletter; members are reached through their account settings.
+         */
+        get: operations["admin_newsletter_subscribers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/newsletter/subscribers/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download newsletter subscribers as CSV
+         * @description Confirmed subscribers by default; the export is recorded in the audit log.
+         */
+        get: operations["admin_newsletter_subscribers_export_retrieve"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -4648,6 +4728,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The top 10 members by engagement, and where you stand
+         * @description Points over the last `period_days` days: posts, comments, comments on news, reactions given and received, and days signed in. Names follow each member's profile visibility. Updated every few minutes.
+         */
+        get: operations["leaderboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lessons/{lesson_id}": {
         parameters: {
             query?: never;
@@ -5649,6 +5749,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/newsletter/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a newsletter sign up
+         * @description Opened from the link in the confirmation email. Safe to repeat.
+         */
+        post: operations["newsletter_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/newsletter/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign up for the newsletter
+         * @description Sends a confirmation link; nothing is sent until it is opened. The answer is the same whether or not the address is already on the list.
+         */
+        post: operations["newsletter_subscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/newsletter/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave the newsletter
+         * @description For people who signed up on the website. Takes effect at once. Send the token as JSON, or in the query string as mail clients do (RFC 8058).
+         */
+        post: operations["newsletter_unsubscribe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notes/{note_id}": {
         parameters: {
             query?: never;
@@ -6156,7 +6316,7 @@ export interface paths {
         };
         /**
          * Browse and search the startup directory
-         * @description Listed startups only, with what their owners made public. Featured startups come first. Without `q` results are paged by `cursor`; with `q` you get the best matches only (no cursor), so refine the search instead of paging.
+         * @description Listed startups only, with what their owners made public. Featured startups come first. Visitors see at most 10; `has_more` says there are more for members.
          */
         get: operations["public_startups_list"];
         put?: never;
@@ -8905,6 +9065,20 @@ export interface components {
             /** Format: date */
             deadline?: string | null;
         };
+        AdminLeaderEntry: {
+            rank: number;
+            /** Format: uuid */
+            user_id: string;
+            name: string;
+            email: string;
+            points: number;
+            breakdown: components["schemas"]["Points"];
+        };
+        AdminLeaderboard: {
+            period_days: number;
+            points: components["schemas"]["Points"];
+            entries: components["schemas"]["AdminLeaderEntry"][];
+        };
         AdminLearner: {
             /** Format: uuid */
             user_id: string;
@@ -9419,6 +9593,15 @@ export interface components {
             name: string;
             email: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ApplicantLinkedInRequest: {
+            linkedin_url: string;
+        };
         ApplicantProfile: {
             full_name: string;
             headline: string;
@@ -9852,6 +10035,7 @@ export interface components {
             }[];
             /** Format: uuid */
             segment_id: string | null;
+            include_subscribers: boolean;
             status: string;
             /** Format: date-time */
             scheduled_at: string | null;
@@ -9880,6 +10064,8 @@ export interface components {
             template_id?: string;
             /** Format: uuid */
             segment_id?: string | null;
+            /** @description Also send to confirmed newsletter subscribers who are not members. */
+            include_subscribers?: boolean;
         };
         CampaignGlance: {
             /** Format: uuid */
@@ -10838,7 +11024,8 @@ export interface components {
         };
         FounderPage: {
             results: components["schemas"]["FounderCard"][];
-            next_cursor: string | null;
+            /** @description More are listed: members can see them all. */
+            has_more: boolean;
         };
         FounderRef: {
             slug: string;
@@ -11257,6 +11444,24 @@ export interface components {
          * @enum {string}
          */
         LanguagesEnum: "af" | "am" | "ar" | "de" | "en" | "es" | "fr" | "ha" | "hi" | "ig" | "pt" | "sw" | "yo" | "zh" | "zu";
+        LeaderEntry: {
+            rank: number;
+            /** Format: uuid */
+            user_id: string;
+            name: string;
+            headline: string;
+            photo: components["schemas"]["Image"] | null;
+            points: number;
+            breakdown: components["schemas"]["Points"];
+            is_me: boolean;
+        };
+        Leaderboard: {
+            period_days: number;
+            /** @description What each activity is worth. */
+            points: components["schemas"]["Points"];
+            entries: components["schemas"]["LeaderEntry"][];
+            me: components["schemas"]["MyStanding"];
+        };
         LearningSection: {
             courses_started: number;
             courses_completed: number;
@@ -11923,6 +12128,14 @@ export interface components {
             waiting_count: number;
             members: components["schemas"]["ReferralEntry"][];
         };
+        MyStanding: {
+            /** @description None until you earn a point. */
+            rank: number | null;
+            points: number;
+            breakdown: components["schemas"]["Points"];
+            /** @description Members with at least one point. */
+            ranked_members: number;
+        };
         MyStats: {
             /** @description The window of the *_recent counts. */
             trend_days: number;
@@ -11987,6 +12200,30 @@ export interface components {
             url: string;
             type: string;
             image: string | null;
+        };
+        NewsletterResult: {
+            detail: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        NewsletterSignupRequest: {
+            /** Format: email */
+            email: string;
+            /** @default  */
+            website: string;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        NewsletterTokenRequest: {
+            token: string;
         };
         Note: {
             /** Format: uuid */
@@ -12530,6 +12767,7 @@ export interface components {
             }[];
             /** Format: uuid */
             segment_id?: string | null;
+            include_subscribers?: boolean;
         };
         PatchedCertificateChoiceRequest: {
             show_on_profile?: boolean;
@@ -12902,6 +13140,14 @@ export interface components {
             date: string;
             /** Format: double */
             value: number | null;
+        };
+        Points: {
+            posts: number;
+            comments: number;
+            news_comments: number;
+            reactions_given: number;
+            reactions_received: number;
+            login_days: number;
         };
         Post: {
             /** Format: uuid */
@@ -13581,6 +13827,7 @@ export interface components {
             full_name: string;
             country?: string;
             city?: string;
+            linkedin_url?: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -14218,6 +14465,8 @@ export interface components {
             full_name: string;
             country: string;
             city: string;
+            /** @description Their LinkedIn profile. Admins approve applications only with one. */
+            linkedin_url: string;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -14232,6 +14481,8 @@ export interface components {
             sector: string;
             stage: string;
             pitch: string;
+            /** @description The company website. */
+            website_url: string;
         };
         Sitemap: {
             startups: components["schemas"]["SitemapEntry"][];
@@ -14376,7 +14627,8 @@ export interface components {
         };
         StartupPage: {
             results: components["schemas"]["StartupCard"][];
-            next_cursor: string | null;
+            /** @description More are listed: members can see them all. */
+            has_more: boolean;
         };
         StartupRef: {
             /** Format: uuid */
@@ -14406,6 +14658,32 @@ export interface components {
          * @enum {string}
          */
         StreamEnum: "transactional" | "broadcast";
+        Subscriber: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            status: string;
+            signed_up_from: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            confirmed_at: string | null;
+            /** Format: date-time */
+            unsubscribed_at: string | null;
+        };
+        SubscriberCounts: {
+            confirmed: number;
+            pending: number;
+            unsubscribed: number;
+        };
+        SubscriberListPage: {
+            count: number;
+            next: string | null;
+            previous: string | null;
+            results: components["schemas"]["Subscriber"][];
+            totals: components["schemas"]["SubscriberCounts"];
+        };
         Suggestion: {
             /** Format: uuid */
             id: string;
@@ -22250,6 +22528,39 @@ export interface operations {
             };
         };
     };
+    admin_leaderboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLeaderboard"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_lessons_destroy: {
         parameters: {
             query?: never;
@@ -22733,6 +23044,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Member"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, MFA missing, or step-up required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The account is not in a state that allows this */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_members_linkedin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicantLinkedInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
                 };
             };
             /** @description Not authenticated */
@@ -23674,6 +24038,105 @@ export interface operations {
             };
             /** @description Not every lesson listed once */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_newsletter_subscribers_retrieve: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `pending` - pending
+                 *     * `confirmed` - confirmed
+                 *     * `unsubscribed` - unsubscribed
+                 */
+                status?: "pending" | "confirmed" | "unsubscribed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriberListPage"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_newsletter_subscribers_export_retrieve: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                q?: string;
+                /**
+                 * @description * `pending` - pending
+                 *     * `confirmed` - confirmed
+                 *     * `unsubscribed` - unsubscribed
+                 */
+                status?: "pending" | "confirmed" | "unsubscribed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29586,6 +30049,32 @@ export interface operations {
             };
         };
     };
+    leaderboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Leaderboard"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     lessons_retrieve: {
         parameters: {
             query?: never;
@@ -32301,6 +32790,96 @@ export interface operations {
             };
         };
     };
+    newsletter_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewsletterTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsletterResult"];
+                };
+            };
+            /** @description Bad link */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    newsletter_subscribe_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewsletterSignupRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsletterResult"];
+                };
+            };
+            /** @description Invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    newsletter_unsubscribe_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewsletterTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsletterResult"];
+                };
+            };
+            /** @description Bad link */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     notes_destroy: {
         parameters: {
             query?: never;
@@ -33160,7 +33739,6 @@ export interface operations {
         parameters: {
             query?: {
                 country?: string;
-                cursor?: string;
                 limit?: number;
                 q?: string;
                 skills?: string;
@@ -33424,7 +34002,6 @@ export interface operations {
         parameters: {
             query?: {
                 country?: string;
-                cursor?: string;
                 featured?: boolean;
                 limit?: number;
                 q?: string;

@@ -8,7 +8,7 @@ import { EmptyState, Loaded, PageHeader, SkeletonCards } from "../../ui/blocks";
 
 const TABS = [
   { id: "startups", label: "Startups" },
-  { id: "founders", label: "Founders" },
+  { id: "founders", label: "Members" },
   { id: "jobs", label: "Jobs" },
   { id: "events", label: "Events" },
   { id: "courses", label: "Courses" },
@@ -27,10 +27,35 @@ function JoinPrompt() {
   );
 }
 
+/** Visitors see a preview of ten; the rest of the directory is for members. */
+function SeeMore({ what }: { what: "startups" | "members" }) {
+  return (
+    <section className="explore-more wo-on-brand" aria-label={`See all ${what}`}>
+      <div>
+        <h2 className="h3" style={{ margin: 0 }}>
+          You&rsquo;re seeing 10 {what}. Join to see them all.
+        </h2>
+        <p className="body" style={{ margin: "var(--space-2) 0 0", color: "var(--text-on-brand-muted)" }}>
+          Members can browse every {what === "startups" ? "startup" : "member"} in the community, filter the directory and
+          ask for introductions.
+        </p>
+      </div>
+      <div className="app-cluster">
+        <Link className="wo-btn wo-btn--accent" to="/register">
+          Request access
+        </Link>
+        <Link className="wo-btn wo-btn--on-brand" to="/login">
+          Sign in
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function Startups() {
   const query = useQuery({
     queryKey: ["public", "startups"],
-    queryFn: () => unwrap(api.GET("/api/v1/public/startups", { params: { query: { limit: 30 } } })),
+    queryFn: () => unwrap(api.GET("/api/v1/public/startups", { params: { query: { limit: 10 } } })),
   });
   return (
     <Loaded
@@ -40,24 +65,27 @@ function Startups() {
       empty={<EmptyState title="No startups listed yet">Startups appear here when their founders choose to be found.</EmptyState>}
     >
       {(data) => (
-        <div className="app-grid">
-          {data.results.map((s) => (
-            <Card key={s.slug}>
-              <div className="app-cluster" style={{ marginBottom: "var(--space-3)" }}>
-                <Badge variant="operator">{s.sector.name}</Badge>
-                <Badge>{s.stage.name}</Badge>
-              </div>
-              <CardTitle>{s.name}</CardTitle>
-              <CardText>{s.pitch}</CardText>
-              <ul className="app-meta" style={{ marginTop: "var(--space-3)" }}>
-                <li>
-                  <MapPin size={16} strokeWidth={1.5} aria-hidden="true" />
-                  {s.city}, {s.country}
-                </li>
-              </ul>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="app-grid">
+            {data.results.map((s) => (
+              <Card key={s.slug}>
+                <div className="app-cluster" style={{ marginBottom: "var(--space-3)" }}>
+                  <Badge variant="operator">{s.sector.name}</Badge>
+                  <Badge>{s.stage.name}</Badge>
+                </div>
+                <CardTitle>{s.name}</CardTitle>
+                <CardText>{s.pitch}</CardText>
+                <ul className="app-meta" style={{ marginTop: "var(--space-3)" }}>
+                  <li>
+                    <MapPin size={16} strokeWidth={1.5} aria-hidden="true" />
+                    {s.city}, {s.country}
+                  </li>
+                </ul>
+              </Card>
+            ))}
+          </div>
+          {data.has_more ? <SeeMore what="startups" /> : null}
+        </>
       )}
     </Loaded>
   );
@@ -66,36 +94,39 @@ function Startups() {
 function Founders() {
   const query = useQuery({
     queryKey: ["public", "founders"],
-    queryFn: () => unwrap(api.GET("/api/v1/public/founders", { params: { query: { limit: 30 } } })),
+    queryFn: () => unwrap(api.GET("/api/v1/public/founders", { params: { query: { limit: 10 } } })),
   });
   return (
     <Loaded
       query={query}
       skeleton={<SkeletonCards />}
       isEmpty={(d) => d.results.length === 0}
-      empty={<EmptyState title="No founders listed yet">Members who make their profile public appear here.</EmptyState>}
+      empty={<EmptyState title="No members listed yet">Members who make their profile public appear here.</EmptyState>}
     >
       {(data) => (
-        <div className="app-grid">
-          {data.results.map((f) => (
-            <Card key={f.slug}>
-              <div className="app-cluster" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
-                <Avatar name={f.full_name} id={f.slug} src={f.photo?.thumb} shape="arch" size="lg" />
-                <div>
-                  <CardTitle>{f.full_name}</CardTitle>
-                  <CardText>{f.headline}</CardText>
-                  <div className="app-cluster" style={{ marginTop: "var(--space-3)" }}>
-                    {f.badges.map((b) => (
-                      <Badge key={b} variant="founder">
-                        {humanise(b)}
-                      </Badge>
-                    ))}
+        <>
+          <div className="app-grid">
+            {data.results.map((f) => (
+              <Card key={f.slug}>
+                <div className="app-cluster" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
+                  <Avatar name={f.full_name} id={f.slug} src={f.photo?.thumb} shape="arch" size="lg" />
+                  <div>
+                    <CardTitle>{f.full_name}</CardTitle>
+                    <CardText>{f.headline}</CardText>
+                    <div className="app-cluster" style={{ marginTop: "var(--space-3)" }}>
+                      {f.badges.map((b) => (
+                        <Badge key={b} variant="founder">
+                          {humanise(b)}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+          {data.has_more ? <SeeMore what="members" /> : null}
+        </>
       )}
     </Loaded>
   );

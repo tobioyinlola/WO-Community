@@ -125,6 +125,7 @@ export const NAV: NavEntry[] = [
       { id: "newsletters", label: "Newsletters", to: "/admin/email", needs: "campaigns.send" },
       { id: "segments", label: "Audiences", to: "/admin/email?tab=audiences", needs: "campaigns.send" },
       { id: "templates", label: "Newsletter blocks", to: "/admin/email?tab=templates", needs: "campaigns.send" },
+      { id: "subscribers", label: "Newsletter subscribers", to: "/admin/email?tab=subscribers", needs: "campaigns.send" },
       { id: "email-templates", label: "Email templates", to: "/admin/email-templates", needs: "email.templates.manage" },
       { id: "email-health", label: "Email health", to: "/admin/email-health", needs: "email.health" },
     ],
