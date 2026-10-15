@@ -2,10 +2,10 @@ import { useState } from "react";
 import { cx } from "../lib/cx";
 
 export const LOGO_SOURCES = {
-  fullOnLight: "/assets/wo-logo-on-light.png",
-  fullOnDark: "/assets/wo-logo-on-dark.png",
-  markOnLight: "/assets/wo-mark-on-light.png",
-  markOnDark: "/assets/wo-mark-on-dark.png",
+  fullOnLight: "/brand/wo-logo-on-light.png",
+  fullOnDark: "/brand/wo-logo-on-dark.png",
+  markOnLight: "/brand/wo-mark-on-light.png",
+  markOnDark: "/brand/wo-mark-on-dark.png",
 };
 
 /** Width over height of the supplied full logo files (680 x 578). */

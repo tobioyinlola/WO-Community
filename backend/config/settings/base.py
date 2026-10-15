@@ -625,7 +625,7 @@ ZOOM_CLIENT_SECRET = env.str("ZOOM_CLIENT_SECRET", default="")
 EMAIL_SIGNOFF = env.str("EMAIL_SIGNOFF", default="Best regards,\nThe WO Community Team").replace(
     "\n", "\n"
 )
-EMAIL_LOGO_URL = env.str("EMAIL_LOGO_URL", default=f"{FRONTEND_BASE_URL}/assets/email-logo.png")
+EMAIL_LOGO_URL = env.str("EMAIL_LOGO_URL", default=f"{FRONTEND_BASE_URL}/brand/email-logo.png")
 
 # Warming up a new sending domain (see apps/notifications/warmup.py).
 EMAIL_WARMUP_START = env.str("EMAIL_WARMUP_START", default="")

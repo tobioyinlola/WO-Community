@@ -23,7 +23,7 @@ export function watchConsole(page: Page): string[] {
   page.on("response", (response) => {
     // A venture with no score, plan or forecast yet answers 404 by design; the screens show an empty state.
     const expectedMissing = response.status() === 404 && /\/toolkit\/ventures\/[^/]+\/(score\/latest|plan|forecast)$/.test(response.url());
-    if (response.status() >= 400 && !expectedMissing && !response.url().includes("/assets/wo-")) {
+    if (response.status() >= 400 && !expectedMissing && !response.url().includes("/brand/wo-")) {
       problems.push(`${response.status()} ${response.url()}`);
     }
   });
