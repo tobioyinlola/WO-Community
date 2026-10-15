@@ -2541,7 +2541,8 @@ paths:
   /api/v1/admin/editorial-comments/{comment_id}/hide:
     post:
       operationId: admin_editorial_comments_hide_create
-      description: The type of the None singleton.
+      description: Hide, unhide or remove a comment on an item (the URL names the
+        action).
       summary: Moderate a comment on an item
       parameters:
       - in: path
@@ -2575,7 +2576,8 @@ paths:
   /api/v1/admin/editorial-comments/{comment_id}/remove:
     post:
       operationId: admin_editorial_comments_remove_create
-      description: The type of the None singleton.
+      description: Hide, unhide or remove a comment on an item (the URL names the
+        action).
       summary: Moderate a comment on an item
       parameters:
       - in: path
@@ -2609,7 +2611,8 @@ paths:
   /api/v1/admin/editorial-comments/{comment_id}/unhide:
     post:
       operationId: admin_editorial_comments_unhide_create
-      description: The type of the None singleton.
+      description: Hide, unhide or remove a comment on an item (the URL names the
+        action).
       summary: Moderate a comment on an item
       parameters:
       - in: path
@@ -2830,7 +2833,8 @@ paths:
   /api/v1/admin/editorial/{item_id}/publish:
     post:
       operationId: admin_editorial_publish_create
-      description: The type of the None singleton.
+      description: Publish now, or take down / cancel a schedule (the URL names the
+        action).
       summary: Publish an item now, or take it down
       parameters:
       - in: path
@@ -2899,7 +2903,8 @@ paths:
   /api/v1/admin/editorial/{item_id}/unpublish:
     post:
       operationId: admin_editorial_unpublish_create
-      description: The type of the None singleton.
+      description: Publish now, or take down / cancel a schedule (the URL names the
+        action).
       summary: Publish an item now, or take it down
       parameters:
       - in: path
