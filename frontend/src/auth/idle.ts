@@ -1,7 +1,6 @@
 /** Signing out after a spell without activity, shared by every open tab through localStorage. */
 
 export const IDLE_LIMIT_MS = 5 * 60 * 1000;
-export const IDLE_WARNING_MS = 60 * 1000;
 
 const LAST_ACTIVE = "wo:last-active";
 const SIGNED_OUT_IDLE = "wo:signed-out-idle";
