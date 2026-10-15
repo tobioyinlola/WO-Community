@@ -10,9 +10,9 @@ from rest_framework.views import APIView
 
 from apps.core import policies
 from apps.core.public import PublicView
-from apps.core.serializers import StrictSerializer
+from apps.core.serializers import ImageSerializer, StrictSerializer
 from apps.editorial.serializers import EditorialItemPageSerializer
-from apps.memberarea import browse, news, onboarding, search, sitemap, stats
+from apps.memberarea import browse, leaderboard, news, onboarding, search, sitemap, stats
 
 
 class ChecklistItemSerializer(serializers.Serializer):
@@ -75,6 +75,55 @@ class MyStatsView(APIView):
     )
     def get(self, request: Request) -> Response:
         return Response(MyStatsSerializer(stats.for_member(cast(UUID, request.user.pk))).data)
+
+
+class PointsSerializer(serializers.Serializer):
+    posts = serializers.IntegerField()
+    comments = serializers.IntegerField()
+    news_comments = serializers.IntegerField()
+    reactions_given = serializers.IntegerField()
+    reactions_received = serializers.IntegerField()
+    login_days = serializers.IntegerField()
+
+
+class LeaderEntrySerializer(serializers.Serializer):
+    rank = serializers.IntegerField()
+    user_id = serializers.UUIDField()
+    name = serializers.CharField()
+    headline = serializers.CharField(allow_blank=True)
+    photo = ImageSerializer(allow_null=True)
+    points = serializers.IntegerField()
+    breakdown = PointsSerializer()
+    is_me = serializers.BooleanField()
+
+
+class MyStandingSerializer(serializers.Serializer):
+    rank = serializers.IntegerField(allow_null=True, help_text="None until you earn a point.")
+    points = serializers.IntegerField()
+    breakdown = PointsSerializer()
+    ranked_members = serializers.IntegerField(help_text="Members with at least one point.")
+
+
+class LeaderboardSerializer(serializers.Serializer):
+    period_days = serializers.IntegerField()
+    points = PointsSerializer(help_text="What each activity is worth.")
+    entries = LeaderEntrySerializer(many=True)
+    me = MyStandingSerializer()
+
+
+class LeaderboardView(APIView):
+    policy = policies.active_member
+
+    @extend_schema(
+        summary="The top 10 members by engagement, and where you stand",
+        description="Points over the last `period_days` days: posts, comments, comments on news, "
+        "reactions given and received, and days signed in. Names follow each member's profile "
+        "visibility. Updated every few minutes.",
+        responses={200: LeaderboardSerializer, 401: OpenApiResponse(description="Not logged in")},
+        tags=["member area"],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(LeaderboardSerializer(leaderboard.for_viewer(request.user)).data)
 
 
 class SearchQuerySerializer(StrictSerializer):

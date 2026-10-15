@@ -41,7 +41,14 @@ export async function signInAdmin(page: Page) {
   await page.getByLabel("Email").fill("admin@demo.test");
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Enter your code" })).toBeVisible();
+  // A browser that entered a code in the last day goes straight in.
+  const codeStep = page.getByRole("heading", { name: "Enter your code" });
+  await expect(codeStep.or(page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/ }))).toBeVisible();
+  if (!(await codeStep.isVisible())) {
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/ })).toBeVisible();
+    return;
+  }
   // Each code works once. A run that started less than 30 seconds after the last one reuses its
   // code and is refused, so wait for the next code and try again.
   for (let attempt = 0; attempt < 2; attempt += 1) {

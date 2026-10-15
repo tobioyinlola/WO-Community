@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { api, unwrap, unwrapTagged } from "../api/client";
+import { useSearchParams } from "react-router-dom";
+import { api, downloadFile, unwrap, unwrapTagged } from "../api/client";
 import type { components } from "../api/schema";
-import { Alert, Badge, Button, Card, Input, Modal, Select, StatTile } from "../components";
+import { Alert, Badge, Button, Card, Checkbox, Input, Modal, Select, StatTile } from "../components";
 import { useCountries } from "../api/reference";
 import { formatDateTime, humanise } from "../lib/format";
 import { fromLocalInput } from "../lib/zoned";
@@ -36,16 +37,17 @@ function CampaignEditor({ id, onClose, onSaved }: { id: string | null; onClose: 
   });
   const segments = useQuery({ queryKey: ["admin", "segments", "all"], queryFn: () => unwrap(api.GET("/api/v1/admin/segments", { params: { query: { limit: 100 } } })) });
   const templates = useQuery({ queryKey: ["admin", "templates"], queryFn: () => unwrap(api.GET("/api/v1/admin/campaign-templates")) });
-  const [form, setForm] = useState<{ name: string; subject: string; preheader: string; segment_id: string; blocks: Block[]; template_id: string } | null>(id ? null : { name: "", subject: "", preheader: "", segment_id: "", blocks: [], template_id: "" });
+  const [form, setForm] = useState<{ name: string; subject: string; preheader: string; segment_id: string; include_subscribers: boolean; blocks: Block[]; template_id: string } | null>(id ? null : { name: "", subject: "", preheader: "", segment_id: "", include_subscribers: false, blocks: [], template_id: "" });
+  const subscribers = useQuery({ queryKey: ["admin", "subscribers", "totals"], queryFn: () => unwrap(api.GET("/api/v1/admin/newsletter/subscribers", { params: { query: { limit: 1 } } })) });
   const [loadedFor, setLoadedFor] = useState("");
   if (id && existing.data && loadedFor !== existing.data.etag) {
     const c = existing.data.data;
     setLoadedFor(existing.data.etag);
-    setForm({ name: c.name, subject: c.subject, preheader: c.preheader, segment_id: c.segment_id ?? "", blocks: asBlocks(c.blocks), template_id: "" });
+    setForm({ name: c.name, subject: c.subject, preheader: c.preheader, segment_id: c.segment_id ?? "", include_subscribers: c.include_subscribers, blocks: asBlocks(c.blocks), template_id: "" });
   }
   const save = useSubmit(async () => {
     if (!form) return;
-    const body = { name: form.name.trim(), subject: form.subject.trim(), preheader: form.preheader.trim(), segment_id: form.segment_id || null };
+    const body = { name: form.name.trim(), subject: form.subject.trim(), preheader: form.preheader.trim(), segment_id: form.segment_id || null, include_subscribers: form.include_subscribers };
     await guard(() =>
       id
         ? unwrap(api.PATCH("/api/v1/admin/campaigns/{campaign_id}", { params: { path: { campaign_id: id }, header: { "If-Match": existing.data?.etag ?? "" } }, body: { ...body, blocks: form.blocks } }))
@@ -68,6 +70,11 @@ function CampaignEditor({ id, onClose, onSaved }: { id: string | null; onClose: 
           <Input label="Subject line" value={form.subject} onChange={(e) => set({ subject: e.target.value })} error={errors.subject} />
           <Input label="Preview text (optional)" value={form.preheader} onChange={(e) => set({ preheader: e.target.value })} error={errors.preheader} />
           <Select label="Who gets it" options={[{ value: "", label: "Every member who has agreed to emails" }, ...(segments.data?.results ?? []).map((s) => ({ value: s.id, label: s.name }))]} value={form.segment_id} onChange={(e) => set({ segment_id: e.target.value })} error={errors.segment_id} />
+          <Checkbox
+            label={`Also send to newsletter subscribers from the website who are not members (${subscribers.data?.totals.confirmed ?? 0} confirmed)`}
+            checked={form.include_subscribers}
+            onChange={(e) => set({ include_subscribers: e.target.checked })}
+          />
           {!id && (templates.data?.length ?? 0) > 0 ? (
             <Select label="Start from a template (optional)" options={[{ value: "", label: "Write it myself" }, ...(templates.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} value={form.template_id} onChange={(e) => set({ template_id: e.target.value })} />
           ) : null}
@@ -394,15 +401,110 @@ function Templates() {
   );
 }
 
+// ---- Subscribers from the website ---------------------------------------------------------
+
+type Subscriber = components["schemas"]["Subscriber"];
+const SUB_TONE: Record<string, "success" | "warning" | "neutral"> = { confirmed: "success", pending: "warning", unsubscribed: "neutral" };
+
+function Subscribers() {
+  const [status, setStatus] = useState("");
+  const [q, setQ] = useState("");
+  const [search, setSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const toast = useToast();
+  const query = { ...(status ? { status: status as "pending" | "confirmed" | "unsubscribed" } : {}), ...(search ? { q: search } : {}) };
+  const list = useOffsetList<Subscriber>(["admin", "subscribers", status, search], (offset, limit) =>
+    unwrap(api.GET("/api/v1/admin/newsletter/subscribers", { params: { query: { ...query, offset, limit } } })),
+  );
+  const counts = useQuery({ queryKey: ["admin", "subscribers", "totals"], queryFn: () => unwrap(api.GET("/api/v1/admin/newsletter/subscribers", { params: { query: { limit: 1 } } })) });
+  const totals = counts.data?.totals;
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]));
+      await downloadFile(`/api/v1/admin/newsletter/subscribers/export?${params.toString()}`, "newsletter-subscribers.csv");
+    } catch {
+      toast.show("Could not download the list. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+  return (
+    <>
+      <p className="body app-muted" style={{ marginTop: 0 }}>
+        People who signed up with the form at the bottom of the website. They confirm by email before they count. Members are
+        reached through their own email settings, so a newsletter only adds the confirmed subscribers who are not members.
+      </p>
+      <div className="app-grid" style={{ marginBottom: "var(--space-6)" }}>
+        <StatTile label="Confirmed" value={String(totals?.confirmed ?? "…")} />
+        <StatTile label="Waiting to confirm" value={String(totals?.pending ?? "…")} />
+        <StatTile label="Left the list" value={String(totals?.unsubscribed ?? "…")} />
+      </div>
+      <form
+        className="app-cluster"
+        style={{ alignItems: "flex-end", marginBottom: "var(--space-4)" }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSearch(q.trim());
+        }}
+      >
+        <Input label="Search by email" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Select
+          label="Status"
+          options={[
+            { value: "", label: "All" },
+            { value: "confirmed", label: "Confirmed" },
+            { value: "pending", label: "Waiting to confirm" },
+            { value: "unsubscribed", label: "Left the list" },
+          ]}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        />
+        <Button type="submit" variant="secondary">Search</Button>
+        <Button variant="ghost" loading={exporting} onClick={() => void exportCsv()}>Download CSV</Button>
+      </form>
+      <Loaded query={list.query} skeleton={<SkeletonRows />} isEmpty={() => list.isEmpty}
+        empty={<EmptyState title="No subscribers yet">Sign ups from the website footer appear here once people start subscribing.</EmptyState>}>
+        {() => (
+          <>
+            <ul className="app-list">
+              {list.items.map((row) => (
+                <li key={row.id}>
+                  <div className="app-list__item">
+                    <div className="app-list__main">
+                      <p className="app-list__title">{row.email}</p>
+                      <p className="app-list__meta">
+                        Signed up {formatDateTime(row.created_at)}
+                        {row.confirmed_at ? ` · confirmed ${formatDateTime(row.confirmed_at)}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant={SUB_TONE[row.status] ?? "neutral"}>{humanise(row.status)}</Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <LoadMore hasNext={list.hasNext} loading={list.loadingMore} onClick={list.loadMore} />
+          </>
+        )}
+      </Loaded>
+    </>
+  );
+}
+
 const TABS = [
   { id: "newsletters", label: "Newsletters" },
   { id: "audiences", label: "Audiences" },
   { id: "templates", label: "Templates" },
+  { id: "subscribers", label: "Subscribers" },
 ] as const;
+type TabId = (typeof TABS)[number]["id"];
 
 export default function Email() {
   useDocumentTitle("Email");
-  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("newsletters");
+  const [params, setParams] = useSearchParams();
+  const asked = params.get("tab");
+  const tab: TabId = TABS.some((t) => t.id === asked) ? (asked as TabId) : "newsletters";
+  const setTab = (id: TabId) => setParams(id === "newsletters" ? {} : { tab: id }, { replace: true });
   return (
     <>
       <PageHeader eyebrow="Content" title="Email" lead="Write to members, choose who gets it, and see how it landed." />
@@ -413,7 +515,7 @@ export default function Email() {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "newsletters" ? <Newsletters /> : tab === "audiences" ? <Audiences /> : <Templates />}
+        {tab === "newsletters" ? <Newsletters /> : tab === "audiences" ? <Audiences /> : tab === "templates" ? <Templates /> : <Subscribers />}
       </div>
     </>
   );

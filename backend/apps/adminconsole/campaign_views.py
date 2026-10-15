@@ -1,5 +1,8 @@
+import csv
+from typing import Any
 from uuid import UUID
 
+from django.http import StreamingHttpResponse
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import exceptions, serializers, status
 from rest_framework.request import Request
@@ -7,8 +10,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.adminconsole.views import _actor, _ip
-from apps.campaigns import segments, services
-from apps.campaigns.models import Campaign, CampaignTemplate, Segment
+from apps.audit import services as audit
+from apps.campaigns import newsletter, segments, services
+from apps.campaigns.models import Campaign, CampaignTemplate, NewsletterSubscriber, Segment
 from apps.campaigns.serializers import (
     CampaignCreateSerializer,
     CampaignQuerySerializer,
@@ -21,6 +25,9 @@ from apps.campaigns.serializers import (
     SegmentSerializer,
     SegmentUpdateSerializer,
     SegmentWriteSerializer,
+    SubscriberCountsSerializer,
+    SubscriberQuerySerializer,
+    SubscriberSerializer,
     TemplateSerializer,
     TemplateWriteSerializer,
 )
@@ -46,6 +53,7 @@ def _campaign_view(campaign: Campaign) -> dict[str, object]:
         "preheader": campaign.preheader,
         "blocks": campaign.blocks,
         "segment_id": campaign.segment_id,
+        "include_subscribers": campaign.include_subscribers,
         "status": campaign.status,
         "scheduled_at": campaign.scheduled_at,
         "started_at": campaign.started_at,
@@ -388,3 +396,94 @@ def action_view(action: str) -> type[CampaignActionView]:
         StepUpCampaignActionView if action in ("send", "schedule", "resume") else CampaignActionView
     )
     return type(f"{action.title()}CampaignView", (base,), {"action": action})
+
+
+# --- newsletter subscribers from the website ---
+
+
+def _subscriber_row(row: NewsletterSubscriber) -> dict[str, object]:
+    return {
+        "id": row.pk,
+        "email": row.email,
+        "status": row.status,
+        "signed_up_from": row.source,
+        "created_at": row.created_at,
+        "confirmed_at": row.confirmed_at,
+        "unsubscribed_at": row.unsubscribed_at,
+    }
+
+
+class SubscriberListPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = SubscriberSerializer(many=True)
+    totals = SubscriberCountsSerializer()
+
+
+class SubscribersView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        summary="People who signed up for the newsletter on the website",
+        description="Newest first. Only confirmed subscribers who are not members can be added "
+        "to a newsletter; members are reached through their account settings.",
+        parameters=[SubscriberQuerySerializer],
+        responses={200: SubscriberListPageSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> Response:
+        query = SubscriberQuerySerializer(data=request.query_params.dict())
+        query.is_valid(raise_exception=True)
+        rows = newsletter.search(status=query.validated_data["status"], q=query.validated_data["q"])
+        paginator = AdminLimitOffsetPagination()
+        page = paginator.paginate_queryset(rows, request, view=self)
+        response = paginator.get_paginated_response([_subscriber_row(r) for r in page or []])
+        response.data["totals"] = newsletter.counts()
+        return response
+
+
+class _Echo:
+    def write(self, value: str) -> str:
+        return value
+
+
+class SubscriberExportView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        summary="Download newsletter subscribers as CSV",
+        description="Confirmed subscribers by default; the export is recorded in the audit log.",
+        parameters=[SubscriberQuerySerializer],
+        responses={(200, "text/csv"): OpenApiResponse(description="CSV file"), **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> StreamingHttpResponse:
+        query = SubscriberQuerySerializer(data=request.query_params.dict())
+        query.is_valid(raise_exception=True)
+        wanted = query.validated_data["status"] or "confirmed"
+        rows = list(newsletter.search(status=wanted, q=query.validated_data["q"])[:50_000])
+        audit.record(
+            actor=_actor(request),
+            action="newsletter.exported",
+            target_type="newsletter",
+            after={"rows": len(rows), "status": wanted},
+            ip=_ip(request),
+        )
+        writer = csv.writer(_Echo())
+
+        def lines() -> Any:
+            yield writer.writerow(["email", "status", "signed_up_utc", "confirmed_utc"])
+            for r in rows:
+                yield writer.writerow(
+                    [
+                        r.email,
+                        r.status,
+                        r.created_at.isoformat(),
+                        r.confirmed_at.isoformat() if r.confirmed_at else "",
+                    ]
+                )
+
+        response = StreamingHttpResponse(lines(), content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="newsletter-subscribers.csv"'
+        return response

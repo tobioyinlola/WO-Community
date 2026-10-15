@@ -1264,3 +1264,82 @@ a.app-outline__item:hover {
     max-height: none;
   }
 }
+
+/* Leaderboard: the ranked list of members and the points table. */
+.wo-leaders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.wo-leaders__row {
+  display: grid;
+  grid-template-columns: 2rem auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+.wo-leaders__row[data-me] {
+  background: var(--bg-subtle, rgba(6, 55, 47, 0.06));
+}
+.wo-leaders__rank {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: var(--bg-muted, rgba(6, 55, 47, 0.06));
+}
+.wo-leaders__row[data-top] .wo-leaders__rank {
+  background: var(--action-accent);
+  color: var(--text-on-accent);
+}
+.wo-leaders__who {
+  display: grid;
+  min-width: 0;
+}
+.wo-leaders__name {
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wo-leaders__name:hover {
+  text-decoration: underline;
+}
+.wo-leaders__you {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.wo-leaders__how {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.wo-leaders__points {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.wo-leaders__unit {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.wo-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.wo-points li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}

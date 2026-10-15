@@ -78,14 +78,14 @@ def test_a_name_match_outranks_a_mention_in_a_description(api_client, listed):
 
 def test_no_match_gives_an_empty_page(api_client, catalogue):
     body = api_client.get(STARTUPS, {"q": "xylophone"}).json()
-    assert body == {"results": [], "next_cursor": None}
+    assert body == {"results": [], "has_more": False}
 
 
-def test_a_search_returns_its_best_matches_without_a_cursor(api_client, listed):
+def test_a_search_returns_its_best_matches_and_says_there_are_more(api_client, listed):
     for n in range(5):
         listed(f"Lending {n}")
     body = api_client.get(STARTUPS, {"q": "lending", "limit": 3}).json()
-    assert len(body["results"]) == 3 and body["next_cursor"] is None
+    assert len(body["results"]) == 3 and body["has_more"] is True
 
 
 @pytest.mark.parametrize(

@@ -4682,6 +4682,26 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such job
+  /api/v1/admin/leaderboard:
+    get:
+      operationId: admin_leaderboard_retrieve
+      description: The same ranking members see, with real names and email addresses.
+      summary: The 10 most engaged members
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLeaderboard'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
   /api/v1/admin/lessons/{lesson_id}:
     patch:
       operationId: admin_lessons_partial_update
@@ -5128,6 +5148,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Member'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, MFA missing, or step-up required
+        '404':
+          description: Member not found
+        '409':
+          description: The account is not in a state that allows this
+  /api/v1/admin/members/{user_id}/linkedin:
+    post:
+      operationId: admin_members_linkedin_create
+      description: For applications sent before LinkedIn was asked for, or with a
+        wrong link. The link must be on linkedin.com.
+      summary: Add the LinkedIn profile to a pending application
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicantLinkedInRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
           description: ''
         '401':
           description: Not authenticated
@@ -5799,6 +5857,112 @@ paths:
           description: Not found
         '409':
           description: Not every lesson listed once
+  /api/v1/admin/newsletter/subscribers:
+    get:
+      operationId: admin_newsletter_subscribers_retrieve
+      description: Newest first. Only confirmed subscribers who are not members can
+        be added to a newsletter; members are reached through their account settings.
+      summary: People who signed up for the newsletter on the website
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 254
+      - in: query
+        name: status
+        schema:
+          enum:
+          - pending
+          - confirmed
+          - unsubscribed
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `pending` - pending
+          * `confirmed` - confirmed
+          * `unsubscribed` - unsubscribed
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberListPage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/newsletter/subscribers/export:
+    get:
+      operationId: admin_newsletter_subscribers_export_retrieve
+      description: Confirmed subscribers by default; the export is recorded in the
+        audit log.
+      summary: Download newsletter subscribers as CSV
+      parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 254
+      - in: query
+        name: status
+        schema:
+          enum:
+          - pending
+          - confirmed
+          - unsubscribed
+          type: string
+          default: ''
+          minLength: 1
+        description: |-
+          * `pending` - pending
+          * `confirmed` - confirmed
+          * `unsubscribed` - unsubscribed
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: CSV file
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/posts:
     get:
       operationId: admin_posts_list
@@ -10287,6 +10451,26 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/leaderboard:
+    get:
+      operationId: leaderboard_retrieve
+      description: 'Points over the last `period_days` days: posts, comments, comments
+        on news, reactions given and received, and days signed in. Names follow each
+        member''s profile visibility. Updated every few minutes.'
+      summary: The top 10 members by engagement, and where you stand
+      tags:
+      - member area
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leaderboard'
+          description: ''
+        '401':
+          description: Not logged in
   /api/v1/lessons/{lesson_id}:
     get:
       operationId: lessons_retrieve
@@ -12307,6 +12491,74 @@ paths:
           description: Not an active member
         '404':
           description: Not found
+  /api/v1/newsletter/confirm:
+    post:
+      operationId: newsletter_confirm_create
+      description: Opened from the link in the confirmation email. Safe to repeat.
+      summary: Confirm a newsletter sign up
+      tags:
+      - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterTokenRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterResult'
+          description: ''
+        '400':
+          description: Bad link
+  /api/v1/newsletter/subscribe:
+    post:
+      operationId: newsletter_subscribe_create
+      description: Sends a confirmation link; nothing is sent until it is opened.
+        The answer is the same whether or not the address is already on the list.
+      summary: Sign up for the newsletter
+      tags:
+      - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSignupRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterResult'
+          description: ''
+        '400':
+          description: Invalid
+  /api/v1/newsletter/unsubscribe:
+    post:
+      operationId: newsletter_unsubscribe_create
+      description: For people who signed up on the website. Takes effect at once.
+        Send the token as JSON, or in the query string as mail clients do (RFC 8058).
+      summary: Leave the newsletter
+      tags:
+      - public
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterTokenRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterResult'
+          description: ''
+        '400':
+          description: Bad link
   /api/v1/notes/{note_id}:
     delete:
       operationId: notes_destroy
@@ -13031,18 +13283,12 @@ paths:
           default: ''
           maxLength: 2
       - in: query
-        name: cursor
-        schema:
-          type: string
-          default: ''
-          maxLength: 400
-      - in: query
         name: limit
         schema:
           type: integer
-          maximum: 50
+          maximum: 10
           minimum: 1
-          default: 20
+          default: 10
       - in: query
         name: q
         schema:
@@ -13316,8 +13562,8 @@ paths:
     get:
       operationId: public_startups_list
       description: Listed startups only, with what their owners made public. Featured
-        startups come first. Without `q` results are paged by `cursor`; with `q` you
-        get the best matches only (no cursor), so refine the search instead of paging.
+        startups come first. Visitors see at most 10; `has_more` says there are more
+        for members.
       summary: Browse and search the startup directory
       parameters:
       - in: query
@@ -13328,12 +13574,6 @@ paths:
           default: ''
           maxLength: 2
       - in: query
-        name: cursor
-        schema:
-          type: string
-          default: ''
-          maxLength: 400
-      - in: query
         name: featured
         schema:
           type: boolean
@@ -13342,9 +13582,9 @@ paths:
         name: limit
         schema:
           type: integer
-          maximum: 50
+          maximum: 10
           minimum: 1
-          default: 20
+          default: 10
       - in: query
         name: q
         schema:
@@ -19460,6 +19700,44 @@ components:
       - description
       - title
       - type
+    AdminLeaderEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        points:
+          type: integer
+        breakdown:
+          $ref: '#/components/schemas/Points'
+      required:
+      - breakdown
+      - email
+      - name
+      - points
+      - rank
+      - user_id
+    AdminLeaderboard:
+      type: object
+      properties:
+        period_days:
+          type: integer
+        points:
+          $ref: '#/components/schemas/Points'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminLeaderEntry'
+      required:
+      - entries
+      - period_days
+      - points
     AdminLearner:
       type: object
       properties:
@@ -20748,6 +21026,20 @@ components:
       - email
       - id
       - name
+    ApplicantLinkedInRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        linkedin_url:
+          type: string
+          minLength: 1
+          maxLength: 300
+      required:
+      - linkedin_url
     ApplicantProfile:
       type: object
       properties:
@@ -21791,6 +22083,8 @@ components:
           type: string
           format: uuid
           nullable: true
+        include_subscribers:
+          type: boolean
         status:
           type: string
         scheduled_at:
@@ -21815,6 +22109,7 @@ components:
       - created_at
       - finished_at
       - id
+      - include_subscribers
       - name
       - preheader
       - recipient_count
@@ -21855,6 +22150,9 @@ components:
           type: string
           format: uuid
           nullable: true
+        include_subscribers:
+          type: boolean
+          description: Also send to confirmed newsletter subscribers who are not members.
       required:
       - name
       - subject
@@ -24030,11 +24328,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FounderCard'
-        next_cursor:
-          type: string
-          nullable: true
+        has_more:
+          type: boolean
+          description: 'More are listed: members can see them all.'
       required:
-      - next_cursor
+      - has_more
       - results
     FounderRef:
       type: object
@@ -24936,6 +25234,57 @@ components:
         * `yo` - yo
         * `zh` - zh
         * `zu` - zu
+    LeaderEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        points:
+          type: integer
+        breakdown:
+          $ref: '#/components/schemas/Points'
+        is_me:
+          type: boolean
+      required:
+      - breakdown
+      - headline
+      - is_me
+      - name
+      - photo
+      - points
+      - rank
+      - user_id
+    Leaderboard:
+      type: object
+      properties:
+        period_days:
+          type: integer
+        points:
+          allOf:
+          - $ref: '#/components/schemas/Points'
+          description: What each activity is worth.
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderEntry'
+        me:
+          $ref: '#/components/schemas/MyStanding'
+      required:
+      - entries
+      - me
+      - period_days
+      - points
     LearningSection:
       type: object
       properties:
@@ -26575,6 +26924,25 @@ components:
       - members
       - url
       - waiting_count
+    MyStanding:
+      type: object
+      properties:
+        rank:
+          type: integer
+          nullable: true
+          description: None until you earn a point.
+        points:
+          type: integer
+        breakdown:
+          $ref: '#/components/schemas/Points'
+        ranked_members:
+          type: integer
+          description: Members with at least one point.
+      required:
+      - breakdown
+      - points
+      - rank
+      - ranked_members
     MyStats:
       type: object
       properties:
@@ -26733,6 +27101,46 @@ components:
       - title
       - type
       - url
+    NewsletterResult:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    NewsletterSignupRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        website:
+          type: string
+          default: ''
+          maxLength: 200
+      required:
+      - email
+    NewsletterTokenRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - token
     Note:
       type: object
       properties:
@@ -27662,6 +28070,8 @@ components:
           type: string
           format: uuid
           nullable: true
+        include_subscribers:
+          type: boolean
     PatchedCertificateChoiceRequest:
       type: object
       properties:
@@ -28423,6 +28833,28 @@ components:
       required:
       - date
       - value
+    Points:
+      type: object
+      properties:
+        posts:
+          type: integer
+        comments:
+          type: integer
+        news_comments:
+          type: integer
+        reactions_given:
+          type: integer
+        reactions_received:
+          type: integer
+        login_days:
+          type: integer
+      required:
+      - comments
+      - login_days
+      - news_comments
+      - posts
+      - reactions_given
+      - reactions_received
     Post:
       type: object
       properties:
@@ -29971,6 +30403,9 @@ components:
           type: string
           maxLength: 100
           minLength: 1
+        linkedin_url:
+          type: string
+          maxLength: 300
       required:
       - full_name
     RegisterRequest:
@@ -31221,10 +31656,17 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        linkedin_url:
+          type: string
+          minLength: 1
+          description: Their LinkedIn profile. Admins approve applications only with
+            one.
+          maxLength: 300
       required:
       - city
       - country
       - full_name
+      - linkedin_url
     SignupStartupRequest:
       type: object
       description: |-
@@ -31257,6 +31699,11 @@ components:
           type: string
           minLength: 1
           maxLength: 160
+        website_url:
+          type: string
+          minLength: 1
+          description: The company website.
+          maxLength: 300
       required:
       - city
       - country
@@ -31264,6 +31711,7 @@ components:
       - pitch
       - sector
       - stage
+      - website_url
     Sitemap:
       type: object
       properties:
@@ -31643,11 +32091,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StartupCard'
-        next_cursor:
-          type: string
-          nullable: true
+        has_more:
+          type: boolean
+          description: 'More are listed: members can see them all.'
       required:
-      - next_cursor
+      - has_more
       - results
     StartupRef:
       type: object
@@ -31716,6 +32164,74 @@ components:
       description: |-
         * `transactional` - transactional
         * `broadcast` - broadcast
+    Subscriber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+        signed_up_from:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        unsubscribed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - confirmed_at
+      - created_at
+      - email
+      - id
+      - signed_up_from
+      - status
+      - unsubscribed_at
+    SubscriberCounts:
+      type: object
+      properties:
+        confirmed:
+          type: integer
+        pending:
+          type: integer
+        unsubscribed:
+          type: integer
+      required:
+      - confirmed
+      - pending
+      - unsubscribed
+    SubscriberListPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscriber'
+        totals:
+          $ref: '#/components/schemas/SubscriberCounts'
+      required:
+      - count
+      - next
+      - previous
+      - results
+      - totals
     Suggestion:
       type: object
       properties:

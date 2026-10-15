@@ -2,9 +2,11 @@ import json
 from uuid import UUID
 
 import pytest
+from rest_framework.exceptions import ValidationError
 
+from apps.directory import selectors
 from apps.directory.pagination import decode_cursor, encode_cursor, rows_after
-from apps.directory.tests.conftest import FOUNDERS, SITEMAP, STARTUPS, slugs
+from apps.directory.tests.conftest import FOUNDERS, SITEMAP, STARTUPS
 
 pytestmark = pytest.mark.django_db
 
@@ -155,14 +157,15 @@ def test_filter_by_founder_skills_requires_all_of_them(api_client, mixed):
 
 def test_filters_that_match_nothing_return_an_empty_page(api_client, mixed):
     body = api_client.get(STARTUPS, {"country": "ZA"}).json()
-    assert body == {"results": [], "next_cursor": None}
+    assert body == {"results": [], "has_more": False}
 
 
 @pytest.mark.parametrize(
     "params",
     [
         {"limit": 0},
-        {"limit": 51},
+        {"limit": 11},
+        {"cursor": "anything"},
         {"limit": "many"},
         {"sort": "popularity"},
         {"sector": "not a slug"},
@@ -225,60 +228,87 @@ def test_the_featured_filter_lists_only_pinned_startups(api_client, listed):
     assert names(api_client.get(STARTUPS, {"featured": "true"})) == {"Star"}
 
 
-@pytest.mark.parametrize("sort", ["newest", "alphabetical"])
-def test_paging_visits_every_startup_once_in_order(api_client, listed, sort):
-    for n in range(7):
-        listed(f"Company {n}", featured=(n == 3))
-    full = slugs(api_client.get(STARTUPS, {"sort": sort, "limit": 50}))
+# --- the public preview ---
+
+
+def test_visitors_see_at_most_ten_and_are_told_there_are_more(api_client, listed):
+    for n in range(12):
+        listed(f"Company {n}", founder=f"Founder {n}")
+    startups = api_client.get(STARTUPS).json()
+    founders = api_client.get(FOUNDERS).json()
+    assert len(startups["results"]) == 10 and startups["has_more"] is True
+    assert len(founders["results"]) == 10 and founders["has_more"] is True
+    assert len(api_client.get(STARTUPS, {"q": "Company"}).json()["results"]) <= 10
+
+
+def test_a_short_list_says_there_is_nothing_more(api_client, listed):
+    for n in range(4):
+        listed(f"Company {n}")
+    page = api_client.get(STARTUPS).json()
+    assert len(page["results"]) == 4 and page["has_more"] is False
+    exact = api_client.get(STARTUPS, {"limit": 4}).json()
+    assert len(exact["results"]) == 4 and exact["has_more"] is False
+
+
+# --- keyset paging, used inside the app ---
+
+
+def _page_all(search, sort, size):
     collected, cursor = [], ""
-    for _ in range(10):
-        page = api_client.get(STARTUPS, {"sort": sort, "limit": 3, "cursor": cursor}).json()
-        collected += [c["slug"] for c in page["results"]]
-        cursor = page["next_cursor"]
+    for _ in range(20):
+        rows, cursor = search(sort=sort, limit=size, cursor=cursor)
+        collected += [row["slug"] for row in rows]
         if cursor is None:
             break
+    return collected
+
+
+@pytest.mark.parametrize("sort", ["newest", "alphabetical"])
+def test_paging_visits_every_startup_once_in_order(listed, sort):
+    for n in range(7):
+        listed(f"Company {n}", featured=(n == 3))
+    full = [row["slug"] for row in selectors.search_startups(sort=sort, limit=50)[0]]
+    collected = _page_all(selectors.search_startups, sort, 3)
     assert collected == full
     assert len(set(collected)) == 7
 
 
-def test_the_last_page_has_no_cursor_and_exact_pages_do_not_invent_one(api_client, listed):
+def test_the_last_page_has_no_cursor_and_exact_pages_do_not_invent_one(listed):
     for n in range(4):
         listed(f"Company {n}")
-    page = api_client.get(STARTUPS, {"limit": 4}).json()
-    assert len(page["results"]) == 4 and page["next_cursor"] is None
+    rows, cursor = selectors.search_startups(limit=4)
+    assert len(rows) == 4 and cursor is None
 
 
-def test_new_listings_do_not_disturb_a_reader_part_way_through(api_client, listed):
+def test_new_listings_do_not_disturb_a_reader_part_way_through(listed):
     for n in range(4):
         listed(f"Company {n}")
-    original = slugs(api_client.get(STARTUPS, {"limit": 50}))
-    first = api_client.get(STARTUPS, {"limit": 2}).json()
+    original = [row["slug"] for row in selectors.search_startups(limit=50)[0]]
+    first, cursor = selectors.search_startups(limit=2)
     listed("Latecomer")  # newer than everything already read
-    second = api_client.get(STARTUPS, {"limit": 2, "cursor": first["next_cursor"]}).json()
-    read = [c["slug"] for c in first["results"]] + [c["slug"] for c in second["results"]]
-    assert read == original[:4]
+    second, _ = selectors.search_startups(limit=2, cursor=cursor or "")
+    assert [r["slug"] for r in first + second] == original[:4]
 
 
 @pytest.mark.parametrize("cursor", ["garbage", "e30", "eyJ2IjogWzFdfQ", "!!!", "a" * 399])
-def test_damaged_cursors_are_a_400(api_client, listed, cursor):
+def test_damaged_cursors_are_refused(listed, cursor):
     listed()
-    response = api_client.get(STARTUPS, {"cursor": cursor})
-    assert response.status_code == 400
-    assert "cursor" in response.json()["errors"]
+    with pytest.raises(ValidationError):
+        selectors.search_startups(cursor=cursor)
 
 
-def test_a_cursor_cannot_be_used_with_a_different_sort(api_client, listed):
+def test_a_cursor_cannot_be_used_with_a_different_sort(listed):
     for n in range(3):
         listed(f"Company {n}")
-    cursor = api_client.get(STARTUPS, {"limit": 1}).json()["next_cursor"]
-    response = api_client.get(STARTUPS, {"sort": "alphabetical", "cursor": cursor})
-    assert response.status_code == 400
+    _, cursor = selectors.search_startups(limit=1)
+    with pytest.raises(ValidationError):
+        selectors.search_startups(sort="alphabetical", cursor=cursor or "")
 
 
-def test_a_forged_cursor_with_wrong_types_is_refused(api_client, listed):
+def test_a_forged_cursor_with_wrong_types_is_refused(listed):
     listed()
-    forged = encode_cursor("newest", ["x", "y", "z"])
-    assert api_client.get(STARTUPS, {"cursor": forged}).status_code == 400
+    with pytest.raises(ValidationError):
+        selectors.search_startups(cursor=encode_cursor("newest", ["x", "y", "z"]))
 
 
 def test_a_well_formed_cursor_round_trips():
@@ -296,18 +326,12 @@ def test_keyset_condition_has_one_branch_per_column():
 # --- founders ---
 
 
-def test_founders_page_through_in_both_orders(api_client, listed):
+def test_founders_page_through_in_both_orders(listed):
     for n in range(5):
         listed(f"Company {n}", founder=f"Founder {n}")
     for sort in ("newest", "alphabetical"):
-        full = slugs(api_client.get(FOUNDERS, {"sort": sort, "limit": 50}))
-        got, cursor = [], ""
-        while True:
-            page = api_client.get(FOUNDERS, {"sort": sort, "limit": 2, "cursor": cursor}).json()
-            got += [c["slug"] for c in page["results"]]
-            cursor = page["next_cursor"]
-            if cursor is None:
-                break
+        full = [row["slug"] for row in selectors.search_founders(sort=sort, limit=50)[0]]
+        got = _page_all(selectors.search_founders, sort, 2)
         assert got == full and len(got) == 5
 
 
@@ -318,9 +342,9 @@ def test_listing_uses_a_fixed_number_of_queries(api_client, listed, django_asser
     for n in range(6):
         listed(f"Company {n}")
     with django_assert_max_num_queries(3):
-        assert api_client.get(STARTUPS, {"limit": 50}).status_code == 200
+        assert api_client.get(STARTUPS, {"limit": 10}).status_code == 200
     with django_assert_max_num_queries(3):
-        assert api_client.get(FOUNDERS, {"limit": 50}).status_code == 200
+        assert api_client.get(FOUNDERS, {"limit": 10}).status_code == 200
 
 
 def test_cached_pages_serialise_to_stable_json(api_client, listed):

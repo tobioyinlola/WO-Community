@@ -112,6 +112,35 @@ function ActivityCard({ events, loading, viewAll }: { events: RecentEvent[]; loa
   );
 }
 
+/** The members who took part most over the last 30 days: the same board members see. */
+function TopMembersCard() {
+  const board = useQuery({ queryKey: ["admin", "leaderboard"], queryFn: () => unwrap(api.GET("/api/v1/admin/leaderboard")) });
+  return (
+    <section className="adm-card" aria-labelledby="top-title">
+      <h2 className="adm-card__title" id="top-title">Most engaged members</h2>
+      <p className="adm-card__sub">Points from posts, comments, reactions, news and days signed in, over the last 30 days.</p>
+      <Loaded query={board} skeleton={<SkeletonRows />} isEmpty={(d) => d.entries.length === 0}
+        empty={<EmptyState title="No activity yet">Members earn points by posting, commenting, reacting and signing in.</EmptyState>}>
+        {(data) => (
+          <ol className="wo-leaders" style={{ marginTop: "var(--space-4)" }}>
+            {data.entries.map((e) => (
+              <li key={e.user_id} className="wo-leaders__row" data-top={e.rank <= 3 || undefined}>
+                <span className="wo-leaders__rank" aria-label={`Rank ${e.rank}`}>{e.rank}</span>
+                <Trophy size={16} strokeWidth={1.5} aria-hidden="true" style={{ visibility: e.rank === 1 ? "visible" : "hidden" }} />
+                <span className="wo-leaders__who">
+                  <Link className="wo-leaders__name" to={`/admin/members/${e.user_id}`}>{e.name}</Link>
+                  <span className="wo-leaders__how">{e.email}</span>
+                </span>
+                <span className="wo-leaders__points">{formatNumber(e.points)}<span className="wo-leaders__unit"> pts</span></span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Loaded>
+    </section>
+  );
+}
+
 export default function Overview() {
   useDocumentTitle("Dashboard");
   const { me } = useAuth();
@@ -149,7 +178,7 @@ export default function Overview() {
           id: e.id,
           at: e.created_at,
           icon: e.outcome === "failure" ? Flag : UserCheck,
-          text: `${e.actor.name} · ${e.action.replace(/[._]/g, " ")}${e.target.title ? `: ${e.target.title}` : ""}`,
+          text: `${e.actor.name} Â· ${e.action.replace(/[._]/g, " ")}${e.target.title ? `: ${e.target.title}` : ""}`,
         }));
       }
       const out: RecentEvent[] = [];
@@ -287,6 +316,8 @@ export default function Overview() {
       </section>
 
       {have.has("dashboard.view") ? <ReferralSection /> : null}
+
+      {have.has("dashboard.view") ? <TopMembersCard /> : null}
 
       <div className="adm-twocol">
         <AttentionCard items={attention} loading={loading} />

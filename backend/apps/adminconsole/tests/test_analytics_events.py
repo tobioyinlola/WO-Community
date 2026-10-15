@@ -10,6 +10,7 @@ from apps.accounts.models import User
 from apps.accounts.tests.helpers import REGISTER_URL, VERIFY_URL, registration_payload
 from apps.analytics import services as analytics
 from apps.analytics.models import AnalyticsEvent, IdentityLink
+from apps.profiles import services as profiles
 
 pytestmark = pytest.mark.django_db
 
@@ -34,9 +35,11 @@ def as_admin(admin, client_for):
 
 @pytest.fixture
 def pending(make_user):
-    return make_user(
+    user = make_user(
         roles=(), status="pending", email="pending@example.com", email_verified_at=timezone.now()
     )
+    profiles.set_linkedin(user_id=user.pk, url="https://www.linkedin.com/in/someone")
+    return user
 
 
 # --- the registration funnel ---

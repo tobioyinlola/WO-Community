@@ -6,6 +6,7 @@ from django.utils import timezone
 from apps.accounts.tests.helpers import AJAX, LOGIN_URL, PASSWORD, REFRESH_URL
 from apps.audit.models import AuditLog
 from apps.core.models import OutboxEvent
+from apps.profiles import services as profiles
 
 pytestmark = pytest.mark.django_db
 
@@ -24,9 +25,19 @@ def admin(make_user):
 
 @pytest.fixture
 def pending(make_user):
-    return make_user(
-        roles=(), status="pending", email="pending@example.com", email_verified_at=timezone.now()
+    return with_linkedin(
+        make_user(
+            roles=(),
+            status="pending",
+            email="pending@example.com",
+            email_verified_at=timezone.now(),
+        )
     )
+
+
+def with_linkedin(user):
+    profiles.set_linkedin(user_id=user.pk, url="https://www.linkedin.com/in/someone")
+    return user
 
 
 @pytest.fixture
@@ -396,8 +407,10 @@ def test_simultaneous_approvals_succeed_exactly_once(make_user, client_for):
     from django.db import connections
 
     admins = [make_user(roles=("community_admin",), email=f"a{n}@example.com") for n in range(2)]
-    target = make_user(
-        roles=(), status="pending", email="race@example.com", email_verified_at=timezone.now()
+    target = with_linkedin(
+        make_user(
+            roles=(), status="pending", email="race@example.com", email_verified_at=timezone.now()
+        )
     )
     clients = [client_for(a, mfa_age=5) for a in admins]
     results: list[int] = []
@@ -512,3 +525,28 @@ def test_list_rows_carry_name_country_and_startup_without_a_query_each(
     assert mine["sector"] and mine["stage"]
     other = next(r for r in rows if r["email"] == "extra0@example.com")
     assert other["name"] == "" and other["startup"] == ""
+
+
+# --- LinkedIn before approval ---
+
+
+def test_an_application_without_linkedin_cannot_be_approved_until_an_admin_adds_it(
+    as_admin, make_user
+):
+    member = make_user(
+        roles=(), status="pending", email="nolink@example.com", email_verified_at=timezone.now()
+    )
+    refused = as_admin.post(f"/api/v1/admin/members/{member.pk}/approve")
+    assert refused.status_code == 409 and refused.json()["code"] == "linkedin_missing"
+
+    wrong = as_admin.post(
+        f"/api/v1/admin/members/{member.pk}/linkedin", {"linkedin_url": "https://x.com/ada"}
+    )
+    assert wrong.status_code == 400
+    added = as_admin.post(
+        f"/api/v1/admin/members/{member.pk}/linkedin",
+        {"linkedin_url": "linkedin.com/in/ada"},
+    )
+    assert added.status_code == 200
+    assert added.json()["profile"]["linkedin_url"] == "https://linkedin.com/in/ada"
+    assert as_admin.post(f"/api/v1/admin/members/{member.pk}/approve").status_code == 200

@@ -85,9 +85,11 @@ test.describe("requesting access", () => {
     await page.getByLabel("Full name").fill("Test Applicant");
     await page.getByLabel("Country").selectOption({ label: "Nigeria" });
     await page.getByLabel("City").fill("Lagos");
+    await page.getByLabel("LinkedIn profile").fill("linkedin.com/in/new-member");
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await page.getByLabel("Startup name").fill("Applicant Labs");
+    await page.getByLabel("Company name").fill("Applicant Labs");
+    await page.getByLabel("Company website").fill("newcompany.example.com");
     await page.getByLabel("Sector").selectOption({ label: "Fintech" });
     await page.getByLabel("Stage").selectOption({ index: 1 });
     await page.getByLabel("What does it do?").fill("Payments for small shops.");

@@ -11,6 +11,8 @@ from apps.adminconsole.serializers import QueueCountsSerializer
 from apps.adminconsole.views import _actor
 from apps.core import policies
 from apps.core.serializers import StrictSerializer
+from apps.memberarea import leaderboard
+from apps.memberarea.views import PointsSerializer
 
 VIEW = policies.admin_permission("dashboard.view")
 REFRESH = policies.admin_permission("settings.manage")
@@ -274,3 +276,31 @@ class RefreshView(APIView):
     def post(self, request: Request) -> Response:
         tasks.refresh_dashboard.delay(2)
         return Response({"detail": "Refresh queued."}, status=status.HTTP_202_ACCEPTED)
+
+
+class AdminLeaderEntrySerializer(serializers.Serializer):
+    rank = serializers.IntegerField()
+    user_id = serializers.UUIDField()
+    name = serializers.CharField()
+    email = serializers.CharField(allow_blank=True)
+    points = serializers.IntegerField()
+    breakdown = PointsSerializer()
+
+
+class AdminLeaderboardSerializer(serializers.Serializer):
+    period_days = serializers.IntegerField()
+    points = PointsSerializer()
+    entries = AdminLeaderEntrySerializer(many=True)
+
+
+class LeaderboardView(APIView):
+    policy = policies.admin_permission("dashboard.view")
+
+    @extend_schema(
+        summary="The 10 most engaged members",
+        description="The same ranking members see, with real names and email addresses.",
+        responses={200: AdminLeaderboardSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(AdminLeaderboardSerializer(leaderboard.for_admins()).data)

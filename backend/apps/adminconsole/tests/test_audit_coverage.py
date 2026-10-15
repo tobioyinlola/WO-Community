@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from apps.audit.models import AuditLog
 from apps.jobs.tests.conftest import post_job, poster, poster_client, set_board  # noqa: F401
+from apps.profiles import services as profiles
 
 pytestmark = pytest.mark.django_db
 
@@ -44,6 +45,7 @@ def test_inviting_writes_one_entry_per_send_and_a_batch_entry(boss_client, boss)
 
 def test_approving_and_suspending_a_member(boss_client, boss, make_user):
     pending = make_user(email="p@example.com", status="pending", email_verified_at=timezone.now())
+    profiles.set_linkedin(user_id=pending.pk, url="https://www.linkedin.com/in/someone")
     boss_client.post(f"{ADMIN}/members/{pending.pk}/approve")
     [approved] = entries("member.approve")
     assert approved.actor_id == boss.pk and approved.target_id == str(pending.pk)

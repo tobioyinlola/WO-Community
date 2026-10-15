@@ -1,7 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { getAccessToken, onTokenChange } from "../api/session";
 import { useAuth } from "../auth/AuthProvider";
@@ -10,7 +10,7 @@ import "../styles/admin-kit.css";
 import "../styles/admin-table.css";
 import "../styles/admin-ops.css";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
-import { mfaAgeSeconds } from "./claims";
+import { MFA_DAY_SECONDS, mfaAgeSeconds } from "./claims";
 import MfaSetup from "./MfaSetup";
 import { isAdmin, permissionsFor } from "./permissions";
 import { adminLinks } from "./shell/links";
@@ -39,8 +39,9 @@ function nameFrom(email: string | undefined): string {
  * Admin accounts must have passed a second step before anything opens.
  */
 export function AdminLayout() {
-  const { me } = useAuth();
+  const { me, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const narrow = useMediaQuery("(max-width: 1023px)");
   const [collapsed, setCollapsed] = usePref("sidebar-collapsed", false);
   const [drawer, setDrawer] = useState(false);
@@ -64,6 +65,19 @@ export function AdminLayout() {
   const counts: Counts = queues.data ?? {};
 
   useEffect(() => setDrawer(false), [location.pathname, location.search]);
+
+  // A day after the authenticator code was entered, sign in again; the code is asked once more.
+  useEffect(() => {
+    if (!verified) return;
+    const check = () => {
+      if ((mfaAgeSeconds() ?? 0) < MFA_DAY_SECONDS) return;
+      navigate("/login", { replace: true });
+      void logout();
+    };
+    check();
+    const timer = window.setInterval(check, 60_000);
+    return () => window.clearInterval(timer);
+  }, [verified, logout, navigate]);
 
   useEffect(() => {
     if (!ready) return;

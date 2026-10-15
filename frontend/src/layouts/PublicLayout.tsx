@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Instagram, Linkedin, Menu, Twitter, X, Youtube, type LucideIcon } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { Logo } from "../components";
+import { NewsletterSignup } from "./NewsletterSignup";
 import { useSideMenu } from "../lib/useSideMenu";
 import { SOCIAL_LINKS } from "../pages/public/landingContent";
 import { ArrowCircle } from "../ui/ArrowCircle";
@@ -98,6 +99,7 @@ export function PublicLayout() {
       <footer className="site-footer wo-on-brand">
         <div className="wo-container">
           <div className="site-footer__card wo-on-brand">
+          <NewsletterSignup />
           <div className="site-footer__grid">
             <div>
               <Logo on="dark" height={120} />

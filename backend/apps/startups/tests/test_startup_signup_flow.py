@@ -22,7 +22,8 @@ def test_registering_creates_the_startup_from_the_form(api_client, run_outbox):
     assert (startup.country, startup.city) == ("NG", "Lagos")
     assert startup.pitch == "Payments for small traders"
     assert startup.directory_opt_in is True  # listed from the start
-    assert startup.completeness_score == 15
+    assert startup.website_url == "https://adapay.example.com"
+    assert startup.completeness_score == 25  # the website counts toward a complete page
 
 
 def test_the_registrant_is_the_founder_on_the_team(api_client, run_outbox):

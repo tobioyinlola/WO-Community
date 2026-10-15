@@ -1,12 +1,13 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, ExternalLink, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import { useCountries } from "../api/reference";
 import type { components } from "../api/schema";
 import { useEffect, useRef, useState } from "react";
-import { Avatar, Button, Textarea } from "../components";
+import { Avatar, Button, Input, Textarea } from "../components";
+import { messageOf } from "../api/errors";
 import { formatDateTime, humanise, timeAgo } from "../lib/format";
 import { Skeleton } from "../ui/blocks";
 import { MeterBar, StatusChip, type Tone } from "./kit/TableBits";
@@ -37,6 +38,65 @@ interface Props {
   onReject: (reason: string) => void;
 }
 
+/** The LinkedIn profile, which every application needs before it can be approved. */
+function LinkedInField({ userId, url, canAdd }: { userId: string; url: string; canAdd: boolean }) {
+  const client = useQueryClient();
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [problem, setProblem] = useState("");
+  if (url) {
+    return (
+      <a href={url} rel="noopener noreferrer" target="_blank">
+        {url.replace(/^https:\/\/(www\.)?/, "")}
+      </a>
+    );
+  }
+  if (!canAdd) return <>Not given</>;
+  const save = async () => {
+    setSaving(true);
+    setProblem("");
+    try {
+      const updated = await unwrap(
+        api.POST("/api/v1/admin/members/{user_id}/linkedin", {
+          params: { path: { user_id: userId } },
+          body: { linkedin_url: value.trim() },
+        }),
+      );
+      client.setQueryData(["admin", "application", userId], updated);
+    } catch (error) {
+      setProblem(messageOf(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <form
+      className="app-stack"
+      style={{ gap: "var(--space-2)" }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (value.trim()) void save();
+      }}
+    >
+      <span className="adm-tile__sub" style={{ color: "var(--danger-text)" }}>
+        Missing. Needed before approval: ask them for it, or add the profile you found.
+      </span>
+      <Input
+        label="LinkedIn profile"
+        placeholder="linkedin.com/in/their-name"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        error={problem || undefined}
+      />
+      <div>
+        <Button size="sm" type="submit" disabled={!value.trim()} loading={saving}>
+          Save LinkedIn
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 /** The request in full: who asked, what they gave, what has happened, and the decision. */
 export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, onApprove, rejecting, onRejectingChange, onReject }: Props) {
   const [reason, setReason] = useState("");
@@ -56,10 +116,14 @@ export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, 
   const country = (code: string | undefined) => (code ? (countries.data?.find((c) => c.value === code)?.label ?? code) : "Not given");
   const name = a?.profile?.full_name || member.name || member.email;
   const waiting = member.status === "pending";
+  // Only a loaded application can say the link is missing; until then approval is not blocked.
+  const missingLinkedIn = Boolean(a) && !a?.profile?.linkedin_url;
+  const site = a?.startup?.website_url || a?.profile?.website_url;
   const rows: Array<[string, React.ReactNode]> = [
+    ["LinkedIn", a ? <LinkedInField userId={member.id} url={a.profile?.linkedin_url ?? ""} canAdd={waiting} /> : "Loading"],
+    ["Company website", site ? <a href={site} rel="noopener noreferrer" target="_blank">{site}</a> : "Not given"],
     ["Country", country(a?.profile?.country || member.country)],
     ["City", a?.profile?.city || a?.startup?.city || "Not given"],
-    ["Website", a?.profile?.website_url || a?.startup?.website_url ? <a href={a?.profile?.website_url || a?.startup?.website_url} rel="noopener noreferrer" target="_blank">{a?.profile?.website_url || a?.startup?.website_url}</a> : "Not given"],
     ["Email", member.email_verified_at ? `Confirmed ${timeAgo(member.email_verified_at)}` : "Not confirmed yet"],
     ["Joined with", member.roles.length === 0 ? "No role yet" : member.roles.map((r) => ROLE_LABELS[r] ?? humanise(r)).join(", ")],
   ];
@@ -120,7 +184,7 @@ export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, 
                 ) : null}
               </section>
               <section className="adm-tile" aria-label="Startup">
-                <p className="adm-tile__label">Startup</p>
+                <p className="adm-tile__label">Company</p>
                 {a?.startup ? (
                   <>
                     <p className="adm-tile__title">{a.startup.name}</p>
@@ -196,7 +260,14 @@ export function ApprovalDrawer({ member, position, onClose, onPrevious, onNext, 
             ) : waiting ? (
               <div className="adm-sheet__actions">
                 <Button variant="secondary" onClick={() => onRejectingChange(true)} aria-keyshortcuts="R">Reject</Button>
-                <Button onClick={onApprove} aria-keyshortcuts="A">Approve</Button>
+                <Button
+                  onClick={onApprove}
+                  aria-keyshortcuts="A"
+                  disabled={missingLinkedIn}
+                  title={missingLinkedIn ? "Add their LinkedIn profile first" : undefined}
+                >
+                  Approve
+                </Button>
               </div>
             ) : (
               <p className="adm-sheet__done">This request has already been decided.</p>

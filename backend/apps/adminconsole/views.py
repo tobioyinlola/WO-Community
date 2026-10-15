@@ -14,6 +14,7 @@ from apps.adminconsole import member_detail
 from apps.adminconsole import selectors as queues
 from apps.adminconsole.member_detail import MemberFullSerializer
 from apps.adminconsole.serializers import (
+    ApplicantLinkedInSerializer,
     ApplicationSerializer,
     MemberQuerySerializer,
     MemberRowSerializer,
@@ -26,6 +27,7 @@ from apps.core import events as domain_events
 from apps.core import policies
 from apps.core.errors import ConflictError
 from apps.core.pagination import AdminLimitOffsetPagination
+from apps.profiles import services as profiles
 
 ERRORS = {
     401: OpenApiResponse(description="Not authenticated"),
@@ -152,8 +154,47 @@ class ApproveView(APIView):
         tags=["admin"],
     )
     def post(self, request: Request, user_id: UUID) -> Response:
+        # Every member is vetted against their LinkedIn profile before they are let in.
+        waiting = selectors.get_member(user_id)
+        if waiting is None:
+            raise exceptions.NotFound()
+        ready = waiting.status == "pending" and waiting.email_verified_at is not None
+        if ready and not profiles.linkedin_of(user_id):
+            raise ConflictError(
+                "Add their LinkedIn profile before approving. Ask them for it, or add the link "
+                "you found in the application.",
+                code="linkedin_missing",
+            )
         member = services.approve_member(actor=_actor(request), user_id=user_id, ip=_ip(request))
         return Response(MemberSerializer(member).data)
+
+
+class ApplicantLinkedInView(APIView):
+    policy = policies.admin_permission("members.approve")
+
+    @extend_schema(
+        summary="Add the LinkedIn profile to a pending application",
+        description="For applications sent before LinkedIn was asked for, or with a wrong link. "
+        "The link must be on linkedin.com.",
+        request=ApplicantLinkedInSerializer,
+        responses={200: ApplicationSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request, user_id: UUID) -> Response:
+        member = selectors.get_member(user_id)
+        if member is None:
+            raise exceptions.NotFound()
+        serializer = ApplicantLinkedInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profiles.set_linkedin(user_id=member.pk, url=serializer.validated_data["linkedin_url"])
+        audit.record(
+            actor=_actor(request),
+            action="members.linkedin_added",
+            target_type="user",
+            target_id=member.pk,
+            ip=_ip(request),
+        )
+        return Response(ApplicationSerializer(queues.application_of(member)).data)
 
 
 class ReinstateView(APIView):

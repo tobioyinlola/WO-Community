@@ -266,6 +266,11 @@ urlpatterns = [
     ),
     path("admin/dashboard", dashboard_views.DashboardView.as_view(), name="admin-dashboard"),
     path(
+        "admin/leaderboard",
+        dashboard_views.LeaderboardView.as_view(),
+        name="admin-leaderboard",
+    ),
+    path(
         "admin/dashboard/metrics",
         dashboard_views.MetricsView.as_view(),
         name="admin-dashboard-metrics",
@@ -286,6 +291,16 @@ urlpatterns = [
         name="admin-dashboard-refresh",
     ),
     path("admin/segments", campaign_views.SegmentsView.as_view(), name="admin-segments"),
+    path(
+        "admin/newsletter/subscribers",
+        campaign_views.SubscribersView.as_view(),
+        name="admin-newsletter-subscribers",
+    ),
+    path(
+        "admin/newsletter/subscribers/export",
+        campaign_views.SubscriberExportView.as_view(),
+        name="admin-newsletter-export",
+    ),
     path(
         "admin/segments/preview",
         campaign_views.SegmentPreviewView.as_view(),
@@ -618,6 +633,11 @@ urlpatterns = [
         "admin/members/<uuid:user_id>/approve",
         views.ApproveView.as_view(),
         name="admin-member-approve",
+    ),
+    path(
+        "admin/members/<uuid:user_id>/linkedin",
+        views.ApplicantLinkedInView.as_view(),
+        name="admin-member-linkedin",
     ),
     path(
         "admin/members/<uuid:user_id>/reject",

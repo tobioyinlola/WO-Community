@@ -799,6 +799,25 @@ TEMPLATES: dict[str, TemplateDef] = {
             Var("settings_url", "url", sample="https://app.example.com/admin/settings"),
         ),
         _t(
+            "newsletter_confirm",
+            "Confirm newsletter sign up",
+            "Sent when someone signs up for the newsletter on the website. Nothing else is sent until they confirm.",
+            "Confirm your WO Community newsletter subscription",
+            "One click and you're on the list.",
+            HI
+            + "Thanks for signing up for the WO Community newsletter: news, stories and opportunities from Africa's founder, operator and investor community.\n\n"
+            "Please confirm it was you. Nothing is sent until you do.\n\n"
+            "[button: Confirm my subscription | {{confirm_url}}]\n\n"
+            "This link works for 7 days. If you didn't sign up, you can ignore this email and you won't hear from us.",
+            FIRST,
+            Var(
+                "confirm_url",
+                "url",
+                sample="https://app.example.com/newsletter/confirm?token=abc",
+                must_appear=True,
+            ),
+        ),
+        _t(
             "notice",
             "Other notifications",
             "Every other notification that is also sent by email, such as mentoring, event and account updates.",

@@ -10,13 +10,18 @@ import { useDocumentTitle } from "../../ui/blocks";
 export function Unsubscribe() {
   useDocumentTitle("Unsubscribe");
   const [params] = useSearchParams();
+  // Members' links carry ?token=; links for people who signed up on the website carry ?newsletter=.
   const token = params.get("token") ?? "";
-  const [state, setState] = useState<"ask" | "working" | "done" | "failed">(token ? "ask" : "failed");
+  const newsletterToken = params.get("newsletter") ?? "";
+  const [state, setState] = useState<"ask" | "working" | "done" | "failed">(token || newsletterToken ? "ask" : "failed");
   const [message, setMessage] = useState("");
 
   const confirm = () => {
     setState("working");
-    void unwrap(api.POST("/api/v1/unsubscribe", { body: { token } }))
+    const call = newsletterToken
+      ? api.POST("/api/v1/newsletter/unsubscribe", { body: { token: newsletterToken } })
+      : api.POST("/api/v1/unsubscribe", { body: { token } });
+    void unwrap(call)
       .then(() => setState("done"))
       .catch((error: unknown) => {
         setMessage(messageOf(error));

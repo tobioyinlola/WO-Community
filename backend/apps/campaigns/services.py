@@ -16,7 +16,7 @@ from rest_framework import exceptions
 from apps.accounts import services as accounts
 from apps.analytics import services as analytics
 from apps.audit import services as audit
-from apps.campaigns import events, render, segments
+from apps.campaigns import events, newsletter, render, segments
 from apps.campaigns.models import (
     Campaign,
     CampaignRecipient,
@@ -166,6 +166,7 @@ def create_campaign(*, actor: Any, data: dict[str, Any], ip: str = "") -> Campai
         preheader=preheader,
         blocks=render.clean_blocks(blocks_in, owner_id=actor.pk) if blocks_in else [],
         segment=_segment(data.get("segment_id")),
+        include_subscribers=bool(data.get("include_subscribers", False)),
         created_by=actor,
     )
     audit.record(
@@ -212,6 +213,8 @@ def update_campaign(
             campaign.blocks = render.clean_blocks(data["blocks"], owner_id=actor.pk)
         if "segment_id" in data:
             campaign.segment = _segment(data["segment_id"])
+        if "include_subscribers" in data:
+            campaign.include_subscribers = bool(data["include_subscribers"])
         campaign.save()
     return campaign
 
@@ -292,8 +295,16 @@ def _begin(campaign: Campaign) -> None:
     CampaignRecipient.objects.bulk_create(
         CampaignRecipient(campaign=campaign, user_id=uid) for uid, _ in audience
     )
+    subscriber_ids = (
+        list(_subscriber_audience().values_list("pk", flat=True))
+        if campaign.include_subscribers
+        else []
+    )
+    CampaignRecipient.objects.bulk_create(
+        CampaignRecipient(campaign=campaign, subscriber_id=sid) for sid in subscriber_ids
+    )
     campaign.segment_snapshot = definition
-    campaign.recipient_count = len(audience)
+    campaign.recipient_count = len(audience) + len(subscriber_ids)
     campaign.status = Campaign.Status.SENDING
     campaign.started_at = timezone.now()
     campaign.scheduled_at = None
@@ -308,7 +319,15 @@ def audience_size(campaign_id: UUID) -> int:
         raise NotFound()
     if campaign.segment is None:
         return 0
-    return len(segments.recipients(campaign.segment.definition))
+    members = len(segments.recipients(campaign.segment.definition))
+    return members + (_subscriber_audience().count() if campaign.include_subscribers else 0)
+
+
+def _subscriber_audience() -> Any:
+    """Confirmed subscribers who are not members and have not unsubscribed or bounced."""
+    rows = newsletter.sendable()
+    blocked = notifications.suppressed_among(list(rows.values_list("email", flat=True)))
+    return rows.exclude(email__in=blocked)
 
 
 def send_now(*, actor: Any, campaign_id: UUID, ip: str = "") -> Campaign:
@@ -393,11 +412,22 @@ def cancel(*, actor: Any, campaign_id: UUID, ip: str = "") -> Campaign:
 
 
 def _build(
-    campaign: Campaign, user_id: UUID, email: str, first_name: str, *, test: bool
+    campaign: Campaign,
+    user_id: UUID,
+    email: str,
+    first_name: str,
+    *,
+    test: bool,
+    subscriber_id: UUID | None = None,
 ) -> EmailMessage:
-    token = unsubscribe_token(user_id, campaign.pk)
-    page_url = f"{settings.FRONTEND_BASE_URL}/unsubscribe?token={token}"
-    one_click = f"{settings.API_BASE_URL}/api/v1/unsubscribe?token={token}"
+    if subscriber_id is not None:  # someone from the website sign up, not a member
+        token = newsletter.unsubscribe_token(subscriber_id)
+        page_url = f"{settings.FRONTEND_BASE_URL}/unsubscribe?newsletter={token}"
+        one_click = f"{settings.API_BASE_URL}/api/v1/newsletter/unsubscribe?token={token}"
+    else:
+        token = unsubscribe_token(user_id, campaign.pk)
+        page_url = f"{settings.FRONTEND_BASE_URL}/unsubscribe?token={token}"
+        one_click = f"{settings.API_BASE_URL}/api/v1/unsubscribe?token={token}"
     subject = render.MERGE_TOKEN.sub(lambda m: first_name or render.FALLBACK_NAME, campaign.subject)
     html_body, text_body = render.render(
         preheader=campaign.preheader,
@@ -462,6 +492,8 @@ def _send_row(campaign: Campaign, row_id: UUID, adapter: Any) -> str:
         )
         if row is None:
             return "ok"  # another worker already has it
+        if row.subscriber_id is not None:
+            return _send_subscriber_row(campaign, row, adapter)
         uid = row.user_id
         email = accounts.emails_for([uid]).get(uid) if uid else None
         # Eligibility is checked again at the moment of sending, so an unsubscribe is honoured
@@ -493,6 +525,41 @@ def _send_row(campaign: Campaign, row_id: UUID, adapter: Any) -> str:
             logger.error("campaign_paused_provider_misconfigured", campaign_id=str(campaign.pk))
             return "stop"
         row.save()
+    return "ok"
+
+
+def _send_subscriber_row(campaign: Campaign, row: CampaignRecipient, adapter: Any) -> str:
+    """The same as for a member, for someone from the website sign up. Called inside the row's
+    transaction."""
+    subscriber = newsletter.still_sendable(row.subscriber_id) if row.subscriber_id else None
+    if subscriber is None:
+        row.status = CampaignRecipient.Status.SKIPPED
+        row.save(update_fields=["status", "updated_at"])
+        return "ok"
+    try:
+        row.provider_message_id = adapter.send(
+            _build(
+                campaign,
+                subscriber.pk,
+                subscriber.email,
+                "",
+                test=False,
+                subscriber_id=subscriber.pk,
+            )
+        )
+        row.status, row.sent_at = CampaignRecipient.Status.SENT, timezone.now()
+    except EmailRejected as exc:
+        logger.warning("campaign_email_rejected", code=exc.code)
+        row.status = CampaignRecipient.Status.FAILED
+    except EmailTemporarilyUnavailable:
+        return "busy"
+    except EmailMisconfigured:
+        Campaign.objects.filter(pk=campaign.pk).update(
+            status=Campaign.Status.PAUSED, updated_at=timezone.now()
+        )
+        logger.error("campaign_paused_provider_misconfigured", campaign_id=str(campaign.pk))
+        return "stop"
+    row.save()
     return "ok"
 
 

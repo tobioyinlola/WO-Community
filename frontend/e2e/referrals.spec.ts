@@ -16,8 +16,10 @@ async function reachLastStep(page: Page) {
   await page.getByLabel("Full name").fill(APPLICANT);
   await page.getByLabel("Country").selectOption({ label: "Nigeria" });
   await page.getByLabel("City").fill("Lagos");
+  await page.getByLabel("LinkedIn profile").fill("linkedin.com/in/new-member");
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByLabel("Startup name").fill(`Referral Labs ${STAMP}`);
+  await page.getByLabel("Company name").fill(`Referral Labs ${STAMP}`);
+  await page.getByLabel("Company website").fill("newcompany.example.com");
   await page.getByLabel("Sector").selectOption({ label: "Fintech" });
   await page.getByLabel("Stage").selectOption({ index: 1 });
   await page.getByLabel("What does it do?").fill("Payments for small shops.");
@@ -110,8 +112,10 @@ test.describe("referrals", () => {
     await fresh.getByLabel("Full name").fill(`Link Applicant ${STAMP}`);
     await fresh.getByLabel("Country").selectOption({ label: "Nigeria" });
     await fresh.getByLabel("City").fill("Lagos");
+    await fresh.getByLabel("LinkedIn profile").fill("linkedin.com/in/new-member");
     await fresh.getByRole("button", { name: "Continue" }).click();
-    await fresh.getByLabel("Startup name").fill(`Link Labs ${STAMP}`);
+    await fresh.getByLabel("Company name").fill(`Link Labs ${STAMP}`);
+    await fresh.getByLabel("Company website").fill("newcompany.example.com");
     await fresh.getByLabel("Sector").selectOption({ label: "Fintech" });
     await fresh.getByLabel("Stage").selectOption({ index: 1 });
     await fresh.getByLabel("What does it do?").fill("Logistics for traders.");
