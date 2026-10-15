@@ -1145,7 +1145,7 @@ export interface paths {
         put?: never;
         /**
          * Moderate a comment on an item
-         * @description The type of the None singleton.
+         * @description Hide, unhide or remove a comment on an item (the URL names the action).
          */
         post: operations["admin_editorial_comments_hide_create"];
         delete?: never;
@@ -1165,7 +1165,7 @@ export interface paths {
         put?: never;
         /**
          * Moderate a comment on an item
-         * @description The type of the None singleton.
+         * @description Hide, unhide or remove a comment on an item (the URL names the action).
          */
         post: operations["admin_editorial_comments_remove_create"];
         delete?: never;
@@ -1185,7 +1185,7 @@ export interface paths {
         put?: never;
         /**
          * Moderate a comment on an item
-         * @description The type of the None singleton.
+         * @description Hide, unhide or remove a comment on an item (the URL names the action).
          */
         post: operations["admin_editorial_comments_unhide_create"];
         delete?: never;
@@ -1265,7 +1265,7 @@ export interface paths {
         put?: never;
         /**
          * Publish an item now, or take it down
-         * @description The type of the None singleton.
+         * @description Publish now, or take down / cancel a schedule (the URL names the action).
          */
         post: operations["admin_editorial_publish_create"];
         delete?: never;
@@ -1305,7 +1305,7 @@ export interface paths {
         put?: never;
         /**
          * Publish an item now, or take it down
-         * @description The type of the None singleton.
+         * @description Publish now, or take down / cancel a schedule (the URL names the action).
          */
         post: operations["admin_editorial_unpublish_create"];
         delete?: never;
