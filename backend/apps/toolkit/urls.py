@@ -10,6 +10,7 @@ urlpatterns = [
     path("", include("apps.toolkit.decks.urls")),
     path("", include("apps.toolkit.prototypes.urls")),
     path("", include("apps.toolkit.partner.urls")),
+    path("", include("apps.toolkit.advisor.urls")),
     path("", include("apps.toolkit.sharing.urls")),
     path("", include("apps.toolkit.admin_api.urls")),
 ]

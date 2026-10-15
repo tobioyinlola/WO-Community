@@ -10,7 +10,7 @@ from typing import Any
 from django.db.models import Exists, F, OuterRef, Q, QuerySet
 
 from apps.accounts import services as accounts
-from apps.core.visibility import audience_for
+from apps.core.visibility import Level, audience_for
 from apps.jobs import selectors as jobs
 from apps.jobs.models import Job
 from apps.profiles import selectors as profiles
@@ -137,7 +137,13 @@ def browse_people(
     page: int = 1,
     page_size: int = 12,
 ) -> dict[str, Any]:
-    queryset = FounderProfile.objects.filter(user_id__in=accounts.active_user_ids())
+    # Every active member is listed, except those who hid their basics from members. That is
+    # filtered here rather than after paging, so every page is full and the count is right.
+    queryset = (
+        FounderProfile.objects.filter(user_id__in=accounts.active_user_ids())
+        .exclude(full_name="")
+        .exclude(visibility__contains={"basics": Level.PRIVATE.value})
+    )
     if country:
         queryset = queryset.filter(country=country.upper())
     if skill:

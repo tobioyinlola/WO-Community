@@ -7196,6 +7196,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toolkit/advisor/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your conversation with Onyeka
+         * @description The latest messages with Onyeka, the community's AI founder advisor, oldest first, and whether Onyeka can answer right now.
+         */
+        get: operations["tk_advisor_conversation"];
+        put?: never;
+        /**
+         * Ask Onyeka something
+         * @description Answers 201 with the reply when it is ready within a few seconds, otherwise 202 with a `job` to poll; the reply then appears in the conversation. Requests for legal, tax or investment advice, or for made up proof, are declined without calling a model. Answers 503 `ai_off` when AI is not switched on.
+         */
+        post: operations["tk_advisor_send"];
+        /**
+         * Start over with Onyeka
+         * @description Deletes every message in your conversation with Onyeka.
+         */
+        delete: operations["tk_advisor_clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toolkit/config": {
         parameters: {
             query?: never;
@@ -11072,6 +11100,14 @@ export interface components {
             full_name: string;
             headline?: string;
         };
+        /**
+         * @description * `yc` - yc
+         *     * `techstars` - techstars
+         *     * `antler` - antler
+         *     * `founder_institute` - founder_institute
+         * @enum {string}
+         */
+        FrameworksEnum: "yc" | "techstars" | "antler" | "founder_institute";
         /**
          * @description * `instant` - instant
          *     * `daily` - daily
@@ -15110,6 +15146,42 @@ export interface components {
             scored: number;
             with_plan: number;
             with_deck: number;
+        };
+        TkAdvisorConversation: {
+            /** @description What Onyeka says before the first message */
+            greeting: string;
+            /** @description Whether Onyeka can answer right now */
+            ai_enabled: boolean;
+            /** @description The latest messages, oldest first */
+            messages: components["schemas"]["TkAdvisorMessage"][];
+        };
+        TkAdvisorMessage: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description Who wrote it
+             *
+             *     * `user` - user
+             *     * `assistant` - assistant
+             */
+            author: components["schemas"]["AuthorEnum"];
+            text: string;
+            next_steps: string[];
+            /** @description Which programmes' thinking the answer drew on */
+            frameworks: components["schemas"]["FrameworksEnum"][];
+            /** @description legal, tax, investment, deception */
+            declined: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        TkAdvisorReply: {
+            user_message: components["schemas"]["TkAdvisorMessage"];
+            assistant_message: components["schemas"]["TkAdvisorMessage"] | null;
+            /** @description Present (with HTTP 202) when the reply is not ready yet: poll it, then read the conversation again */
+            job: components["schemas"]["TkJob"] | null;
+        };
+        TkAdvisorSendRequest: {
+            text: string;
         };
         TkAssessment: {
             /** Format: uuid */
@@ -36543,6 +36615,139 @@ export interface operations {
                 content?: never;
             };
             /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tk_advisor_conversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkAdvisorConversation"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The advisor is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tk_advisor_send: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TkAdvisorSendRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkAdvisorReply"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkAdvisorReply"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The advisor is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tk_advisor_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The advisor is switched off */
             404: {
                 headers: {
                     [name: string]: unknown;

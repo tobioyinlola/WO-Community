@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.toolkit.decks",
     "apps.toolkit.prototypes",
     "apps.toolkit.partner",
+    "apps.toolkit.advisor",
     "apps.toolkit.sharing",
     "apps.toolkit.admin_api",
     "apps.notifications",
@@ -181,6 +182,7 @@ REST_FRAMEWORK = {
         "lesson_progress": "60/min",
         "lesson_visitor": "30/min",
         "toolkit_share": "60/min",
+        "toolkit_advisor": "20/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -558,7 +560,7 @@ TOOLKIT_MAX_VENTURES_PER_MEMBER = env.int("TOOLKIT_MAX_VENTURES_PER_MEMBER", def
 # Each tool can ship (or be switched off) on its own.
 TOOLKIT_FEATURES = {
     name: env.bool(f"TOOLKIT_FEATURE_{name.upper()}", default=True)
-    for name in ("score", "plan", "forecast", "decks", "prototypes", "partner")
+    for name in ("score", "plan", "forecast", "decks", "prototypes", "partner", "advisor")
 }
 # Blank switches AI off: the toolkit works without it and says where AI would help. "http" is
 # any OpenAI compatible API (AI_BASE_URL, AI_API_KEY); "fake" is the offline stand-in, for local

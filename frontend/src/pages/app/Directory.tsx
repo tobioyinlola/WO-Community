@@ -69,7 +69,7 @@ function useFilters() {
 export default function DirectoryPage() {
   const filters = useFilters();
   const q = filters.get("q").trim();
-  const tab = filters.get("tab") === "members" ? "members" : "startups";
+  const tab = filters.get("tab") === "startups" ? "startups" : "members";
   const [draft, setDraft] = useState(q);
   useEffect(() => setDraft(q), [q]);
 
@@ -91,7 +91,7 @@ export default function DirectoryPage() {
       {q ? <SearchResults q={q} /> : (
         <>
           <div className="app-tabs-scroll">
-            <Tabs label="Browse" variant="segment" value={tab} onChange={(id) => filters.setParams(id === "members" ? { tab: "members" } : {})} items={[{ id: "startups", label: "Startups" }, { id: "members", label: "Members" }]} />
+            <Tabs label="Browse" variant="segment" value={tab} onChange={(id) => filters.setParams(id === "startups" ? { tab: "startups" } : {})} items={[{ id: "members", label: "Members" }, { id: "startups", label: "Startups" }]} />
           </div>
           <div style={{ marginTop: "var(--space-6)" }}>
             {tab === "startups" ? <StartupsBrowser filters={filters} /> : <MembersBrowser filters={filters} />}
@@ -146,7 +146,7 @@ function StartupsBrowser({ filters }: { filters: Filters }) {
         <div className="app-filterbar__check">
           <Checkbox label="Hiring now" checked={hiring} onChange={(e) => filters.set({ hiring: e.target.checked ? "1" : "" })} />
         </div>
-        {active ? <Button variant="ghost" size="sm" onClick={() => filters.setParams(new URLSearchParams())}>Clear filters</Button> : null}
+        {active ? <Button variant="ghost" size="sm" onClick={() => filters.setParams(new URLSearchParams({ tab: "startups" }))}>Clear filters</Button> : null}
       </FilterRow>
       <Loaded
         query={query}
@@ -226,7 +226,7 @@ function MembersBrowser({ filters }: { filters: Filters }) {
         <Select label="Country" options={withPlaceholder(countries.data, "All countries")} value={country} onChange={(e) => filters.set({ country: e.target.value })} />
         <Select label="Skill" options={withPlaceholder(skills.data, "Any skill")} value={skill} onChange={(e) => filters.set({ skill: e.target.value })} />
         <Select label="Sort" options={SORTS} value={sort} onChange={(e) => filters.set({ sort: e.target.value === "newest" ? "" : e.target.value })} />
-        {active ? <Button variant="ghost" size="sm" onClick={() => filters.setParams(new URLSearchParams({ tab: "members" }))}>Clear filters</Button> : null}
+        {active ? <Button variant="ghost" size="sm" onClick={() => filters.setParams(new URLSearchParams())}>Clear filters</Button> : null}
       </FilterRow>
       <Loaded
         query={query}

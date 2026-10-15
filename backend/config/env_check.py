@@ -36,7 +36,7 @@ EMAIL_ADAPTERS = (
     "apps.integrations.email.smtp.SmtpEmailAdapter",
     FAKE_EMAIL,
 )
-TOOLKIT_TOOLS = ("score", "plan", "forecast", "decks", "prototypes", "partner")
+TOOLKIT_TOOLS = ("score", "plan", "forecast", "decks", "prototypes", "partner", "advisor")
 
 SECRET_HINT = (
     'python -c "import secrets; print(secrets.token_urlsafe(64))"'  # noqa: S105  # nosec B105
@@ -481,7 +481,7 @@ def _toolkit(c: _Checker) -> None:
         return
     off_hint = (
         "or switch every tool off with TOOLKIT_FEATURE_<NAME>=false "
-        "(SCORE, PLAN, FORECAST, DECKS, PROTOTYPES, PARTNER)"
+        "(SCORE, PLAN, FORECAST, DECKS, PROTOTYPES, PARTNER, ADVISOR)"
     )
     # No AI is allowed: the tools work without it. The offline stand-ins never are.
     provider = c.get("AI_PROVIDER").strip() or ("http" if c.get("AI_API_KEY").strip() else "")
