@@ -3,7 +3,7 @@ import { ChevronDown, CircleHelp, Clock, Menu, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
-import { Avatar } from "../../components";
+import { Avatar, Logo } from "../../components";
 import { formatTime } from "../../lib/format";
 import { NotificationBell } from "../../shell/NotificationBell";
 import { GlobalSearch } from "../../shell/GlobalSearch";
@@ -104,6 +104,11 @@ export function TopBar({ limited = false, narrow, onMenu, links, onHelp, pending
         <button type="button" className="adm-iconbtn" onClick={onMenu} aria-label="Open menu">
           <Menu size={22} strokeWidth={1.5} aria-hidden="true" />
         </button>
+      ) : null}
+      {narrow ? (
+        <Link to="/admin" className="adm-top__logo" aria-label="WO Community, home">
+          <Logo kind="mark" height={30} />
+        </Link>
       ) : null}
       <GlobalSearch scope="admin" links={links} resultsPath="/admin/search" placeholder="Search members, courses, jobs, pages" />
       <div className="adm-top__tail">

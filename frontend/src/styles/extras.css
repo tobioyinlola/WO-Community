@@ -51,8 +51,22 @@
   }
 }
 
-/* Top nav under 768px: the mark alone and the links behind a menu button. */
-.wo-nav__logo--mark,
+/* A 40px bar is too short for the full logo (never under 120px wide), so bars show the mark. */
+.wo-nav__logo--full {
+  display: none !important;
+}
+.wo-nav__logo--mark {
+  display: block;
+}
+[data-theme="dark"] .wo-nav__logo--mark.wo-logo-for-light,
+.wo-nav__logo--mark.wo-logo-for-dark {
+  display: none;
+}
+[data-theme="dark"] .wo-nav__logo--mark.wo-logo-for-dark {
+  display: block;
+}
+
+/* Top nav under 768px: the links behind a menu button. */
 .wo-nav__menu,
 .wo-nav__scrim {
   display: none;
@@ -65,12 +79,6 @@
     gap: var(--space-4);
     padding: 0 var(--page-margin);
     position: relative;
-  }
-  .wo-nav__logo--full {
-    display: none;
-  }
-  .wo-nav__logo--mark {
-    display: block;
   }
   /* The menu button stays put and sits above the drawer, so the same button opens and closes it. */
   .wo-nav__menu {

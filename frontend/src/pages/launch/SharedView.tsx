@@ -98,7 +98,7 @@ export default function SharedView() {
   return (
     <main style={{ maxWidth: 820, margin: "0 auto", padding: "var(--space-8) var(--space-4)" }}>
       <meta name="robots" content="noindex" />
-      <div style={{ marginBottom: "var(--space-6)" }}><Logo /></div>
+      <div style={{ marginBottom: "var(--space-6)" }}><Logo kind="mark" height={40} /></div>
       {state.kind === "loading" ? <p className="body app-muted" role="status">Opening…</p> : null}
       {state.kind === "missing" ? (
         <Card><h1 className="h2" style={{ margin: "0 0 var(--space-2)" }}>This link is not available</h1><p className="body" style={{ margin: 0 }}>It may have expired or been turned off by the person who shared it.</p></Card>

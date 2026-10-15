@@ -654,3 +654,18 @@ a.adm-chip:hover {
     transition: none;
   }
 }
+
+/* The mark beside the menu button, when the sidebar is tucked away in a drawer. */
+.adm-top__logo {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  border-radius: var(--radius-md);
+}
+.adm-top__logo:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+.wo-logo-for-light {
+  display: block;
+}

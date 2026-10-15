@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSupport } from "../../support/SupportProvider";
 import { isAdmin } from "../../admin/permissions";
 import { useAuth } from "../../auth/AuthProvider";
-import { Avatar } from "../../components";
+import { Avatar, Logo } from "../../components";
 import { GlobalSearch } from "../../shell/GlobalSearch";
 import { MEMBER_LINKS } from "../../shell/searchModel";
 import { NotificationBell } from "../../shell/NotificationBell";
@@ -83,6 +83,11 @@ export function MemberTopBar({ limited, narrow, onMenu, name, photo, role }: Mem
         <button type="button" className="adm-iconbtn" onClick={onMenu} aria-label="Open menu">
           <Menu size={22} strokeWidth={1.5} aria-hidden="true" />
         </button>
+      ) : null}
+      {narrow ? (
+        <Link to="/app" className="adm-top__logo" aria-label="WO Community, home">
+          <Logo kind="mark" height={30} />
+        </Link>
       ) : null}
       {limited ? null : <GlobalSearch scope="member" links={MEMBER_LINKS} resultsPath="/app/search" placeholder="Search members, startups, courses" />}
       <div className="adm-top__tail">

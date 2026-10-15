@@ -1075,9 +1075,10 @@ def layout(
         f'<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" '
         f'class="wo-col wo-card" style="width:600px;max-width:100%;background:{PAPER};'
         f'border-radius:12px"><tr><td class="wo-pad" style="padding:32px 40px 8px">'
-        f'<img src="{escape(settings.EMAIL_LOGO_URL)}" width="140" alt="WO Community" '
-        f'style="display:block;border:0;height:auto;font-family:{FONT};font-size:18px;'
-        f'font-weight:700;color:{FOREST}"></td></tr>'
+        f'<img src="{escape(settings.EMAIL_LOGO_URL)}" width="128" height="112" '
+        f'alt="WO Community" style="display:block;border:0;width:128px;height:112px;'
+        f"margin-left:-12px;font-family:{FONT};font-size:18px;font-weight:700;"
+        f'color:{FOREST}"></td></tr>'
         f'<tr><td class="wo-pad" style="padding:16px 40px 8px">{body_html}</td></tr>'
         f'<tr><td class="wo-pad" style="padding:8px 40px 32px">{sign}</td></tr></table>'
         f'<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" '

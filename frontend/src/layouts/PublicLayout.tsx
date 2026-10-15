@@ -44,7 +44,7 @@ export function PublicLayout() {
       </a>
       <nav className="wo-nav wo-nav--brand wo-on-brand site-head" aria-label="Main" data-scrolled={scrolled}>
         <Link to="/" aria-label="WO Community, home">
-          <Logo on="dark" height={40} />
+          <Logo on="dark" kind="mark" height={40} />
         </Link>
         <button
           type="button"
@@ -100,7 +100,7 @@ export function PublicLayout() {
           <div className="site-footer__card wo-on-brand">
           <div className="site-footer__grid">
             <div>
-              <Logo on="dark" height={44} />
+              <Logo on="dark" height={120} />
               <p className="body" style={{ maxWidth: "36ch", marginTop: "var(--space-4)", color: "var(--text-on-brand-muted)" }}>
                 Africa&rsquo;s most intentional founder, operator and investor ecosystem.
               </p>

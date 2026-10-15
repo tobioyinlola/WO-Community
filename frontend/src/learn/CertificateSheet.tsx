@@ -31,7 +31,7 @@ export function CertificateSheet({ holder, course, issuedAt, number, hours, titl
           <span className="wo-cert__dot" />
         </div>
         <header className="wo-cert__top">
-          <Logo on="light" height={34} />
+          <Logo on="light" height={104} />
           <p className="wo-cert__eyebrow">{titleText}</p>
         </header>
         <div className="wo-cert__body">
