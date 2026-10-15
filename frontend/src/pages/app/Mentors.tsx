@@ -5,9 +5,10 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
 import { compact, useCursorList } from "../../api/hooks";
-import { messageOf } from "../../api/errors";
+import { FriendlyError, messageOf } from "../../api/errors";
 import type { components } from "../../api/schema";
-import { Alert, Avatar, Badge, Button, Card, CardText, CardTitle, CardTo, Input, Modal, Select, Tabs, Textarea } from "../../components";
+import { Alert, Avatar, Badge, Button, Card, CardText, CardTitle, CardTo, ChoiceGroup, Input, Modal, Select, Tabs, Textarea } from "../../components";
+import { useSectors, useStages } from "../../api/reference";
 import { DownloadButton } from "../../ui/DownloadButton";
 import { formatDate, formatDateTime, humanise, plural } from "../../lib/format";
 import { EmptyState, LoadMore, Loaded, PageHeader, SkeletonCards, SkeletonRows } from "../../ui/blocks";
@@ -322,22 +323,63 @@ export function BecomeMentor() {
   );
 }
 
+const APPLY_LANGUAGES: Array<[string, string]> = [["en", "English"], ["fr", "French"], ["pt", "Portuguese"], ["es", "Spanish"], ["ar", "Arabic"], ["sw", "Swahili"], ["yo", "Yoruba"], ["ig", "Igbo"], ["ha", "Hausa"], ["am", "Amharic"], ["zu", "Zulu"], ["af", "Afrikaans"], ["de", "German"], ["hi", "Hindi"], ["zh", "Chinese"]];
+const MIN_MOTIVATION = 50;
+const MAX_MOTIVATION = 1500;
+
+/** Problems that can be seen before sending, worded like the server's own, so a member fixes them all at once. */
+function checkApplication(f: { expertise: string; years: string; role: string; company: string; linkedin: string; hours: string; motivation: string; industries: string[]; stages: string[]; languages: string[] }): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const areas = f.expertise.split(",").map((s) => s.trim()).filter(Boolean);
+  if (areas.length === 0 || areas.length > 8) errors.expertise = "Give 1 to 8 areas, separated by commas.";
+  else if (areas.some((a) => a.length < 2 || a.length > 50)) errors.expertise = "Each area must be 2 to 50 characters.";
+  const years = Number(f.years);
+  if (!f.years || !Number.isInteger(years) || years < 1 || years > 60) errors.years_experience = "Enter a whole number of years, from 1 to 60.";
+  const hours = Number(f.hours);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 40) errors.weekly_hours = "Enter a whole number of hours, from 1 to 40.";
+  if (!f.role.trim()) errors.current_role = "Enter your current role.";
+  if (!f.company.trim()) errors.company = "Enter your company.";
+  if (!/^(https?:\/\/)?([a-z0-9-]+\.)*linkedin\.com\/.+/i.test(f.linkedin.trim())) errors.linkedin_url = "Paste the full address of your LinkedIn profile, for example https://www.linkedin.com/in/your-name";
+  if (f.industries.length === 0) errors.industries = "Choose at least one industry.";
+  if (f.stages.length === 0) errors.stages = "Choose at least one stage.";
+  if (f.languages.length === 0) errors.languages = "Choose at least one language.";
+  const motivation = f.motivation.trim().length;
+  if (motivation < MIN_MOTIVATION) errors.motivation = `Write at least ${MIN_MOTIVATION} characters (${MIN_MOTIVATION - motivation} more to go).`;
+  else if (motivation > MAX_MOTIVATION) errors.motivation = `Keep it to ${MAX_MOTIVATION} characters (${motivation - MAX_MOTIVATION} too many).`;
+  return errors;
+}
+
+class CheckFailed extends FriendlyError {}
+
 function MentorApplicationForm() {
   const client = useQueryClient();
   const toast = useToast();
-  const [f, setF] = useState({ expertise: "", years: "", role: "", company: "", linkedin: "", hours: "2", motivation: "", accept: false });
+  const sectors = useSectors();
+  const stages = useStages();
+  const [f, setF] = useState({ expertise: "", years: "", role: "", company: "", linkedin: "", hours: "2", motivation: "", accept: false, industries: [] as string[], stages: [] as string[], languages: ["en"] as string[] });
+  const [local, setLocal] = useState<Record<string, string>>({});
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((c) => ({ ...c, [k]: v }));
+  const toggle = (k: "industries" | "stages" | "languages", value: string, max: number) => setF((c) => {
+    const list = c[k];
+    if (list.includes(value)) return { ...c, [k]: list.filter((v) => v !== value) };
+    return list.length >= max ? c : { ...c, [k]: [...list, value] };
+  });
   const submit = useSubmit(async () => {
+    const problems = checkApplication(f);
+    setLocal(problems);
+    if (Object.keys(problems).length) throw new CheckFailed("Some answers need fixing. Look for the messages under each field.");
+    let linkedin = f.linkedin.trim();
+    if (!/^https?:\/\//i.test(linkedin)) linkedin = `https://${linkedin}`;
     await unwrap(api.POST("/api/v1/mentor-applications", { body: {
       expertise: f.expertise.split(",").map((s) => s.trim()).filter(Boolean),
       years_experience: Number(f.years),
       current_role: f.role.trim(),
       company: f.company.trim(),
-      linkedin_url: f.linkedin.trim(),
-      industries: [],
-      stages: [],
-      languages: ["en"],
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      linkedin_url: linkedin,
+      industries: f.industries,
+      stages: f.stages,
+      languages: f.languages as never,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Lagos",
       weekly_hours: Number(f.hours),
       motivation: f.motivation.trim(),
       accept_conduct: f.accept,
@@ -345,19 +387,42 @@ function MentorApplicationForm() {
     toast.show("Application sent");
     await client.invalidateQueries({ queryKey: ["me", "mentoring"] });
   });
+  // The server's word wins over the local check when both have something to say.
+  const errors = { ...local, ...errorsFrom(submit.error).fields };
+  const chips = (k: "industries" | "stages" | "languages", options: Array<{ value: string; label: string }>, max: number) => (
+    <div className="app-cluster">
+      {options.map((o) => (
+        <button key={o.value} type="button" className="app-react" aria-pressed={f[k].includes(o.value)} onClick={() => toggle(k, o.value, max)}>{o.label}</button>
+      ))}
+    </div>
+  );
+  const fieldError = (message?: string) => (message ? <p className="body-sm" role="alert" style={{ margin: 0, color: "var(--danger-text)" }}>{message}</p> : null);
   return (
     <form className="app-stack app-stack--lg" noValidate onSubmit={(e) => { e.preventDefault(); void submit.run(); }}>
-      <FormError error={submit.error} />
-      <Input label="Your areas of expertise" hint="Separate with commas: pricing, hiring, fundraising" value={f.expertise} onChange={(e) => set("expertise", e.target.value)} />
+      {submit.error instanceof CheckFailed ? <Alert tone="danger" title="Some answers need fixing">Look for the messages under each field, fix them, then send again.</Alert> : <FormError error={submit.error} />}
+      <Input label="Your areas of expertise" hint="1 to 8 areas, separated by commas: pricing, hiring, fundraising" value={f.expertise} onChange={(e) => set("expertise", e.target.value)} error={errors.expertise} />
       <div className="app-formgrid">
-        <Input label="Years of experience" type="number" min={0} value={f.years} onChange={(e) => set("years", e.target.value)} />
-        <Input label="Hours a week you can give" type="number" min={1} value={f.hours} onChange={(e) => set("hours", e.target.value)} />
-        <Input label="Current role" value={f.role} onChange={(e) => set("role", e.target.value)} />
-        <Input label="Company" value={f.company} onChange={(e) => set("company", e.target.value)} />
+        <Input label="Years of experience" hint="1 to 60" type="number" min={1} max={60} value={f.years} onChange={(e) => set("years", e.target.value)} error={errors.years_experience} />
+        <Input label="Hours a week you can give" hint="1 to 40" type="number" min={1} max={40} value={f.hours} onChange={(e) => set("hours", e.target.value)} error={errors.weekly_hours} />
+        <Input label="Current role" value={f.role} onChange={(e) => set("role", e.target.value)} error={errors.current_role} />
+        <Input label="Company" value={f.company} onChange={(e) => set("company", e.target.value)} error={errors.company} />
       </div>
-      <Input label="LinkedIn profile" value={f.linkedin} onChange={(e) => set("linkedin", e.target.value)} />
-      <Textarea label="Why do you want to mentor?" rows={4} value={f.motivation} onChange={(e) => set("motivation", e.target.value)} />
+      <Input label="LinkedIn profile" hint="For example https://www.linkedin.com/in/your-name" value={f.linkedin} onChange={(e) => set("linkedin", e.target.value)} error={errors.linkedin_url} />
+      <ChoiceGroup legend="Industries you know best (up to 5)">
+        {chips("industries", sectors.data ?? [], 5)}
+        {fieldError(errors.industries)}
+      </ChoiceGroup>
+      <ChoiceGroup legend="Startup stages you can help with (up to 4)">
+        {chips("stages", stages.data ?? [], 4)}
+        {fieldError(errors.stages)}
+      </ChoiceGroup>
+      <ChoiceGroup legend="Languages you can mentor in (up to 5)">
+        {chips("languages", APPLY_LANGUAGES.map(([value, label]) => ({ value, label })), 5)}
+        {fieldError(errors.languages)}
+      </ChoiceGroup>
+      <Textarea label="Why do you want to mentor?" hint={`${f.motivation.trim().length}/${MAX_MOTIVATION} characters, at least ${MIN_MOTIVATION}`} rows={4} value={f.motivation} onChange={(e) => set("motivation", e.target.value)} error={errors.motivation} />
       <label className="wo-check"><input type="checkbox" checked={f.accept} onChange={(e) => set("accept", e.target.checked)} />I will follow the mentor code of conduct</label>
+      {fieldError(errors.accept_conduct ?? errors.timezone)}
       <div><Button size="lg" type="submit" loading={submit.busy} disabled={!f.accept}>Send application</Button></div>
     </form>
   );

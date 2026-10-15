@@ -122,7 +122,7 @@ class RegisterView(PublicAuthView):
             referral=data["referral"],
             signup={
                 "profile": data["profile"],
-                "startup": data["startup"],
+                "startup": data.get("startup"),
                 "also_mentor": data["also_mentor"],
             },
         )

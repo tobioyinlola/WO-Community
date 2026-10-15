@@ -146,17 +146,24 @@ def opt_in(client):
     )
 
 
-def test_the_digest_goes_only_to_members_who_asked_for_it_and_once_a_week(
+def opt_out(client):
+    return client.put(
+        "/api/v1/me/notification-preferences",
+        {"preferences": {"news_digest": {"email": False}}},
+        format="json",
+    )
+
+
+def test_the_digest_goes_to_members_who_did_not_switch_it_off_and_once_a_week(
     editor, fan, make_user, client_for, sent_emails
 ):
     publish(editor, "Big funding round")
     quiet = member(make_user, "quiet@example.com")
-    assert quiet
-    assert news.send_digest() == 0  # nobody asked
-    assert opt_in(client_for(fan)).status_code == 200
-    assert news.send_digest() == 1
+    assert opt_out(client_for(quiet)).status_code == 200
+    assert news.send_digest() >= 1
+    to = {m.to for m in sent_emails if m.subject == "This week on WO Community"}
+    assert "fan@example.com" in to and "quiet@example.com" not in to
     mail = [m for m in sent_emails if m.to == "fan@example.com"]
-    assert mail[0].subject == "This week on WO Community"
     assert "Big funding round" in mail[0].text_body and "/news/" in mail[0].text_body
     assert news.send_digest() == 0  # already sent this week
 

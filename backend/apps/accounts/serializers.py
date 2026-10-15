@@ -37,6 +37,20 @@ class SignupProfileSerializer(StrictSerializer):
         return code
 
 
+class RegisterProfileSerializer(SignupProfileSerializer):
+    """Country and city may be left out here; the service asks for them unless an admin invitation
+    is used, as staff join to run the console and have no founder profile to fill."""
+
+    country = serializers.CharField(min_length=2, max_length=2, required=False, allow_blank=True)
+    city = serializers.CharField(min_length=1, max_length=100, required=False, allow_blank=True)
+
+    def validate_city(self, value: str) -> str:
+        return _plain_required(value) if value else value
+
+    def validate_country(self, value: str) -> str:
+        return super().validate_country(value) if value else value
+
+
 class SignupStartupSerializer(StrictSerializer):
     name = serializers.CharField(min_length=1, max_length=120)
     country = serializers.CharField(min_length=2, max_length=2)
@@ -114,8 +128,10 @@ class RegisterSerializer(StrictSerializer):
         default=False,
         help_text="I am also a mentor. Only records interest; an admin still approves.",
     )
-    profile = SignupProfileSerializer()
-    startup = SignupStartupSerializer()
+    profile = RegisterProfileSerializer()
+    startup = SignupStartupSerializer(
+        required=False, help_text="Required, except with an invitation to an admin role."
+    )
     anonymous_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     referral = ReferralInputSerializer(required=False, default=dict)
     invitation_token = serializers.CharField(
