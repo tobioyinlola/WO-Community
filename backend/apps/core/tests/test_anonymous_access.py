@@ -64,9 +64,9 @@ def test_the_sweep_actually_finds_the_routes():
 def test_visitors_get_401_from_every_protected_route(api_client, route):
     for method in METHODS:
         response = getattr(api_client, method)(route)
-        assert response.status_code == 401, (
-            f"{method.upper()} {route} answered {response.status_code}"
-        )
+        assert (
+            response.status_code == 401
+        ), f"{method.upper()} {route} answered {response.status_code}"
 
 
 ADMIN_ROUTES = [r for r in ROUTES if "/admin/" in r]
@@ -82,9 +82,9 @@ def test_ordinary_members_get_403_from_every_admin_route(make_user, client_for, 
     client = client_for(member, mfa_age=5)
     for method in METHODS:
         response = getattr(client, method)(route)
-        assert response.status_code == 403, (
-            f"{method.upper()} {route} answered {response.status_code}"
-        )
+        assert (
+            response.status_code == 403
+        ), f"{method.upper()} {route} answered {response.status_code}"
 
 
 @pytest.mark.parametrize("route", ADMIN_ROUTES)
@@ -93,6 +93,6 @@ def test_admins_without_an_mfa_check_get_403_from_every_admin_route(make_user, c
     client = client_for(admin)  # logged in, but no second factor on the session
     for method in METHODS:
         response = getattr(client, method)(route)
-        assert response.status_code == 403, (
-            f"{method.upper()} {route} answered {response.status_code}"
-        )
+        assert (
+            response.status_code == 403
+        ), f"{method.upper()} {route} answered {response.status_code}"

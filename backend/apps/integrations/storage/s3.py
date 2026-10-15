@@ -148,7 +148,7 @@ class S3Storage(ObjectStorage):
         safe = "".join(c for c in filename if c.isprintable() and c not in '"\\/;')[:150]
         ascii_name = safe.encode("ascii", "replace").decode().replace("?", "_") or "download"
         disposition = (
-            f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(safe or 'download')}"
+            f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(safe or "download")}'
         )
         url: str = self.client.generate_presigned_url(
             "get_object",

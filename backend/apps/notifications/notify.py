@@ -545,9 +545,11 @@ def mail_template_for(
             return "session_declined", {
                 "mentor_name": who,
                 "message": payload.get("reason", ""),
-                "mentor_url": f"{settings.FRONTEND_BASE_URL}/app/mentors/{mentor}"
-                if mentor
-                else f"{settings.FRONTEND_BASE_URL}/app/mentors",
+                "mentor_url": (
+                    f"{settings.FRONTEND_BASE_URL}/app/mentors/{mentor}"
+                    if mentor
+                    else f"{settings.FRONTEND_BASE_URL}/app/mentors"
+                ),
             }
         case "ticket_reply" | "ticket_resolved":
             return type_, {

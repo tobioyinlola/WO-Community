@@ -190,9 +190,7 @@ def render_pptx(title: str, deck: dict[str, Any], images: dict[str, bytes]) -> b
                 run.font.color.rgb = _rgb(
                     colours["accent"]
                     if style == "metric"
-                    else colours["muted"]
-                    if style == "small"
-                    else colours["text"]
+                    else colours["muted"] if style == "small" else colours["text"]
                 )
         if slide.get("notes"):
             s.notes_slide.notes_text_frame.text = slide["notes"]
@@ -250,9 +248,7 @@ def render_pdf(title: str, deck: dict[str, Any], images: dict[str, bytes]) -> by
                 color = (
                     colours["accent"]
                     if style == "metric"
-                    else colours["muted"]
-                    if style == "small"
-                    else colours["text"]
+                    else colours["muted"] if style == "small" else colours["text"]
                 )
                 c.setFillColor(HexColor("#" + color))
                 c.setFont(font, size)

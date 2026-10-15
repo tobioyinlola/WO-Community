@@ -44,15 +44,21 @@ MEETING_PROVIDERS = {
 }
 RESEND_API_KEY = "re_test_key"  # noqa: S105  # nosec B105
 # "whsec_" followed by base64 of a throwaway key, the format Resend/Svix issue.
-RESEND_WEBHOOK_SECRET = "whsec_dGVzdC13ZWJob29rLXNlY3JldC0xMjM0NTY3ODkwMTI="  # noqa: S105  # nosec B105
+RESEND_WEBHOOK_SECRET = (
+    "whsec_dGVzdC13ZWJob29rLXNlY3JldC0xMjM0NTY3ODkwMTI="  # noqa: S105  # nosec B105
+)
 EMAIL_FROM_TRANSACTIONAL = "WO Community <no-reply@mail.test>"
 EMAIL_FROM_MARKETING = "WO Community <community@news.test>"
-PASSWORD_BREACH_CHECKER = "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
+PASSWORD_BREACH_CHECKER = (
+    "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
+)
 FRONTEND_BASE_URL = "https://app.test"
 LINK_PREVIEW_FETCHER = "apps.integrations.linkpreview.fake.FakeFetcher"
 YOUTUBE_TITLE_LOOKUP = "apps.integrations.youtube.fake_title"
 GOOGLE_CLIENT_ID = "test-client.apps.googleusercontent.com"
-GOOGLE_TOKEN_VERIFIER = "apps.integrations.identity.fake.FakeGoogleVerifier"  # noqa: S105  # nosec B105
+GOOGLE_TOKEN_VERIFIER = (
+    "apps.integrations.identity.fake.FakeGoogleVerifier"  # noqa: S105  # nosec B105
+)
 
 SERVE_API_SCHEMA = True
 EMAIL_DNS_RESOLVER = "apps.notifications.tests.fake_dns.FakeResolver"
