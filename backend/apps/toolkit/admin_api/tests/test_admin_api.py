@@ -275,3 +275,38 @@ def test_settings_show_no_secrets(boss_client, settings):
     body = boss_client.get(ADMIN + "/settings").json()
     assert "sk-very-secret" not in str(body)
     assert body["features"]["plan"] is True and body["ai_daily_run_ceiling"] > 0
+
+
+def test_ventures_are_listed_with_progress_but_no_content(
+    staff_client, client, other_client, full_venture, run_jobs
+):
+    other_client.post(f"{BASE}/ventures", {"name": "Grainstore"}, format="json")
+    client.post(f"{BASE}/ventures/{full_venture['id']}/score", format="json")
+    run_jobs()
+    body = staff_client.get(ADMIN + "/ventures").json()
+    assert body["count"] == 2
+    assert body["totals"]["ventures"] == 2 and body["totals"]["founders"] == 2
+    row = next(r for r in body["results"] if r["id"] == full_venture["id"])
+    assert row["name"] == "Mamapesa" and row["owner_email"]
+    assert row["profile_completeness"] > 0 and row["latest_score"] is not None
+    assert body["totals"]["scored"] == 1
+    assert "fields" not in row and "Market traders" not in str(body)
+
+
+def test_ventures_can_be_searched_by_name_or_owner(staff_client, other_client, full_venture):
+    other_client.post(f"{BASE}/ventures", {"name": "Grainstore"}, format="json")
+    names = [r["name"] for r in staff_client.get(ADMIN + "/ventures?q=grain").json()["results"]]
+    assert names == ["Grainstore"]
+
+
+def test_deleted_ventures_are_hidden_unless_asked_for(staff_client, client, venture):
+    assert client.delete(f"{BASE}/ventures/{venture['id']}").status_code == 204
+    assert staff_client.get(ADMIN + "/ventures").json()["count"] == 0
+    rows = staff_client.get(ADMIN + "/ventures?include_deleted=true").json()["results"]
+    assert [r["status"] for r in rows] == ["deleted"]
+
+
+def test_only_staff_see_the_ventures_list(client, api_client, staff, client_for):
+    assert api_client.get(ADMIN + "/ventures").status_code == 401
+    assert client.get(ADMIN + "/ventures").status_code == 403
+    assert client_for(staff).get(ADMIN + "/ventures").status_code == 403

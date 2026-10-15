@@ -7,6 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.toolkit.ai import errors as ai_errors
 from apps.toolkit.forecasts import catalog, engine, service
 from apps.toolkit.forecasts.models import Forecast
 from apps.toolkit.forecasts.serializers import (
@@ -23,6 +24,7 @@ from apps.toolkit.forecasts.serializers import (
 )
 from apps.toolkit.jobs import services as jobs
 from apps.toolkit.jobs.serializers import TkJobSerializer
+from apps.toolkit.jobs.services import JobFailed, TransientError
 from apps.toolkit.jobs.views import accepted, idempotency_key
 from apps.toolkit.ventures.models import Venture
 from apps.toolkit.ventures.permissions import (
@@ -201,7 +203,12 @@ class SuggestView(APIView):
     )
     def post(self, request: Request, venture_id: UUID) -> Response:
         venture = owned_venture(request, venture_id)
-        body = service.suggest(venture=venture, owner_id=uid(request), forecast=_forecast(venture))
+        try:
+            body = service.suggest(
+                venture=venture, owner_id=uid(request), forecast=_forecast(venture)
+            )
+        except (JobFailed, TransientError) as exc:
+            raise ai_errors.translate(exc) from exc
         return _private(Response(TkForecastSuggestionSerializer(body).data))
 
 

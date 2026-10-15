@@ -8,6 +8,7 @@ import { formatDate } from "../../lib/format";
 import { EmptyState, Loaded, SkeletonCards, SkeletonRows } from "../../ui/blocks";
 import { FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
+import { useAiEnabled } from "./config";
 import { JobStatus, cancelJob, useJob } from "./jobs";
 import { Node, type ProtoNode, type ProtoSpec } from "./preview";
 import { useWorkspace } from "./Workspace";
@@ -129,6 +130,7 @@ function Editor({ id, onBack }: { id: string; onBack: () => void }) {
 }
 
 export default function PrototypesTab() {
+  const ai = useAiEnabled();
   const { ventureId } = useWorkspace();
   const client = useQueryClient();
   const toast = useToast();
@@ -175,16 +177,16 @@ export default function PrototypesTab() {
             <div><Button loading={create.busy} disabled={!chosen} onClick={() => void create.run()}>Create prototype</Button></div>
           </div>
         </Card>
-        <Card>
+        {ai ? <Card>
           <h2 className="h3" style={{ margin: "0 0 var(--space-2)" }}>Draft one from your idea</h2>
           <div className="app-stack">
             <FormError error={draft.error} />
             <Select label="For" options={[{ value: "mobile", label: "A phone app" }, { value: "web", label: "A website" }]} value={kind} onChange={(e) => setKind(e.target.value as "web" | "mobile")} />
             <Textarea label="Anything to stress? (optional)" rows={2} value={brief} onChange={(e) => setBrief(e.target.value)} />
             <div><Button loading={drafting} onClick={() => void draft.run()}>Draft a prototype</Button></div>
-            {jobId ? <JobStatus job={running.job} error={running.error} onCancel={() => void cancelJob(jobId)} /> : null}
+            {jobId ? <JobStatus job={running.job} error={running.error} onCancel={() => void cancelJob(jobId)} /> : running.failure ? <JobStatus job={running.failure} /> : null}
           </div>
-        </Card>
+        </Card> : null}
       </div>
       <Loaded query={list} skeleton={<SkeletonCards count={2} />} isEmpty={(d) => d.length === 0} empty={<EmptyState title="No prototypes yet" icon={<Smartphone size={22} strokeWidth={1.5} />}>Make a clickable mock-up to test the idea with real people.</EmptyState>}>
         {(items) => (

@@ -3,6 +3,7 @@ from django.urls import path
 from apps.toolkit.ai import views
 
 urlpatterns = [
+    path("config", views.ConfigView.as_view(), name="tk-config"),
     path(
         "ventures/<uuid:venture_id>/profile/suggest",
         views.SuggestView.as_view(),

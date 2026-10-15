@@ -13,7 +13,7 @@ from django.db import transaction
 
 from apps.toolkit.ai import runner
 from apps.toolkit.ai.research import gather
-from apps.toolkit.jobs.services import JobCancelled, JobContext, JobFailed
+from apps.toolkit.jobs.services import JobCancelled, JobContext, JobFailed, TransientError
 from apps.toolkit.scoring import engine, rubric
 from apps.toolkit.scoring.models import Assessment, ScoreRubric
 from apps.toolkit.ventures import schema
@@ -96,21 +96,26 @@ def _explain(
         }
         for r in results
     ]
-    answer = runner.structured(
-        prompt_id="score.explain",
-        variables={
-            "venture": {
-                "name": fields.get("name", ""),
-                "sector": fields.get("sector", ""),
-                "stage": fields.get("stage", ""),
+    try:
+        answer = runner.structured(
+            prompt_id="score.explain",
+            variables={
+                "venture": {
+                    "name": fields.get("name", ""),
+                    "sector": fields.get("sector", ""),
+                    "stage": fields.get("stage", ""),
+                },
+                "overall": {"score": overall.score, "verdict": overall.verdict},
+                "dimensions": payload,
             },
-            "overall": {"score": overall.score, "verdict": overall.verdict},
-            "dimensions": payload,
-        },
-        owner_id=ctx.owner_id,
-        venture=venture,
-        job=ctx.job,
-    )
+            owner_id=ctx.owner_id,
+            venture=venture,
+            job=ctx.job,
+        )
+    except (JobFailed, TransientError) as exc:
+        # The score is worked out by code; only the wording comes from the model.
+        logger.info("score_explained_without_ai", reason=getattr(exc, "code", "transient"))
+        answer = {}
     given = {d["key"]: (d["explanation"], d["next_step"]) for d in answer.get("dimensions", [])}
     return {r.key: given.get(r.key) or _fallback_text(r) for r in results}
 

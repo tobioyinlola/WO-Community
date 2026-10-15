@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core import policies
+from apps.core.pagination import AdminLimitOffsetPagination
 from apps.toolkit.admin_api import service
 from apps.toolkit.admin_api.serializers import (
     TkAdminDeckTemplateSerializer,
@@ -22,6 +23,8 @@ from apps.toolkit.admin_api.serializers import (
     TkAdminSettingsSerializer,
     TkAdminUsageQuerySerializer,
     TkAdminUsageRowSerializer,
+    TkAdminVenturePageSerializer,
+    TkAdminVentureQuerySerializer,
 )
 from apps.toolkit.decks import service as decks
 from apps.toolkit.decks.models import DeckTemplate
@@ -320,3 +323,28 @@ class SettingsView(APIView):
     )
     def get(self, request: Request) -> Response:
         return _private(Response(TkAdminSettingsSerializer(service.settings_view()).data))
+
+
+class VenturesView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        summary="Every venture, with its owner and which tools it has used",
+        description="Names, dates and counts only; what members wrote stays private. Newest "
+        "first. Search `q` by venture name or owner email.",
+        parameters=[TkAdminVentureQuerySerializer],
+        responses={200: TkAdminVenturePageSerializer, **ERRORS},
+        tags=["toolkit-admin"],
+    )
+    def get(self, request: Request) -> Response:
+        query = TkAdminVentureQuerySerializer(data=request.query_params.dict())
+        query.is_valid(raise_exception=True)
+        rows = service.ventures(
+            q=query.validated_data["q"],
+            include_deleted=query.validated_data["include_deleted"],
+        )
+        paginator = AdminLimitOffsetPagination()
+        page = paginator.paginate_queryset(rows, request, view=self)
+        response = paginator.get_paginated_response([service.venture_row(v) for v in page or []])
+        response.data["totals"] = service.venture_totals()
+        return _private(response)

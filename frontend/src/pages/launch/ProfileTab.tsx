@@ -11,6 +11,7 @@ import { Loaded, SkeletonRows } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
 import { packageKey, useWorkspace } from "./Workspace";
+import { useAiEnabled } from "./config";
 
 type Fields = Record<string, unknown>;
 
@@ -103,6 +104,7 @@ function FillFromText({ ventureId, onApply, onClose }: { ventureId: string; onAp
 }
 
 export default function ProfileTab() {
+  const ai = useAiEnabled();
   const { ventureId } = useWorkspace();
   const client = useQueryClient();
   const toast = useToast();
@@ -146,7 +148,7 @@ export default function ProfileTab() {
   const text = (key: string, label: string, props: { rows?: number; hint?: string } = {}) => (
     <div className="app-stack" style={{ gap: "var(--space-1)" }}>
       <Textarea label={label} rows={props.rows ?? 3} hint={props.hint} value={str(draft[key])} onChange={(e) => set(key, e.target.value)} error={errors[key]} />
-      {SUGGESTIBLE.has(key) ? <div><button type="button" className="app-linklike" onClick={() => setSuggest({ field: key, label })}><Sparkles size={14} strokeWidth={1.5} aria-hidden="true" /> Suggest wording</button></div> : null}
+      {ai && SUGGESTIBLE.has(key) ? <div><button type="button" className="app-linklike" onClick={() => setSuggest({ field: key, label })}><Sparkles size={14} strokeWidth={1.5} aria-hidden="true" /> Suggest wording</button></div> : null}
     </div>
   );
 
@@ -171,7 +173,7 @@ export default function ProfileTab() {
               </Alert>
             ) : <FormError error={save.error} />}
             <div className="app-cluster">
-              <Button variant="secondary" size="sm" icon={<Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setFilling(true)}>Fill from a few sentences</Button>
+              {ai ? <Button variant="secondary" size="sm" icon={<Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setFilling(true)}>Fill from a few sentences</Button> : null}
             </div>
             <Card>
               <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>The venture</h2>
@@ -185,7 +187,7 @@ export default function ProfileTab() {
                   <Select label="Stage" options={[{ value: "", label: "Choose one" }, ...opts(STAGES)]} value={str(draft.stage)} onChange={(e) => set("stage", e.target.value)} error={errors.stage} />
                   <Select label="Product status" options={[{ value: "", label: "Choose one" }, ...opts(PRODUCT)]} value={str(draft.product_status)} onChange={(e) => set("product_status", e.target.value)} error={errors.product_status} />
                 </div>
-                {SUGGESTIBLE.has("one_liner") ? <div><button type="button" className="app-linklike" onClick={() => setSuggest({ field: "one_liner", label: "One line description" })}><Sparkles size={14} strokeWidth={1.5} aria-hidden="true" /> Suggest wording</button></div> : null}
+                {ai && SUGGESTIBLE.has("one_liner") ? <div><button type="button" className="app-linklike" onClick={() => setSuggest({ field: "one_liner", label: "One line description" })}><Sparkles size={14} strokeWidth={1.5} aria-hidden="true" /> Suggest wording</button></div> : null}
               </div>
             </Card>
             <Card>

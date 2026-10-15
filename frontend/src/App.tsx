@@ -88,6 +88,11 @@ const AdminCourseRequests = lazy(() => import("./admin/CourseRequests"));
 const AdminEmail = lazy(() => import("./admin/Email"));
 const AdminLists = lazy(() => import("./admin/Reference"));
 const AdminStub = lazy(() => import("./admin/Stub"));
+const ToolkitVentures = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitVentures })));
+const ToolkitTemplates = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitTemplates })));
+const ToolkitRubric = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitRubric })));
+const ToolkitUsage = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitUsage })));
+const ToolkitQuality = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitQuality })));
 const EmailTemplates = lazy(() => import("./admin/EmailTemplates"));
 const EmailHealth = lazy(() => import("./admin/EmailHealth"));
 const AuditLog = lazy(() => import("./admin/AuditLog"));
@@ -247,6 +252,11 @@ export function App() {
                     <Route path="support/replies" element={<AdminSupportReplies />} />
                     <Route path="design" element={<AdminDesign />} />
                     <Route path="security" element={<AdminSecurity />} />
+                    <Route path="toolkit/ventures" element={<ToolkitVentures />} />
+                    <Route path="toolkit/templates" element={<ToolkitTemplates />} />
+                    <Route path="toolkit/rubric" element={<ToolkitRubric />} />
+                    <Route path="toolkit/usage" element={<ToolkitUsage />} />
+                    <Route path="toolkit/quality" element={<ToolkitQuality />} />
                     <Route path="*" element={<AdminStub />} />
                   </Route>
                 </Route>

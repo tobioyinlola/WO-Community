@@ -6,8 +6,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.toolkit.ai import errors as ai_errors
 from apps.toolkit.jobs import services as jobs
 from apps.toolkit.jobs.serializers import TkJobSerializer
+from apps.toolkit.jobs.services import JobFailed, TransientError
 from apps.toolkit.jobs.views import accepted, idempotency_key
 from apps.toolkit.plans import selectors, service
 from apps.toolkit.plans.models import PlanSection
@@ -171,13 +173,16 @@ class PlanSectionAssistView(APIView):
         section = _section(venture, number)
         body = TkPlanAssistSerializer(data=request.data)
         body.is_valid(raise_exception=True)
-        proposal = service.propose(
-            venture=venture,
-            owner_id=uid(request),
-            section=section,
-            action=body.validated_data["action"],
-            country=body.validated_data.get("country", ""),
-        )
+        try:
+            proposal = service.propose(
+                venture=venture,
+                owner_id=uid(request),
+                section=section,
+                action=body.validated_data["action"],
+                country=body.validated_data.get("country", ""),
+            )
+        except (JobFailed, TransientError) as exc:
+            raise ai_errors.translate(exc) from exc
         return _private(Response(TkPlanProposalSerializer(proposal).data))
 
 

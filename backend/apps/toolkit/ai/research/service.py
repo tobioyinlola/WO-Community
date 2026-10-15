@@ -17,7 +17,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.module_loading import import_string
 
-from apps.toolkit.ai import runner
+from apps.toolkit.ai import providers, runner
 from apps.toolkit.ai.models import Fact, ResearchCache, Source
 from apps.toolkit.ai.research.base import Page, ResearchFailed, ResearchProvider
 from apps.toolkit.jobs.models import AIJob
@@ -106,6 +106,9 @@ def collect(
     """Facts for one topic: from the cache for today if there are any, otherwise researched."""
     day = timezone.now().date().isoformat()
     key = hashlib.sha256(f"{topic}|{query}|{region}|{sector}|{day}".encode()).hexdigest()
+    if not settings.RESEARCH_PROVIDER or not providers.ai_enabled():
+        # No web research (or no model to read the pages): work from what the member wrote.
+        return []
     cached = ResearchCache.objects.filter(key=key).first()
     if cached is not None:
         return list(Fact.objects.filter(pk__in=cached.fact_ids).select_related("source"))

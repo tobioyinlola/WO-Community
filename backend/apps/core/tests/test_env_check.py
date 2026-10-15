@@ -112,8 +112,6 @@ def test_an_empty_environment_lists_all_the_required_variables():
         "STORAGE_ADAPTER",
         "MALWARE_SCANNER",
         "MEDIA_BASE_URL",
-        "AI_PROVIDER",
-        "RESEARCH_PROVIDER",
     ):
         assert name in named(result), name
 
@@ -150,7 +148,12 @@ def test_an_empty_environment_lists_all_the_required_variables():
         ({"STORAGE_SECRET_ACCESS_KEY": None}, "STORAGE_SECRET_ACCESS_KEY", "required"),
         ({"STORAGE_UPLOAD_METHOD": "form"}, "STORAGE_UPLOAD_METHOD", "'post' or 'put'"),
         ({"GOOGLE_MEET_REFRESH_TOKEN": None}, "GOOGLE_MEET_REFRESH_TOKEN", "required"),
-        ({"AI_PROVIDER": "fake"}, "AI_PROVIDER", "real provider"),
+        ({"AI_PROVIDER": "fake"}, "AI_PROVIDER", "offline stand-in"),
+        (
+            {"RESEARCH_PROVIDER": "apps.toolkit.ai.research.fake.FakeResearchProvider"},
+            "RESEARCH_PROVIDER",
+            "fake provider",
+        ),
         ({"AI_API_KEY": None}, "AI_API_KEY", "required"),
         ({"RESEARCH_ALLOWED_DOMAINS": ""}, "RESEARCH_ALLOWED_DOMAINS", "sites"),
         ({"CLOUDFLARE_ZONE_ID": None}, "CLOUDFLARE_ZONE_ID", "required"),
@@ -203,6 +206,16 @@ def test_toolkit_settings_are_not_needed_when_every_tool_is_switched_off():
     off = {f"TOOLKIT_FEATURE_{tool}": "false" for tool in TOOLS}
     result = report(AI_PROVIDER=None, RESEARCH_PROVIDER=None, **off)
     assert result.ok, render(result)
+
+
+def test_the_tools_can_run_without_ai_or_web_research():
+    result = report(AI_PROVIDER=None, AI_BASE_URL=None, AI_API_KEY=None, RESEARCH_PROVIDER=None)
+    assert result.ok, render(result)
+
+
+def test_an_api_key_alone_switches_ai_on_and_then_needs_the_address():
+    result = report(AI_PROVIDER=None, AI_BASE_URL=None)
+    assert "AI_BASE_URL" in named(result)
 
 
 def test_the_local_run_switch_relaxes_only_the_https_checks():

@@ -273,7 +273,7 @@ def test_assistance_is_private_to_the_owner_and_rate_limited(
     settings.AI_DAILY_RUN_CEILING = 1
     assert client.post(path, {"field": "problem"}, format="json").status_code == 200
     capped = client.post(path, {"field": "problem"}, format="json")
-    assert capped.status_code == 429 and capped.json()["code"] == "rate_limited"
+    assert capped.status_code == 429 and capped.json()["code"] == "ai_daily_limit"
 
 
 def test_a_failing_model_gives_a_clear_error(client, full_venture):

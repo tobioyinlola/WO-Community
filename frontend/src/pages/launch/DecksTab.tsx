@@ -10,6 +10,7 @@ import { FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
 import { useExport } from "./jobs";
 import { useWorkspace } from "./Workspace";
+import { useAiEnabled } from "./config";
 
 type El = Record<string, unknown> & { id: string; type: string };
 type Slide = { id: string; layout: string; title: string; notes: string; elements: El[] };
@@ -49,6 +50,7 @@ function SlidePreview({ slide, theme }: { slide: Record<string, unknown>; theme:
 }
 
 function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) {
+  const ai = useAiEnabled();
   const { ventureId } = useWorkspace();
   const client = useQueryClient();
   const toast = useToast();
@@ -159,6 +161,7 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
                       <Button loading={apply.busy} disabled={!changed} onClick={saveSlide}>Save this slide</Button>
                       <Button variant="ghost" onClick={() => void apply.run([{ op: "remove", path: `/slides/${index}` }], `Removed slide ${index + 1}`)}>Remove slide</Button>
                     </div>
+                    {ai ? (<>
                     <hr className="app-rule" />
                     <div className="app-cluster">
                       <span className="body-sm app-muted">Reword this slide:</span>
@@ -167,6 +170,7 @@ function DeckEditor({ deckId, onBack }: { deckId: string; onBack: () => void }) 
                       ))}
                     </div>
                     <FormError error={assist.error} />
+                    </>) : null}
                     {suggestion ? (
                       <Card variant="white">
                         <p className="eyebrow" style={{ margin: "0 0 var(--space-2)" }}>Suggestion</p>

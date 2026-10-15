@@ -560,8 +560,12 @@ TOOLKIT_FEATURES = {
     name: env.bool(f"TOOLKIT_FEATURE_{name.upper()}", default=True)
     for name in ("score", "plan", "forecast", "decks", "prototypes", "partner")
 }
-# "fake" runs offline; otherwise a dotted path to an LLMProvider class.
-AI_PROVIDER = env.str("AI_PROVIDER", default="fake")
+# Blank switches AI off: the toolkit works without it and says where AI would help. "http" is
+# any OpenAI compatible API (AI_BASE_URL, AI_API_KEY); "fake" is the offline stand-in, for local
+# runs and tests only; anything else is a dotted path to an LLMProvider class.
+AI_PROVIDER = env.str(
+    "AI_PROVIDER", default="http" if env.str("AI_API_KEY", default="").strip() else ""
+)
 AI_FALLBACK_PROVIDER = env.str("AI_FALLBACK_PROVIDER", default="")
 # Which model each kind of task uses, so routine steps can use a cheaper one.
 AI_MODEL_ROUTING = {
@@ -578,14 +582,24 @@ AI_BASE_URL = env.str("AI_BASE_URL", default="")  # an OpenAI compatible chat co
 AI_API_KEY = env.str("AI_API_KEY", default="")
 AI_REQUEST_TIMEOUT_SECONDS = env.int("AI_REQUEST_TIMEOUT_SECONDS", default=60)
 AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per member, model calls
-# Estimated cost per million tokens in minor units, by model (input, output). For usage reports.
-AI_PRICE_PER_MILLION_TOKENS: dict[str, tuple[int, int]] = {}
+# Estimated cost per million tokens in minor units, by model (input, output). For usage reports
+# only. OpenAI's list prices when this was written; AI_PRICES (JSON, for example
+# {"gpt-4.1-mini": [40, 160]}) adds models or replaces these when prices change.
+AI_PRICE_PER_MILLION_TOKENS: dict[str, tuple[int, int]] = {
+    "gpt-4.1-mini": (40, 160),
+    "gpt-4.1": (200, 800),
+    "gpt-4o-mini": (15, 60),
+    "gpt-4o": (250, 1000),
+}
+AI_PRICE_PER_MILLION_TOKENS.update(
+    {model: (int(p[0]), int(p[1])) for model, p in env.json("AI_PRICES", default={}).items()}
+)
 AI_COST_CURRENCY = "USD"
 AI_PARTNER_REPLY_TIMEOUT_SECONDS = env.int("AI_PARTNER_REPLY_TIMEOUT_SECONDS", default=10)
 RESEARCH_ALLOWED_DOMAINS = env.list("RESEARCH_ALLOWED_DOMAINS", default=[])
-RESEARCH_PROVIDER = env.str(
-    "RESEARCH_PROVIDER", default="apps.toolkit.ai.research.fake.FakeResearchProvider"
-)
+# Blank means no web research: scores and plans use what the member wrote. The fake provider
+# invents pages and is for local runs and tests only.
+RESEARCH_PROVIDER = env.str("RESEARCH_PROVIDER", default="")
 RESEARCH_SEARCH_URL = env.str("RESEARCH_SEARCH_URL", default="")
 RESEARCH_SEARCH_KEY = env.str("RESEARCH_SEARCH_KEY", default="")
 EXPORT_URL_TTL = env.int("EXPORT_URL_TTL", default=900)

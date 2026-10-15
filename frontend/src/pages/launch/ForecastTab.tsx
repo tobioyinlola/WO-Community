@@ -11,6 +11,7 @@ import { FormError, errorsFrom, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
 import { useExport } from "./jobs";
 import { packageKey, useWorkspace } from "./Workspace";
+import { useAiEnabled } from "./config";
 
 type Assumptions = Record<string, unknown> & { drivers?: Record<string, number>; costs?: Record<string, unknown> };
 type Salary = { role: string; monthly_minor: number; count: number; start_month: number };
@@ -51,6 +52,7 @@ function Chart({ months, currency }: { months: Array<{ month: number; revenue: n
 }
 
 export default function ForecastTab() {
+  const ai = useAiEnabled();
   const { ventureId } = useWorkspace();
   const client = useQueryClient();
   const toast = useToast();
@@ -293,7 +295,7 @@ export default function ForecastTab() {
             ) : null}
             <div className="app-cluster">
               <Button type="submit" loading={save.busy} disabled={!dirty}>{dirty ? "Save and recalculate" : "Saved"}</Button>
-              <Button type="button" variant="secondary" loading={suggest.busy} onClick={() => void suggest.run()}>Suggest typical numbers</Button>
+              {ai ? <Button type="button" variant="secondary" loading={suggest.busy} onClick={() => void suggest.run()}>Suggest typical numbers</Button> : null}
             </div>
           </form>
 

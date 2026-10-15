@@ -143,6 +143,8 @@ def post_message(
         raise exceptions.ValidationError({"text": [f"At most {MAX_MESSAGE_CHARS} characters."]})
     if conversation.messages.count() >= MAX_MESSAGES:
         raise ConflictError("This conversation is full. Start a new one.", code="limit")
+    # The partner is all conversation, so without AI it says so before anything is stored.
+    runner.require_ai()
     with transaction.atomic():
         user_message = Message.objects.create(conversation=conversation, role="user", text=cleaned)
         conversation.save(update_fields=["updated_at"])

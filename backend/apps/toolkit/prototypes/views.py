@@ -7,8 +7,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.toolkit.ai import errors as ai_errors
+from apps.toolkit.ai import runner
 from apps.toolkit.jobs import services as jobs
 from apps.toolkit.jobs.serializers import TkJobSerializer
+from apps.toolkit.jobs.services import JobFailed
 from apps.toolkit.jobs.views import accepted, idempotency_key
 from apps.toolkit.prototypes import registry, service
 from apps.toolkit.prototypes.models import Prototype
@@ -157,6 +160,10 @@ class GenerateView(APIView):
         body = TkPrototypeGenerateSerializer(data=request.data or {})
         body.is_valid(raise_exception=True)
         data = body.validated_data
+        try:
+            runner.require_ai()  # drafting is the model's job; templates work without it
+        except JobFailed as exc:
+            raise ai_errors.translate(exc) from exc
         job, created = jobs.start(
             owner_id=uid(request),
             kind="prototype.generate",

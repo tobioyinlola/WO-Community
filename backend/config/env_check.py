@@ -483,22 +483,24 @@ def _toolkit(c: _Checker) -> None:
         "or switch every tool off with TOOLKIT_FEATURE_<NAME>=false "
         "(SCORE, PLAN, FORECAST, DECKS, PROTOTYPES, PARTNER)"
     )
-    provider = c.get("AI_PROVIDER").strip() or "fake"
+    # No AI is allowed: the tools work without it. The offline stand-ins never are.
+    provider = c.get("AI_PROVIDER").strip() or ("http" if c.get("AI_API_KEY").strip() else "")
     if provider == "fake":
         c.problem(
             "AI_PROVIDER",
-            "AI_PROVIDER must name a real provider in production.",
-            f"Set AI_PROVIDER=http with AI_BASE_URL and AI_API_KEY, {off_hint}.",
+            "AI_PROVIDER=fake is the offline stand-in and must not be used in production.",
+            "Remove it (AI off), or set AI_API_KEY and AI_BASE_URL for a real service, "
+            f"{off_hint}.",
         )
     elif provider == "http":
         c.need("AI_BASE_URL", "An OpenAI compatible chat completions API address")
         c.need("AI_API_KEY", "The API key for that service")
-    research = c.get("RESEARCH_PROVIDER").strip() or FAKE_RESEARCH
+    research = c.get("RESEARCH_PROVIDER").strip()
     if research == FAKE_RESEARCH:
         c.problem(
             "RESEARCH_PROVIDER",
             "RESEARCH_PROVIDER must not be the fake provider in production.",
-            f"Set it to apps.toolkit.ai.research.web.WebResearchProvider, {off_hint}.",
+            "Remove it (no web research), or set apps.toolkit.ai.research.web.WebResearchProvider.",
         )
     elif research.endswith("WebResearchProvider") and not c.csv(c.get("RESEARCH_ALLOWED_DOMAINS")):
         c.problem(

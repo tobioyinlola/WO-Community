@@ -8,7 +8,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.toolkit.ai import errors as ai_errors
 from apps.toolkit.jobs import services as jobs
+from apps.toolkit.jobs.services import JobFailed
 from apps.toolkit.jobs.views import idempotency_key
 from apps.toolkit.partner import service
 from apps.toolkit.partner.models import ChangeSet, Conversation, Decision, Message, Nudge
@@ -170,13 +172,16 @@ class MessagesView(APIView):
         conversation = _conversation(request, venture, conversation_id)
         body = TkSendMessageSerializer(data=request.data)
         body.is_valid(raise_exception=True)
-        result = service.post_message(
-            venture=venture,
-            owner_id=uid(request),
-            conversation=conversation,
-            text=body.validated_data["text"],
-            key=idempotency_key(request),
-        )
+        try:
+            result = service.post_message(
+                venture=venture,
+                owner_id=uid(request),
+                conversation=conversation,
+                text=body.validated_data["text"],
+                key=idempotency_key(request),
+            )
+        except JobFailed as exc:
+            raise ai_errors.translate(exc) from exc
         assistant = result["assistant_message"]
         job = result["job"]
         data = {

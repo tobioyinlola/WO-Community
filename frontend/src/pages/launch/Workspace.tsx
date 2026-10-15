@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink, Outlet, useOutletContext, useParams } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
 import type { components } from "../../api/schema";
-import { Badge, Button } from "../../components";
+import { Alert, Badge, Button } from "../../components";
+import { useToolkitConfig } from "./config";
 import { Loaded, PageHeader, SkeletonRows } from "../../ui/blocks";
 import { useDeleteVenture } from "./Ventures";
 import { Modal } from "../../components";
@@ -22,15 +23,16 @@ export function useWorkspace(): WorkspaceContext {
 
 export const packageKey = (id: string) => ["toolkit", id, "package"] as const;
 
-const TABS = [
+/** The tabs, with the switch that turns each tool on or off. The partner is all AI conversation. */
+const TABS: Array<{ to: string; label: string; end?: boolean; feature?: string; needsAi?: boolean }> = [
   { to: "", label: "Overview", end: true },
   { to: "profile", label: "Profile" },
-  { to: "score", label: "Score" },
-  { to: "plan", label: "Business plan" },
-  { to: "forecast", label: "Forecast" },
-  { to: "decks", label: "Pitch decks" },
-  { to: "prototypes", label: "Prototypes" },
-  { to: "partner", label: "Partner" },
+  { to: "score", label: "Score", feature: "score" },
+  { to: "plan", label: "Business plan", feature: "plan" },
+  { to: "forecast", label: "Forecast", feature: "forecast" },
+  { to: "decks", label: "Pitch decks", feature: "decks" },
+  { to: "prototypes", label: "Prototypes", feature: "prototypes" },
+  { to: "partner", label: "Partner", feature: "partner", needsAi: true },
   { to: "sharing", label: "Sharing" },
 ];
 
@@ -38,6 +40,10 @@ export default function Workspace() {
   const { ventureId = "" } = useParams();
   const [confirm, setConfirm] = useState(false);
   const remove = useDeleteVenture(ventureId);
+  const config = useToolkitConfig();
+  const shown = TABS.filter(
+    (t) => (!t.feature || config.data?.features[t.feature] !== false) && !(t.needsAi && config.data?.ai_enabled === false),
+  );
   const venture = useQuery({
     queryKey: ["toolkit", ventureId],
     queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures/{venture_id}", { params: { path: { venture_id: ventureId } } })),
@@ -54,13 +60,20 @@ export default function Workspace() {
           />
           <nav className="app-tabs-scroll" aria-label="Venture sections">
             <div className="app-tablinks">
-              {TABS.map((t) => (
+              {shown.map((t) => (
                 <NavLink key={t.label} to={t.to} end={t.end} className="app-tablink">
                   {t.label}
                 </NavLink>
               ))}
             </div>
           </nav>
+          {config.data?.ai_enabled === false ? (
+            <Alert tone="info" title="AI writing is off for now">
+              Every tool here works without it: your score is worked out from your answers, the business plan lays out each
+              section for you to write, and decks, forecasts and prototypes start from templates. Buttons that would ask the
+              AI are hidden until it is switched on.
+            </Alert>
+          ) : null}
           <Outlet context={{ ventureId, venture: v } satisfies WorkspaceContext} />
           {confirm ? (
             <Modal

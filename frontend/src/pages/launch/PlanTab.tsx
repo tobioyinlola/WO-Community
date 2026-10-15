@@ -9,6 +9,7 @@ import { formatDate } from "../../lib/format";
 import { EmptyState, Loaded, SkeletonRows, TableScroll } from "../../ui/blocks";
 import { FormError, useSubmit } from "../../ui/forms";
 import { useToast } from "../../ui/Toast";
+import { useAiEnabled } from "./config";
 import { JobStatus, cancelJob, useExport, useJob } from "./jobs";
 import { packageKey, useWorkspace } from "./Workspace";
 
@@ -50,6 +51,7 @@ function BlockView({ block }: { block: Block }) {
 }
 
 function Editor({ number, onClose }: { number: number; onClose: () => void }) {
+  const ai = useAiEnabled();
   const { ventureId } = useWorkspace();
   const client = useQueryClient();
   const toast = useToast();
@@ -106,7 +108,13 @@ function Editor({ number, onClose }: { number: number; onClose: () => void }) {
             {section.guidance ? <p className="body-sm app-muted" style={{ margin: 0 }}>{section.guidance}</p> : null}
             {section.stale ? <Alert tone="warning" title="This was written before you changed your answers">Refresh the plan or review it by hand.</Alert> : null}
             {stale ? <Alert tone="warning" title="This changed somewhere else" action={<Button size="sm" variant="secondary" onClick={() => void query.refetch()}>Reload</Button>}>Reload to see the latest.</Alert> : <FormError error={save.error} />}
-            {section.status === "needs_input" ? <Alert tone="info" title="We need more from you here">Add what you know below, or complete the profile so this can be written.</Alert> : null}
+            {section.status === "needs_input" ? (
+              ai ? (
+                <Alert tone="info" title="We need more from you here">Add what you know below, or complete the profile so this can be written.</Alert>
+              ) : (
+                <Alert tone="info" title="Yours to write">Add paragraphs or a list below, covering what the note above describes, then save.</Alert>
+              )
+            ) : null}
             {blocks.map((b, i) => (
               <div key={i} className="app-stack" style={{ gap: "var(--space-2)" }}>
                 {b.type === "heading" ? (
@@ -134,6 +142,7 @@ function Editor({ number, onClose }: { number: number; onClose: () => void }) {
             ) : null}
             <div><Button loading={save.busy} disabled={!changed} onClick={() => void save.run()}>Save this section</Button></div>
 
+            {ai ? (<>
             <hr className="app-rule" />
             <h3 className="h4" style={{ margin: 0 }}>Ask for help with this section</h3>
             <p className="body-sm app-muted" style={{ margin: 0 }}>We show a suggestion first. Nothing changes until you use it, and any figure we cannot back up is taken out.</p>
@@ -143,6 +152,7 @@ function Editor({ number, onClose }: { number: number; onClose: () => void }) {
               {assist === "localise" ? <Input label="Country code" placeholder="NG" maxLength={2} value={country} onChange={(e) => setCountry(e.target.value.toUpperCase())} /> : null}
             </div>
             <div><Button variant="secondary" size="sm" loading={propose.busy} onClick={() => void propose.run()}>Suggest</Button></div>
+            </>) : null}
             {proposal ? (
               <Card variant="white">
                 <p className="eyebrow" style={{ margin: "0 0 var(--space-3)" }}>Suggestion</p>
@@ -162,6 +172,7 @@ function Editor({ number, onClose }: { number: number; onClose: () => void }) {
 }
 
 export default function PlanTab() {
+  const ai = useAiEnabled();
   const { ventureId } = useWorkspace();
   const client = useQueryClient();
   const toast = useToast();
@@ -212,7 +223,11 @@ export default function PlanTab() {
   return (
     <div className="app-stack app-stack--lg">
       <div className="app-cluster" style={{ justifyContent: "space-between" }}>
-        <p className="body app-muted" style={{ margin: 0, maxWidth: "60ch" }}>A full plan written from your profile, forecast and cited sources. Every section is yours to edit.</p>
+        <p className="body app-muted" style={{ margin: 0, maxWidth: "60ch" }}>
+          {ai
+            ? "A full plan written from your profile, forecast and cited sources. Every section is yours to edit."
+            : "A full business plan laid out section by section, each with what it should cover, for you to write. Your profile and forecast are kept alongside."}
+        </p>
         <div className="app-cluster">
           {plan.data ? (
             <>
@@ -220,13 +235,13 @@ export default function PlanTab() {
               <Button variant="secondary" loading={exporter.busy} onClick={() => void exporter.run("pdf")}>Download PDF</Button>
             </>
           ) : null}
-          <Button loading={generating} onClick={() => void generate.run(false)}>{plan.data ? "Update the plan" : "Write my plan"}</Button>
+          <Button loading={generating} onClick={() => void generate.run(false)}>{plan.data ? (ai ? "Update the plan" : "Add any missing sections") : ai ? "Write my plan" : "Lay out my plan"}</Button>
         </div>
       </div>
       {needsProfile ? (
         <Alert tone="info" title="Complete the profile first" action={<Link className="wo-btn wo-btn--secondary wo-btn--sm" to="../profile">Open the profile</Link>}>{messageOf(generate.error)}</Alert>
       ) : <FormError error={generate.error ?? exporter.error} />}
-      {jobId ? <JobStatus job={running.job} error={running.error} onCancel={() => void cancelJob(jobId)} /> : null}
+      {jobId ? <JobStatus job={running.job} error={running.error} onCancel={() => void cancelJob(jobId)} /> : running.failure ? <JobStatus job={running.failure} /> : null}
       {exporter.busy ? <JobStatus job={exporter.job} /> : null}
       <Loaded
         query={plan}
@@ -239,7 +254,11 @@ export default function PlanTab() {
             <div className="app-stack">
               {readiness.data && !readiness.data.ready ? (
                 <Alert tone="warning" title="Not ready to share yet">
-                  <ul style={{ margin: 0 }}>{readiness.data.blockers.map((b) => <li key={b}>{b}</li>)}</ul>
+                  {/* A plan laid out to be written has a blocker per section: show the first few. */}
+                  <ul style={{ margin: 0 }}>{readiness.data.blockers.slice(0, 5).map((b) => <li key={b}>{b}</li>)}</ul>
+                  {readiness.data.blockers.length > 5 ? (
+                    <p style={{ margin: "var(--space-2) 0 0" }}>And {readiness.data.blockers.length - 5} more. Sections marked &ldquo;Needs you&rdquo; below are still to write.</p>
+                  ) : null}
                 </Alert>
               ) : null}
               {data && [...chapters.entries()].map(([chapter, sections]) => (

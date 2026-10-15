@@ -161,6 +161,7 @@ def all_scenarios(forecast: Forecast) -> dict[str, dict[str, Any]]:
 
 def suggest(*, venture: Venture, owner_id: UUID, forecast: Forecast) -> dict[str, Any]:
     """Assumptions the sources support, as a proposal. Nothing is saved."""
+    runner.require_ai()  # sourced benchmarks need the model to read them
     a = forecast.assumptions
     template = a["template"]
     # Rates only: prices, volumes and costs are the founder's to set.

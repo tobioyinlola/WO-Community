@@ -49,7 +49,7 @@ export default function ScoreTab() {
         <Button onClick={() => void start.run()} loading={busy}>{latest.data ? "Score it again" : "Score my idea"}</Button>
       </div>
       <FormError error={start.error} />
-      {jobId ? <JobStatus job={running.job} error={running.error} onCancel={() => void cancelJob(jobId)} /> : null}
+      {jobId ? <JobStatus job={running.job} error={running.error} onCancel={() => void cancelJob(jobId)} /> : running.failure ? <JobStatus job={running.failure} /> : null}
       <Loaded
         query={latest}
         skeleton={<SkeletonRows />}
