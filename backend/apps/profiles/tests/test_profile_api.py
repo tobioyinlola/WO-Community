@@ -30,12 +30,12 @@ def test_a_profile_is_created_on_first_use_with_a_slug(my_client, me):
 def test_the_owner_view_shows_everything_and_the_visibility_levels(my_client):
     body = my_client.get(PROFILE).json()
     assert body["visibility"] == {
-        "basics": "members",
-        "bio": "members",
-        "location": "members",
-        "skills": "members",
-        "links": "private",
-        "open_to": "members",
+        "basics": "public",
+        "bio": "public",
+        "location": "public",
+        "skills": "public",
+        "links": "public",
+        "open_to": "public",
     }
     assert {"full_name", "headline", "bio", "country", "city", "skills", "linkedin_url"} <= set(
         body
@@ -219,11 +219,11 @@ def test_completeness_rises_as_fields_are_filled_and_names_the_next_gap(my_clien
 
 
 def test_visibility_can_be_read_and_changed(my_client):
-    assert my_client.get("/api/v1/me/visibility").json()["bio"] == "members"
-    response = my_client.patch("/api/v1/me/visibility", {"bio": "public", "links": "members"})
+    assert my_client.get("/api/v1/me/visibility").json()["bio"] == "public"
+    response = my_client.patch("/api/v1/me/visibility", {"bio": "members", "links": "private"})
     assert response.status_code == 200
-    assert response.json()["bio"] == "public" and response.json()["links"] == "members"
-    assert my_client.get(PROFILE).json()["visibility"]["bio"] == "public"
+    assert response.json()["bio"] == "members" and response.json()["links"] == "private"
+    assert my_client.get(PROFILE).json()["visibility"]["bio"] == "members"
 
 
 @pytest.mark.parametrize(
@@ -232,7 +232,7 @@ def test_visibility_can_be_read_and_changed(my_client):
 def test_invalid_visibility_changes_are_rejected(my_client, body):
     response = my_client.patch("/api/v1/me/visibility", body)
     assert response.status_code == 400
-    assert my_client.get(PROFILE).json()["visibility"]["bio"] == "members"
+    assert my_client.get(PROFILE).json()["visibility"]["bio"] == "public"
 
 
 def test_visibility_requires_authentication(api_client):

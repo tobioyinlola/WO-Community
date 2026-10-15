@@ -2541,8 +2541,7 @@ paths:
   /api/v1/admin/editorial-comments/{comment_id}/hide:
     post:
       operationId: admin_editorial_comments_hide_create
-      description: Hide, unhide or remove a comment on an item (the URL names the
-        action).
+      description: The type of the None singleton.
       summary: Moderate a comment on an item
       parameters:
       - in: path
@@ -2576,8 +2575,7 @@ paths:
   /api/v1/admin/editorial-comments/{comment_id}/remove:
     post:
       operationId: admin_editorial_comments_remove_create
-      description: Hide, unhide or remove a comment on an item (the URL names the
-        action).
+      description: The type of the None singleton.
       summary: Moderate a comment on an item
       parameters:
       - in: path
@@ -2611,8 +2609,7 @@ paths:
   /api/v1/admin/editorial-comments/{comment_id}/unhide:
     post:
       operationId: admin_editorial_comments_unhide_create
-      description: Hide, unhide or remove a comment on an item (the URL names the
-        action).
+      description: The type of the None singleton.
       summary: Moderate a comment on an item
       parameters:
       - in: path
@@ -2833,8 +2830,7 @@ paths:
   /api/v1/admin/editorial/{item_id}/publish:
     post:
       operationId: admin_editorial_publish_create
-      description: Publish now, or take down / cancel a schedule (the URL names the
-        action).
+      description: The type of the None singleton.
       summary: Publish an item now, or take it down
       parameters:
       - in: path
@@ -2903,8 +2899,7 @@ paths:
   /api/v1/admin/editorial/{item_id}/unpublish:
     post:
       operationId: admin_editorial_unpublish_create
-      description: Publish now, or take down / cancel a schedule (the URL names the
-        action).
+      description: The type of the None singleton.
       summary: Publish an item now, or take it down
       parameters:
       - in: path
@@ -11731,6 +11726,25 @@ paths:
           description: The startup changed since the ETag was issued
         '428':
           description: If-Match header missing
+  /api/v1/me/stats:
+    get:
+      operationId: me_stats_retrieve
+      description: Followers, reactions and comments on your posts, learning, mentoring
+        and events. The *_recent counts cover the last `trend_days` days.
+      summary: Your numbers for the dashboard
+      tags:
+      - member area
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyStats'
+          description: ''
+        '401':
+          description: Not logged in
   /api/v1/me/visibility:
     get:
       operationId: me_visibility_retrieve
@@ -26532,6 +26546,56 @@ components:
       - members
       - url
       - waiting_count
+    MyStats:
+      type: object
+      properties:
+        trend_days:
+          type: integer
+          description: The window of the *_recent counts.
+        followers:
+          type: integer
+        followers_recent:
+          type: integer
+        posts:
+          type: integer
+        reactions_received:
+          type: integer
+        reactions_recent:
+          type: integer
+        comments_received:
+          type: integer
+        comments_recent:
+          type: integer
+        courses_in_progress:
+          type: integer
+        courses_completed:
+          type: integer
+        certificates:
+          type: integer
+        sessions_completed:
+          type: integer
+        sessions_upcoming:
+          type: integer
+        events_attended:
+          type: integer
+        events_upcoming:
+          type: integer
+      required:
+      - certificates
+      - comments_received
+      - comments_recent
+      - courses_completed
+      - courses_in_progress
+      - events_attended
+      - events_upcoming
+      - followers
+      - followers_recent
+      - posts
+      - reactions_received
+      - reactions_recent
+      - sessions_completed
+      - sessions_upcoming
+      - trend_days
     Named:
       type: object
       properties:
@@ -29857,6 +29921,26 @@ components:
             $ref: '#/components/schemas/ReferrerCandidate'
       required:
       - results
+    RegisterProfileRequest:
+      type: object
+      description: |-
+        Country and city may be left out here; the service asks for them unless an admin invitation
+        is used, as staff join to run the console and have no founder profile to fill.
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        country:
+          type: string
+          maxLength: 2
+          minLength: 2
+        city:
+          type: string
+          maxLength: 100
+          minLength: 1
+      required:
+      - full_name
     RegisterRequest:
       type: object
       description: |-
@@ -29889,9 +29973,11 @@ components:
           default: false
           description: I am also a mentor. Only records interest; an admin still approves.
         profile:
-          $ref: '#/components/schemas/SignupProfileRequest'
+          $ref: '#/components/schemas/RegisterProfileRequest'
         startup:
-          $ref: '#/components/schemas/SignupStartupRequest'
+          allOf:
+          - $ref: '#/components/schemas/SignupStartupRequest'
+          description: Required, except with an invitation to an admin role.
         anonymous_id:
           type: string
           format: uuid
@@ -29909,7 +29995,6 @@ components:
       - email
       - password
       - profile
-      - startup
     Registered:
       type: object
       properties:

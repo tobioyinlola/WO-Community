@@ -1145,7 +1145,7 @@ export interface paths {
         put?: never;
         /**
          * Moderate a comment on an item
-         * @description Hide, unhide or remove a comment on an item (the URL names the action).
+         * @description The type of the None singleton.
          */
         post: operations["admin_editorial_comments_hide_create"];
         delete?: never;
@@ -1165,7 +1165,7 @@ export interface paths {
         put?: never;
         /**
          * Moderate a comment on an item
-         * @description Hide, unhide or remove a comment on an item (the URL names the action).
+         * @description The type of the None singleton.
          */
         post: operations["admin_editorial_comments_remove_create"];
         delete?: never;
@@ -1185,7 +1185,7 @@ export interface paths {
         put?: never;
         /**
          * Moderate a comment on an item
-         * @description Hide, unhide or remove a comment on an item (the URL names the action).
+         * @description The type of the None singleton.
          */
         post: operations["admin_editorial_comments_unhide_create"];
         delete?: never;
@@ -1265,7 +1265,7 @@ export interface paths {
         put?: never;
         /**
          * Publish an item now, or take it down
-         * @description Publish now, or take down / cancel a schedule (the URL names the action).
+         * @description The type of the None singleton.
          */
         post: operations["admin_editorial_publish_create"];
         delete?: never;
@@ -1305,7 +1305,7 @@ export interface paths {
         put?: never;
         /**
          * Publish an item now, or take it down
-         * @description Publish now, or take down / cancel a schedule (the URL names the action).
+         * @description The type of the None singleton.
          */
         post: operations["admin_editorial_unpublish_create"];
         delete?: never;
@@ -5375,6 +5375,26 @@ export interface paths {
         };
         /** Startups you own or are on the team of */
         get: operations["me_startups_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your numbers for the dashboard
+         * @description Followers, reactions and comments on your posts, learning, mentoring and events. The *_recent counts cover the last `trend_days` days.
+         */
+        get: operations["me_stats_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11899,6 +11919,24 @@ export interface components {
             waiting_count: number;
             members: components["schemas"]["ReferralEntry"][];
         };
+        MyStats: {
+            /** @description The window of the *_recent counts. */
+            trend_days: number;
+            followers: number;
+            followers_recent: number;
+            posts: number;
+            reactions_received: number;
+            reactions_recent: number;
+            comments_received: number;
+            comments_recent: number;
+            courses_in_progress: number;
+            courses_completed: number;
+            certificates: number;
+            sessions_completed: number;
+            sessions_upcoming: number;
+            events_attended: number;
+            events_upcoming: number;
+        };
         Named: {
             slug: string;
             name: string;
@@ -13531,6 +13569,15 @@ export interface components {
             results: components["schemas"]["ReferrerCandidate"][];
         };
         /**
+         * @description Country and city may be left out here; the service asks for them unless an admin invitation
+         *     is used, as staff join to run the console and have no founder profile to fill.
+         */
+        RegisterProfileRequest: {
+            full_name: string;
+            country?: string;
+            city?: string;
+        };
+        /**
          * @description Rejects fields the serializer does not declare.
          *
          *     Silently ignoring unknown input hides client bugs and makes mass
@@ -13550,8 +13597,9 @@ export interface components {
              * @default false
              */
             also_mentor: boolean;
-            profile: components["schemas"]["SignupProfileRequest"];
-            startup: components["schemas"]["SignupStartupRequest"];
+            profile: components["schemas"]["RegisterProfileRequest"];
+            /** @description Required, except with an invitation to an admin role. */
+            startup?: components["schemas"]["SignupStartupRequest"];
             /** Format: uuid */
             anonymous_id?: string | null;
             referral?: components["schemas"]["ReferralInputRequest"];
@@ -31552,6 +31600,32 @@ export interface operations {
             };
             /** @description If-Match header missing */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_stats_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStats"];
+                };
+            };
+            /** @description Not logged in */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -91,9 +91,15 @@ def _owners_of(startup_ids: list[UUID]) -> list[UUID]:
 
 
 def digest_recipients() -> list[UUID]:
-    """Members who switched the digest email on (it is off until they choose it)."""
-    rows = NotificationPreference.objects.filter(choices__news_digest__email=True)
-    return list(rows.values_list("user_id", flat=True))
+    """Active members, less those who switched the digest email off (it is on until they do).
+
+    Saved preferences keep only what differs from the defaults, so an opt-out is the stored row.
+    """
+    from apps.accounts import selectors as accounts
+
+    opted_out = NotificationPreference.objects.filter(choices__news_digest__email=False)
+    members = accounts.active_members().exclude(pk__in=opted_out.values("user_id"))
+    return list(members.values_list("pk", flat=True))
 
 
 def send_digest(now: Any = None) -> int:

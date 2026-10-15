@@ -75,8 +75,8 @@ def create_from_signup(user_id: UUID, details: dict[str, Any]) -> FounderProfile
     if profile.full_name:
         return profile
     profile.full_name = details["full_name"]
-    profile.country = details["country"]
-    profile.city = details["city"]
+    profile.country = details.get("country", "")
+    profile.city = details.get("city", "")
     if profile.slug.startswith("member-"):
         profile.slug = _new_slug(details["full_name"])
     _refresh_completeness(profile)

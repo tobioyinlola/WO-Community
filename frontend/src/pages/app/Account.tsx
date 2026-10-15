@@ -6,7 +6,8 @@ import { api, unwrap, unwrapTagged } from "../../api/client";
 import { ApiError, messageOf } from "../../api/errors";
 import { useCountries, useSectors, useSkills, useStages, withPlaceholder } from "../../api/reference";
 import type { components } from "../../api/schema";
-import { Alert, Button, Card, ChoiceGroup, Checkbox, Input, Select, Switch, Textarea } from "../../components";
+import { Alert, Avatar, Button, Card, ChoiceGroup, Checkbox, Input, Select, Switch, Textarea } from "../../components";
+import { uploadFile } from "../../api/upload";
 import { formatDateTime, humanise } from "../../lib/format";
 import { Loaded, PageHeader, SkeletonRows, TableScroll } from "../../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
@@ -19,6 +20,14 @@ const OPEN_TO: Array<{ value: OpenTo; label: string }> = [
   { value: "seeking_mentor", label: "Looking for a mentor" },
   { value: "partnerships", label: "Partnerships" },
 ];
+
+// The server keeps About you to 500 characters; the counter shows words too, as people think in words.
+const BIO_MAX = 500;
+
+function bioCount(text: string): string {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  return `${words} ${words === 1 ? "word" : "words"} · ${text.length}/${BIO_MAX} characters`;
+}
 
 export default function ProfilePage() {
   const client = useQueryClient();
@@ -68,7 +77,7 @@ export default function ProfilePage() {
                 <Select label="Country" options={withPlaceholder(countries.data)} value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })} error={errors.country} />
                 <Input label="City" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} error={errors.city} />
               </div>
-              <Textarea label="About you" rows={5} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} error={errors.bio} />
+              <Textarea label="About you" rows={5} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} hint={bioCount(f.bio)} error={errors.bio ?? (f.bio.length > BIO_MAX ? `That is ${f.bio.length - BIO_MAX} characters too long. Shorten it to ${BIO_MAX} or fewer.` : undefined)} />
               <div className="app-formgrid">
                 <Input label="LinkedIn" value={f.linkedin_url} onChange={(e) => setF({ ...f, linkedin_url: e.target.value })} error={errors.linkedin_url} />
                 <Input label="X" value={f.x_url} onChange={(e) => setF({ ...f, x_url: e.target.value })} error={errors.x_url} />
@@ -87,6 +96,16 @@ export default function ProfilePage() {
               <div><Button size="lg" type="submit" loading={save.busy}>Save profile</Button></div>
             </form>
             <aside className="app-stack">
+              <ProfilePhoto
+                name={f.full_name || "You"}
+                photo={tagged.data.photo?.large ?? null}
+                etag={etag}
+                onSaved={(data, next) => {
+                  setEtag(next || etag);
+                  client.setQueryData(["me", "profile", "tagged"], { data, etag: next || etag });
+                  void client.invalidateQueries({ queryKey: ["me"] });
+                }}
+              />
               <Card>
                 <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Profile strength</h2>
                 <div className="app-meter" role="progressbar" aria-valuenow={tagged.data.completeness?.score ?? 0} aria-valuemin={0} aria-valuemax={100} aria-label="Profile strength"><span style={{ width: `${tagged.data.completeness?.score ?? 0}%` }} /></div>
@@ -104,6 +123,68 @@ export default function ProfilePage() {
         )}
       </Loaded>
     </>
+  );
+}
+
+type Profile = components["schemas"]["Profile"];
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+
+function ProfilePhoto({ name, photo, etag, onSaved }: { name: string; photo: string | null; etag: string; onSaved: (data: Profile, etag: string) => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState("");
+
+  const choose = async (file: File | undefined) => {
+    if (!file) return;
+    setProblem("");
+    if (!PHOTO_TYPES.includes(file.type)) return setProblem("Choose a JPEG, PNG or WebP image.");
+    if (file.size > PHOTO_MAX_BYTES) return setProblem("That image is larger than 5 MB. Choose a smaller one.");
+    setBusy(true);
+    try {
+      const uploaded = await uploadFile(file, "profile_photo");
+      const { data, etag: next } = await unwrapTagged(
+        api.PUT("/api/v1/me/profile/photo", { params: { header: { "If-Match": etag } }, body: { upload_id: uploaded.id } }),
+      );
+      onSaved(data, next);
+      toast.show("Photo updated");
+    } catch (error) {
+      setProblem(error instanceof ApiError && error.status === 412 ? "Your profile changed somewhere else. Reload the page and try again." : messageOf(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    setProblem("");
+    try {
+      const { data, etag: next } = await unwrapTagged(api.DELETE("/api/v1/me/profile/photo", { params: { header: { "If-Match": etag } } }));
+      onSaved(data, next);
+      toast.show("Photo removed");
+    } catch (error) {
+      setProblem(messageOf(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Your photo</h2>
+      <div className="app-cluster">
+        <Avatar name={name} src={photo ?? undefined} size="xl" />
+        <div className="app-stack">
+          <label className="wo-btn wo-btn--secondary wo-btn--sm" aria-disabled={busy || undefined}>
+            {busy ? "Uploading…" : photo ? "Change photo" : "Upload photo"}
+            <input className="wo-visually-hidden" type="file" accept={PHOTO_TYPES.join(",")} disabled={busy} onChange={(e) => { void choose(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
+          {photo ? <Button size="sm" variant="ghost" disabled={busy} onClick={() => void remove()}>Remove</Button> : null}
+        </div>
+      </div>
+      <p className="body-sm app-muted" style={{ margin: "var(--space-2) 0 0" }}>JPEG, PNG or WebP, up to 5 MB.</p>
+      {problem ? <p className="body-sm" role="alert" style={{ margin: "var(--space-2) 0 0", color: "var(--danger-text)" }}>{problem}</p> : null}
+    </Card>
   );
 }
 
@@ -173,7 +254,103 @@ export function StartupForm() {
           <Link className="wo-btn wo-btn--ghost" to="/app/me">Cancel</Link>
         </div>
       </form>
+      {editing && id ? <TractionEditor startupId={id} /> : null}
     </>
+  );
+}
+
+type TractionItem = components["schemas"]["TractionItemRequest"];
+const REVENUE_BANDS = ["none", "lt_1k", "1k_10k", "10k_50k", "50k_250k", "gt_250k"];
+const FUNDING_BANDS = ["none", "lt_50k", "50k_250k", "250k_1m", "1m_5m", "gt_5m"];
+const TEXT_KINDS = [
+  { kind: "milestone", label: "Milestones", placeholder: "Launched in Ghana" },
+  { kind: "award", label: "Awards", placeholder: "Winner, Lagos Startup Week 2026" },
+  { kind: "partner", label: "Partners", placeholder: "Flutterwave" },
+] as const;
+
+/** A revenue or funding band such as "50k_250k" as words a person can read. */
+function bandLabel(value: string): string {
+  if (value === "none") return "None yet";
+  if (value.startsWith("lt_")) return `Under $${value.slice(3)}`;
+  if (value.startsWith("gt_")) return `Over $${value.slice(3)}`;
+  return `$${value.replace("_", " to ")}`;
+}
+
+/** Users, revenue and funding bands, and lists of milestones, awards and partners, saved together. */
+function TractionEditor({ startupId }: { startupId: string }) {
+  const client = useQueryClient();
+  const toast = useToast();
+  const query = useQuery({ queryKey: ["startups", startupId, "traction"], queryFn: () => unwrapTagged(api.GET("/api/v1/startups/{startup_id}", { params: { path: { startup_id: startupId } } })) });
+  const [users, setUsers] = useState("");
+  const [revenue, setRevenue] = useState("");
+  const [funding, setFunding] = useState("");
+  const [texts, setTexts] = useState<Record<string, string[]>>({ milestone: [], award: [], partner: [] });
+  const [visibility, setVisibility] = useState<string>("public");
+
+  useEffect(() => {
+    const items = query.data?.data.traction ?? [];
+    const of = (kind: string) => items.filter((t) => t.kind === kind).map((t) => String(t.value ?? ""));
+    setUsers(of("users")[0] ?? "");
+    setRevenue(of("revenue_range")[0] ?? "");
+    setFunding(of("funding_range")[0] ?? "");
+    setTexts({ milestone: of("milestone"), award: of("award"), partner: of("partner") });
+    if (items[0]) setVisibility(items[0].visibility);
+  }, [query.data]);
+
+  const save = useSubmit(async () => {
+    const vis = visibility as TractionItem["visibility"];
+    const metrics: TractionItem[] = [];
+    if (users.trim()) metrics.push({ kind: "users", value: Number(users), visibility: vis });
+    if (revenue) metrics.push({ kind: "revenue_range", value: revenue, visibility: vis });
+    if (funding) metrics.push({ kind: "funding_range", value: funding, visibility: vis });
+    for (const { kind } of TEXT_KINDS) for (const text of texts[kind] ?? []) if (text.trim()) metrics.push({ kind, value: text.trim(), visibility: vis });
+    await unwrap(api.PUT("/api/v1/startups/{startup_id}/traction", { params: { path: { startup_id: startupId }, header: { "If-Match": query.data?.etag ?? "" } }, body: { metrics } }));
+    toast.show("Traction saved");
+    await client.invalidateQueries({ queryKey: ["startups"] });
+    await client.invalidateQueries({ queryKey: ["me", "onboarding"] });
+  });
+  // The dashboard's "Add your traction" link lands here.
+  const loaded = Boolean(query.data);
+  useEffect(() => {
+    if (loaded && window.location.hash === "#traction") document.getElementById("traction")?.scrollIntoView({ block: "start" });
+  }, [loaded]);
+  const stale = save.error instanceof ApiError && save.error.status === 412;
+  const usersError = users.trim() && (!/^\d+$/.test(users.trim())) ? "Enter a whole number, without commas." : undefined;
+
+  return (
+    <section id="traction" style={{ maxWidth: 720, marginTop: "var(--space-12)" }}>
+      <Card>
+        <h2 className="h3" style={{ margin: "0 0 var(--space-2)" }}>Traction</h2>
+        <p className="body-sm app-muted" style={{ margin: "0 0 var(--space-4)" }}>Show what you have achieved. Revenue and funding are shared as ranges, never exact figures.</p>
+        <Loaded query={query} skeleton={<SkeletonRows count={3} />}>
+          {() => (
+            <form className="app-stack" noValidate onSubmit={(e) => { e.preventDefault(); if (!usersError) void save.run(); }}>
+              {stale ? <Alert tone="warning" title="This startup changed somewhere else" action={<Button size="sm" variant="secondary" onClick={() => void query.refetch()}>Reload</Button>}>Reload to see the latest, then save again.</Alert> : <FormError error={save.error} />}
+              <div className="app-formgrid">
+                <Input label="Users or customers" inputMode="numeric" value={users} onChange={(e) => setUsers(e.target.value)} error={usersError} />
+                <Select label="Revenue to date" options={[{ value: "", label: "Not shared" }, ...REVENUE_BANDS.map((b) => ({ value: b, label: bandLabel(b) }))]} value={revenue} onChange={(e) => setRevenue(e.target.value)} />
+                <Select label="Funding raised" options={[{ value: "", label: "Not shared" }, ...FUNDING_BANDS.map((b) => ({ value: b, label: bandLabel(b) }))]} value={funding} onChange={(e) => setFunding(e.target.value)} />
+                <Select label="Who can see your traction" options={LEVELS.map((l) => ({ value: l, label: l === "public" ? "Anyone" : l === "members" ? "Members only" : "Only you and your team" }))} value={visibility} onChange={(e) => setVisibility(e.target.value)} />
+              </div>
+              {TEXT_KINDS.map(({ kind, label, placeholder }) => (
+                <ChoiceGroup key={kind} legend={label}>
+                  <div className="app-stack">
+                    {(texts[kind] ?? []).map((text, i) => (
+                      <div className="app-cluster" key={i} style={{ flexWrap: "nowrap" }}>
+                        <div style={{ flex: 1 }}><Input label={`${label} ${i + 1}`} placeholder={placeholder} maxLength={300} value={text} onChange={(e) => setTexts({ ...texts, [kind]: (texts[kind] ?? []).map((t, j) => (j === i ? e.target.value : t)) })} /></div>
+                        <Button size="sm" variant="ghost" onClick={() => setTexts({ ...texts, [kind]: (texts[kind] ?? []).filter((_, j) => j !== i) })}>Remove</Button>
+                      </div>
+                    ))}
+                    <div><Button size="sm" variant="secondary" onClick={() => setTexts({ ...texts, [kind]: [...(texts[kind] ?? []), ""] })}>Add {label.toLowerCase().replace(/s$/, "")}</Button></div>
+                  </div>
+                </ChoiceGroup>
+              ))}
+              <div><Button size="lg" type="submit" loading={save.busy}>Save traction</Button></div>
+            </form>
+          )}
+        </Loaded>
+      </Card>
+    </section>
   );
 }
 

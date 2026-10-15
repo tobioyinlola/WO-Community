@@ -30,12 +30,25 @@ export function FormError({ error, listFields = false }: { error: unknown; listF
       </Alert>
     );
   }
-  const count = Object.keys(fields).length;
+  // Say what is wrong and where, so a problem with a field that is not on screen can still be fixed.
+  const entries = Object.entries(fields);
   return (
-    <Alert tone="danger" title="Check the highlighted fields">
-      {count === 1 ? "One field needs attention." : `${count} fields need attention.`}
+    <Alert tone="danger" title={entries.length === 1 ? "One answer needs fixing" : `${entries.length} answers need fixing`}>
+      <ul style={{ margin: 0, paddingLeft: "1.2em" }}>
+        {entries.map(([field, message]) => (
+          <li key={field}>{fieldLabel(field) ? `${fieldLabel(field)}: ${message}` : message}</li>
+        ))}
+      </ul>
     </Alert>
   );
+}
+
+/** "profile.full_name" as "Full name"; "non_field_errors" and list positions add nothing a person needs. */
+function fieldLabel(field: string): string {
+  const part = field.split(".").filter((p) => !/^\d+$/.test(p) && p !== "non_field_errors").pop() ?? "";
+  if (!part) return "";
+  const words = part.replace(/_url$/, "").replace(/_/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /** Runs an async submit, tracking whether it is busy and what went wrong. */

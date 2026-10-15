@@ -18,14 +18,14 @@ GROUP_FIELDS: dict[str, tuple[str, ...]] = {
     "open_to": ("open_to",),
 }
 
-# Members see the essentials by default; personal links start private.
+# Every part starts visible to anyone; the member can narrow each one in settings.
 DEFAULT_LEVELS: dict[str, str] = {
-    "basics": "members",
-    "bio": "members",
-    "location": "members",
-    "skills": "members",
-    "links": "private",
-    "open_to": "members",
+    "basics": "public",
+    "bio": "public",
+    "location": "public",
+    "skills": "public",
+    "links": "public",
+    "open_to": "public",
 }
 
 # Weight of each field in the completeness score, in the order a member is nudged to fill them.

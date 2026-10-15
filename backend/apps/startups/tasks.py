@@ -12,7 +12,9 @@ def create_from_signup(event_id: str) -> None:
     event = OutboxEvent.objects.filter(pk=event_id).first()
     if event is None:
         return
-    services.create_from_signup(UUID(event.payload["user_id"]), event.payload["details"]["startup"])
+    details = event.payload["details"].get("startup")
+    if details:  # invited staff join without a startup
+        services.create_from_signup(UUID(event.payload["user_id"]), details)
 
 
 @shared_task(name="startups.link_invited_member")
