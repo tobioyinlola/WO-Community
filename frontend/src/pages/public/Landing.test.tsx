@@ -33,6 +33,7 @@ vi.mock("./landingContent", async (original) => {
 
 import { PublicLayout } from "../../layouts/PublicLayout";
 import { Landing } from "./Landing";
+import { MARQUEE_COUNTRIES } from "./landingContent";
 
 function page(element = <Landing />) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -71,24 +72,23 @@ describe("the numbers", () => {
 });
 
 describe("the countries strip", () => {
-  it("names each country once for a screen reader, with up to ten shown", async () => {
-    stats.value = {
-      startups: 10, founders: 8, courses: 4, jobs: 12,
-      countries: ["NG", "GH", "KE", "ZA", "EG", "RW", "SN", "TZ", "UG", "ET", "MA"].map((code) => ({ code, founders: 1 })),
-    };
+  it("shows the fixed list of countries, each named once for a screen reader", async () => {
     page();
     const list = await screen.findByRole("list", { name: "Countries our founders are in" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(10);
+    expect(within(list).getAllByRole("listitem")).toHaveLength(MARQUEE_COUNTRIES.length);
+    expect(MARQUEE_COUNTRIES.length).toBeGreaterThan(10);
     expect(within(list).getByText("Nigeria")).toBeInTheDocument();
-    expect(within(list).queryByText("Morocco")).toBeNull();
+    expect(within(list).getByText("Morocco")).toBeInTheDocument();
     // The second copy that makes the loop seamless is hidden from assistive technology.
     expect(document.querySelectorAll(".site-marquee__row[aria-hidden='true']")).toHaveLength(1);
   });
 
-  it("is left out when no founder has a public country", async () => {
+  it("does not depend on where members said they are", async () => {
+    stats.value = { startups: 10, founders: 8, courses: 4, jobs: 12, countries: [{ code: "FR", founders: 3 }] };
     page();
-    await screen.findByRole("link", { name: /Startups listed/ });
-    expect(screen.queryByRole("list", { name: "Countries our founders are in" })).toBeNull();
+    const list = await screen.findByRole("list", { name: "Countries our founders are in" });
+    expect(within(list).queryByText("France")).toBeNull();
+    expect(within(list).getAllByRole("listitem")).toHaveLength(MARQUEE_COUNTRIES.length);
   });
 });
 

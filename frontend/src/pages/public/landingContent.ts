@@ -81,3 +81,8 @@ export interface SocialLink {
  * the list is empty. Add only addresses that belong to WO Community.
  */
 export const SOCIAL_LINKS: SocialLink[] = [];
+
+/** The countries in the strip on the landing page: a fixed list, not taken from member sign ups. */
+export const MARQUEE_COUNTRIES = [
+  "NG", "GH", "KE", "ZA", "EG", "RW", "ET", "SN", "CI", "TZ", "UG", "MA", "CM", "ZW", "TN", "BW",
+] as const;
