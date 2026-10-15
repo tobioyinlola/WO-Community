@@ -26,7 +26,8 @@ test.describe("mentor application", () => {
     await page.getByLabel("Why do you want to mentor?").fill("I have raised three rounds and want to help founders avoid the mistakes I made.");
     await page.getByRole("button", { name: "Send application" }).click();
 
-    await expect(page.getByText(/Your application: /)).toBeVisible();
+    await expect(page.getByText("Your application has been received")).toBeVisible();
+    await expect(page.getByText(/within 3 to 5 working days/)).toBeVisible();
   });
 });
 

@@ -46,8 +46,9 @@ def test_unknown_startups_are_404(stranger_client):
 
 def test_pending_accounts_see_what_a_visitor_sees(owner_client, startup_id, make_user, client_for):
     pending = client_for(make_user(email="pending@example.com", status="pending"))
-    assert view(pending, startup_id).status_code == 404  # basics are members-only by default
-    set_levels(owner_client, startup_id, {"basics": "public"})
+    set_levels(owner_client, startup_id, {"basics": "members"})
+    assert view(pending, startup_id).status_code == 404
+    set_levels(owner_client, startup_id, {"basics": "public", "description": "members"})
     body = view(pending, startup_id).json()
     assert body["name"] == "ZZSTARTUP Pay"
     assert "description" not in body
@@ -129,7 +130,11 @@ def test_a_private_startup_leaks_nothing_to_anyone_else(owner_client, startup_id
 
 
 def test_a_startup_with_only_public_basics_shows_a_visitor_nothing_else(owner_client, startup_id):
-    set_levels(owner_client, startup_id, {"basics": "public"})
+    set_levels(
+        owner_client,
+        startup_id,
+        {"basics": "public", "description": "members", "website": "members", "team": "members"},
+    )
     public = selectors.project_startup(selectors.get_startup(startup_id), Audience.PUBLIC)
     text = json.dumps(public, default=str)
     assert "ZZSTARTUP" in text

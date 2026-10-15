@@ -353,7 +353,7 @@ def test_the_home_page_never_touches_the_raw_event_table(
     with CaptureQueriesContext(connection) as queries:
         assert as_admin.get(BASE).status_code == 200
     assert not [q for q in queries if "analytics_event" in q["sql"]]
-    assert len(queries) < 60
+    assert len(queries) < 61  # one count per waiting queue, mentor applications included
 
 
 # --- the refresh button and schedule ---

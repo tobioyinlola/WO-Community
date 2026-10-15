@@ -4251,6 +4251,30 @@ paths:
           description: Changed since the ETag was issued
         '428':
           description: If-Match header missing
+    delete:
+      operationId: admin_jobs_destroy
+      description: Unlike remove, it cannot be reopened. Audited with its title.
+      summary: Delete a job for good
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such job
   /api/v1/admin/jobs/{job_id}/approve:
     post:
       operationId: admin_jobs_approve_create
@@ -29447,6 +29471,8 @@ components:
           type: integer
         jobs_awaiting_review:
           type: integer
+        mentor_applications_pending:
+          type: integer
         wins_awaiting_review:
           type: integer
         support_unanswered:
@@ -29455,6 +29481,7 @@ components:
           type: integer
       required:
       - jobs_awaiting_review
+      - mentor_applications_pending
       - open_reports
       - registrations_awaiting_approval
       - registrations_unverified

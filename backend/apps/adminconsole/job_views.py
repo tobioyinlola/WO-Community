@@ -154,6 +154,16 @@ class AdminJobView(APIView):
         )
         return _one(request, job)
 
+    @extend_schema(
+        summary="Delete a job for good",
+        description="Unlike remove, it cannot be reopened. Audited with its title.",
+        responses={204: None, **ERRORS},
+        tags=["admin"],
+    )
+    def delete(self, request: Request, job_id: UUID) -> Response:
+        services.delete_job(actor=_actor(request), job_id=job_id, ip=_ip(request))
+        return Response(status=204)
+
 
 class ReviewJobView(APIView):
     """Approve, reject, unpublish or remove a job. The URL names the decision."""
