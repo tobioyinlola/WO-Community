@@ -4,6 +4,7 @@ import { ChevronDown, CircleHelp, LifeBuoy, PanelLeftClose, PanelLeftOpen, X, ty
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Avatar, Logo } from "../../components";
+import { FULL_LOGO_MIN_HEIGHT } from "../../components/Logo";
 import { ROLE_LABELS } from "../permissions";
 import { isCurrent, isGroup, type NavEntry, type NavGroup, type NavLeaf, type QueueKey } from "./nav";
 import { usePref } from "./prefs";
@@ -194,7 +195,7 @@ export function Sidebar({ entries, counts, collapsed, onToggle, onNavigate, onHe
       <div className="adm-side__inner" data-collapsed={collapsed}>
         <div className="adm-side__head">
           <Link to={home.to} className="adm-side__logo" aria-label={home.label} onClick={onNavigate}>
-            <Logo kind={collapsed ? "mark" : "full"} height={collapsed ? 32 : 36} />
+            <Logo kind={collapsed ? "mark" : "full"} height={collapsed ? 32 : FULL_LOGO_MIN_HEIGHT} />
           </Link>
           <button
             type="button"

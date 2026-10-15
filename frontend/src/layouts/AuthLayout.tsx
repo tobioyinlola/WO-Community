@@ -7,7 +7,7 @@ export function AuthLayout() {
     <div className="auth-page">
       <aside className="auth-brand wo-on-brand">
         <Link to="/" aria-label="WO Community, home">
-          <Logo on="dark" height={48} />
+          <Logo on="dark" height={120} />
         </Link>
         <blockquote className="auth-brand__quote">
           <p className="display-md">
@@ -23,7 +23,7 @@ export function AuthLayout() {
       </aside>
       <main className="auth-panel" id="main">
         <Link to="/" className="auth-panel__logo" aria-label="WO Community, home">
-          <Logo on="auto" height={40} />
+          <Logo on="auto" kind="mark" height={48} />
         </Link>
         <div className="auth-card">
           <Outlet />

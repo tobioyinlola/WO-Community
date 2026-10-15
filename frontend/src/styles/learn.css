@@ -1032,15 +1032,18 @@ a.wo-curriculum__row[data-done="true"] svg {
   position: absolute;
   left: 7.13cqw;
   right: 27.6cqw;
-  top: 6.6cqw;
+  top: 5.2cqw;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.wo-cert__top .wo-wordmark,
-.wo-cert__top img {
+.wo-cert__top .wo-wordmark {
   font-size: 2.1cqw;
-  height: 4cqw;
+}
+/* The full logo at 30 mm wide on the A4 sheet, as in the PDF; it scales with the sheet. */
+.wo-cert__top img {
+  height: 8.5cqw !important;
+  width: auto !important;
 }
 .wo-cert__eyebrow {
   color: var(--cert-label);

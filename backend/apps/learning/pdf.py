@@ -30,9 +30,7 @@ from reportlab.pdfgen import canvas
 
 ASSETS = Path(__file__).parent / "assets"
 FONT_DIR = ASSETS / "fonts"
-LOGO = (
-    ASSETS / "wo-logo-on-light.png"
-)  # supplied with the brand files; a wordmark stands in until then
+LOGO = ASSETS / "wo-logo-on-light.png"  # from the design system; a wordmark stands in if missing
 
 PAGE_WIDTH, PAGE_HEIGHT = 842, 595  # A4 landscape in points (297 by 210 mm)
 MM = 72 / 25.4
@@ -152,11 +150,21 @@ def _decoration(pdf: canvas.Canvas) -> None:
     pdf.circle(790, 232, 24, stroke=0, fill=1)
 
 
+# The full logo is never printed narrower than 28 mm (design system, section 03).
+LOGO_WIDTH = 30 * MM
+LOGO_HEIGHT = LOGO_WIDTH * 578 / 680  # the supplied file is 680 by 578
+
+
 def _logo(pdf: canvas.Canvas) -> None:
     top = PAGE_HEIGHT - 66
     if LOGO.exists():
         pdf.drawImage(
-            ImageReader(str(LOGO)), LEFT, top - 6, height=34, preserveAspectRatio=True, mask="auto"
+            ImageReader(str(LOGO)),
+            LEFT,
+            PAGE_HEIGHT - 44 - LOGO_HEIGHT,
+            width=LOGO_WIDTH,
+            height=LOGO_HEIGHT,
+            mask="auto",
         )
         return
     pdf.setFillColor(_c("forest-700"))

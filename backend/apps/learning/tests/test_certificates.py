@@ -289,7 +289,8 @@ def test_the_signatory_is_a_name_only_and_defaults_to_onyeka_akumah():
     text = text_of(pdf)
     assert "Onyeka Akumah" in text
     assert "http" not in text and "verify" not in text.lower()
-    assert b"/Subtype /Image" not in pdf  # no signature image and no QR code
+    # The logo is the only picture: no signature image and no QR code.
+    assert len(PdfReader(io.BytesIO(pdf)).pages[0].images) == 1
     assert "Dr A. Other" in text_of(render_certificate(sample(signatory_name="Dr A. Other")))
 
 
