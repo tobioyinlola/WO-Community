@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { MARQUEE_COUNTRIES } from "../src/pages/public/landingContent";
 
 /**
  * The public landing page: its content is all still there, nothing scrolls sideways at any width,
@@ -189,7 +190,7 @@ test.describe("on a phone", () => {
     await withCountries(page);
     await open(page);
     const list = page.getByRole("list", { name: "Countries our founders are in" });
-    await expect(list.getByRole("listitem")).toHaveCount(COUNTRIES.length);
+    await expect(list.getByRole("listitem")).toHaveCount(MARQUEE_COUNTRIES.length);
     await expect(list.locator(".fi").first()).toBeVisible();
     const track = page.locator(".site-marquee__track");
     const x1 = await track.evaluate((el) => el.getBoundingClientRect().left);
@@ -207,7 +208,7 @@ test.describe("reduced motion, countries", () => {
     const track = page.locator(".site-marquee__track");
     await expect(track).toBeVisible();
     expect(await track.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
-    await expect(page.locator(".site-marquee__row:visible .site-marquee__item:visible")).toHaveCount(COUNTRIES.length);
+    await expect(page.locator(".site-marquee__row:visible .site-marquee__item:visible")).toHaveCount(MARQUEE_COUNTRIES.length);
   });
 });
 

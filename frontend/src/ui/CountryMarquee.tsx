@@ -6,7 +6,6 @@ export interface MarqueeCountry {
   founders: number;
 }
 
-const MAX = 10;
 /** Enough entries in a row that it is wider than any screen, so the loop never shows a gap. */
 const MIN_IN_ROW = 8;
 
@@ -27,7 +26,6 @@ function nameOf(code: string): string {
 export function CountryMarquee({ countries }: { countries: MarqueeCountry[] }) {
   const items = countries
     .filter((c) => /^[A-Za-z]{2}$/.test(c.code))
-    .slice(0, MAX)
     .map((c) => ({ code: c.code.toLowerCase(), name: nameOf(c.code.toUpperCase()) }));
   if (items.length === 0) return null;
 

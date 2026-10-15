@@ -24,7 +24,7 @@ import { CountUp } from "../../ui/CountUp";
 import { Faq } from "../../ui/Faq";
 import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import { Reveal } from "../../ui/Reveal";
-import { COMPARE, FAQ, STEPS, TESTIMONIALS } from "./landingContent";
+import { COMPARE, FAQ, STEPS, TESTIMONIALS, MARQUEE_COUNTRIES } from "./landingContent";
 
 interface Feature {
   icon: LucideIcon;
@@ -169,16 +169,14 @@ export function Landing() {
         </div>
       </section>
 
-      {(stats.data?.countries ?? []).length > 0 ? (
-        <section className="site-band site-band--marquee" aria-labelledby="countries">
-          <div className="wo-container">
-            <h2 className="site-marquee__title" id="countries">
-              Founders in our community are from
-            </h2>
-          </div>
-          <CountryMarquee countries={stats.data?.countries ?? []} />
-        </section>
-      ) : null}
+      <section className="site-band site-band--marquee" aria-labelledby="countries">
+        <div className="wo-container">
+          <h2 className="site-marquee__title" id="countries">
+            Founders in our community are from
+          </h2>
+        </div>
+        <CountryMarquee countries={MARQUEE_COUNTRIES.map((code) => ({ code, founders: 0 }))} />
+      </section>
 
       {tiles.length >= 2 ? (
         <section className="site-band site-band--tight" aria-labelledby="numbers">
