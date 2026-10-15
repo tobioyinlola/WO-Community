@@ -60,7 +60,7 @@ def test_more_items_within_fifteen_minutes_wait_and_then_go_as_one_digest(admin)
     later = timezone.now() + timedelta(minutes=16)
     assert adminalerts.dispatch("member_signup", now=later) == 1
     digest = mails()[1]
-    assert "2 more" in digest.subject
+    assert digest.subject == "2 items waiting for your review"
     assert "Request 2" in digest.text_body and "Request 3" in digest.text_body
     # Nothing is sent twice.
     assert adminalerts.dispatch("member_signup", now=later + timedelta(hours=1)) == 0

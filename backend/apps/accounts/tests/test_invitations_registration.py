@@ -76,7 +76,8 @@ def test_a_welcome_email_follows_and_no_verification_email_is_sent(
     sent_emails.clear()
     run_outbox()
     assert len(sent_emails) == 1
-    assert "approved" in sent_emails[0].subject.lower()
+    assert sent_emails[0].subject.startswith("Welcome to WO Community")
+    assert "approved" in sent_emails[0].text_body
 
 
 def test_a_mentor_invitation_grants_mentor_and_member_roles(api_client, invite):

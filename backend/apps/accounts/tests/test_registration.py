@@ -105,7 +105,7 @@ def test_duplicate_registration_looks_identical_and_emails_the_owner(
     run_outbox()
     to_owner = [m for m in sent_emails if m.to == "taken@example.com"]
     assert len(to_owner) == 1
-    assert "already exists" in to_owner[0].text_body
+    assert "you already have an account" in to_owner[0].text_body
 
 
 def test_duplicate_check_ignores_case(api_client, make_user):

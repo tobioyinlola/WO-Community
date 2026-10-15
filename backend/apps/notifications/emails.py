@@ -119,6 +119,9 @@ def send_templated(
     no_reply: bool = False,
     with_preferences: bool = False,
 ) -> None:
+    tpl = mt.TEMPLATES.get(key)
+    if tpl is not None and tpl.var("first_name") and not values.get("first_name"):
+        values = {**values, "first_name": first_name_for(to)}
     rendered = render_template(key, values, with_preferences=with_preferences)
     _send(
         to,
@@ -128,6 +131,18 @@ def send_templated(
         no_reply=no_reply,
         html=rendered.html,
     )
+
+
+def first_name_for(address: str) -> str:
+    """The first word of the profile name of whoever owns ``address``; blank if unknown."""
+    from apps.profiles.models import FounderProfile
+
+    name = (
+        FounderProfile.objects.filter(user__email__iexact=address)
+        .values_list("full_name", flat=True)
+        .first()
+    )
+    return (name or "").split()[0] if (name or "").strip() else ""
 
 
 def _app(path: str) -> str:
@@ -149,9 +164,9 @@ def send_already_registered(to: str) -> None:
         "notice",
         {
             "title": "You already have a WO Community account",
-            "detail": "Someone tried to register with this address, but an account already "
-            f"exists. If you forgot your password, you can reset it at {_app('/forgot-password')}. "
-            "If this was not you, no action is needed.",
+            "detail": "Someone tried to apply with this address, but you already have an account. "
+            f"If you forgot your password, you can choose a new one at {_app('/forgot-password')}. "
+            "If this wasn't you, there's nothing to do.",
             "link_url": _app("/login"),
         },
         category="already_registered",
@@ -185,9 +200,11 @@ def send_suspended(to: str, reason: str) -> None:
         "notice",
         {
             "title": "Your WO Community account has been suspended",
-            "detail": f"Reason: {reason}. You cannot sign in or take part for now, and anything "
-            "already agreed with other members, such as mentoring sessions, has been cancelled. "
-            "If you think this is a mistake, reply to this email and our team will look again.",
+            "detail": f"Reason: {reason}. While your account is suspended, you can't sign in or "
+            "take part in the community, and anything already agreed with other members, such as "
+            "mentoring sessions, has been cancelled. If you think this is a mistake, please send "
+            "us a request through Contact support in the app, and a member of our team will "
+            "review it.",
             "link_url": _app("/login"),
         },
         category="suspended",
@@ -200,7 +217,8 @@ def send_reinstated(to: str) -> None:
         "notice",
         {
             "title": "Your WO Community account is active again",
-            "detail": "Your account has been reinstated and you can sign in again.",
+            "detail": "Your account has been reinstated, and you can sign in again. Thanks for "
+            "your patience.",
             "link_url": _app("/login"),
         },
         category="reinstated",
@@ -214,7 +232,7 @@ def send_removed(to: str, reason: str) -> None:
         {
             "title": "Your WO Community account has been removed",
             "detail": f"Reason: {reason}. Your public pages are down. If you think this is a "
-            "mistake, reply to this email and our team will look again.",
+            "mistake, please send us a request through Contact support in the app.",
             "link_url": _app("/login"),
         },
         category="removed",

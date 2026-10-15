@@ -23,5 +23,5 @@ def test_a_new_request_alerts_support_admins_and_confirms_to_the_member(
     by_recipient = {m.to: m for m in FakeEmailAdapter.sent}
     assert "Review request" in by_recipient["support@example.com"].html_body
     received = by_recipient["ada@example.com"]
-    assert received.subject.startswith("We received your request")
+    assert received.subject.startswith("We've got your request")
     assert received.html_body and received.no_reply

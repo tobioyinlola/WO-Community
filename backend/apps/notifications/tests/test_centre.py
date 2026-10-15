@@ -58,10 +58,10 @@ def test_the_email_names_the_actor_and_links_to_the_post(me, actor, sent_emails,
     profile = get_or_create_profile(actor.pk)
     profile.full_name = "Ada Obi"
     profile.save()
-    created = send(me, actor)
+    send(me, actor)
     message = sent_emails[0]
     assert message.subject == "Ada Obi commented on your post"
-    assert f"{settings.FRONTEND_BASE_URL}/posts/{created.payload['post_id']}" in message.text_body
+    assert f"{settings.FRONTEND_BASE_URL}/app/feed" in message.text_body  # the feed shows the post
     assert "settings/notifications" in message.text_body
 
 

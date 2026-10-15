@@ -6,6 +6,7 @@ is given, so a retried event never notifies twice. Wording lives here, not in th
 payload carries ids, and titles are produced when a notification is read or emailed.
 """
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -231,7 +232,7 @@ TYPES: dict[str, Spec] = {
     "mentor_application_decision": Spec(
         "mentorship",
         lambda who, p: _mentor_decision_title(p),
-        lambda p: "/mentoring/application",
+        lambda p: "/settings/mentorship" if p.get("decision") == "approved" else "/mentors/become",
         email=True,
     ),
     "mentor_revoked": Spec(
@@ -413,6 +414,28 @@ def notify(
     return created
 
 
+# Paths in notifications name things the way the API does; these are the screens they open.
+_SCREENS = (
+    (re.compile(r"^/home/?$"), "/app"),
+    (re.compile(r"^/sessions/[^/?#]+"), "/app/mentors/sessions"),
+    (re.compile(r"^/posts/[^/?#]+"), "/app/feed"),
+    (re.compile(r"^/mentoring/application"), "/app/mentors/become"),
+)
+
+
+def app_path(path: str) -> str:
+    """The website path for a notification link, which an email can open directly.
+
+    Member screens live under /app; admin screens and the public news pages keep their paths.
+    """
+    if path.startswith(("/admin", "/app", "/news")):
+        return path
+    for pattern, screen in _SCREENS:
+        if pattern.match(path):
+            return screen
+    return f"/app{path}"
+
+
 def mail_template_for(
     type_: str, title: str, extra: str, link: str, payload: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
@@ -427,15 +450,14 @@ def mail_template_for(
                 "reason": payload.get("reason"),
                 "job_url": link,
             }
-        case "mentor_application_decision":
-            approved = str(payload.get("decision", "")) == "approved"
-            return "mentor_decision", {
-                "outcome": "approved" if approved else "not approved",
-                "note": extra,
+        case "mentor_application_decision" if payload.get("decision") in ("approved", "declined"):
+            approved = payload.get("decision") == "approved"
+            return "mentor_approved" if approved else "mentor_not_approved", {
+                "note": "" if approved else str(payload.get("reason") or ""),
                 "url": link,
             }
         case "ticket_reply" | "ticket_resolved":
-            return "ticket_reply", {
+            return type_, {
                 "reference": payload.get("reference"),
                 "excerpt": extra,
                 "ticket_url": link,
@@ -476,7 +498,7 @@ def _email(
     title = spec.title(who, payload)
     extra = spec.body(payload) if spec.body else ""
     lead = f"{extra}\n\n" if extra else ""
-    link = f"{settings.FRONTEND_BASE_URL}{spec.link(payload)}"
+    link = f"{settings.FRONTEND_BASE_URL}{app_path(spec.link(payload))}"
     template, values = mail_template_for(type_, title, extra, link, payload)
     emails.send_notice(
         contact.email,
