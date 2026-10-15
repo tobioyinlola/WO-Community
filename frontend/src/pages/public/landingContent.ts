@@ -82,7 +82,11 @@ export interface SocialLink {
  */
 export const SOCIAL_LINKS: SocialLink[] = [];
 
-/** The countries in the strip on the landing page: a fixed list, not taken from member sign ups. */
+/**
+ * The countries in the strip on the landing page: a fixed list, not taken from member sign ups.
+ * Africa first, mixed with the diaspora hubs in North America and Europe.
+ */
 export const MARQUEE_COUNTRIES = [
-  "NG", "GH", "KE", "ZA", "EG", "RW", "ET", "SN", "CI", "TZ", "UG", "MA", "CM", "ZW", "TN", "BW",
+  "NG", "GH", "KE", "ZA", "US", "GB", "EG", "RW", "CA", "FR", "ET", "SN", "DE", "NL", "CI", "TZ",
+  "IE", "PT", "UG", "MA", "BE", "ES", "CM", "ZW", "IT", "SE", "TN", "BW",
 ] as const;

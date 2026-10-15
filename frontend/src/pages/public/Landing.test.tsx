@@ -79,15 +79,18 @@ describe("the countries strip", () => {
     expect(MARQUEE_COUNTRIES.length).toBeGreaterThan(10);
     expect(within(list).getByText("Nigeria")).toBeInTheDocument();
     expect(within(list).getByText("Morocco")).toBeInTheDocument();
+    expect(within(list).getByText("United States")).toBeInTheDocument();
+    expect(within(list).getByText("United Kingdom")).toBeInTheDocument();
+    expect(within(list).getByText("Canada")).toBeInTheDocument();
     // The second copy that makes the loop seamless is hidden from assistive technology.
     expect(document.querySelectorAll(".site-marquee__row[aria-hidden='true']")).toHaveLength(1);
   });
 
   it("does not depend on where members said they are", async () => {
-    stats.value = { startups: 10, founders: 8, courses: 4, jobs: 12, countries: [{ code: "FR", founders: 3 }] };
+    stats.value = { startups: 10, founders: 8, courses: 4, jobs: 12, countries: [{ code: "JP", founders: 3 }] };
     page();
     const list = await screen.findByRole("list", { name: "Countries our founders are in" });
-    expect(within(list).queryByText("France")).toBeNull();
+    expect(within(list).queryByText("Japan")).toBeNull();
     expect(within(list).getAllByRole("listitem")).toHaveLength(MARQUEE_COUNTRIES.length);
   });
 });
