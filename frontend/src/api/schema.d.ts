@@ -7224,6 +7224,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toolkit/advisor/messages/{message_id}/speech": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hear one of Onyeka's answers
+         * @description The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's own answers in your conversation can be heard. Kept for a day so listening again is quick.
+         */
+        get: operations["tk_advisor_speech"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toolkit/advisor/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn a voice recording into text
+         * @description Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up to 4 MB). Answers with the words, which you then send to Onyeka as a message. Nothing is kept: neither the recording nor the words.
+         */
+        post: operations["tk_advisor_transcribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toolkit/config": {
         parameters: {
             query?: never;
@@ -15181,6 +15221,17 @@ export interface components {
             job: components["schemas"]["TkJob"] | null;
         };
         TkAdvisorSendRequest: {
+            text: string;
+        };
+        TkAdvisorTranscribeRequest: {
+            /**
+             * Format: binary
+             * @description The recording, up to 4 MB
+             */
+            audio: string;
+        };
+        TkAdvisorTranscript: {
+            /** @description What was said */
             text: string;
         };
         TkAssessment: {
@@ -36732,6 +36783,92 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The advisor is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tk_advisor_speech: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/mpeg": string;
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an approved member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The advisor is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tk_advisor_transcribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["TkAdvisorTranscribeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkAdvisorTranscript"];
+                };
             };
             /** @description Not authenticated */
             401: {

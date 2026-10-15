@@ -34,3 +34,11 @@ class TkAdvisorReplySerializer(serializers.Serializer):
         help_text="Present (with HTTP 202) when the reply is not ready yet: poll it, then read "
         "the conversation again",
     )
+
+
+class TkAdvisorTranscribeSerializer(serializers.Serializer):
+    audio = serializers.FileField(help_text="The recording, up to 4 MB")
+
+
+class TkAdvisorTranscriptSerializer(serializers.Serializer):
+    text = serializers.CharField(help_text="What was said")

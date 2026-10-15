@@ -10,6 +10,7 @@ test.describe("the member area", () => {
     const problems = watchConsole(page);
     await signIn(page);
     const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav.getByRole("link", { name: "Launch toolkit" })).toBeVisible();
     const labels = await nav.getByRole("link").allInnerTexts();
     const at = (label: string) => labels.findIndex((l) => l.trim() === label);
     expect(at("Launch toolkit")).toBeGreaterThan(-1);

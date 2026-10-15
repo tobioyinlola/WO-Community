@@ -183,6 +183,7 @@ REST_FRAMEWORK = {
         "lesson_visitor": "30/min",
         "toolkit_share": "60/min",
         "toolkit_advisor": "20/min",
+        "toolkit_voice": "30/min",
         "auth_forgot": "5/hour",
         "auth_token": "20/hour",
         "auth_refresh": "60/min",
@@ -584,6 +585,15 @@ AI_BASE_URL = env.str("AI_BASE_URL", default="")  # an OpenAI compatible chat co
 AI_API_KEY = env.str("AI_API_KEY", default="")
 AI_REQUEST_TIMEOUT_SECONDS = env.int("AI_REQUEST_TIMEOUT_SECONDS", default=60)
 AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per member, model calls
+# Voice for Onyeka: speech to text and text to speech on the same service as the text models.
+AI_TRANSCRIBE_MODEL = env.str("AI_TRANSCRIBE_MODEL", default="gpt-4o-mini-transcribe")
+AI_TTS_MODEL = env.str("AI_TTS_MODEL", default="gpt-4o-mini-tts")
+AI_TTS_VOICE = env.str("AI_TTS_VOICE", default="alloy")
+AI_TTS_INSTRUCTIONS = env.str(
+    "AI_TTS_INSTRUCTIONS",
+    default="Speak as a warm, confident founder mentoring another founder: clear, encouraging "
+    "and natural, at an easy conversational pace.",
+)
 # Estimated cost per million tokens in minor units, by model (input, output). For usage reports
 # only. OpenAI's list prices when this was written; AI_PRICES (JSON, for example
 # {"gpt-4.1-mini": [40, 160]}) adds models or replaces these when prices change.

@@ -15414,6 +15414,68 @@ paths:
           description: Not an approved member
         '404':
           description: The advisor is switched off
+  /api/v1/toolkit/advisor/messages/{message_id}/speech:
+    get:
+      operationId: tk_advisor_speech
+      description: The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's
+        own answers in your conversation can be heard. Kept for a day so listening
+        again is quick.
+      summary: Hear one of Onyeka's answers
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
+  /api/v1/toolkit/advisor/transcribe:
+    post:
+      operationId: tk_advisor_transcribe
+      description: 'Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV,
+        up to 4 MB). Answers with the words, which you then send to Onyeka as a message.
+        Nothing is kept: neither the recording nor the words.'
+      summary: Turn a voice recording into text
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TkAdvisorTranscribeRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorTranscript'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
   /api/v1/toolkit/config:
     get:
       operationId: toolkit_config_retrieve
@@ -33358,6 +33420,23 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
+      required:
+      - text
+    TkAdvisorTranscribeRequest:
+      type: object
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: The recording, up to 4 MB
+      required:
+      - audio
+    TkAdvisorTranscript:
+      type: object
+      properties:
+        text:
+          type: string
+          description: What was said
       required:
       - text
     TkAssessment:

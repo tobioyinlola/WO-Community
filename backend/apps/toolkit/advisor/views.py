@@ -1,6 +1,12 @@
 from typing import Any
+from uuid import UUID
 
+from django.core.cache import cache
+from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from rest_framework import exceptions
+from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
@@ -12,11 +18,13 @@ from apps.toolkit.advisor.serializers import (
     TkAdvisorConversationSerializer,
     TkAdvisorReplySerializer,
     TkAdvisorSendSerializer,
+    TkAdvisorTranscribeSerializer,
+    TkAdvisorTranscriptSerializer,
 )
 from apps.toolkit.ai import errors as ai_errors
-from apps.toolkit.ai import providers
+from apps.toolkit.ai import providers, voice
 from apps.toolkit.jobs import services as jobs
-from apps.toolkit.jobs.services import JobFailed
+from apps.toolkit.jobs.services import JobFailed, TransientError
 from apps.toolkit.jobs.views import idempotency_key
 from apps.toolkit.ventures.permissions import member_policy, uid
 
@@ -119,3 +127,97 @@ class MessagesView(APIView):
     def delete(self, request: Request) -> Response:
         service.clear(uid(request))
         return Response(status=204)
+
+
+SPEECH_CACHE_SECONDS = 86400
+# A recording that cannot be used is the member's to fix, so it is a 400, not a failure of ours.
+RECORDING_PROBLEMS = ("unsupported_audio", "audio_too_long")
+
+
+class TranscribeView(APIView):
+    policy = member_policy("advisor")
+    parser_classes = [MultiPartParser]
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "toolkit_voice"
+
+    @extend_schema(
+        operation_id="tk_advisor_transcribe",
+        summary="Turn a voice recording into text",
+        description="Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up to 4 MB). "
+        "Answers with the words, which you then send to Onyeka as a message. Nothing is kept: "
+        "neither the recording nor the words.",
+        request={"multipart/form-data": TkAdvisorTranscribeSerializer},
+        responses={200: TkAdvisorTranscriptSerializer, **ERRORS},
+        tags=["toolkit"],
+    )
+    def post(self, request: Request) -> Response:
+        body = TkAdvisorTranscribeSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        upload = body.validated_data["audio"]
+        if upload.size > voice.MAX_AUDIO_BYTES:
+            raise exceptions.ValidationError(
+                {"audio": ["That recording is too long. Keep it under two minutes."]}
+            )
+        try:
+            text = voice.transcribe(
+                owner_id=uid(request),
+                audio=upload.read(),
+                content_type=upload.content_type or "",
+            )
+        except JobFailed as exc:
+            if exc.code in RECORDING_PROBLEMS:
+                raise exceptions.ValidationError({"audio": [exc.detail]}) from exc
+            raise ai_errors.translate(exc) from exc
+        except TransientError as exc:
+            raise ai_errors.translate(exc) from exc
+        if not text:
+            raise exceptions.ValidationError(
+                {"audio": ["We could not hear any words. Try again a little closer to the mic."]}
+            )
+        return _private(Response(TkAdvisorTranscriptSerializer({"text": text}).data))
+
+
+def spoken_text(m: AdvisorMessage) -> str:
+    """What Onyeka reads out: the answer, then the next steps."""
+    steps = m.meta.get("next_steps") or []
+    if not steps:
+        return m.text
+    listed = " ".join(f"{n}. {step}" for n, step in enumerate(steps, start=1))
+    return f"{m.text}\n\nNext steps. {listed}"
+
+
+class SpeechView(APIView):
+    policy = member_policy("advisor")
+    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+    throttle_scope = "toolkit_voice"
+
+    @extend_schema(
+        operation_id="tk_advisor_speech",
+        summary="Hear one of Onyeka's answers",
+        description="The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's own "
+        "answers in your conversation can be heard. Kept for a day so listening again is quick.",
+        responses={
+            (200, "audio/mpeg"): OpenApiTypes.BINARY,
+            **ERRORS,
+        },
+        tags=["toolkit"],
+    )
+    def get(self, request: Request, message_id: UUID) -> HttpResponse:
+        message = AdvisorMessage.objects.filter(
+            pk=message_id, owner_id=uid(request), role="assistant"
+        ).first()
+        if message is None:
+            raise exceptions.NotFound()
+        key = f"toolkit:advisor:speech:{message.pk}"
+        cached = cache.get(key)
+        if cached is None:
+            try:
+                speech = voice.speak(owner_id=uid(request), text=spoken_text(message))
+            except (JobFailed, TransientError) as exc:
+                raise ai_errors.translate(exc) from exc
+            cached = (speech.content_type, speech.audio)
+            cache.set(key, cached, SPEECH_CACHE_SECONDS)
+        content_type, audio = cached
+        response = HttpResponse(audio, content_type=content_type)
+        response["Cache-Control"] = "private, max-age=86400"
+        return response
