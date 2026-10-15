@@ -142,7 +142,7 @@ def test_registration_sends_the_verification_email_through_resend(
     assert call.url.path == "/emails"
     assert body["to"] == ["new.member@example.com"]
     assert body["from"] == "WO Community <no-reply@mail.test>"
-    assert body["subject"] == "Confirm your email address"
+    assert body["subject"] == "Confirm your email to join WO Community"
     assert "verify-email?token=" in body["text"]
     assert body["tags"] == [{"name": "category", "value": "verification"}]
     assert len(call.headers["idempotency-key"]) == 64

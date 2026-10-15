@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -109,6 +110,25 @@ def send_password_reset_email(event_id: str) -> None:
     issued = accounts.issue_email_token(user_id, accounts.PASSWORD_RESET)
     if issued is not None:
         emails.send_password_reset(*issued)
+
+
+@shared_task(name="notifications.send_application_received_email")
+def send_application_received_email(event_id: str) -> None:
+    user_id = _user_id(event_id)
+    contact = accounts.get_contact(user_id) if user_id else None
+    if contact is not None and contact.status == "pending":
+        emails.send_application_received(contact.email)
+
+
+@shared_task(name="notifications.send_password_changed_email")
+def send_password_changed_email(event_id: str) -> None:
+    found = _payload_contact(event_id)
+    if found is None:
+        return
+    contact, payload = found
+    emails.send_password_changed(
+        contact.email, datetime.fromisoformat(payload["changed_at"]), contact.timezone
+    )
 
 
 @shared_task(name="notifications.process_webhook")

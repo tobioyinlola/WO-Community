@@ -10,7 +10,7 @@ from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
 from apps.integrations import meetings
 from apps.mentorship import booking, calendar_sync, lifecycle
-from apps.mentorship.models import MentorSession
+from apps.mentorship.models import MentorProfile, MentorSession
 from apps.notifications import notify
 
 logger = structlog.get_logger(__name__)
@@ -30,6 +30,16 @@ def _session(data: dict[str, Any] | None) -> MentorSession | None:
     if data is None:
         return None
     return MentorSession.objects.filter(pk=data["session_id"]).first()
+
+
+def _timing(session: MentorSession) -> dict[str, str]:
+    """When the session is, for the email: the start and the mentor's time zone."""
+    zone = (
+        MentorProfile.objects.filter(user_id=session.mentor_id)
+        .values_list("timezone", flat=True)
+        .first()
+    )
+    return {"starts_at": session.starts_at.isoformat(), "timezone": zone or "UTC"}
 
 
 def _other(session: MentorSession, user_id: str) -> UUID:
@@ -52,6 +62,8 @@ def notify_session_requested(event_id: str) -> None:
             "session_id": str(session.pk),
             "actor_id": str(session.mentee_id),
             "payment": session.payment_mode,
+            "message": session.message[:300],
+            **_timing(session),
         },
         dedupe_key=f"{event_id}:requested",
     )
@@ -69,6 +81,8 @@ def notify_session_confirmed(event_id: str) -> None:
             "session_id": str(session.pk),
             "actor_id": str(session.mentor_id),
             "payment": session.payment_mode,
+            "where": session.meeting_url,
+            **_timing(session),
         },
         dedupe_key=f"{event_id}:confirmed",
     )

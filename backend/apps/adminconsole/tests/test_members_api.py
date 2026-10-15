@@ -220,7 +220,8 @@ def test_approved_member_is_emailed(as_admin, pending, run_outbox, sent_emails):
     as_admin.post(url(pending, "approve"))
     run_outbox()
     assert [m.to for m in sent_emails] == ["pending@example.com"]
-    assert "approved" in sent_emails[0].subject.lower()
+    assert sent_emails[0].subject.startswith("Welcome to WO Community")
+    assert "approved" in sent_emails[0].text_body
 
 
 def test_unverified_registration_cannot_be_approved(as_admin, make_user):

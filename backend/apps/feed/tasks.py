@@ -5,7 +5,9 @@ import structlog
 from celery import shared_task
 
 from apps.core.models import OutboxEvent
+from apps.core.text import text_of
 from apps.feed import links, services
+from apps.feed.models import Comment
 from apps.notifications import notify
 from apps.startups import selectors as startups
 
@@ -44,10 +46,13 @@ def notify_comment(event_id: str) -> None:
     data = _payload(event_id)
     if data is None:
         return
+    comment = Comment.objects.filter(pk=data["comment_id"]).first()
+    words = " ".join(text_of(comment.body).split()) if comment is not None else ""
     payload = {
         "actor_id": data["commenter_id"],
         "post_id": data["post_id"],
         "comment_id": data["comment_id"],
+        "excerpt": words if len(words) <= 200 else words[:199].rstrip() + "…",
     }
     parent_author = data["parent_author_id"]
     if parent_author:

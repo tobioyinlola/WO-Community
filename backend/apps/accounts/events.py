@@ -35,6 +35,13 @@ class PasswordResetRequested(DomainEvent):
 
 
 @dataclass(frozen=True)
+class PasswordChanged(DomainEvent):
+    topic: ClassVar[str] = "accounts.password_changed"
+    user_id: str
+    changed_at: str
+
+
+@dataclass(frozen=True)
 class MemberApproved(DomainEvent):
     topic: ClassVar[str] = "accounts.member_approved"
     user_id: str

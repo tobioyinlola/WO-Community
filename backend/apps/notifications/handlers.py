@@ -15,6 +15,16 @@ def register() -> None:
         "default",
     )
     outbox.register_handler(
+        account_events.RegistrationAwaitingApproval.topic,
+        "notifications.send_application_received_email",
+        "critical",
+    )
+    outbox.register_handler(
+        account_events.PasswordChanged.topic,
+        "notifications.send_password_changed_email",
+        "critical",
+    )
+    outbox.register_handler(
         notification_events.WebhookReceived.topic, "notifications.process_webhook", "default"
     )
     outbox.register_handler(

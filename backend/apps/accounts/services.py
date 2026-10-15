@@ -62,6 +62,7 @@ class InvalidCredentials(exceptions.APIException):
 class Contact:
     email: str
     status: str
+    timezone: str = "UTC"
 
 
 @dataclass(frozen=True)
@@ -257,7 +258,7 @@ def issue_email_token(user_id: UUID, purpose: str) -> tuple[str, str] | None:
 
 def get_contact(user_id: UUID) -> Contact | None:
     user = User.objects.filter(pk=user_id).first()
-    return Contact(email=user.email, status=user.status) if user else None
+    return Contact(email=user.email, status=user.status, timezone=user.timezone) if user else None
 
 
 def _consume_token(raw: str, purpose: str) -> User:
@@ -318,6 +319,9 @@ def reset_password(*, raw_token: str, new_password: str, ip: str = "") -> None:
         user.bump_token_version()
         audit.record(
             actor=user, action="auth.password_reset", target_type="user", target_id=user.pk, ip=ip
+        )
+        domain_events.publish(
+            events.PasswordChanged(user_id=str(user.pk), changed_at=timezone.now().isoformat())
         )
     tokens.revoke_older_tokens(user)
 

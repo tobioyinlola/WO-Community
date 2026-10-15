@@ -137,7 +137,7 @@ def test_posters_are_warned_once_three_days_before(
         "expires in 3 days"
         in poster_client.get("/api/v1/notifications").json()["results"][0]["title"]
     )
-    assert any("Renew or close" in m.subject or "renew or close" in m.subject for m in sent_emails)
+    assert any(m.subject.startswith("Your job post ends in 3 days") for m in sent_emails)
     assert services.warn_expiring() == 0  # only once per term
     run_outbox()
     assert len(notices(poster)) == 1

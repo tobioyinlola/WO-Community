@@ -154,7 +154,7 @@ def create_ticket(
             {
                 "reference": ticket.reference,
                 "subject": ticket.subject,
-                "ticket_url": f"{settings.FRONTEND_BASE_URL}/support/{ticket.pk}",
+                "ticket_url": f"{settings.FRONTEND_BASE_URL}/app/support/{ticket.pk}",
             },
             category="notification_ticket_received",
             no_reply=True,
