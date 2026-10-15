@@ -24,10 +24,10 @@ import {
 import { useTheme, type ThemeChoice } from "../theme/ThemeProvider";
 
 const LOGO = {
-  fullOnLight: "/assets/wo-logo-on-light.png",
-  fullOnDark: "/assets/wo-logo-on-dark.png",
-  markOnLight: "/assets/wo-mark-on-light.png",
-  markOnDark: "/assets/wo-mark-on-dark.png",
+  fullOnLight: "/brand/wo-logo-on-light.png",
+  fullOnDark: "/brand/wo-logo-on-dark.png",
+  markOnLight: "/brand/wo-mark-on-light.png",
+  markOnDark: "/brand/wo-mark-on-dark.png",
 };
 
 /** Renders its content on a themed ground, so one page shows both themes side by side. */
