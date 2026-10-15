@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from apps.integrations.storage import get_storage
 from apps.integrations.storage.base import PRIVATE
+from apps.toolkit.ai import errors as ai_errors
 from apps.toolkit.decks import service
 from apps.toolkit.decks.models import Deck, DeckAsset
 from apps.toolkit.decks.serializers import (
@@ -31,6 +32,7 @@ from apps.toolkit.decks.serializers import (
 )
 from apps.toolkit.jobs import services as jobs
 from apps.toolkit.jobs.serializers import TkJobSerializer
+from apps.toolkit.jobs.services import JobFailed, TransientError
 from apps.toolkit.jobs.views import accepted, idempotency_key
 from apps.toolkit.ventures.models import Venture
 from apps.toolkit.ventures.permissions import (
@@ -278,13 +280,16 @@ class AssistView(APIView):
         deck = _deck(venture, deck_id)
         body = TkDeckAssistSerializer(data=request.data)
         body.is_valid(raise_exception=True)
-        result = service.assist(
-            venture=venture,
-            owner_id=uid(request),
-            deck=deck,
-            slide_id=body.validated_data["slide_id"],
-            action=body.validated_data["action"],
-        )
+        try:
+            result = service.assist(
+                venture=venture,
+                owner_id=uid(request),
+                deck=deck,
+                slide_id=body.validated_data["slide_id"],
+                action=body.validated_data["action"],
+            )
+        except (JobFailed, TransientError) as exc:
+            raise ai_errors.translate(exc) from exc
         return _private(Response(TkDeckAssistResultSerializer(result).data))
 
 

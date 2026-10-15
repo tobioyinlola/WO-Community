@@ -384,6 +384,28 @@
 a.app-list__item:hover {
   background: var(--bg-brand-soft);
 }
+/* A row that opens something in place: a full width button that reads like the other rows. */
+button.app-list__item {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-bottom: var(--stroke-1) solid var(--border-subtle);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+li:last-child > button.app-list__item {
+  border-bottom: 0;
+}
+button.app-list__item:hover,
+button.app-list__item[aria-current="true"] {
+  background: var(--bg-brand-soft);
+}
+button.app-list__item:focus-visible {
+  outline: none;
+  box-shadow: inset var(--shadow-focus);
+}
 .app-list__main {
   flex: 1;
   min-width: 0;
@@ -391,6 +413,12 @@ a.app-list__item:hover {
 .app-list__title {
   margin: 0;
   font: 600 16px/24px var(--font-body);
+}
+.app-list__meta {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
 }
 .app-richtext {
   overflow-wrap: anywhere;

@@ -36,8 +36,26 @@ logger = structlog.get_logger(__name__)
 INVALID_RETRIES = 2
 
 
-class CeilingReached(Exception):
+class CeilingReached(JobFailed):
     """The member has used the day's allowance of model calls."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "ai_daily_limit",
+            "You have reached today's limit for AI help. It resets tomorrow; everything else "
+            "keeps working.",
+        )
+
+
+AI_OFF_DETAIL = (
+    "AI writing is not switched on yet. Everything else works, and you can write this yourself."
+)
+
+
+def require_ai() -> None:
+    """Stop before any work when no model can be called."""
+    if not providers.ai_enabled():
+        raise JobFailed("ai_off", AI_OFF_DETAIL)
 
 
 def check_ceiling(owner_id: UUID) -> None:
@@ -48,7 +66,12 @@ def check_ceiling(owner_id: UUID) -> None:
 
 
 def _cost(model: str, input_tokens: int, output_tokens: int) -> int:
-    prices = settings.AI_PRICE_PER_MILLION_TOKENS.get(model)
+    table = settings.AI_PRICE_PER_MILLION_TOKENS
+    prices = table.get(model)
+    if not prices:
+        # Providers answer with dated names (gpt-4.1-mini-2025-04-14); use the longest match.
+        known = sorted((m for m in table if model.startswith(f"{m}-")), key=len, reverse=True)
+        prices = table[known[0]] if known else None
     if not prices:
         return 0
     cents_in, cents_out = prices
@@ -100,6 +123,7 @@ def _call(
     max_tokens: int | None,
     temperature: float,
 ) -> Any:
+    require_ai()
     check_ceiling(owner_id)
     prompt = prompts.get(prompt_id)
     system, user = prompts.render(prompt, variables)

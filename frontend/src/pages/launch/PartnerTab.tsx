@@ -102,7 +102,7 @@ function Thread({ conversationId }: { conversationId: string }) {
               </li>
             ))}
           </ul>
-          {jobId ? <JobStatus job={running.job} error={running.error} /> : null}
+          {jobId ? <JobStatus job={running.job} error={running.error} /> : running.failure ? <JobStatus job={running.failure} /> : null}
           <FormError error={send.error} />
           <form className="app-stack" onSubmit={(e) => { e.preventDefault(); if (text.trim()) void send.run(); }}>
             <Textarea label="Ask the venture partner" rows={3} value={text} onChange={(e) => setText(e.target.value)} hint="It can help with your plan, pricing, who to talk to and what to do next. It does not give legal, tax or investment advice." />

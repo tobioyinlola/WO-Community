@@ -110,11 +110,11 @@ export const NAV: NavEntry[] = [
     label: "Toolkit",
     icon: Rocket,
     children: [
-      { id: "ventures", label: "Ventures", to: "/admin/toolkit/ventures", needs: "toolkit.manage", soon: true },
-      { id: "toolkit-templates", label: "Templates", to: "/admin/toolkit/templates", needs: "toolkit.manage", soon: true },
-      { id: "rubric", label: "Scoring rubric", to: "/admin/toolkit/rubric", needs: "toolkit.settings", soon: true },
-      { id: "ai-usage", label: "AI usage", to: "/admin/toolkit/usage", needs: "toolkit.manage", soon: true },
-      { id: "quality", label: "Quality queue", to: "/admin/toolkit/quality", needs: "toolkit.manage", soon: true },
+      { id: "ventures", label: "Ventures", to: "/admin/toolkit/ventures", needs: "toolkit.manage" },
+      { id: "toolkit-templates", label: "Templates", to: "/admin/toolkit/templates", needs: "toolkit.manage" },
+      { id: "rubric", label: "Scoring rubric", to: "/admin/toolkit/rubric", needs: "toolkit.settings" },
+      { id: "ai-usage", label: "AI usage", to: "/admin/toolkit/usage", needs: "toolkit.manage" },
+      { id: "quality", label: "Quality queue", to: "/admin/toolkit/quality", needs: "toolkit.manage" },
     ],
   },
   {

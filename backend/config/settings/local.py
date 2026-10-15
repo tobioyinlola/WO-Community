@@ -41,3 +41,9 @@ REST_FRAMEWORK = {
         for name, rate in REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"].items()  # noqa: F405
     },
 }
+
+# Offline stand-ins, so the toolkit runs end to end without an AI account. Never in production.
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "fake")
+RESEARCH_PROVIDER = os.environ.get(
+    "RESEARCH_PROVIDER", "apps.toolkit.ai.research.fake.FakeResearchProvider"
+)

@@ -7176,6 +7176,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toolkit/admin/ventures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every venture, with its owner and which tools it has used
+         * @description Names, dates and counts only; what members wrote stays private. Newest first. Search `q` by venture name or owner email.
+         */
+        get: operations["toolkit_admin_ventures_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toolkit/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which tools are on, and whether AI writing is available
+         * @description So the workspace shows only the tools that work and says where AI would help.
+         */
+        get: operations["toolkit_config_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toolkit/deck-templates": {
         parameters: {
             query?: never;
@@ -15034,6 +15074,43 @@ export interface components {
                 [key: string]: number;
             };
         };
+        TkAdminVenture: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            status: string;
+            /** Format: uuid */
+            owner_id: string;
+            owner_email: string;
+            profile_completeness: number;
+            latest_score: number | null;
+            /** Format: date-time */
+            scored_at: string | null;
+            plans: number;
+            has_forecast: boolean;
+            decks: number;
+            prototypes: number;
+            partner_conversations: number;
+            share_links: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TkAdminVenturePage: {
+            count: number;
+            next: string | null;
+            previous: string | null;
+            results: components["schemas"]["TkAdminVenture"][];
+            totals: components["schemas"]["TkAdminVentureTotals"];
+        };
+        TkAdminVentureTotals: {
+            ventures: number;
+            founders: number;
+            scored: number;
+            with_plan: number;
+            with_deck: number;
+        };
         TkAssessment: {
             /** Format: uuid */
             id: string;
@@ -15114,6 +15191,15 @@ export interface components {
             props: {
                 [key: string]: unknown;
             };
+        };
+        TkConfig: {
+            /** @description Which tools are switched on. */
+            features: {
+                [key: string]: boolean;
+            };
+            /** @description Whether AI writing is on. When off, every tool still works without it. */
+            ai_enabled: boolean;
+            research_enabled: boolean;
         };
         TkConversation: {
             /** Format: uuid */
@@ -36413,6 +36499,77 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    toolkit_admin_ventures_retrieve: {
+        parameters: {
+            query?: {
+                include_deleted?: boolean;
+                limit?: number;
+                offset?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkAdminVenturePage"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    toolkit_config_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkConfig"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

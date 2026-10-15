@@ -46,10 +46,14 @@ export class ApiError extends Error {
 /** A failure the app explains itself, in words meant for the member; shown as it is. */
 export class FriendlyError extends Error {}
 
+const AI_CODES = new Set(["ai_off", "ai_daily_limit", "ai_unavailable", "ai_failed"]);
+
 /** Turns anything thrown into a sentence a member can read. */
 export function messageOf(error: unknown): string {
   if (error instanceof FriendlyError && error.message) return error.message;
   if (error instanceof ApiError) {
+    // AI problems carry their own explanation for the member (switched off, daily limit, busy).
+    if (AI_CODES.has(error.code) && error.problem.detail) return error.problem.detail;
     if (error.status === 429) return "Too many attempts. Wait a moment, then try again.";
     if (error.status >= 500) return "Something went wrong on our side. Please try again.";
     return error.message;

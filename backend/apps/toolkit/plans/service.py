@@ -18,7 +18,7 @@ from rest_framework import exceptions
 
 from apps.core.errors import ConflictError
 from apps.core.text import plain
-from apps.toolkit.ai import runner, safety
+from apps.toolkit.ai import providers, runner, safety
 from apps.toolkit.ai.models import Fact
 from apps.toolkit.ai.research import gather
 from apps.toolkit.forecasts import selectors as forecasts
@@ -397,6 +397,9 @@ def generate(ctx: JobContext) -> dict[str, Any]:
         order += [d for d in definitions if d.number == SUMMARY]
         written = 0
         failed = 0
+        # Without AI the plan is laid out section by section with what each should say, for the
+        # founder to write; with AI each section is drafted for them to check.
+        ai_on = providers.ai_enabled()
         for i, defn in enumerate(order):
             ctx.progress(20 + int(70 * i / max(1, len(order))), f"Writing: {defn.title}")
             existing = plan.sections.filter(number=defn.number).first()
@@ -404,7 +407,11 @@ def generate(ctx: JobContext) -> dict[str, Any]:
                 continue
             wanted_fields = list(defn.depends_on.get("fields", []))
             data = venture_data(venture, wanted_fields)
-            if defn.number == SUMMARY:
+            section_facts: list[Fact] = []
+            if not ai_on:
+                blocks: dict[str, Any] = {"blocks": []}
+                asked = [{"field": "", "message": defn.guidance or "Write this section."}]
+            elif defn.number == SUMMARY:
                 blocks, asked = _summary(
                     ctx=ctx,
                     venture=venture,
@@ -413,7 +420,6 @@ def generate(ctx: JobContext) -> dict[str, Any]:
                     data=venture_data(venture),
                     forecast=forecast,
                 )
-                section_facts: list[Fact] = []
             else:
                 asked = _missing(defn, data)
                 section_facts = _facts_for(defn, facts)
@@ -430,7 +436,7 @@ def generate(ctx: JobContext) -> dict[str, Any]:
                             forecast=forecast,
                         )
                     except JobFailed as exc:
-                        if exc.code == "invalid_output":
+                        if exc.code in ("invalid_output", "invalid_model_output"):
                             logger.warning("plan_section_failed", number=defn.number)
                             blocks = {"blocks": []}
                             asked = [

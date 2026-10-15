@@ -1,11 +1,13 @@
 from uuid import UUID
 
+from django.conf import settings
 from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.toolkit.ai import errors
+from apps.toolkit.ai import errors, providers
 from apps.toolkit.ai.agents import writer
 from apps.toolkit.ai.runner import CeilingReached
 from apps.toolkit.ai.serializers import (
@@ -78,4 +80,35 @@ class FillFromTextView(APIView):
             raise errors.translate(exc) from exc
         return Response(
             TkProposedFieldsSerializer({"proposed": proposed, "rejected": rejected}).data
+        )
+
+
+class TkConfigSerializer(serializers.Serializer):
+    features = serializers.DictField(
+        child=serializers.BooleanField(), help_text="Which tools are switched on."
+    )
+    ai_enabled = serializers.BooleanField(
+        help_text="Whether AI writing is on. When off, every tool still works without it."
+    )
+    research_enabled = serializers.BooleanField()
+
+
+class ConfigView(APIView):
+    policy = member_policy()
+
+    @extend_schema(
+        summary="Which tools are on, and whether AI writing is available",
+        description="So the workspace shows only the tools that work and says where AI would help.",
+        responses={200: TkConfigSerializer, 401: OpenApiResponse(description="Not signed in")},
+        tags=["toolkit"],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(
+            TkConfigSerializer(
+                {
+                    "features": dict(settings.TOOLKIT_FEATURES),
+                    "ai_enabled": providers.ai_enabled(),
+                    "research_enabled": bool(settings.RESEARCH_PROVIDER) and providers.ai_enabled(),
+                }
+            ).data
         )

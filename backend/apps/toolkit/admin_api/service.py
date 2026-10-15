@@ -12,7 +12,7 @@ from typing import Any
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, F, Sum
+from django.db.models import Count, Exists, F, Max, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import exceptions
@@ -23,13 +23,16 @@ from apps.toolkit.ai.research.gather import TOPICS
 from apps.toolkit.decks import schema as deck_schema
 from apps.toolkit.decks.models import DeckTemplate
 from apps.toolkit.decks.service import build_content
+from apps.toolkit.forecasts.models import Forecast
 from apps.toolkit.jobs.models import AIJob
+from apps.toolkit.partner.models import Conversation
 from apps.toolkit.plans.models import PlanSectionDef
 from apps.toolkit.prototypes import spec as prototype_spec
 from apps.toolkit.prototypes.models import PrototypeTemplate
 from apps.toolkit.scoring import rubric
-from apps.toolkit.scoring.models import ScoreRubric
+from apps.toolkit.scoring.models import Assessment, ScoreRubric
 from apps.toolkit.ventures import schema as profile_schema
+from apps.toolkit.ventures.models import Venture
 
 PLAN_OUTPUTS = ("forecast",)
 PLAN_FIELDS = set(profile_schema.FIELD_NAMES) | {"competitors", "team"}
@@ -348,4 +351,64 @@ def settings_view() -> dict[str, Any]:
         "max_ventures_per_member": settings.TOOLKIT_MAX_VENTURES_PER_MEMBER,
         "export_retention_days": settings.EXPORT_RETENTION_DAYS,
         "venture_delete_grace_days": settings.VENTURE_DELETE_GRACE_DAYS,
+    }
+
+
+# --- ventures, for oversight ---
+
+
+def ventures(*, q: str = "", include_deleted: bool = False) -> Any:
+    """Every venture with its owner and how far it has gone, newest first.
+
+    Only names, dates and counts: what a member wrote stays private to them.
+    """
+    rows = Venture.objects.select_related("owner")
+    if not include_deleted:
+        rows = rows.filter(deleted_at__isnull=True)
+    if q.strip():
+        term = q.strip()
+        rows = rows.filter(Q(name__icontains=term) | Q(owner__email__icontains=term))
+    latest = Assessment.objects.filter(venture=OuterRef("pk")).order_by("-created_at")
+    return rows.annotate(
+        latest_score=Subquery(latest.values("overall_score")[:1]),
+        scored_at=Max("assessments__created_at"),
+        plan_count=Count("plans", distinct=True),
+        deck_count=Count("decks", distinct=True),
+        prototype_count=Count("prototypes", distinct=True),
+        conversation_count=Count("conversations", distinct=True),
+        share_count=Count("share_links", distinct=True),
+        has_forecast=Exists(Forecast.objects.filter(venture=OuterRef("pk"))),
+        has_partner=Exists(Conversation.objects.filter(venture=OuterRef("pk"))),
+    ).order_by("-created_at", "id")
+
+
+def venture_row(v: Any) -> dict[str, Any]:
+    return {
+        "id": v.pk,
+        "name": v.name,
+        "status": "deleted" if v.deleted_at else v.status,
+        "owner_id": v.owner_id,
+        "owner_email": v.owner.email,
+        "profile_completeness": v.profile_completeness,
+        "latest_score": v.latest_score,
+        "scored_at": v.scored_at,
+        "plans": v.plan_count,
+        "has_forecast": v.has_forecast,
+        "decks": v.deck_count,
+        "prototypes": v.prototype_count,
+        "partner_conversations": v.conversation_count,
+        "share_links": v.share_count,
+        "created_at": v.created_at,
+        "updated_at": v.updated_at,
+    }
+
+
+def venture_totals() -> dict[str, int]:
+    live = Venture.objects.filter(deleted_at__isnull=True)
+    return {
+        "ventures": live.count(),
+        "founders": live.values("owner_id").distinct().count(),
+        "scored": live.filter(assessments__isnull=False).distinct().count(),
+        "with_plan": live.filter(plans__isnull=False).distinct().count(),
+        "with_deck": live.filter(decks__isnull=False).distinct().count(),
     }

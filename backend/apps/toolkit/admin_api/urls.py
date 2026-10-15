@@ -25,4 +25,5 @@ urlpatterns = [
     path("admin/usage.csv", views.UsageCsvView.as_view(), name="tk-admin-usage-csv"),
     path("admin/quality", views.QualityView.as_view(), name="tk-admin-quality"),
     path("admin/settings", views.SettingsView.as_view(), name="tk-admin-settings"),
+    path("admin/ventures", views.VenturesView.as_view(), name="tk-admin-ventures"),
 ]

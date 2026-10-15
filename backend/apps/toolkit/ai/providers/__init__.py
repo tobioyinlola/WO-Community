@@ -59,3 +59,14 @@ def providers_for(task: str) -> list[tuple[str, LLMProvider]]:
         names.append(settings.AI_FALLBACK_PROVIDER)
     usable = [n for n in names if not is_open(n)] or names[-1:]
     return [(n, _load(n)) for n in usable]
+
+
+def ai_enabled() -> bool:
+    """Whether a model can be called at all. Off when no provider is set, or an API service is
+    named without its address and key."""
+    name = str(settings.AI_PROVIDER or "").strip()
+    if not name:
+        return False
+    if name == "http":
+        return bool(settings.AI_BASE_URL and settings.AI_API_KEY)
+    return True

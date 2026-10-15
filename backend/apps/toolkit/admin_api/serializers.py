@@ -106,3 +106,45 @@ class TkAdminSettingsSerializer(serializers.Serializer):
     max_ventures_per_member = serializers.IntegerField()
     export_retention_days = serializers.IntegerField()
     venture_delete_grace_days = serializers.IntegerField()
+
+
+class TkAdminVentureQuerySerializer(StrictSerializer):
+    q = serializers.CharField(required=False, allow_blank=True, max_length=120, default="")
+    include_deleted = serializers.BooleanField(required=False, default=False)
+    limit = serializers.IntegerField(required=False, min_value=1, max_value=100)
+    offset = serializers.IntegerField(required=False, min_value=0)
+
+
+class TkAdminVentureSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    status = serializers.CharField()
+    owner_id = serializers.UUIDField()
+    owner_email = serializers.CharField()
+    profile_completeness = serializers.IntegerField()
+    latest_score = serializers.IntegerField(allow_null=True)
+    scored_at = serializers.DateTimeField(allow_null=True)
+    plans = serializers.IntegerField()
+    has_forecast = serializers.BooleanField()
+    decks = serializers.IntegerField()
+    prototypes = serializers.IntegerField()
+    partner_conversations = serializers.IntegerField()
+    share_links = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class TkAdminVentureTotalsSerializer(serializers.Serializer):
+    ventures = serializers.IntegerField()
+    founders = serializers.IntegerField()
+    scored = serializers.IntegerField()
+    with_plan = serializers.IntegerField()
+    with_deck = serializers.IntegerField()
+
+
+class TkAdminVenturePageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.CharField(allow_null=True)
+    previous = serializers.CharField(allow_null=True)
+    results = TkAdminVentureSerializer(many=True)
+    totals = TkAdminVentureTotalsSerializer()

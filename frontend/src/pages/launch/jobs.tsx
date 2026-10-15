@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { api, unwrap } from "../../api/client";
-import { messageOf } from "../../api/errors";
+import { FriendlyError, messageOf } from "../../api/errors";
 import type { components } from "../../api/schema";
 import { Alert, Button } from "../../components";
 
@@ -16,6 +16,11 @@ const DONE = ["succeeded", "failed", "cancelled"];
  */
 export function useJob(jobId: string | null, onDone?: (job: Job) => void) {
   const fired = useRef<string | null>(null);
+  // Tabs forget the job once it ends, so a failure is kept here to be shown until the next try.
+  const [failure, setFailure] = useState<Job | null>(null);
+  useEffect(() => {
+    if (jobId) setFailure(null);
+  }, [jobId]);
   const query = useQuery({
     queryKey: ["toolkit", "job", jobId],
     enabled: Boolean(jobId),
@@ -27,6 +32,7 @@ export function useJob(jobId: string | null, onDone?: (job: Job) => void) {
   useEffect(() => {
     if (job && DONE.includes(job.status) && fired.current !== job.id) {
       fired.current = job.id;
+      if (job.status === "failed") setFailure(job);
       onDone?.(job);
     }
   }, [job, onDone]);
@@ -34,6 +40,7 @@ export function useJob(jobId: string | null, onDone?: (job: Job) => void) {
     job,
     running: Boolean(jobId) && (!job || !DONE.includes(job.status)),
     failed: job?.status === "failed",
+    failure,
     error: query.error,
   };
 }
@@ -77,6 +84,10 @@ export function useExport(start: (format: string) => Promise<Job>) {
   const tracked = useJob(jobId, (done) => {
     setJobId(null);
     const exportId = done.result?.id;
+    if (done.status === "failed") {
+      setProblem(new FriendlyError(done.error_detail || "The file could not be made. Please try again."));
+      return;
+    }
     if (done.status !== "succeeded" || typeof exportId !== "string") return;
     unwrap(api.GET("/api/v1/toolkit/exports/{export_id}", { params: { path: { export_id: exportId } } }))
       .then((file) => {

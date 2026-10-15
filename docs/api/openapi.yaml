@@ -15287,6 +15287,71 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/toolkit/admin/ventures:
+    get:
+      operationId: toolkit_admin_ventures_retrieve
+      description: Names, dates and counts only; what members wrote stays private.
+        Newest first. Search `q` by venture name or owner email.
+      summary: Every venture, with its owner and which tools it has used
+      parameters:
+      - in: query
+        name: include_deleted
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - in: query
+        name: offset
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 120
+      tags:
+      - toolkit-admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdminVenturePage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/toolkit/config:
+    get:
+      operationId: toolkit_config_retrieve
+      description: So the workspace shows only the tools that work and says where
+        AI would help.
+      summary: Which tools are on, and whether AI writing is available
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkConfig'
+          description: ''
+        '401':
+          description: Not signed in
   /api/v1/toolkit/deck-templates:
     get:
       operationId: toolkit_deck_templates_list
@@ -33015,6 +33080,107 @@ components:
       - outcomes
       - output_tokens
       - runs
+    TkAdminVenture:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+        owner_id:
+          type: string
+          format: uuid
+        owner_email:
+          type: string
+        profile_completeness:
+          type: integer
+        latest_score:
+          type: integer
+          nullable: true
+        scored_at:
+          type: string
+          format: date-time
+          nullable: true
+        plans:
+          type: integer
+        has_forecast:
+          type: boolean
+        decks:
+          type: integer
+        prototypes:
+          type: integer
+        partner_conversations:
+          type: integer
+        share_links:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - decks
+      - has_forecast
+      - id
+      - latest_score
+      - name
+      - owner_email
+      - owner_id
+      - partner_conversations
+      - plans
+      - profile_completeness
+      - prototypes
+      - scored_at
+      - share_links
+      - status
+      - updated_at
+    TkAdminVenturePage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkAdminVenture'
+        totals:
+          $ref: '#/components/schemas/TkAdminVentureTotals'
+      required:
+      - count
+      - next
+      - previous
+      - results
+      - totals
+    TkAdminVentureTotals:
+      type: object
+      properties:
+        ventures:
+          type: integer
+        founders:
+          type: integer
+        scored:
+          type: integer
+        with_plan:
+          type: integer
+        with_deck:
+          type: integer
+      required:
+      - founders
+      - scored
+      - ventures
+      - with_deck
+      - with_plan
     TkAssessment:
       type: object
       properties:
@@ -33221,6 +33387,24 @@ components:
       - label
       - name
       - props
+    TkConfig:
+      type: object
+      properties:
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Which tools are switched on.
+        ai_enabled:
+          type: boolean
+          description: Whether AI writing is on. When off, every tool still works
+            without it.
+        research_enabled:
+          type: boolean
+      required:
+      - ai_enabled
+      - features
+      - research_enabled
     TkConversation:
       type: object
       properties:

@@ -6,6 +6,7 @@ import { Alert, Button, Card, CardText, CardTitle } from "../../components";
 import { formatDate, humanise } from "../../lib/format";
 import { Loaded, SkeletonRows } from "../../ui/blocks";
 import { StatusBadge, packageKey, useWorkspace } from "./Workspace";
+import { useToolkitConfig } from "./config";
 
 const OUTPUTS: Record<string, { label: string; to: string; blurb: string }> = {
   score: { label: "Validation score", to: "score", blurb: "How strong the idea looks, and what would make it stronger." },
@@ -14,6 +15,8 @@ const OUTPUTS: Record<string, { label: string; to: string; blurb: string }> = {
   deck: { label: "Pitch deck", to: "decks", blurb: "Slides built from your profile, with figures linked to the forecast." },
   prototype: { label: "Prototype", to: "prototypes", blurb: "A clickable mock-up of the product." },
 };
+
+const FEATURE: Record<string, string> = { deck: "decks", prototype: "prototypes" };
 
 const STEP_LINKS: Array<[RegExp, string]> = [
   [/profile|required|field/i, "profile"],
@@ -25,6 +28,7 @@ const STEP_LINKS: Array<[RegExp, string]> = [
 
 export default function Overview() {
   const { ventureId } = useWorkspace();
+  const features = useToolkitConfig().data?.features;
   const query = useQuery({
     queryKey: packageKey(ventureId),
     queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures/{venture_id}/package", { params: { path: { venture_id: ventureId } } })),
@@ -45,7 +49,7 @@ export default function Overview() {
               </Alert>
             ) : null}
             <div className="app-grid">
-              {Object.entries(OUTPUTS).map(([type, info]) => {
+              {Object.entries(OUTPUTS).filter(([type]) => features?.[FEATURE[type] ?? type] !== false).map(([type, info]) => {
                 const state = stateOf(type);
                 return (
                   <Card key={type}>
