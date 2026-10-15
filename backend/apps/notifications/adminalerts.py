@@ -154,9 +154,11 @@ def dispatch(kind: str, *, now: datetime | None = None) -> int:
                 continue  # inside the window: wait for the digest
             if len(unsent) == 1:
                 item = unsent[0]
+                # A support request is not an approval, so it has its own wording.
+                single = "admin_support_request" if kind == "support_ticket" else None
                 emails.send_templated(
                     contact.email,
-                    "admin_approval_needed",
+                    single or "admin_approval_needed",
                     {
                         "what": item.what,
                         "who": item.who,

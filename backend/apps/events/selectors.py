@@ -103,7 +103,13 @@ def _views(
 
 
 def listing(
-    viewer: Any, *, when: str, type: str, registered: bool, cursor: str, limit: int  # noqa: A002
+    viewer: Any,
+    *,
+    when: str,
+    type: str,
+    registered: bool,
+    cursor: str,
+    limit: int,  # noqa: A002
 ) -> dict[str, Any]:
     now = timezone.now()
     queryset = live()
@@ -138,9 +144,7 @@ def get_event(viewer: Any, event_id: UUID) -> tuple[Event, dict[str, Any]]:
 # --- public ---
 
 
-def public_listing(
-    *, when: str, type: str, cursor: str, limit: int
-) -> dict[str, Any]:  # noqa: A002
+def public_listing(*, when: str, type: str, cursor: str, limit: int) -> dict[str, Any]:  # noqa: A002
     now = timezone.now()
     queryset = Event.objects.filter(status=Event.Status.PUBLISHED, public=True)
     if type:

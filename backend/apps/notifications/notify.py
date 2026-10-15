@@ -9,6 +9,7 @@ payload carries ids, and titles are produced when a notification is read or emai
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -135,13 +136,13 @@ TYPES: dict[str, Spec] = {
     ),
     "job_approved": Spec(
         "jobs",
-        lambda who, p: f"Your job \"{p.get('title', '')}\" is now live",
+        lambda who, p: f'Your job "{p.get("title", "")}" is now live',
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
     "job_rejected": Spec(
         "jobs",
-        lambda who, p: f"Your job \"{p.get('title', '')}\" was not approved: {p.get('reason', '')}",
+        lambda who, p: f'Your job "{p.get("title", "")}" was not approved: {p.get("reason", "")}',
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
@@ -162,7 +163,7 @@ TYPES: dict[str, Spec] = {
     "job_changed": Spec(
         "jobs",
         lambda who, p: (
-            f"Your job \"{p.get('title', '')}\" was {p.get('what', 'changed')} by an admin"
+            f'Your job "{p.get("title", "")}" was {p.get("what", "changed")} by an admin'
             + (f": {p['reason']}" if p.get("reason") else "")
         ),
         lambda p: f"/jobs/{p['job_id']}",
@@ -170,13 +171,13 @@ TYPES: dict[str, Spec] = {
     ),
     "job_expiring": Spec(
         "jobs",
-        lambda who, p: f"Your job \"{p.get('title', '')}\" expires in 3 days: renew or close",
+        lambda who, p: f'Your job "{p.get("title", "")}" expires in 3 days: renew or close',
         lambda p: f"/jobs/{p['job_id']}",
         email=True,
     ),
     "win_approved": Spec(
         "moderation",
-        lambda who, p: f"Your win \"{p.get('title', '')}\" was accepted. Congratulations!",
+        lambda who, p: f'Your win "{p.get("title", "")}" was accepted. Congratulations!',
         lambda p: "/news",
         email=True,
     ),
@@ -194,8 +195,10 @@ TYPES: dict[str, Spec] = {
     ),
     "event_reminder": Spec(
         "event_reminders",
-        lambda who, p: f"{p.get('title', 'Your event')} starts in "
-        f"{'1 hour' if p.get('when') == '1h' else '24 hours'}",
+        lambda who, p: (
+            f"{p.get('title', 'Your event')} starts in "
+            f"{'1 hour' if p.get('when') == '1h' else '24 hours'}"
+        ),
         lambda p: f"/events/{p['event_id']}",
         email=True,
     ),
@@ -213,13 +216,13 @@ TYPES: dict[str, Spec] = {
     ),
     "certificate_ready": Spec(
         "learning",
-        lambda who, p: f"Your certificate for \"{p.get('title', 'your course')}\" is ready",
+        lambda who, p: f'Your certificate for "{p.get("title", "your course")}" is ready',
         lambda p: f"/learn/certificates/{p['certificate_id']}",
         email=True,
     ),
     "course_granted": Spec(
         "learning",
-        lambda who, p: f"You now have access to \"{p.get('title', 'a course')}\"",
+        lambda who, p: f'You now have access to "{p.get("title", "a course")}"',
         lambda p: f"/learn/courses/{p['course_id']}",
         email=True,
     ),
@@ -285,8 +288,9 @@ TYPES: dict[str, Spec] = {
     ),
     "session_reminder": Spec(
         "mentorship",
-        lambda who, p: "Your mentoring session starts in "
-        f"{'1 hour' if p.get('when') == '1h' else '24 hours'}",
+        lambda who, p: (
+            f"Your mentoring session starts in {'1 hour' if p.get('when') == '1h' else '24 hours'}"
+        ),
         _session_link,
         email=True,
     ),
@@ -314,23 +318,23 @@ TYPES: dict[str, Spec] = {
     # Learning: asking for access, answers, announcements.
     "course_request": Spec(
         "learning",
-        lambda who, p: f"New access request for \"{p.get('title', 'a course')}\"",
+        lambda who, p: f'New access request for "{p.get("title", "a course")}"',
         lambda p: f"/admin/courses?course={p['course_id']}&tab=requests",
     ),
     "course_request_declined": Spec(
         "learning",
-        lambda who, p: f"Your request for \"{p.get('title', 'a course')}\" was not approved",
+        lambda who, p: f'Your request for "{p.get("title", "a course")}" was not approved',
         lambda p: f"/learn/courses/{p['course_id']}",
         email=True,
     ),
     "lecture_answer": Spec(
         "learning",
-        lambda who, p: f"{who} answered your question in \"{p.get('title', 'a course')}\"",
+        lambda who, p: f'{who} answered your question in "{p.get("title", "a course")}"',
         lambda p: f"/learn/courses/{p['course_id']}/lecture/{p['lesson_id']}?tab=qa",
     ),
     "course_announcement": Spec(
         "learning",
-        lambda who, p: f"New in \"{p.get('title', 'your course')}\": {p.get('announcement', '')}",
+        lambda who, p: f'New in "{p.get("title", "your course")}": {p.get("announcement", "")}',
         lambda p: f"/learn/courses/{p['course_id']}?tab=announcements",
         email=True,
     ),
@@ -436,11 +440,52 @@ def app_path(path: str) -> str:
     return f"/app{path}"
 
 
+def _moment(raw: Any, tz_name: str) -> dict[str, str]:
+    """An ISO time from a payload as date, time and zone words, or nothing if absent."""
+    if not raw:
+        return {}
+    try:
+        moment = datetime.fromisoformat(str(raw))
+    except ValueError:
+        return {}
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return emails.when(moment, tz_name)
+
+
+def _event_values(payload: dict[str, Any], link: str) -> dict[str, Any]:
+    moment = _moment(payload.get("starts_at"), str(payload.get("timezone") or "UTC"))
+    return {
+        "event_title": payload.get("title"),
+        "event_date": moment.get("date", ""),
+        "event_time": moment.get("time", ""),
+        "timezone": moment.get("timezone", ""),
+        "where": payload.get("where", ""),
+        "event_url": link,
+    }
+
+
+_PAID = "This is a paid session. While online payment is off, you agree payment directly."
+
+
 def mail_template_for(
-    type_: str, title: str, extra: str, link: str, payload: dict[str, Any]
+    type_: str,
+    title: str,
+    extra: str,
+    link: str,
+    payload: dict[str, Any],
+    *,
+    who: str = "Someone",
+    tz: str = "UTC",
 ) -> tuple[str, dict[str, Any]]:
-    """The email template that suits a notification, with its values; the generic one otherwise."""
+    """The email template that suits a notification, with its values; the generic one otherwise.
+
+    ``who`` is the name of the person who caused it, as the recipient may see it, and ``tz`` the
+    recipient's time zone (sessions fall back to the mentor's when the member has not set one).
+    """
     when = "in 1 hour" if payload.get("when") == "1h" else "in 24 hours"
+    session_tz = tz if tz and tz != "UTC" else str(payload.get("timezone") or "UTC")
+    paid = _PAID if payload.get("payment") == "arranged" else ""
     match type_:
         case "job_approved":
             return "job_approved", {"job_title": payload.get("title"), "job_url": link}
@@ -450,11 +495,59 @@ def mail_template_for(
                 "reason": payload.get("reason"),
                 "job_url": link,
             }
+        case "job_expiring" if payload.get("expires_at"):
+            return "job_expiring", {
+                "job_title": payload.get("title"),
+                "expiry_date": _moment(payload["expires_at"], tz).get("date", ""),
+                "job_url": link,
+            }
+        case "job_changed" if payload.get("what") == "removed":
+            return "job_removed", {
+                "job_title": payload.get("title"),
+                "reason": payload.get("reason"),
+            }
+        case "post_moderated" if payload.get("what") == "removed":
+            return "post_removed", {
+                "reason": payload.get("reason"),
+                "guidelines_url": f"{settings.FRONTEND_BASE_URL}/legal/conduct",
+            }
+        case "comment" | "reply":
+            return "comment_reply", {
+                "commenter_name": who,
+                "target": "comment" if type_ == "reply" else "post",
+                "comment_preview": payload.get("excerpt", ""),
+                "post_url": link,
+            }
         case "mentor_application_decision" if payload.get("decision") in ("approved", "declined"):
             approved = payload.get("decision") == "approved"
             return "mentor_approved" if approved else "mentor_not_approved", {
                 "note": "" if approved else str(payload.get("reason") or ""),
                 "url": link,
+            }
+        case "session_requested" if payload.get("starts_at"):
+            return "session_requested", {
+                "member_name": who,
+                **_moment(payload["starts_at"], session_tz),
+                "message": payload.get("message", ""),
+                "payment_note": paid,
+                "session_url": link,
+            }
+        case "session_confirmed" if payload.get("starts_at"):
+            return "session_confirmed", {
+                "other_name": who,
+                **_moment(payload["starts_at"], session_tz),
+                "where": payload.get("where", ""),
+                "payment_note": paid,
+                "session_url": link,
+            }
+        case "session_declined":
+            mentor = payload.get("actor_id")
+            return "session_declined", {
+                "mentor_name": who,
+                "message": payload.get("reason", ""),
+                "mentor_url": f"{settings.FRONTEND_BASE_URL}/app/mentors/{mentor}"
+                if mentor
+                else f"{settings.FRONTEND_BASE_URL}/app/mentors",
             }
         case "ticket_reply" | "ticket_resolved":
             return type_, {
@@ -469,10 +562,27 @@ def mail_template_for(
                 "course_title": payload.get("title"),
                 "certificate_url": link,
             }
+        case "event_registered" if payload.get("starts_at"):
+            return "event_registered", _event_values(payload, link)
         case "event_reminder":
-            return "event_reminder", {
+            return "event_reminder", {**_event_values(payload, link), "when": when}
+        case "event_cancelled":
+            return "event_changed", {
                 "event_title": payload.get("title"),
-                "when": when,
+                "change_summary": "it has been cancelled.",
+                "event_url": link,
+            }
+        case "event_rescheduled":
+            moment = _event_values(payload, link)
+            new_when = (
+                f"{moment['event_date']}, {moment['event_time']} ({moment['timezone']})"
+                if moment["event_date"]
+                else ""
+            )
+            return "event_changed", {
+                "event_title": payload.get("title"),
+                "change_summary": "it has moved to a new date and time.",
+                "new_when": new_when,
                 "event_url": link,
             }
     return "notice", {"title": title, "detail": extra, "link_url": link}
@@ -499,7 +609,9 @@ def _email(
     extra = spec.body(payload) if spec.body else ""
     lead = f"{extra}\n\n" if extra else ""
     link = f"{settings.FRONTEND_BASE_URL}{app_path(spec.link(payload))}"
-    template, values = mail_template_for(type_, title, extra, link, payload)
+    template, values = mail_template_for(
+        type_, title, extra, link, payload, who=who, tz=contact.timezone
+    )
     emails.send_notice(
         contact.email,
         title,

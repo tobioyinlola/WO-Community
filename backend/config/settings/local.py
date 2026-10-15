@@ -19,9 +19,7 @@ REFRESH_COOKIE_SECURE = False
 ANALYTICS_STRICT = True
 # Development only. Real environments must set FIELD_ENCRYPTION_KEYS.
 FIELD_ENCRYPTION_KEYS = ["87bV-lfLJURYTjAE8FLMf04SC-ZzQs2mb8k2bAqa7E8="]  # nosec B105
-PASSWORD_BREACH_CHECKER = (
-    "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
-)
+PASSWORD_BREACH_CHECKER = "apps.integrations.passwords.fake.FakeBreachChecker"  # noqa: S105  # nosec B105
 LINK_PREVIEW_FETCHER = os.environ.get(
     "LINK_PREVIEW_FETCHER", "apps.integrations.linkpreview.fetcher.WebFetcher"
 )

@@ -133,7 +133,7 @@ def test_registering_confirms_counts_and_is_idempotent(
     run_outbox()
     run_outbox()
     assert Notification.objects.filter(user=member, type="event_registered").count() == 1
-    assert any("registered for Pitch practice workshop" in m.subject for m in sent_emails)
+    assert any(m.subject == "You're registered: Pitch practice workshop" for m in sent_emails)
 
 
 def test_a_member_can_cancel_their_registration(event, member_client):

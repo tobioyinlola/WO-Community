@@ -106,7 +106,28 @@ def enrol(*, user_id: UUID, course_id: UUID) -> tuple[Enrolment, bool]:
                 )
     except IntegrityError:  # two taps at once
         return Enrolment.objects.get(course=course, user_id=user_id), False
+    if created:
+        _confirm_enrolled(user_id, course)
     return enrolment, created
+
+
+def _confirm_enrolled(user_id: UUID, course: Course) -> None:
+    from django.conf import settings
+
+    from apps.accounts import services as accounts
+    from apps.notifications import emails
+
+    contact = accounts.get_contact(user_id)
+    if contact is not None:
+        emails.send_quietly(
+            contact.email,
+            "course_enrolled",
+            {
+                "course_title": course.title,
+                "course_url": f"{settings.FRONTEND_BASE_URL}/app/learn/courses/{course.pk}",
+            },
+            category="course_enrolled",
+        )
 
 
 def unenrol(*, user_id: UUID, course_id: UUID) -> None:

@@ -8,6 +8,7 @@ else from the built in copy.
 import hashlib
 from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import structlog
 from django.conf import settings
@@ -72,7 +73,7 @@ def _send(
 
 
 def preferences_url() -> str:
-    return f"{settings.FRONTEND_BASE_URL}/settings/notifications"
+    return f"{settings.FRONTEND_BASE_URL}/app/settings"
 
 
 def render_template(
@@ -195,34 +196,50 @@ def send_rejected(to: str, reason: str) -> None:
 
 
 def send_suspended(to: str, reason: str) -> None:
-    send_templated(
-        to,
-        "notice",
-        {
-            "title": "Your WO Community account has been suspended",
-            "detail": f"Reason: {reason}. While your account is suspended, you can't sign in or "
-            "take part in the community, and anything already agreed with other members, such as "
-            "mentoring sessions, has been cancelled. If you think this is a mistake, please send "
-            "us a request through Contact support in the app, and a member of our team will "
-            "review it.",
-            "link_url": _app("/login"),
-        },
-        category="suspended",
-    )
+    send_templated(to, "account_suspended", {"reason": reason}, category="suspended")
 
 
 def send_reinstated(to: str) -> None:
+    send_templated(to, "account_reinstated", {"login_url": _app("/login")}, category="reinstated")
+
+
+def send_application_received(to: str) -> None:
+    send_templated(
+        to, "application_received", {"profile_url": _app("/app/me")}, category="application"
+    )
+
+
+def send_password_changed(to: str, changed_at: datetime, tz_name: str = "UTC") -> None:
+    moment = when(changed_at, tz_name)
     send_templated(
         to,
-        "notice",
-        {
-            "title": "Your WO Community account is active again",
-            "detail": "Your account has been reinstated, and you can sign in again. Thanks for "
-            "your patience.",
-            "link_url": _app("/login"),
-        },
-        category="reinstated",
+        "password_changed",
+        {**moment, "reset_url": _app("/forgot-password")},
+        category="password_changed",
     )
+
+
+def send_quietly(to: str, key: str, values: dict[str, Any], *, category: str) -> None:
+    """Send an email a member's own action asked for, without letting a mail fault fail it."""
+    try:
+        send_templated(to, key, values, category=category, with_preferences=True)
+    except Exception:  # noqa: BLE001 - the action itself has already succeeded
+        logger.exception("email_send_failed", key=key, category=category)
+
+
+def when(moment: datetime, tz_name: str = "UTC") -> dict[str, str]:
+    """A moment as the words an email shows: date, time and the time zone's name."""
+    try:
+        zone = ZoneInfo(tz_name or "UTC")
+    except (ZoneInfoNotFoundError, ValueError):
+        zone, tz_name = ZoneInfo("UTC"), "UTC"
+    local = moment.astimezone(zone)
+    hour = local.hour % 12 or 12
+    return {
+        "date": f"{local:%A} {local.day} {local:%B %Y}",
+        "time": f"{hour}:{local:%M} {'AM' if local.hour < 12 else 'PM'}",
+        "timezone": tz_name or "UTC",
+    }
 
 
 def send_removed(to: str, reason: str) -> None:

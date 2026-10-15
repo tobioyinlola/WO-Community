@@ -421,7 +421,8 @@ class AdminMatchesView(APIView):
             rows = [
                 r
                 for r in rows
-                if text in f"{r['mentor']['name']} {r['mentor']['email']} "
+                if text
+                in f"{r['mentor']['name']} {r['mentor']['email']} "
                 f"{r['mentee']['name']} {r['mentee']['email']}".lower()
             ]
         if params.validated_data["state"]:

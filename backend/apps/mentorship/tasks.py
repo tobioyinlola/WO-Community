@@ -3,11 +3,12 @@ from uuid import UUID
 
 import structlog
 from celery import shared_task
+from django.conf import settings
 
 from apps.accounts import services as accounts
 from apps.core.models import OutboxEvent
 from apps.mentorship.models import MentorApplication, MentorInterest
-from apps.notifications import adminalerts, notify
+from apps.notifications import adminalerts, emails, notify
 
 logger = structlog.get_logger(__name__)
 ADMIN_ROLES = ["community_admin", "super_admin"]
@@ -30,6 +31,13 @@ def notify_admins(event_id: str) -> None:
     if application is None or application.status != MentorApplication.Status.PENDING:
         return
     contact = accounts.get_contact(application.applicant_id)
+    if contact is not None:
+        emails.send_quietly(
+            contact.email,
+            "mentor_application_received",
+            {"url": f"{settings.FRONTEND_BASE_URL}/app/mentors/become"},
+            category="mentor_application_received",
+        )
     adminalerts.raise_alert(
         "mentor_application",
         item_key=f"mentor-application:{application.pk}",

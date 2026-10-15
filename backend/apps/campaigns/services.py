@@ -405,7 +405,7 @@ def _build(
         first_name=first_name,
         unsubscribe_url=page_url,
         subject=subject,
-        preferences_url=f"{settings.FRONTEND_BASE_URL}/settings/notifications",
+        preferences_url=f"{settings.FRONTEND_BASE_URL}/app/settings",
     )
     key = hashlib.sha256(
         f"campaign:{campaign.pk}:{user_id}:{'test' if test else ''}".encode()

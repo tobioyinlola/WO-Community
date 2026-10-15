@@ -38,13 +38,11 @@ def send_stale_summary() -> int:
             continue
         emails.send_templated(
             contact.email,
-            "admin_approval_digest",
+            "admin_still_pending",
             {
                 "count": len(mine),
-                "kind": "Still waiting after 24 hours",
                 "items": "\n".join(mine),
-                "review_url": f"{settings.FRONTEND_BASE_URL}/admin",
-                "settings_url": adminalerts.settings_url(),
+                "review_url": f"{settings.FRONTEND_BASE_URL}/admin/approvals",
             },
             category="admin_approval_daily",
         )

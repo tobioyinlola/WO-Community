@@ -20,6 +20,7 @@ import { Register } from "./pages/auth/Register";
 import { Explore } from "./pages/public/Explore";
 import { Landing } from "./pages/public/Landing";
 import { Legal } from "./pages/public/Legal";
+import { Unsubscribe } from "./pages/public/Unsubscribe";
 import { NewsItem, NewsList } from "./pages/public/News";
 import { Skeleton } from "./ui/blocks";
 import { ToastProvider } from "./ui/Toast";
@@ -138,6 +139,7 @@ export function App() {
                   <Route path="news/:slug" element={<NewsItem />} />
                   <Route path="legal/:doc" element={<Legal />} />
                   <Route path="help" element={<HelpPage />} />
+                  <Route path="unsubscribe" element={<Unsubscribe />} />
                   <Route path="verify/:code" element={<VerifyCertificate />} />
                   <Route path="design" element={<Design />} />
                 </Route>

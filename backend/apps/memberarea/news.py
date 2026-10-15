@@ -35,9 +35,7 @@ def followed_startup_ids(user_id: UUID) -> list[UUID]:
     return list(ids)
 
 
-def following_feed(
-    viewer: Any, *, type: str, cursor: str, limit: int
-) -> dict[str, Any]:  # noqa: A002
+def following_feed(viewer: Any, *, type: str, cursor: str, limit: int) -> dict[str, Any]:  # noqa: A002
     """News and wins that feature a startup the member follows, or one run by someone they do."""
     ids = followed_startup_ids(viewer.pk)
     if not ids:

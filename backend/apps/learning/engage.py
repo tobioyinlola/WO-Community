@@ -4,6 +4,7 @@ answering questions, keeping notes, and announcements. Each rule is checked here
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import exceptions
@@ -26,7 +27,7 @@ from apps.learning.models import (
     Lesson,
     WishlistItem,
 )
-from apps.notifications import adminalerts, notify
+from apps.notifications import adminalerts, emails, notify
 
 STAFF_ROLES = ["content_editor", "community_admin", "super_admin"]
 MAX_NOTES_PER_LESSON = 200
@@ -101,6 +102,16 @@ def request_access(*, user_id: UUID, course_id: UUID, message: str) -> Enrolment
             path=f"/admin/courses?course={course.pk}&tab=requests",
             in_app=False,
         )
+        if contact is not None:
+            emails.send_quietly(
+                contact.email,
+                "access_request_received",
+                {
+                    "item_title": course.title,
+                    "item_url": f"{settings.FRONTEND_BASE_URL}/app/learn/courses/{course.pk}",
+                },
+                category="course_request_received",
+            )
         for admin_id in accounts.ids_with_roles(STAFF_ROLES).distinct():
             notify.notify(
                 admin_id,

@@ -359,6 +359,10 @@ def send_reminders() -> int:
                     "event_id": str(registration.event_id),
                     "title": registration.event.title,
                     "when": label,
+                    "starts_at": registration.event.starts_at.isoformat(),
+                    "timezone": registration.event.timezone,
+                    "where": registration.event.location
+                    or ("Online" if registration.event.link else ""),
                 },
                 dedupe_key=f"event-reminder:{registration.event_id}:{label}",
             )

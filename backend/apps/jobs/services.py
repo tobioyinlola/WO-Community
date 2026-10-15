@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from django.conf import settings
 from django.contrib.postgres.search import SearchVector
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
@@ -31,7 +32,7 @@ from apps.jobs.models import (
     JobSettings,
     SavedJob,
 )
-from apps.notifications import adminalerts
+from apps.notifications import adminalerts, emails
 from apps.startups import selectors as startups
 
 logger = structlog.get_logger(__name__)
@@ -258,7 +259,24 @@ def create_job(*, user_id: UUID, data: dict[str, Any], admin: bool = False) -> J
             _announce_published(job)
         else:
             _alert_review(job)
+    if job.status == Job.Status.PENDING and not admin:
+        _confirm_submitted(job)
     return job
+
+
+def _confirm_submitted(job: Job) -> None:
+    """Tell the member their job arrived and waits for review."""
+    contact = accounts.get_contact(job.poster_id)
+    if contact is not None:
+        emails.send_quietly(
+            contact.email,
+            "job_submitted",
+            {
+                "job_title": job.title,
+                "job_url": f"{settings.FRONTEND_BASE_URL}/app/jobs/{job.pk}",
+            },
+            category="job_submitted",
+        )
 
 
 def _alert_review(job: Job) -> None:

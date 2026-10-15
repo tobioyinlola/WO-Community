@@ -419,10 +419,16 @@ TEMPLATES: dict[str, TemplateDef] = {
             "Reminder: {{event_title}} starts {{when}}",
             "Here's everything you need to join.",
             HI + "A quick reminder that **{{event_title}}** starts {{when}}.\n\n"
+            "**When:** {{event_date}}, {{event_time}} ({{timezone}})\n\n"
+            "**Where:** {{where}}\n\n"
             "[button: Join the event | {{event_url}}]",
             FIRST,
             Var("event_title", sample="Founders Friday"),
             Var("when", sample="in 24 hours"),
+            Var("event_date", required=False, sample="Friday 23 October 2026"),
+            Var("event_time", required=False, sample="6:00 PM"),
+            Var("timezone", required=False, sample="Africa/Lagos"),
+            Var("where", required=False, sample="Online"),
             Var("event_url", "url", sample="https://app.example.com/events/1", must_appear=True),
         ),
         _t(
@@ -438,6 +444,359 @@ TEMPLATES: dict[str, TemplateDef] = {
             Var("items", "lines", sample="12 new members joined\n3 new roles were posted"),
             Var("link_url", "url", sample="https://app.example.com/home", must_appear=True),
             stream=BROADCAST,
+        ),
+        _t(
+            "application_received",
+            "Application received",
+            "Sent when an applicant confirms their email and the application waits for our team.",
+            "We've got your application, {{first_name|there}}",
+            "Our team reviews every application personally.",
+            HI
+            + "Your email is confirmed and your application is with our team. We review every application by hand so the community stays useful for everyone in it.\n\n"
+            "You'll get an email as soon as there's a decision. Most applications are reviewed within 3 to 5 working days.\n\n"
+            "While you wait, you can complete your profile. Members with a full profile are easier for us to review and get more out of the community from day one.\n\n"
+            "[button: Complete my profile | {{profile_url}}]",
+            FIRST,
+            Var("profile_url", "url", sample="https://app.example.com/app/me", must_appear=True),
+        ),
+        _t(
+            "password_changed",
+            "Your password was changed",
+            "Sent after the password on an account is changed.",
+            "Your WO Community password was changed",
+            "If this wasn't you, reset it straight away.",
+            HI
+            + "The password on your WO Community account was changed on {{date}} at {{time}} ({{timezone}}).\n\n"
+            "If this was you, there's nothing more to do.\n\n"
+            "If it wasn't you, reset your password straight away and use Contact support in the app so we can secure your account.\n\n"
+            "[button: Reset my password | {{reset_url}}]",
+            FIRST,
+            Var("date", sample="Thursday 15 October 2026"),
+            Var("time", sample="3:00 PM"),
+            Var("timezone", sample="UTC"),
+            Var(
+                "reset_url",
+                "url",
+                sample="https://app.example.com/forgot-password",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "account_suspended",
+            "Account suspended",
+            "Sent when an admin suspends a member.",
+            "Your WO Community account has been suspended",
+            "Here's what this means and what you can do.",
+            HI + "Your WO Community account has been suspended.\n\n"
+            "Reason: {{reason}}\n\n"
+            "While your account is suspended, you can't sign in or take part in the community, and anything already agreed with other members, such as mentoring sessions, has been cancelled. If you think this is a mistake, please send us a request through Contact support in the app, and a member of our team will review it.",
+            FIRST,
+            Var("reason", required=False, sample="Repeated breaches of the code of conduct."),
+        ),
+        _t(
+            "account_reinstated",
+            "Account reinstated",
+            "Sent when an admin reinstates a member.",
+            "Your WO Community account is active again",
+            "You can sign in again.",
+            HI + "Your WO Community account has been reinstated, and you can sign in again.\n\n"
+            "[button: Sign in | {{login_url}}]\n\n"
+            "Thanks for your patience.",
+            FIRST,
+            Var("login_url", "url", sample="https://app.example.com/login", must_appear=True),
+        ),
+        _t(
+            "job_submitted",
+            "Job submitted",
+            "Sent when a member posts a job that waits for review.",
+            "We're reviewing your job post: {{job_title}}",
+            "It goes live as soon as our team approves it.",
+            HI
+            + "Thanks for posting **{{job_title}}**. Our team reviews every member post before it goes live, usually within 2 working days.\n\n"
+            "You'll get an email as soon as it's approved. Candidates apply directly through the link or email address you gave; we don't collect applications on the platform.\n\n"
+            "[button: View my job post | {{job_url}}]",
+            FIRST,
+            Var("job_title", sample="Backend engineer"),
+            Var("job_url", "url", sample="https://app.example.com/app/jobs/1", must_appear=True),
+        ),
+        _t(
+            "job_expiring",
+            "Job expiring soon",
+            "Sent a few days before a live job post comes down.",
+            "Your job post ends in {{days_left|3}} days: {{job_title}}",
+            "Renew it if the role is still open.",
+            HI
+            + "**{{job_title}}** will come down on {{expiry_date}}. If the role is still open, you can renew it in one click. If you've filled it, you can close it now.\n\n"
+            "[button: Renew or close my post | {{job_url}}]",
+            FIRST,
+            Var("job_title", sample="Backend engineer"),
+            Var("days_left", required=False, sample="3"),
+            Var("expiry_date", sample="Sunday 18 October 2026"),
+            Var("job_url", "url", sample="https://app.example.com/app/jobs/1", must_appear=True),
+        ),
+        _t(
+            "job_removed",
+            "Job removed by an admin",
+            "Sent when an admin removes a job post.",
+            "Your job post was removed: {{job_title}}",
+            "Here's why.",
+            HI + "Our team has removed **{{job_title}}** from WO Community.\n\n"
+            "Reason: {{reason}}\n\n"
+            "If you think this was a mistake, send us a request through Contact support in the app.",
+            FIRST,
+            Var("job_title", sample="Backend engineer"),
+            Var("reason", required=False, sample="The role is not based in our regions."),
+        ),
+        _t(
+            "course_enrolled",
+            "You're enrolled",
+            "Sent when a member enrols in a free course.",
+            "You're in: {{course_title}}",
+            "Start the first lesson whenever you're ready.",
+            HI + "You're enrolled in **{{course_title}}**.\n\n"
+            "Pick up where you left off at any time. Your progress is saved.\n\n"
+            "[button: Start the course | {{course_url}}]",
+            FIRST,
+            Var("course_title", sample="Founder fundamentals"),
+            Var(
+                "course_url",
+                "url",
+                sample="https://app.example.com/app/learn/courses/1",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "access_request_received",
+            "Access request received",
+            "Sent when a member asks for a paid course while payments are off.",
+            "We've received your request for {{item_title}}",
+            "Our team will be in touch with the next step.",
+            HI
+            + "Thanks for your interest in **{{item_title}}**. Payments aren't switched on yet, so our team handles access personally. We've got your request and will come back to you within 2 working days with the next step.\n\n"
+            "[button: View my request | {{item_url}}]",
+            FIRST,
+            Var("item_title", sample="Fundraising masterclass"),
+            Var(
+                "item_url",
+                "url",
+                sample="https://app.example.com/app/learn/courses/1",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "mentor_application_received",
+            "Mentor application received",
+            "Sent to the applicant when a mentor application is submitted.",
+            "We've received your mentor application",
+            "Our team will review it and get back to you.",
+            HI
+            + "Thank you for offering your time to the community. Your mentor application is with our team and we'll let you know our decision within 3 to 5 working days.\n\n"
+            "[button: View my application | {{url}}]",
+            FIRST,
+            Var(
+                "url",
+                "url",
+                sample="https://app.example.com/app/mentors/become",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "session_requested",
+            "New session request",
+            "Sent to a mentor when a member asks for a session.",
+            "{{member_name}} would like a session with you",
+            "Review the request and reply.",
+            HI
+            + "{{member_name}} has asked to book a session with you on {{date}} at {{time}} ({{timezone}}).\n\n"
+            'Their message: "{{message}}"\n\n'
+            "{{payment_note}}\n\n"
+            "[button: Review the request | {{session_url}}]",
+            FIRST,
+            Var("member_name", sample="Ada Obi"),
+            Var("date", sample="Tuesday 20 October 2026"),
+            Var("time", sample="3:00 PM"),
+            Var("timezone", sample="Africa/Lagos"),
+            Var("message", required=False, sample="I'd love help with my pitch deck."),
+            Var(
+                "payment_note",
+                required=False,
+                sample="This is a paid session. While online payment is off, you agree payment directly.",
+            ),
+            Var(
+                "session_url",
+                "url",
+                sample="https://app.example.com/app/mentors/sessions",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "session_confirmed",
+            "Session confirmed",
+            "Sent to the member when a mentor confirms a session.",
+            "Your session is confirmed for {{date}}",
+            "{{time}} ({{timezone}}) with {{other_name}}.",
+            HI + "Your session with {{other_name}} is confirmed.\n\n"
+            "**When:** {{date}}, {{time}} ({{timezone}})\n"
+            "**Where:** {{where|We'll add the meeting link to your session page}}\n\n"
+            "{{payment_note}}\n\n"
+            "[button: View session details | {{session_url}}]",
+            FIRST,
+            Var("other_name", sample="Kofi Mensah"),
+            Var("date", sample="Tuesday 20 October 2026"),
+            Var("time", sample="3:00 PM"),
+            Var("timezone", sample="Africa/Lagos"),
+            Var("where", required=False, sample="https://meet.example.com/abc"),
+            Var(
+                "payment_note",
+                required=False,
+                sample="This is a paid session. While online payment is off, you agree payment directly.",
+            ),
+            Var(
+                "session_url",
+                "url",
+                sample="https://app.example.com/app/mentors/sessions",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "session_declined",
+            "Session declined",
+            "Sent to the member when a mentor cannot take a session request.",
+            "An update on your session request",
+            "{{mentor_name}} can't make that time.",
+            HI + "Unfortunately {{mentor_name}} isn't able to take the session you asked for.\n\n"
+            'Their note: "{{message}}"\n\n'
+            "You can look at their other available times or find another mentor.\n\n"
+            "[button: Find another time | {{mentor_url}}]",
+            FIRST,
+            Var("mentor_name", sample="Kofi Mensah"),
+            Var("message", required=False, sample="I'm travelling that week."),
+            Var(
+                "mentor_url",
+                "url",
+                sample="https://app.example.com/app/mentors/1",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "event_registered",
+            "You're registered",
+            "Sent when a member registers for an event.",
+            "You're registered: {{event_title}}",
+            "{{event_date}}, {{event_time}} ({{timezone}}).",
+            HI + "You're registered for **{{event_title}}**.\n\n"
+            "**When:** {{event_date}}, {{event_time}} ({{timezone}})\n\n"
+            "**Where:** {{where}}\n\n"
+            "[button: View event details | {{event_url}}]",
+            FIRST,
+            Var("event_title", sample="Founders Friday"),
+            Var("event_date", sample="Friday 23 October 2026"),
+            Var("event_time", sample="6:00 PM"),
+            Var("timezone", sample="Africa/Lagos"),
+            Var("where", required=False, sample="Online"),
+            Var(
+                "event_url",
+                "url",
+                sample="https://app.example.com/app/events/1",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "event_changed",
+            "Event cancelled or changed",
+            "Sent to registrants when an event is cancelled or moves.",
+            "Update on {{event_title}}",
+            "{{change_summary}}",
+            HI + "There's a change to **{{event_title}}**: {{change_summary}}\n\n"
+            "The new date and time is {{new_when}}.\n\n"
+            "We're sorry for any inconvenience.\n\n"
+            "[button: View event details | {{event_url}}]",
+            FIRST,
+            Var("event_title", sample="Founders Friday"),
+            Var("change_summary", sample="it has moved to a new date and time."),
+            Var(
+                "new_when", required=False, sample="Friday 30 October 2026, 6:00 PM (Africa/Lagos)"
+            ),
+            Var(
+                "event_url",
+                "url",
+                sample="https://app.example.com/app/events/1",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "post_removed",
+            "Your post was removed",
+            "Sent when the team removes a member's post.",
+            "Your post was removed from the community feed",
+            "Here's why.",
+            HI + "Our team has removed your post from the community feed.\n\n"
+            "Reason: {{reason}}\n\n"
+            "Our community guidelines are there to keep WO Community useful and respectful for everyone. If you have questions, send us a request through Contact support in the app.\n\n"
+            "[button: Read the community guidelines | {{guidelines_url}}]",
+            FIRST,
+            Var("reason", required=False, sample="It was promotional."),
+            Var(
+                "guidelines_url",
+                "url",
+                sample="https://app.example.com/legal/conduct",
+                must_appear=True,
+            ),
+        ),
+        _t(
+            "comment_reply",
+            "Someone replied to you",
+            "Sent when someone comments on a member's post or replies to their comment.",
+            "{{commenter_name}} replied to your {{target|post}}",
+            "{{comment_preview}}",
+            HI + "{{commenter_name}} replied to your {{target|post}}:\n\n"
+            '"{{comment_preview}}"\n\n'
+            "[button: See the conversation | {{post_url}}]\n\n"
+            "You can change which notifications you get in your notification settings.",
+            FIRST,
+            Var("commenter_name", sample="Ada Obi"),
+            Var("target", required=False, sample="post"),
+            Var("comment_preview", required=False, sample="Great point. We saw the same thing."),
+            Var("post_url", "url", sample="https://app.example.com/app/feed", must_appear=True),
+        ),
+        _t(
+            "admin_still_pending",
+            "Still pending after 24 hours",
+            "Sent to admins once a day when approvals have waited more than a day.",
+            "{{count}} items have been waiting more than 24 hours",
+            "Members are waiting for a decision.",
+            HI + "These items have been waiting for more than a day:\n\n{{items}}\n\n"
+            "Members hear back faster when decisions are made quickly, especially on new applications.\n\n"
+            "[button: Review pending items | {{review_url}}]",
+            FIRST,
+            Var("count", "int", sample="4"),
+            Var(
+                "items",
+                "lines",
+                sample="New member requests: 3 still waiting\nJob posts: 1 still waiting",
+            ),
+            Var("review_url", "url", sample="https://app.example.com/admin", must_appear=True),
+        ),
+        _t(
+            "admin_support_request",
+            "New support request",
+            "Sent to admins when a support request arrives.",
+            "New support request {{what}}",
+            "From {{who}}",
+            HI + "{{who}} has sent a new support request.\n\n"
+            "**Request:** {{what}}\n\n"
+            "[button: Open the request | {{review_url}}]\n\n"
+            "You can choose which emails you get in your [notification settings]({{settings_url}}).",
+            FIRST,
+            Var("what", sample="WO-1042: I cannot upload my logo"),
+            Var("who", sample="ada@example.com"),
+            Var(
+                "review_url",
+                "url",
+                sample="https://app.example.com/admin/support",
+                must_appear=True,
+            ),
+            Var("settings_url", "url", sample="https://app.example.com/admin/settings"),
         ),
         _t(
             "notice",

@@ -30,9 +30,20 @@ def notify_registered(event_id: str) -> None:
     notify.notify(
         UUID(payload["user_id"]),
         "event_registered",
-        {"event_id": str(event.pk), "title": event.title},
+        _details(event),
         dedupe_key=f"{event_id}:registered",
     )
+
+
+def _details(event: Event) -> dict[str, str]:
+    """What the email needs about the event: its title, start, time zone and where it is."""
+    return {
+        "event_id": str(event.pk),
+        "title": event.title,
+        "starts_at": event.starts_at.isoformat(),
+        "timezone": event.timezone,
+        "where": event.location or ("Online" if event.link else ""),
+    }
 
 
 def _notify_registrants(event_id: str, kind: str) -> None:
@@ -44,7 +55,7 @@ def _notify_registrants(event_id: str, kind: str) -> None:
         notify.notify(
             user_id,
             kind,
-            {"event_id": str(event.pk), "title": event.title},
+            _details(event),
             dedupe_key=f"{event_id}:{kind}",
         )
 
