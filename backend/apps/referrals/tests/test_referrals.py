@@ -27,7 +27,7 @@ def member(make_user, email, name="", public=True, **fields):
     if name:
         profile = get_or_create_profile(user.pk)
         FounderProfile.objects.filter(pk=profile.pk).update(
-            full_name=name, visibility={"basics": "public"} if public else {}
+            full_name=name, visibility={"basics": "public" if public else "members"}
         )
     return user
 

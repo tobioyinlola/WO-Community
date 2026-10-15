@@ -1,3 +1,6 @@
+from typing import cast
+from uuid import UUID
+
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import serializers
 from rest_framework.request import Request
@@ -9,7 +12,7 @@ from apps.core import policies
 from apps.core.public import PublicView
 from apps.core.serializers import StrictSerializer
 from apps.editorial.serializers import EditorialItemPageSerializer
-from apps.memberarea import browse, news, onboarding, search, sitemap
+from apps.memberarea import browse, news, onboarding, search, sitemap, stats
 
 
 class ChecklistItemSerializer(serializers.Serializer):
@@ -40,6 +43,38 @@ class OnboardingView(APIView):
     )
     def get(self, request: Request) -> Response:
         return Response(OnboardingSerializer(onboarding.checklist(request.user)).data)
+
+
+class MyStatsSerializer(serializers.Serializer):
+    trend_days = serializers.IntegerField(help_text="The window of the *_recent counts.")
+    followers = serializers.IntegerField()
+    followers_recent = serializers.IntegerField()
+    posts = serializers.IntegerField()
+    reactions_received = serializers.IntegerField()
+    reactions_recent = serializers.IntegerField()
+    comments_received = serializers.IntegerField()
+    comments_recent = serializers.IntegerField()
+    courses_in_progress = serializers.IntegerField()
+    courses_completed = serializers.IntegerField()
+    certificates = serializers.IntegerField()
+    sessions_completed = serializers.IntegerField()
+    sessions_upcoming = serializers.IntegerField()
+    events_attended = serializers.IntegerField()
+    events_upcoming = serializers.IntegerField()
+
+
+class MyStatsView(APIView):
+    policy = policies.authenticated
+
+    @extend_schema(
+        summary="Your numbers for the dashboard",
+        description="Followers, reactions and comments on your posts, learning, mentoring and "
+        "events. The *_recent counts cover the last `trend_days` days.",
+        responses={200: MyStatsSerializer, 401: OpenApiResponse(description="Not logged in")},
+        tags=["member area"],
+    )
+    def get(self, request: Request) -> Response:
+        return Response(MyStatsSerializer(stats.for_member(cast(UUID, request.user.pk))).data)
 
 
 class SearchQuerySerializer(StrictSerializer):

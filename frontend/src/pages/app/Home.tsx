@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Circle, MessageCircle, Rocket, ThumbsUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
+import type { components } from "../../api/schema";
 import { ReferralCard } from "../../referrals/ReferralCard";
 import { Alert, Avatar, Badge, Card, CardText, CardTitle, CardTo, StatTile } from "../../components";
 import { formatDate, formatTime, humanise, timeAgo } from "../../lib/format";
@@ -17,6 +18,13 @@ const CHECKLIST: Record<string, { label: string; to: string }> = {
   add_traction: { label: "Add your traction", to: "/app/me" },
   set_notification_preferences: { label: "Choose what we email you", to: "/app/settings" },
 };
+
+/** Traction belongs to a startup, so that step opens the startup's traction section, or asks for a startup first. */
+function stepFor(key: string, startupId: string | undefined): { label: string; to: string } {
+  const step = CHECKLIST[key] ?? { label: humanise(key), to: "/app/me" };
+  if (key === "add_traction") return { ...step, to: startupId ? `/app/startups/${startupId}/edit#traction` : "/app/startups/new" };
+  return step;
+}
 
 const REACTION_WORDS: Record<string, string> = { like: "liked", celebrate: "celebrated", insightful: "found insightful" };
 
@@ -36,6 +44,8 @@ export default function Home() {
     queryFn: () => unwrap(api.GET("/api/v1/feed/activity", { params: { query: { limit: 8 } } })),
     refetchInterval: 30_000,
   });
+  const myStartups = useQuery({ queryKey: ["me", "startups"], queryFn: () => unwrap(api.GET("/api/v1/me/startups")) });
+  const stats = useQuery({ queryKey: ["me", "stats"], queryFn: () => unwrap(api.GET("/api/v1/me/stats")) });
   const { me } = useAuth();
   const ventures = useQuery({ queryKey: ["toolkit", "ventures"], enabled: permissionsFor(me?.roles ?? []).has("toolkit.use"), queryFn: () => unwrap(api.GET("/api/v1/toolkit/ventures")) });
 
@@ -77,7 +87,7 @@ export default function Home() {
             </div>
             <ul className="app-stack" style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {onboarding.data.items.map((item) => {
-                const step = CHECKLIST[item.key] ?? { label: humanise(item.key), to: "/app/me" };
+                const step = stepFor(item.key, myStartups.data?.[0]?.id);
                 const Icon = item.done ? CheckCircle2 : Circle;
                 return (
                   <li key={item.key}>
@@ -94,6 +104,8 @@ export default function Home() {
             </ul>
           </div>
         </Card>
+      ) : onboarding.data?.complete && stats.data ? (
+        <YourActivity stats={stats.data} />
       ) : null}
 
       <div className="app-grid" style={{ marginTop: "var(--space-8)" }}>
@@ -187,5 +199,26 @@ export default function Home() {
         </aside>
       </div>
     </>
+  );
+}
+
+type MyStats = components["schemas"]["MyStats"];
+
+/** Once setup is done, the space the checklist used shows the member's own numbers. */
+function YourActivity({ stats }: { stats: MyStats }) {
+  const recent = (n: number) => (n > 0 ? `+${n} in ${stats.trend_days} days` : `none new in ${stats.trend_days} days`);
+  return (
+    <Section title="Your activity">
+      <div className="app-grid">
+        <StatTile variant="brand" label="Followers" value={String(stats.followers)} delta={recent(stats.followers_recent)} />
+        <StatTile label="Reactions on your posts" value={String(stats.reactions_received)} delta={recent(stats.reactions_recent)} />
+        <StatTile label="Comments on your posts" value={String(stats.comments_received)} delta={recent(stats.comments_recent)} />
+        <StatTile label="Posts shared" value={String(stats.posts)} delta="in the feed" />
+        <StatTile label="Courses" value={String(stats.courses_completed)} delta={`completed, ${stats.courses_in_progress} in progress`} />
+        <StatTile label="Certificates" value={String(stats.certificates)} delta="earned" />
+        <StatTile label="Mentoring sessions" value={String(stats.sessions_completed)} delta={`completed, ${stats.sessions_upcoming} coming up`} />
+        <StatTile label="Events" value={String(stats.events_attended)} delta={`attended, ${stats.events_upcoming} coming up`} />
+      </div>
+    </Section>
   );
 }

@@ -81,10 +81,11 @@ def listed(make_user, run_outbox):
             user.pk, {"full_name": founder, "country": country, "city": "Lagos"}
         )
         edit_profile(user.pk, skills=list(skills), bio="ZZBIO builds things")
+        # Stated in full, so the tests do not lean on the account defaults.
         levels = {"basics": "public" if founder_public else "members"}
+        levels.update(bio="members", links="private", open_to="members")
         levels["skills"] = "public"
-        if founder_location_public:
-            levels["location"] = "public"
+        levels["location"] = "public" if founder_location_public else "members"
         profile_services.update_visibility(user_id=user.pk, levels=levels)
         startup = startup_services.create_startup(
             owner_id=user.pk,

@@ -35,7 +35,7 @@ from apps.analytics import services as analytics
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.core import ratelimit
-from apps.core.rbac import Role
+from apps.core.rbac import ADMIN_ROLES, Role
 
 logger = structlog.get_logger(__name__)
 
@@ -130,6 +130,9 @@ def register(
     ignored, exactly as if none had been sent.
     """
     address = normalise_email(email)
+    # Checked before the address is looked up, so a missing field answers the same either way.
+    if signup is not None and not _is_staff_invitation(_open_invitation(invitation_token, address)):
+        _require_founder_details(signup)
     existing = User.objects.filter(email__iexact=address).first()
     if existing is not None:
         make_password(password)  # keep the cost of both paths comparable
@@ -182,6 +185,28 @@ def register(
         # A concurrent request registered the same address first.
         logger.info("registration_race")
         return False
+
+
+def _open_invitation(raw_token: str, address: str) -> invitations.Invitation | None:
+    found = invitations.find_open(raw_token) if raw_token else None
+    return found if found is not None and found.email.lower() == address else None
+
+
+def _is_staff_invitation(invitation: invitations.Invitation | None) -> bool:
+    return invitation is not None and invitation.role in {r.value for r in ADMIN_ROLES}
+
+
+def _require_founder_details(signup: dict[str, Any]) -> None:
+    """Members join with their location and startup; only invited staff may leave them out."""
+    profile = signup.get("profile") or {}
+    errors: dict[str, Any] = {}
+    missing = {f: ["This field is required."] for f in ("country", "city") if not profile.get(f)}
+    if missing:
+        errors["profile"] = missing
+    if not signup.get("startup"):
+        errors["startup"] = ["This field is required."]
+    if errors:
+        raise exceptions.ValidationError(errors)
 
 
 def create_invited_user(

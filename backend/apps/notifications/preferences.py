@@ -10,12 +10,13 @@ from apps.notifications.models import NotificationPreference
 
 CHANNELS = ("email", "in_app")
 
-# Every type a member can control, with what they get until they choose.
+# Every type a member can control. All start on; the member switches off what they do not want.
+# Newsletters still need marketing consent, which is asked for separately.
 DEFAULTS: dict[str, dict[str, bool]] = {
     "comments": {"email": True, "in_app": True},
-    "follows": {"email": False, "in_app": True},
-    "news": {"email": False, "in_app": True},
-    "news_digest": {"email": False, "in_app": False},
+    "follows": {"email": True, "in_app": True},
+    "news": {"email": True, "in_app": True},
+    "news_digest": {"email": True, "in_app": True},
     "mentions": {"email": True, "in_app": True},
     "mentorship": {"email": True, "in_app": True},
     "approvals": {"email": True, "in_app": True},
@@ -24,7 +25,7 @@ DEFAULTS: dict[str, dict[str, bool]] = {
     "learning": {"email": True, "in_app": True},
     "support": {"email": True, "in_app": True},
     "event_reminders": {"email": True, "in_app": True},
-    "newsletter": {"email": False, "in_app": False},
+    "newsletter": {"email": True, "in_app": True},
 }
 
 # Account messages the member cannot switch off.

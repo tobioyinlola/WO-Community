@@ -49,12 +49,18 @@ def test_members_without_a_profile_row_are_404(other_client, other, me):
 # --- defaults ---
 
 
-def test_by_default_members_see_the_essentials_but_not_personal_links(full_profile, other_client):
+def test_by_default_everything_is_visible_including_links(full_profile, other_client):
     body = view(other_client, full_profile).json()
     assert body["full_name"] == "ZZNAME Okafor"
     assert body["bio"] == "ZZBIO builds things"
     assert body["city"] == "ZZCITY"
     assert body["skills"] == [{"slug": "payments", "name": "Payments"}]
+    assert body["linkedin_url"] == "https://www.linkedin.com/in/zzlinked"
+
+
+def test_links_made_private_are_hidden_from_members(full_profile, my_client, other_client):
+    set_levels(my_client, {"links": "private"})
+    body = view(other_client, full_profile).json()
     for hidden in ("linkedin_url", "x_url", "website_url"):
         assert hidden not in body
     assert "zzlinked" not in json.dumps(body)
@@ -139,15 +145,18 @@ def test_a_private_group_never_reaches_a_member_over_http(
             assert marker not in text, f"{name} leaked"
 
 
-def test_a_visitor_sees_nothing_unless_the_member_made_it_public(full_profile, my_client):
+def test_a_visitor_sees_only_what_the_member_leaves_public(full_profile, my_client):
     profile = FounderProfile.objects.get(user=full_profile)
-    assert selectors.project_profile(profile, Audience.PUBLIC) is None
-    set_levels(my_client, {"basics": "public"})
+    assert selectors.project_profile(profile, Audience.PUBLIC)["full_name"] == "ZZNAME Okafor"
+    set_levels(my_client, {"bio": "members", "location": "members", "links": "private"})
     profile.refresh_from_db()
     public = selectors.project_profile(profile, Audience.PUBLIC)
     assert public["full_name"] == "ZZNAME Okafor"
     assert "bio" not in public and "city" not in public and "linkedin_url" not in public
     assert "ZZBIO" not in json.dumps(public, default=str)
+    set_levels(my_client, {"basics": "members"})
+    profile.refresh_from_db()
+    assert selectors.project_profile(profile, Audience.PUBLIC) is None
 
 
 def test_a_visitor_never_receives_contact_details(full_profile, my_client):
