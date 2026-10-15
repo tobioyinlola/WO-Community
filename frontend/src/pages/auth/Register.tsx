@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { withPlaceholder, useCountries, useSectors, useStages } from "../../api/reference";
 import { api, unwrap } from "../../api/client";
+import { FriendlyError } from "../../api/errors";
 import type { components } from "../../api/schema";
 import { useAuth } from "../../auth/AuthProvider";
 import { Alert, Button, Checkbox, Input, Select, Textarea } from "../../components";
+import { isAdmin } from "../../admin/permissions";
 import { EMPTY_REFERRAL, ReferralFields, referralBody, type ReferralDraft } from "../../referrals/ReferralFields";
 import { rememberRefCode, storedRefCode } from "../../referrals/ref";
 import { useDocumentTitle } from "../../ui/blocks";
@@ -64,7 +66,8 @@ export function Register() {
   useDocumentTitle("Request access");
   const { status } = useAuth();
   const [params] = useSearchParams();
-  const invitation = params.get("invite") ?? "";
+  // Invitation emails link with ?invitation=; ?invite= is kept for links already shared.
+  const invitation = params.get("invitation") ?? params.get("invite") ?? "";
   // A referral link keeps its code for the visit, so moving between pages does not lose it.
   const refCode = (params.get("ref") ?? storedRefCode()).trim().toUpperCase().slice(0, 12);
   const [refNote, setRefNote] = useState("");
@@ -72,6 +75,7 @@ export function Register() {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState<"pending" | "approved" | null>(null);
   const [problems, setProblems] = useState<Record<string, string>>({});
+  const [inviteRole, setInviteRole] = useState("");
 
   const countries = useCountries();
   const sectors = useSectors();
@@ -83,7 +87,10 @@ export function Register() {
     void unwrap(
       api.POST("/api/v1/auth/invitations/inspect", { body: { token: invitation } }),
     )
-      .then((preview) => setDraft((d) => ({ ...d, email: preview.email })))
+      .then((preview) => {
+        setDraft((d) => ({ ...d, email: preview.email }));
+        setInviteRole(preview.role);
+      })
       .catch(() => undefined);
   }, [invitation]);
 
@@ -140,7 +147,11 @@ export function Register() {
     setDone(response.status === 201 ? "approved" : "pending");
   });
 
-  if (status === "authenticated") return <Navigate to="/app" replace />;
+  // Staff invited to the admin console only choose a name and a password: the link already proved
+  // the address, so they are signed in and taken straight to the console.
+  const staffInvite = Boolean(invitation) && isAdmin([inviteRole]);
+  if (status === "authenticated") return <Navigate to={staffInvite ? "/admin" : "/app"} replace />;
+  if (staffInvite) return <StaffJoin email={draft.email} invitation={invitation} />;
 
   if (done) {
     return (
@@ -392,6 +403,63 @@ export function Register() {
           Sign in
         </Link>
       </p>
+    </form>
+  );
+}
+
+function StaffJoin({ email, invitation }: { email: string; invitation: string }) {
+  useDocumentTitle("Join the admin team");
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [agree, setAgree] = useState(false);
+  const [problems, setProblems] = useState<Record<string, string>>({});
+  const submit = useSubmit(async () => {
+    const found: Record<string, string> = {};
+    if (name.trim().length < 2) found.full_name = "Enter your full name.";
+    if (password.length < 10) found.password = "Use at least 10 characters.";
+    if (!agree) found.agree = "Accept the terms, privacy policy and code of conduct to continue.";
+    setProblems(found);
+    if (Object.keys(found).length) return;
+    const body = {
+      email,
+      password,
+      accepted_terms: true,
+      accepted_privacy: true,
+      accepted_conduct: true,
+      invitation_token: invitation,
+      profile: { full_name: name.trim(), country: "", city: "" },
+    } as unknown as components["schemas"]["RegisterRequest"];
+    const { response, error } = await api.POST("/api/v1/auth/register", { body });
+    if (response.status !== 201) {
+      // 202 means the invitation no longer applies (used, revoked or expired).
+      if (response.ok) throw new FriendlyError("This invitation has already been used or has expired. Ask an admin to send a new one.");
+      await unwrap(Promise.resolve({ error, response }));
+      return;
+    }
+    const outcome = await login(email, password);
+    navigate(outcome.kind === "mfa" ? "/login" : "/admin", { replace: true });
+  });
+  const here = errorsFrom(submit.error).fields;
+  return (
+    <form className="app-stack app-stack--lg" noValidate onSubmit={(e) => { e.preventDefault(); void submit.run(); }}>
+      <div>
+        <span className="wo-eyebrow">Admin invitation</span>
+        <h1 className="h1" style={{ margin: "var(--space-2) 0" }}>Join the admin team</h1>
+        <p className="body app-muted" style={{ margin: 0 }}>Your email is confirmed by this link. Choose a password and you are in.</p>
+      </div>
+      <FormError error={submit.error} />
+      <Input label="Email" type="email" value={email} readOnly />
+      <Input label="Full name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={here["profile.full_name"] ?? problems.full_name} />
+      <Input label="Password" type="password" autoComplete="new-password" hint="At least 10 characters. A passphrase of a few words works well." value={password} onChange={(e) => setPassword(e.target.value)} error={here.password ?? problems.password} />
+      <Checkbox
+        label={<span>I accept the <Link className="app-link" to="/legal/terms" target="_blank">terms</Link>, <Link className="app-link" to="/legal/privacy" target="_blank">privacy policy</Link> and <Link className="app-link" to="/legal/conduct" target="_blank">code of conduct</Link></span>}
+        checked={agree}
+        onChange={(e) => setAgree(e.target.checked)}
+      />
+      {problems.agree ? <span className="wo-error">! {problems.agree}</span> : null}
+      <Button size="lg" type="submit" loading={submit.busy} disabled={!email}>Create account and continue</Button>
     </form>
   );
 }

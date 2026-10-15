@@ -80,10 +80,10 @@ def test_the_public_audience_sees_the_photo_only_with_public_basics(my_client, m
 
     put_photo(my_client, ready_upload(me).pk)
     profile = FounderProfile.objects.get(user=me)
-    assert selectors.project_profile(profile, Audience.PUBLIC) is None
-    my_client.patch("/api/v1/me/visibility", {"basics": "public"})
-    profile.refresh_from_db()
     assert selectors.project_profile(profile, Audience.PUBLIC)["photo"] is not None
+    my_client.patch("/api/v1/me/visibility", {"basics": "members"})
+    profile.refresh_from_db()
+    assert selectors.project_profile(profile, Audience.PUBLIC) is None
 
 
 # --- whose uploads can be used ---

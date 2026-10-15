@@ -39,9 +39,6 @@ export function UserMenu({ name, role, onShortcuts }: { name: string; role: stri
           <DropdownMenu.Item className="adm-menu__item" onSelect={onShortcuts}>
             Keyboard shortcuts
           </DropdownMenu.Item>
-          <DropdownMenu.Item asChild>
-            <Link to="/app" className="adm-menu__item">Back to the community</Link>
-          </DropdownMenu.Item>
           <DropdownMenu.Separator className="adm-menu__sep" />
           <DropdownMenu.Item
             className="adm-menu__item"

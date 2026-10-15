@@ -131,7 +131,8 @@ def test_defaults_before_anything_is_saved(client):
     body = client.get(PREFS).json()
     assert body["confirmed"] is False
     assert body["preferences"]["comments"] == {"email": True, "in_app": True}
-    assert body["preferences"]["newsletter"] == {"email": False, "in_app": False}
+    # Everything starts on; newsletters still need marketing consent before any is sent.
+    assert body["preferences"]["newsletter"] == {"email": True, "in_app": True}
 
 
 def test_a_partial_change_is_merged_and_confirms(client, member):

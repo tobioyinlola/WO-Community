@@ -182,3 +182,53 @@ def test_two_simultaneous_registrations_with_one_link_create_one_account(
     assert sorted(results) in ([201, 202], [202, 202])
     assert User.objects.filter(email=EMAIL).count() == 1
     assert Invitation.objects.get().status in ("registered", "sent")
+
+
+# --- staff join without founder details ---
+
+
+def staff_payload(token, email=EMAIL):
+    body = registration_payload(email=email, invitation_token=token)
+    del body["startup"]
+    body["profile"] = {"full_name": "Grace Admin", "country": "", "city": ""}
+    return body
+
+
+@pytest.fixture
+def super_admin(make_user):
+    return make_user(roles=("super_admin",), email="owner@example.com")
+
+
+def test_invited_staff_join_with_only_a_name_and_a_password(
+    api_client, super_admin, run_outbox, last_invitation_token
+):
+    services.create_invitation(actor=super_admin, email=EMAIL, role="community_admin")
+    run_outbox()
+    response = api_client.post(REGISTER_URL, staff_payload(last_invitation_token()), format="json")
+    assert response.status_code == 201
+    user = User.objects.get(email=EMAIL)
+    assert user.status == "active" and user.email_verified_at is not None
+    assert "community_admin" in user.role_names()
+    run_outbox()  # the profile is filled and no startup is created
+    from apps.profiles.models import FounderProfile
+    from apps.startups.models import Startup
+
+    assert FounderProfile.objects.get(user=user).full_name == "Grace Admin"
+    assert not Startup.objects.filter(owner=user).exists()
+
+
+def test_a_member_invitation_still_needs_the_founder_details(api_client, invite):
+    response = api_client.post(REGISTER_URL, staff_payload(invite()), format="json")
+    assert response.status_code == 400
+    errors = response.json()["errors"]
+    assert "startup" in errors and set(errors["profile"]) == {"country", "city"}
+    assert not User.objects.filter(email=EMAIL).exists()
+
+
+def test_without_an_invitation_the_founder_details_are_needed_whether_or_not_the_address_exists(
+    api_client, make_user
+):
+    body = staff_payload("")
+    assert api_client.post(REGISTER_URL, body, format="json").status_code == 400
+    make_user(email=EMAIL)
+    assert api_client.post(REGISTER_URL, body, format="json").status_code == 400

@@ -1,6 +1,7 @@
 import { api } from "./client";
+import { FriendlyError } from "./errors";
 
-export type UploadPurpose = "support_attachment" | "course_cover" | "cert_signature";
+export type UploadPurpose = "support_attachment" | "course_cover" | "cert_signature" | "profile_photo";
 
 export interface Uploaded {
   id: string;
@@ -20,7 +21,7 @@ const REJECTIONS: Record<string, string> = {
   size_mismatch: "did not arrive complete.",
 };
 
-export class UploadError extends Error {}
+export class UploadError extends FriendlyError {}
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -34,7 +35,10 @@ export async function uploadFile(file: File, purpose: UploadPurpose, pollMs = 70
     body: { purpose, content_type: file.type, size: file.size, filename: file.name },
   });
   if (reserved.error || !reserved.data) {
-    const detail = (reserved.error as { detail?: string } | undefined)?.detail;
+    const problem = reserved.error as { detail?: string; errors?: Record<string, string[] | string> } | undefined;
+    // A validation failure names the field ("size", "content_type"); its message says what to change.
+    const reasons = Object.values(problem?.errors ?? {}).flat().join(" ");
+    const detail = reasons || problem?.detail;
     throw new UploadError(detail ? `${label}: ${detail}` : `We could not start uploading ${label}.`);
   }
   const { upload, form } = reserved.data;

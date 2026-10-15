@@ -41,7 +41,8 @@ test.describe("certificates", () => {
     await expect(sheet).toContainText("This certifies that");
     await expect(sheet).toContainText("has successfully completed");
     await expect(sheet).toContainText(number);
-    await expect(sheet.getByRole("img", { name: /QR code that opens .*\/verify\// })).toBeVisible();
+    // The sheet carries no QR code or web address; the number is checked on the verify page.
+    await expect(sheet.getByRole("img", { name: /QR code/ })).toHaveCount(0);
 
     const downloading = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download certificate" }).click();
