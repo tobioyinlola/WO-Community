@@ -7,7 +7,7 @@ test.describe("a signed-in member", () => {
   test("home shows the welcome, the checklist and what is coming up", async ({ page }) => {
     const problems = watchConsole(page);
     await signIn(page);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Welcome back, Amaka");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/Good (morning|afternoon|evening), Amaka/);
     await expect(page.getByText("Finish setting up")).toBeVisible();
     await expect(page.getByText("Demo Day, Lagos")).toBeVisible();
     expect(problems).toEqual([]);

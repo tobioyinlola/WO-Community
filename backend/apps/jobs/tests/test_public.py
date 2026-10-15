@@ -182,6 +182,11 @@ def test_a_startups_public_logo_becomes_the_share_image(api_client, auto_publish
 
 def test_a_startup_hiding_its_basics_is_not_named_publicly(api_client, auto_publish, poster_client):
     startup = poster_client.post(STARTUPS, new_startup_body(name="Secret Co")).json()["id"]
+    poster_client.patch(
+        f"{STARTUPS}/{startup}/visibility",
+        {"basics": "members"},
+        HTTP_IF_MATCH=poster_client.get(f"{STARTUPS}/{startup}")["ETag"],
+    )
     body = {
         "title": "Dev",
         "type": "full_time",

@@ -12,10 +12,10 @@ GROUP_FIELDS: dict[str, tuple[str, ...]] = {
 
 # Opting into the public directory also makes the basics public (see services).
 DEFAULT_LEVELS: dict[str, str] = {
-    "basics": "members",
-    "description": "members",
-    "website": "members",
-    "team": "members",
+    "basics": "public",
+    "description": "public",
+    "website": "public",
+    "team": "public",
 }
 
 TRACTION_KINDS = ("users", "revenue_range", "funding_range", "milestone", "award", "partner")

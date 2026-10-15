@@ -8,6 +8,7 @@ from apps.editorial import reporting as editorial_reporting
 from apps.editorial import selectors as editorial
 from apps.feed import moderation
 from apps.jobs import selectors as jobs
+from apps.mentorship import selectors as mentorship
 from apps.support import selectors as support
 
 
@@ -17,6 +18,7 @@ def queue_counts() -> dict[str, int]:
         **accounts.registration_queue_counts(),
         "open_reports": moderation.open_report_count() + editorial_reporting.open_count(),
         "jobs_awaiting_review": jobs.pending_count(),
+        "mentor_applications_pending": mentorship.pending_application_count(),
         "wins_awaiting_review": editorial.pending_wins(),
         "support_unanswered": support.unanswered_count(),
         "support_overdue": support.overdue_count(),

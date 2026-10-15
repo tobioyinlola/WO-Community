@@ -101,8 +101,7 @@ def listed(make_user, run_outbox):
                 "website_url": "https://acme.example.com",
             },
         )
-        if listed:
-            edit_startup(startup.pk, directory_opt_in=True)
+        edit_startup(startup.pk, directory_opt_in=listed)  # new startups start listed
         set_startup_levels(
             startup.pk,
             team="public" if team_public else "members",

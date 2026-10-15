@@ -343,3 +343,8 @@ def _cooling_down(until: Any) -> bool:
     from django.utils import timezone
 
     return until is not None and timezone.now() < until
+
+
+def pending_application_count() -> int:
+    """Mentor applications waiting for an admin's decision."""
+    return MentorApplication.objects.filter(status=MentorApplication.Status.PENDING).count()

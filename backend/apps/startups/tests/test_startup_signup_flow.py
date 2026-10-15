@@ -21,7 +21,7 @@ def test_registering_creates_the_startup_from_the_form(api_client, run_outbox):
     assert (startup.sector.slug, startup.stage.slug) == ("fintech", "seed")
     assert (startup.country, startup.city) == ("NG", "Lagos")
     assert startup.pitch == "Payments for small traders"
-    assert startup.directory_opt_in is False
+    assert startup.directory_opt_in is True  # listed from the start
     assert startup.completeness_score == 15
 
 

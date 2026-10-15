@@ -1864,7 +1864,11 @@ export interface paths {
         get: operations["admin_jobs_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a job for good
+         * @description Unlike remove, it cannot be reopened. Audited with its title.
+         */
+        delete: operations["admin_jobs_destroy"];
         options?: never;
         head?: never;
         /** Edit any job */
@@ -13345,6 +13349,7 @@ export interface components {
             registrations_unverified: number;
             open_reports: number;
             jobs_awaiting_review: number;
+            mentor_applications_pending: number;
             wins_awaiting_review: number;
             support_unanswered: number;
             support_overdue: number;
@@ -21638,6 +21643,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AdminJob"];
                 };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such job */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_jobs_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not authenticated */
             401: {
