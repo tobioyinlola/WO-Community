@@ -15333,6 +15333,149 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/toolkit/advisor/messages:
+    get:
+      operationId: tk_advisor_conversation
+      description: The latest messages with Onyeka, the community's AI founder advisor,
+        oldest first, and whether Onyeka can answer right now.
+      summary: Your conversation with Onyeka
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorConversation'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
+    post:
+      operationId: tk_advisor_send
+      description: Answers 201 with the reply when it is ready within a few seconds,
+        otherwise 202 with a `job` to poll; the reply then appears in the conversation.
+        Requests for legal, tax or investment advice, or for made up proof, are declined
+        without calling a model. Answers 503 `ai_off` when AI is not switched on.
+      summary: Ask Onyeka something
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TkAdvisorSendRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorReply'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorReply'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
+    delete:
+      operationId: tk_advisor_clear
+      description: Deletes every message in your conversation with Onyeka.
+      summary: Start over with Onyeka
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
+  /api/v1/toolkit/advisor/messages/{message_id}/speech:
+    get:
+      operationId: tk_advisor_speech
+      description: The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's
+        own answers in your conversation can be heard. Kept for a day so listening
+        again is quick.
+      summary: Hear one of Onyeka's answers
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
+  /api/v1/toolkit/advisor/transcribe:
+    post:
+      operationId: tk_advisor_transcribe
+      description: 'Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV,
+        up to 4 MB). Answers with the words, which you then send to Onyeka as a message.
+        Nothing is kept: neither the recording nor the words.'
+      summary: Turn a voice recording into text
+      tags:
+      - toolkit
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TkAdvisorTranscribeRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorTranscript'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an approved member
+        '404':
+          description: The advisor is switched off
   /api/v1/toolkit/config:
     get:
       operationId: toolkit_config_retrieve
@@ -24411,6 +24554,18 @@ components:
       required:
       - full_name
       - slug
+    FrameworksEnum:
+      enum:
+      - yc
+      - techstars
+      - antler
+      - founder_institute
+      type: string
+      description: |-
+        * `yc` - yc
+        * `techstars` - techstars
+        * `antler` - antler
+        * `founder_institute` - founder_institute
     FrequencyEnum:
       enum:
       - instant
@@ -33181,6 +33336,109 @@ components:
       - ventures
       - with_deck
       - with_plan
+    TkAdvisorConversation:
+      type: object
+      properties:
+        greeting:
+          type: string
+          description: What Onyeka says before the first message
+        ai_enabled:
+          type: boolean
+          description: Whether Onyeka can answer right now
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TkAdvisorMessage'
+          description: The latest messages, oldest first
+      required:
+      - ai_enabled
+      - greeting
+      - messages
+    TkAdvisorMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          allOf:
+          - $ref: '#/components/schemas/AuthorEnum'
+          description: |-
+            Who wrote it
+
+            * `user` - user
+            * `assistant` - assistant
+        text:
+          type: string
+        next_steps:
+          type: array
+          items:
+            type: string
+        frameworks:
+          type: array
+          items:
+            $ref: '#/components/schemas/FrameworksEnum'
+          description: Which programmes' thinking the answer drew on
+        declined:
+          type: string
+          nullable: true
+          description: legal, tax, investment, deception
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author
+      - created_at
+      - declined
+      - frameworks
+      - id
+      - next_steps
+      - text
+    TkAdvisorReply:
+      type: object
+      properties:
+        user_message:
+          $ref: '#/components/schemas/TkAdvisorMessage'
+        assistant_message:
+          allOf:
+          - $ref: '#/components/schemas/TkAdvisorMessage'
+          nullable: true
+        job:
+          allOf:
+          - $ref: '#/components/schemas/TkJob'
+          nullable: true
+          description: 'Present (with HTTP 202) when the reply is not ready yet: poll
+            it, then read the conversation again'
+      required:
+      - assistant_message
+      - job
+      - user_message
+    TkAdvisorSendRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - text
+    TkAdvisorTranscribeRequest:
+      type: object
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: The recording, up to 4 MB
+      required:
+      - audio
+    TkAdvisorTranscript:
+      type: object
+      properties:
+        text:
+          type: string
+          description: What was said
+      required:
+      - text
     TkAssessment:
       type: object
       properties:

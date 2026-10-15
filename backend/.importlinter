@@ -26,7 +26,7 @@ containers =
     apps.toolkit
 layers =
     admin_api
-    partner
+    partner | advisor
     sharing
     decks | prototypes | plans | scoring
     forecasts

@@ -166,3 +166,15 @@ def test_activity_on_a_hidden_post_is_not_shown(viewer, founders):
     post.hidden_at = timezone.now()
     post.save(update_fields=["hidden_at"])
     assert viewer.get(ACTIVITY).json() == []
+
+
+def test_every_member_is_listed_except_those_who_hid_themselves(viewer, founders, make_user):
+    hidden = member(make_user, "hidden@example.com", "Hana Hidden")
+    FounderProfile.objects.filter(user_id=hidden.pk).update(visibility={"basics": "private"})
+    member(make_user, "noname@example.com", "")
+    shown = member(make_user, "members@example.com", "Mo Members")
+    FounderProfile.objects.filter(user_id=shown.pk).update(visibility={"basics": "members"})
+    page = viewer.get(BROWSE_PEOPLE, {"page_size": 2, "sort": "name"}).json()
+    assert page["count"] == 4 and page["pages"] == 2 and len(page["results"]) == 2
+    everyone = names(viewer.get(BROWSE_PEOPLE, {"page_size": 10, "sort": "name"}))
+    assert everyone == ["Ada Founder", "Kofi Founder", "Mo Members", "Vera Viewer"]

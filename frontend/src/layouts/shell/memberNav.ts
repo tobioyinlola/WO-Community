@@ -5,6 +5,7 @@ import type { NavEntry } from "../../admin/shell/nav";
 export const MEMBER_NAV: NavEntry[] = [
   { id: "home", label: "Home", to: "/app", icon: Home, end: true },
   { id: "feed", label: "Feed", to: "/app/feed", icon: MessageSquare },
+  { id: "launch", label: "Launch toolkit", to: "/app/launch", icon: Rocket, needs: "toolkit.use" },
   { id: "directory", label: "Directory", to: "/app/directory", icon: Users },
   { id: "leaderboard", label: "Leaderboard", to: "/app/leaderboard", icon: Trophy },
   { id: "jobs", label: "Jobs", to: "/app/jobs", icon: Briefcase },
@@ -12,5 +13,4 @@ export const MEMBER_NAV: NavEntry[] = [
   { id: "learn", label: "Learn", to: "/app/learn", icon: GraduationCap },
   { id: "mentors", label: "Mentors", to: "/app/mentors", icon: UserCheck },
   { id: "news", label: "News", to: "/app/news", icon: Megaphone },
-  { id: "launch", label: "Launch toolkit", to: "/app/launch", icon: Rocket, needs: "toolkit.use" },
 ];

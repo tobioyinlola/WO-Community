@@ -16,6 +16,7 @@ import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { MemberTopBar } from "./shell/MemberTopBar";
 import { SupportProvider, useSupport } from "../support/SupportProvider";
 import { MEMBER_NAV } from "./shell/memberNav";
+import { Onyeka } from "./Onyeka";
 
 /**
  * The signed-in frame, built the same way as the admin console: a floating sidebar that collapses
@@ -117,6 +118,9 @@ function Frame() {
           <ErrorBoundary resetKey={location.pathname}>{isPending ? <PendingNotice /> : <Outlet />}</ErrorBoundary>
         </main>
       </div>
+      <ErrorBoundary resetKey="onyeka">
+        <Onyeka allowed={!isPending && permissionsFor(roles).has("toolkit.use")} />
+      </ErrorBoundary>
     </div>
   );
 }
