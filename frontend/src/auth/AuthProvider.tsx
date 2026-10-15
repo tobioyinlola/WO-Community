@@ -11,6 +11,7 @@ import {
 } from "react";
 import { api, refreshSession, unwrap } from "../api/client";
 import { setAccessToken } from "../api/session";
+import { clearIdleSignOutNote, markActive } from "./idle";
 import type { components } from "../api/schema";
 
 export type Me = components["schemas"]["Me"];
@@ -79,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Sign in failed");
       }
       setAccessToken(data.access_token);
+      markActive(); // a fresh sign-in starts the inactivity clock again
+      clearIdleSignOutNote();
       await settle();
       return { kind: "signed-in" };
     },
@@ -91,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         api.POST("/api/v1/auth/mfa/verify", { body: { mfa_token: mfaToken, code } }),
       );
       setAccessToken(data.access_token);
+      markActive();
+      clearIdleSignOutNote();
       await settle();
     },
     [settle],

@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { isStatus } from "./api/errors";
 import { AuthProvider } from "./auth/AuthProvider";
+import { IdleTimeout } from "./auth/IdleTimeout";
 import { GuestOnly, RequireAuth } from "./auth/guards";
 import { AppLayout } from "./layouts/AppLayout";
 import { SearchPage } from "./shell/SearchPage";
@@ -127,6 +128,7 @@ export function App() {
       <ToastProvider>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
+            <IdleTimeout />
             <Suspense fallback={<Fallback />}>
               <Routes>
                 <Route element={<PublicLayout />}>

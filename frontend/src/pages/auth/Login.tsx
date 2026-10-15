@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../../api/errors";
 import { useAuth } from "../../auth/AuthProvider";
+import { wasSignedOutIdle } from "../../auth/idle";
 import { Alert, Button, Input } from "../../components";
 import { errorsFrom, FormError, useSubmit } from "../../ui/forms";
 import { useDocumentTitle } from "../../ui/blocks";
@@ -20,6 +21,7 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [idleNote] = useState(wasSignedOutIdle);
   const [code, setCode] = useState("");
 
   const signIn = useSubmit(async () => {
@@ -84,6 +86,11 @@ export function Login() {
           Welcome back. Pick up where you left off.
         </p>
       </div>
+      {idleNote && !signIn.error ? (
+        <Alert tone="info" title="You were signed out">
+          For your security, we sign you out after 5 minutes without activity. Sign in again to continue.
+        </Alert>
+      ) : null}
       {unverified ? (
         <Alert tone="warning" title="Confirm your email first">
           We sent you a link when you registered. Open it, then sign in.
