@@ -589,6 +589,12 @@ AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per membe
 AI_TRANSCRIBE_MODEL = env.str("AI_TRANSCRIBE_MODEL", default="gpt-4o-mini-transcribe")
 AI_TTS_MODEL = env.str("AI_TTS_MODEL", default="gpt-4o-mini-tts")
 AI_TTS_VOICE = env.str("AI_TTS_VOICE", default="alloy")
+# A voice made for Onyeka on ElevenLabs (cloned with its speaker's consent). When both are set,
+# answers are spoken in it instead of the OpenAI voice above. Flash is ElevenLabs' fastest model.
+ELEVENLABS_API_KEY = env.str("ELEVENLABS_API_KEY", default="")
+ELEVENLABS_VOICE_ID = env.str("ELEVENLABS_VOICE_ID", default="")
+ELEVENLABS_MODEL = env.str("ELEVENLABS_MODEL", default="eleven_flash_v2_5")
+ELEVENLABS_BASE_URL = env.str("ELEVENLABS_BASE_URL", default="https://api.elevenlabs.io/v1")
 AI_TTS_INSTRUCTIONS = env.str(
     "AI_TTS_INSTRUCTIONS",
     default="Speak as a warm, confident founder mentoring another founder: clear, encouraging "

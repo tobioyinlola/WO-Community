@@ -34,11 +34,16 @@ class TkAdvisorReplySerializer(serializers.Serializer):
         help_text="Present (with HTTP 202) when the reply is not ready yet: poll it, then read "
         "the conversation again",
     )
+    speech_url = serializers.CharField(
+        allow_null=True,
+        help_text="For a spoken turn whose reply is ready: where to stream it read aloud",
+    )
 
 
-class TkAdvisorTranscribeSerializer(serializers.Serializer):
+class TkAdvisorVoiceTurnSerializer(serializers.Serializer):
     audio = serializers.FileField(help_text="The recording, up to 4 MB")
 
 
-class TkAdvisorTranscriptSerializer(serializers.Serializer):
-    text = serializers.CharField(help_text="What was said")
+class TkAdvisorSpeechLinkSerializer(serializers.Serializer):
+    url = serializers.CharField(help_text="Where to stream the answer from")
+    expires_in = serializers.IntegerField(help_text="Seconds the address works for")

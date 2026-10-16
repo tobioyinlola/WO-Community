@@ -15415,12 +15415,12 @@ paths:
         '404':
           description: The advisor is switched off
   /api/v1/toolkit/advisor/messages/{message_id}/speech:
-    get:
-      operationId: tk_advisor_speech
-      description: The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's
-        own answers in your conversation can be heard. Kept for a day so listening
-        again is quick.
-      summary: Hear one of Onyeka's answers
+    post:
+      operationId: tk_advisor_speech_link
+      description: A short lived address (a few minutes) that streams the answer read
+        aloud in Onyeka's voice, for an audio player to start playing at once. Only
+        Onyeka's own answers in your conversation.
+      summary: Where to hear one of Onyeka's answers
       parameters:
       - in: path
         name: message_id
@@ -15435,10 +15435,9 @@ paths:
       responses:
         '200':
           content:
-            audio/mpeg:
+            application/json:
               schema:
-                type: string
-                format: binary
+                $ref: '#/components/schemas/TkAdvisorSpeechLink'
           description: ''
         '401':
           description: Not authenticated
@@ -15446,29 +15445,64 @@ paths:
           description: Not an approved member
         '404':
           description: The advisor is switched off
-  /api/v1/toolkit/advisor/transcribe:
+  /api/v1/toolkit/advisor/speech/{token}:
+    get:
+      operationId: tk_advisor_speech
+      description: MP3 audio, sent as it is made so playback can start at once. The
+        address comes from a voice turn or from asking for a speech link. Kept for
+        a day so listening again is instant.
+      summary: Stream one of Onyeka's answers
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '404':
+          description: The advisor is switched off
+  /api/v1/toolkit/advisor/voice:
     post:
-      operationId: tk_advisor_transcribe
-      description: 'Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV,
-        up to 4 MB). Answers with the words, which you then send to Onyeka as a message.
-        Nothing is kept: neither the recording nor the words.'
-      summary: Turn a voice recording into text
+      operationId: tk_advisor_voice_turn
+      description: Send a recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up
+        to 4 MB). It is turned into words, sent to Onyeka as your message, and answered
+        like a typed message (201 with the reply, or 202 with a job), with a short
+        spoken answer and `speech_url` to stream it from. The recording itself is
+        not kept.
+      summary: Say something to Onyeka
       tags:
       - toolkit
       requestBody:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TkAdvisorTranscribeRequest'
+              $ref: '#/components/schemas/TkAdvisorVoiceTurnRequest'
         required: true
       security:
       - bearerAuth: []
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TkAdvisorTranscript'
+                $ref: '#/components/schemas/TkAdvisorReply'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorReply'
           description: ''
         '401':
           description: Not authenticated
@@ -33409,9 +33443,15 @@ components:
           nullable: true
           description: 'Present (with HTTP 202) when the reply is not ready yet: poll
             it, then read the conversation again'
+        speech_url:
+          type: string
+          nullable: true
+          description: 'For a spoken turn whose reply is ready: where to stream it
+            read aloud'
       required:
       - assistant_message
       - job
+      - speech_url
       - user_message
     TkAdvisorSendRequest:
       type: object
@@ -33422,7 +33462,19 @@ components:
           maxLength: 2000
       required:
       - text
-    TkAdvisorTranscribeRequest:
+    TkAdvisorSpeechLink:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Where to stream the answer from
+        expires_in:
+          type: integer
+          description: Seconds the address works for
+      required:
+      - expires_in
+      - url
+    TkAdvisorVoiceTurnRequest:
       type: object
       properties:
         audio:
@@ -33431,14 +33483,6 @@ components:
           description: The recording, up to 4 MB
       required:
       - audio
-    TkAdvisorTranscript:
-      type: object
-      properties:
-        text:
-          type: string
-          description: What was said
-      required:
-      - text
     TkAssessment:
       type: object
       properties:

@@ -479,6 +479,14 @@ def _toolkit(c: _Checker) -> None:
 
     if not any(enabled(tool) for tool in TOOLKIT_TOOLS):
         return
+    eleven_key = bool(c.get("ELEVENLABS_API_KEY").strip())
+    eleven_voice = bool(c.get("ELEVENLABS_VOICE_ID").strip())
+    if eleven_key != eleven_voice:
+        c.warn(
+            "ELEVENLABS_VOICE_ID" if eleven_key else "ELEVENLABS_API_KEY",
+            "Onyeka's own voice needs both ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID.",
+            "Set both, or neither to use the OpenAI voice.",
+        )
     off_hint = (
         "or switch every tool off with TOOLKIT_FEATURE_<NAME>=false "
         "(SCORE, PLAN, FORECAST, DECKS, PROTOTYPES, PARTNER, ADVISOR)"

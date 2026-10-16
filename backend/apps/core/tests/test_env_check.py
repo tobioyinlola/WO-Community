@@ -354,3 +354,10 @@ def test_the_settings_take_the_default_from_address_when_a_stream_has_none(monke
     finally:
         monkeypatch.delenv("DEFAULT_FROM_EMAIL")
         importlib.reload(base)
+
+
+def test_onyekas_own_voice_needs_both_elevenlabs_settings():
+    half = report(ELEVENLABS_API_KEY="xi-key")
+    assert any(w.name == "ELEVENLABS_VOICE_ID" for w in half.warnings)
+    both = report(ELEVENLABS_API_KEY="xi-key", ELEVENLABS_VOICE_ID="v1")
+    assert not any(w.name.startswith("ELEVENLABS") for w in both.warnings)

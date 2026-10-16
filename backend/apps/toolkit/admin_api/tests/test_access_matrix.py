@@ -18,7 +18,8 @@ from apps.toolkit.testing import BASE
 pytestmark = pytest.mark.django_db
 
 METHODS = ("get", "post", "put", "patch", "delete")
-PUBLIC = {"tk-public-share"}
+# Public by design: a share link, and an answer read aloud, whose signed address is the permission.
+PUBLIC = {"tk-public-share", "tk-advisor-speech"}
 CATALOGUES = {
     "tk-forecast-templates",
     "tk-deck-templates",

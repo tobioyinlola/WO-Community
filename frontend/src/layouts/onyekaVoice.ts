@@ -1,10 +1,13 @@
-import { API_BASE, authFetch } from "../api/client";
+import { API_BASE, api, authFetch, unwrap } from "../api/client";
 import { ApiError, type Problem } from "../api/errors";
+import type { components } from "../api/schema";
+
+export type VoiceReply = components["schemas"]["TkAdvisorReply"];
 
 /** Recording formats in order of preference; the first the browser can make is used. */
 const FORMATS = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
 const MAX_MS = 90_000; // a long question, well inside the 4 MB the server takes
-const QUIET_AFTER_SPEECH_MS = 1_500; // this much quiet after speaking ends the turn
+const QUIET_AFTER_SPEECH_MS = 900; // this much quiet after speaking ends the turn
 const NO_SPEECH_MS = 8_000; // give up if nothing is said at all
 const TICK_MS = 100;
 
@@ -114,14 +117,23 @@ async function problemOf(response: Response): Promise<ApiError> {
   return new ApiError(response.status, problem);
 }
 
-/** The words in a recording, from the server. */
-export async function transcribe(blob: Blob): Promise<string> {
+/**
+ * One spoken turn in a single request: the server turns the recording into words, asks Onyeka and
+ * answers with the reply and, when it is ready, where to stream it read aloud.
+ */
+export async function voiceTurn(blob: Blob): Promise<VoiceReply> {
   const form = new FormData();
   const extension = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : "webm";
   form.append("audio", blob, `speech.${extension}`);
-  const response = await authFetch(new Request(new URL(`${API_BASE}/api/v1/toolkit/advisor/transcribe`, window.location.origin), { method: "POST", body: form }));
+  const response = await authFetch(new Request(new URL(`${API_BASE}/api/v1/toolkit/advisor/voice`, window.location.origin), { method: "POST", body: form }));
   if (!response.ok) throw await problemOf(response);
-  return ((await response.json()) as { text: string }).text;
+  return (await response.json()) as VoiceReply;
+}
+
+/** Where to stream one of Onyeka's answers from. */
+export async function speechUrl(messageId: string): Promise<string> {
+  const link = await unwrap(api.POST("/api/v1/toolkit/advisor/messages/{message_id}/speech", { params: { path: { message_id: messageId } } }));
+  return link.url;
 }
 
 /** A short silent sound. Playing it while the member taps unlocks audio for later replies. */
@@ -130,7 +142,7 @@ const SILENCE = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+A
 /** One audio element for all of Onyeka's speech, so a browser that needs a tap first only needs one. */
 export class Speaker {
   private el: HTMLAudioElement | null = null;
-  private url: string | null = null;
+  private unlocked = false;
 
   private element(): HTMLAudioElement {
     this.el ??= new Audio();
@@ -139,30 +151,32 @@ export class Speaker {
 
   /** Call from a tap or click. */
   unlock(): void {
+    if (this.unlocked) return;
+    this.unlocked = true;
     const el = this.element();
-    if (this.url) return;
     el.src = SILENCE;
     void el.play().catch(() => undefined);
   }
 
-  /** Reads one of Onyeka's answers aloud; resolves when it ends or is stopped. */
-  async play(messageId: string, signal?: AbortSignal): Promise<void> {
-    const response = await authFetch(new Request(new URL(`${API_BASE}/api/v1/toolkit/advisor/messages/${messageId}/speech`, window.location.origin)));
-    if (!response.ok) throw await problemOf(response);
-    const blob = await response.blob();
+  /**
+   * Plays an answer from its streaming address; sound starts as soon as the first of it arrives.
+   * Resolves when it ends or is stopped.
+   */
+  async play(url: string, signal?: AbortSignal): Promise<void> {
     if (signal?.aborted) return;
     this.stop();
-    this.url = URL.createObjectURL(blob);
     const el = this.element();
-    el.src = this.url;
+    el.src = new URL(API_BASE + url, window.location.origin).toString();
     await new Promise<void>((resolve, reject) => {
       const finish = () => {
         el.onended = null;
         el.onpause = null;
+        el.onerror = null;
         resolve();
       };
       el.onended = finish;
       el.onpause = finish;
+      el.onerror = () => reject(new Error("Onyeka's voice could not be played. Please try again."));
       signal?.addEventListener("abort", () => el.pause(), { once: true });
       el.play().catch(reject);
     });
@@ -170,9 +184,5 @@ export class Speaker {
 
   stop(): void {
     if (this.el && !this.el.paused) this.el.pause();
-    if (this.url) {
-      URL.revokeObjectURL(this.url);
-      this.url = null;
-    }
   }
 }
