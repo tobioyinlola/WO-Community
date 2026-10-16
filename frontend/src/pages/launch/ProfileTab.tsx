@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api, unwrap } from "../../api/client";
 import { ApiError } from "../../api/errors";
@@ -23,6 +23,28 @@ const MODELS = ["subscription", "transaction_fee", "marketplace_commission", "pr
 const CURRENCIES = ["NGN", "KES", "GHS", "ZAR", "EGP", "USD"];
 const PERIODS = ["one_off", "day", "week", "month", "quarter", "year"];
 const SUGGESTIBLE = new Set(["one_liner", "startup_idea", "business_concept", "target_customer", "problem", "problem_today", "problem_evidence", "solution", "differentiator", "sales_channel"]);
+
+/** The profile's sections, in page order, and the answers in each that the score cannot do without. */
+const SECTIONS = [
+  { id: "venture", title: "The venture" },
+  { id: "idea", title: "The idea" },
+  { id: "problem", title: "Problem and solution" },
+  { id: "model", title: "Business model" },
+  { id: "traction", title: "Traction and funding" },
+  { id: "competitors", title: "Competitors" },
+  { id: "team", title: "Team" },
+];
+const REQUIRED: Record<string, string[]> = { venture: ["name"], idea: ["startup_idea", "target_regions"], problem: ["problem", "solution"], model: ["revenue_models"] };
+const empty = (v: unknown) => v === undefined || v === null || (typeof v === "string" && !v.trim()) || (Array.isArray(v) && v.length === 0);
+
+function SectionHead({ id, title, missing = [] }: { id: string; title: string; missing?: string[] }) {
+  return (
+    <div className="tk-sechead" id={`tk-head-${id}`}>
+      <h2 className="h3" style={{ margin: 0 }}>{title}</h2>
+      {missing.length ? <span className="tk-sechead__need">{missing.length} needed for your score</span> : null}
+    </div>
+  );
+}
 
 const opts = (list: string[]) => list.map((v) => ({ value: v, label: humanise(v) }));
 const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -161,6 +183,8 @@ export default function ProfileTab() {
     set(key, Object.keys(next).length ? next : null);
   };
   const regions = arr(draft.target_regions);
+  const missingIn = (section: string) => (REQUIRED[section] ?? []).filter((k) => empty(draft[k]));
+  const stillNeeded = Object.values(REQUIRED).flat().filter((k) => empty(draft[k]));
 
   return (
     <Loaded query={query} skeleton={<SkeletonRows />}>
@@ -172,11 +196,21 @@ export default function ProfileTab() {
                 Reload to see the latest, then make your change again.
               </Alert>
             ) : <FormError error={save.error} />}
-            <div className="app-cluster">
-              {ai ? <Button variant="secondary" size="sm" icon={<Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setFilling(true)}>Fill from a few sentences</Button> : null}
-            </div>
-            <Card>
-              <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>The venture</h2>
+            {ai && profile.completeness < 50 ? (
+              <div className="tk-quickstart">
+                <div>
+                  <h2 className="h4" style={{ margin: 0 }}>Short on time? Start from a few sentences</h2>
+                  <p className="body-sm app-muted" style={{ margin: "var(--space-1) 0 0" }}>Describe the venture the way you would to a friend. We propose answers for each section, and you keep only the ones you like.</p>
+                </div>
+                <Button icon={<Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setFilling(true)}>Fill from a few sentences</Button>
+              </div>
+            ) : ai ? (
+              <div className="app-cluster">
+                <Button variant="secondary" size="sm" icon={<Sparkles size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setFilling(true)}>Fill from a few sentences</Button>
+              </div>
+            ) : null}
+            <Card id="tk-sec-venture">
+              <SectionHead id="venture" title="The venture" missing={missingIn("venture")} />
               <div className="app-stack">
                 <div className="app-formgrid">
                   <Input label="Name" value={str(draft.name)} onChange={(e) => set("name", e.target.value)} error={errors.name} />
@@ -190,17 +224,17 @@ export default function ProfileTab() {
                 {ai && SUGGESTIBLE.has("one_liner") ? <div><button type="button" className="app-linklike" onClick={() => setSuggest({ field: "one_liner", label: "One line description" })}><Sparkles size={14} strokeWidth={1.5} aria-hidden="true" /> Suggest wording</button></div> : null}
               </div>
             </Card>
-            <Card>
-              <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>The idea</h2>
+            <Card id="tk-sec-idea">
+              <SectionHead id="idea" title="The idea" missing={missingIn("idea")} />
               <div className="app-stack">
-                {text("startup_idea", "The idea in a few sentences", { rows: 4, hint: "At least 20 characters." })}
+                {text("startup_idea", "The idea in a few sentences", { rows: 4, hint: "Needed for your score. At least 20 characters." })}
                 {text("business_concept", "How the business works (optional)")}
                 {text("target_customer", "Who is it for?")}
                 <div className="app-formgrid">
                   <Select label="Type of customer" options={[{ value: "", label: "Choose one" }, ...opts(CUSTOMERS)]} value={str(draft.customer_type)} onChange={(e) => set("customer_type", e.target.value)} error={errors.customer_type} />
                   <Input label="How many could you reach?" type="number" min={0} value={typeof draft.estimated_customers === "number" ? String(draft.estimated_customers) : ""} onChange={(e) => set("estimated_customers", e.target.value === "" ? null : Number(e.target.value))} error={errors.estimated_customers} />
                 </div>
-                <ChipSelect legend="Where will you sell?" options={opts(REGIONS)} value={regions} onChange={(v) => set("target_regions", v)} error={errors.target_regions} />
+                <ChipSelect legend="Where will you sell? (needed for your score)" options={opts(REGIONS)} value={regions} onChange={(v) => set("target_regions", v)} error={errors.target_regions} />
                 {regions.includes("africa") ? (
                   <ChipSelect
                     legend="Which African countries?"
@@ -212,22 +246,22 @@ export default function ProfileTab() {
                 ) : null}
               </div>
             </Card>
-            <Card>
-              <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Problem and solution</h2>
+            <Card id="tk-sec-problem">
+              <SectionHead id="problem" title="Problem and solution" missing={missingIn("problem")} />
               <div className="app-stack">
-                {text("problem", "The problem", { rows: 4, hint: "At least 20 characters." })}
+                {text("problem", "The problem", { rows: 4, hint: "Needed for your score. At least 20 characters." })}
                 {text("problem_today", "How people cope today")}
                 {text("problem_evidence", "What shows the problem is real")}
-                {text("solution", "Your solution", { rows: 4, hint: "At least 20 characters." })}
+                {text("solution", "Your solution", { rows: 4, hint: "Needed for your score. At least 20 characters." })}
                 {text("differentiator", "What makes you different")}
                 <StringList label="How it works" max={10} value={arr(draft.how_it_works)} onChange={(v) => set("how_it_works", v)} placeholder="One step" error={errors.how_it_works} />
                 <StringList label="Key features" max={6} value={arr(draft.key_features)} onChange={(v) => set("key_features", v)} placeholder="One feature" error={errors.key_features} />
               </div>
             </Card>
-            <Card>
-              <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Business model</h2>
+            <Card id="tk-sec-model">
+              <SectionHead id="model" title="Business model" missing={missingIn("model")} />
               <div className="app-stack">
-                <ChipSelect legend="How will you earn?" options={opts(MODELS)} value={arr(draft.revenue_models)} onChange={(v) => set("revenue_models", v)} error={errors.revenue_models} />
+                <ChipSelect legend="How will you earn? (needed for your score)" options={opts(MODELS)} value={arr(draft.revenue_models)} onChange={(v) => set("revenue_models", v)} error={errors.revenue_models} />
                 <div className="app-stack">
                   <span className="wo-label">Prices</span>
                   {prices.map((p, i) => (
@@ -245,8 +279,8 @@ export default function ProfileTab() {
                 {text("sales_channel", "How customers will find and buy", { rows: 2 })}
               </div>
             </Card>
-            <Card>
-              <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Traction and funding</h2>
+            <Card id="tk-sec-traction">
+              <SectionHead id="traction" title="Traction and funding" missing={missingIn("traction")} />
               <div className="app-stack">
                 <div className="app-formgrid">
                   <Input label="Users or customers" type="number" min={0} value={typeof traction.users === "number" ? String(traction.users) : ""} onChange={(e) => setObj("traction", traction, "users", e.target.value === "" ? "" : Number(e.target.value))} error={errors["traction.users"]} />
@@ -264,19 +298,46 @@ export default function ProfileTab() {
             </Card>
             <CompetitorsAndTeam />
           </div>
-          <aside className="app-stack" style={{ position: "sticky", top: "calc(var(--header-height) + var(--space-4))" }}>
+          <aside className="app-stack tk-profile-aside">
             <Card>
               <h2 className="h4" style={{ margin: "0 0 var(--space-3)" }}>Profile strength</h2>
               <div className="app-meter" role="progressbar" aria-valuenow={profile.completeness} aria-valuemin={0} aria-valuemax={100} aria-label="Profile strength"><span style={{ width: `${profile.completeness}%` }} /></div>
               <p className="body-sm app-muted" style={{ margin: "var(--space-2) 0 var(--space-4)" }}>
-                {profile.missing_required.length > 0 ? `Still needed for a score: ${profile.missing_required.map((f) => humanise(f).toLowerCase()).join(", ")}.` : "You have what is needed for a score."}
+                {stillNeeded.length > 0
+                  ? `${stillNeeded.length} answer${stillNeeded.length > 1 ? "s" : ""} left before you can score the idea.`
+                  : changed.length > 0
+                    ? "That is everything the score needs. Save to unlock the next step."
+                    : "You have everything the score needs. Anything more makes each step read better."}
               </p>
-              <Button size="lg" type="submit" loading={save.busy} disabled={changed.length === 0} style={{ width: "100%" }}>
+              <nav aria-label="Profile sections">
+                <ol className="tk-sections">
+                  {SECTIONS.map((sec) => {
+                    const need = missingIn(sec.id).length;
+                    const required = (REQUIRED[sec.id] ?? []).length > 0;
+                    return (
+                      <li key={sec.id}>
+                        <a href={`#tk-sec-${sec.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(`tk-sec-${sec.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+                          <span className={`tk-sections__dot${required ? (need ? " tk-sections__dot--need" : " tk-sections__dot--ok") : ""}`} aria-hidden="true">{required && !need ? <Check size={12} strokeWidth={3} /> : null}</span>
+                          <span className="tk-sections__name">{sec.title}</span>
+                          <span className="tk-sections__note">{required ? (need ? `${need} needed` : "Done") : "Optional"}</span>
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+              <Button size="lg" type="submit" loading={save.busy} disabled={changed.length === 0} style={{ width: "100%", marginTop: "var(--space-4)" }}>
                 {changed.length === 0 ? "Saved" : `Save ${changed.length} change${changed.length > 1 ? "s" : ""}`}
               </Button>
               <p className="caption app-faint" style={{ margin: "var(--space-3) 0 0" }}>Saving marks anything made from the changed answers as out of date, so you know to refresh it.</p>
             </Card>
           </aside>
+          {changed.length > 0 ? (
+            <div className="tk-savebar" role="region" aria-label="Unsaved changes">
+              <span>{changed.length} unsaved change{changed.length > 1 ? "s" : ""}</span>
+              <Button type="submit" size="sm" loading={save.busy}>Save now</Button>
+            </div>
+          ) : null}
           {suggest ? <SuggestDialog ventureId={ventureId} field={suggest.field} label={suggest.label} onClose={() => setSuggest(null)} onPick={(t) => set(suggest.field, t)} /> : null}
           {filling ? <FillFromText ventureId={ventureId} onClose={() => setFilling(false)} onApply={(f) => setDraft((d) => ({ ...d, ...f }))} /> : null}
         </form>
@@ -309,8 +370,8 @@ function CompetitorsAndTeam() {
   const delT = useMutation({ mutationFn: (id: string) => unwrap(api.DELETE("/api/v1/toolkit/ventures/{venture_id}/team/{member_id}", { params: { path: { venture_id: ventureId, member_id: id } } })), onSuccess: refresh });
   return (
     <>
-      <Card>
-        <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Competitors</h2>
+      <Card id="tk-sec-competitors">
+        <SectionHead id="competitors" title="Competitors" />
         <div className="app-stack">
           <ul className="app-stack" style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {competitors.data?.map((x) => (
@@ -329,8 +390,8 @@ function CompetitorsAndTeam() {
           <div><Button variant="secondary" size="sm" loading={addC.busy} disabled={!c.name.trim()} onClick={() => void addC.run()}>Add competitor</Button></div>
         </div>
       </Card>
-      <Card>
-        <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Team</h2>
+      <Card id="tk-sec-team">
+        <SectionHead id="team" title="Team" />
         <div className="app-stack">
           <ul className="app-stack" style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {team.data?.map((x) => (
