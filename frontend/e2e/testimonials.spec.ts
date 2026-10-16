@@ -44,13 +44,20 @@ test("an admin publishes a testimonial and it glides past above the footer", asy
   expect(problems).toEqual([]);
 });
 
-test("the feature cards show their picture or a clean fallback, and respond to the pointer", async ({ page }) => {
+test("every feature card shows its photo, described for screen readers", async ({ page }) => {
   await page.goto("/");
-  const card = page.locator(".site-feature").first();
-  await card.scrollIntoViewIfNeeded();
-  await expect(card.locator(".wo-media")).toBeVisible();
-  // Without a photo file, the card falls back to the gradient and icon rather than a broken image.
-  await expect(card.locator(".wo-media img[src]")).toHaveCount(0, { timeout: 5_000 }).catch(() => undefined);
-  await card.hover();
+  const cards = page.locator(".site-feature");
+  await expect(cards).toHaveCount(6);
+  for (const card of await cards.all()) {
+    const photo = card.locator(".wo-media img");
+    await expect(photo).toHaveAttribute("src", /\/brand\/features\/.+\.webp$/);
+    await expect(photo).not.toHaveAttribute("alt", "");
+  }
+  const first = cards.first();
+  await first.scrollIntoViewIfNeeded();
+  await expect(first.locator(".wo-media img")).toBeVisible();
+  // A real picture, loaded and decoded, not the fallback.
+  expect(await first.locator(".wo-media img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(960);
+  await first.hover();
   if (process.env.E2E_SHOTS) await page.locator(".site-carousel").first().screenshot({ path: `${process.env.E2E_SHOTS}/feature-cards.png` });
 });

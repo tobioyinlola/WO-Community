@@ -17,3 +17,18 @@ Landscape, 640 x 400 px or larger at 16:10, WebP, under 80 KB each.
 
 If a photo shows something different, change its `photoAlt` text in
 `frontend/src/pages/public/Landing.tsx` to describe it.
+
+## The photos in use
+
+All from [Pexels](https://www.pexels.com/license/): free for commercial use, no credit required.
+
+| File | Pexels photo |
+|------|--------------|
+| `directory.webp` | https://www.pexels.com/photo/3184338/ |
+| `mentors.webp` | https://www.pexels.com/photo/1181605/ |
+| `launch-toolkit.webp` | https://www.pexels.com/photo/1181244/ |
+| `courses.webp` | https://www.pexels.com/photo/3810792/ |
+| `jobs.webp` | https://www.pexels.com/photo/3153201/ |
+| `events.webp` | https://www.pexels.com/photo/3727511/ |
+
+Each is cropped to 960 x 600 and saved as WebP at quality 72 (25 to 46 KB).
