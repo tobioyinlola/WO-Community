@@ -130,8 +130,13 @@ def test_voice_counts_towards_the_daily_allowance(client, settings, quick):
 def test_a_spoken_answer_is_read_without_its_steps_and_a_written_one_with_them(member):
     from apps.toolkit.advisor.views import spoken_text
 
-    written = answer(member, "Do this.", next_steps=["Call", "Price"])
-    assert spoken_text(written) == "Do this.\n\nNext steps. 1. Call 2. Price"
+    written = answer(member, "Do this.", next_steps=["Call ten traders.", "Price it"])
+    assert spoken_text(written) == (
+        "Do this.\n\nIf I were you, here's where I'd start. First, call ten traders. "
+        "And then, price it."
+    )
+    one = answer(member, "Do this.", next_steps=["MVP first"])
+    assert spoken_text(one) == "Do this.\n\nSo, if I were you, I'd MVP first."
     spoken = answer(member, "Do this.", next_steps=["Call"], voice=True)
     assert spoken_text(spoken) == "Do this."
 

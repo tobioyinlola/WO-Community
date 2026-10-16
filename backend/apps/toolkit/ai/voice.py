@@ -13,6 +13,7 @@ import io
 import struct
 import time
 import wave
+import zlib
 from collections.abc import Iterator
 from dataclasses import dataclass
 from uuid import UUID
@@ -24,12 +25,15 @@ from django.conf import settings
 from apps.core import metrics
 from apps.toolkit.ai import runner
 from apps.toolkit.ai.models import AIRun
+from apps.toolkit.ai.spoken import for_speech
 from apps.toolkit.jobs.services import JobFailed, TransientError
 
 logger = structlog.get_logger(__name__)
 
 MAX_AUDIO_BYTES = 4 * 1024 * 1024  # about four minutes of compressed speech
 MAX_SPEECH_CHARS = 4000
+# Raise when the way text is prepared for speech changes, so old recordings are not replayed.
+SPEECH_REVISION = 2
 AUDIO_TYPES = {
     "audio/webm": "webm",
     "audio/ogg": "ogg",
@@ -175,10 +179,13 @@ FALLBACK_VOICE = "ash"
 
 
 def speech_voice() -> str:
-    """Which voice answers are spoken in, so a change of voice is never served from the cache."""
+    """Which voice answers are spoken in, so a change of voice, or of how it is directed, is never
+    served from the cache."""
     if _eleven():
-        return f"elevenlabs:{settings.ELEVENLABS_VOICE_ID}:{settings.ELEVENLABS_MODEL}"
-    return f"openai:{settings.AI_TTS_VOICE}:{settings.AI_TTS_MODEL}"
+        voice = f"{settings.ELEVENLABS_VOICE_ID}:{settings.ELEVENLABS_MODEL}"
+        return f"elevenlabs:{voice}:{SPEECH_REVISION}"
+    direction = zlib.crc32(settings.AI_TTS_INSTRUCTIONS.encode())
+    return f"openai:{settings.AI_TTS_VOICE}:{settings.AI_TTS_MODEL}:{direction:x}:{SPEECH_REVISION}"
 
 
 def _eleven() -> bool:
@@ -234,7 +241,7 @@ def open_speech(*, owner_id: UUID, text: str) -> SpeechStream:
     """Spoken audio for ``text`` in Onyeka's voice, streamed as it is made. Raises like
     ``transcribe`` before any audio is returned."""
     runner.require_ai()
-    words = text.strip()[:MAX_SPEECH_CHARS]
+    words = for_speech(text)[:MAX_SPEECH_CHARS]
     if not words:
         raise JobFailed("nothing_to_say", "There is nothing to read out.")
     runner.check_ceiling(owner_id)

@@ -206,13 +206,31 @@ class VoiceTurnView(APIView):
 
 
 def spoken_text(m: AdvisorMessage) -> str:
-    """What Onyeka reads out: the answer, then any next steps. A spoken answer already carries its
-    one next step in its words, so only written answers have them read after."""
-    steps = [] if m.meta.get("voice") else (m.meta.get("next_steps") or [])
+    """What Onyeka reads out: the answer, then any next steps, said the way a person would say
+    them. A spoken answer already carries its one next step in its words, so only written answers
+    have them read after."""
+    if m.meta.get("voice"):
+        return m.text
+    steps = [s.strip().rstrip(".") for s in m.meta.get("next_steps") or []]
+    steps = [s for s in steps if s]
     if not steps:
         return m.text
-    listed = " ".join(f"{n}. {step}" for n, step in enumerate(steps, start=1))
-    return f"{m.text}\n\nNext steps. {listed}"
+    if len(steps) == 1:
+        return f"{m.text}\n\nSo, if I were you, I'd {_lower(steps[0])}."
+    leads = ["First", "Then", "And finally"] if len(steps) == 3 else ["First", "And then"]
+    said = " ".join(f"{lead}, {_lower(step)}." for lead, step in zip(leads, steps, strict=False))
+    return f"{m.text}\n\nIf I were you, here's where I'd start. {said}"
+
+
+def _lower(text: str) -> str:
+    """A step written as its own line, ready to follow a comma: "Call ten traders" to "call ten
+    traders". Names and shorthand ("Y Combinator", "MVP") keep their capitals."""
+    first = text.split(" ", 1)[0]
+    return (
+        text
+        if first.isupper() or (len(first) > 1 and first[1:] != first[1:].lower())
+        else text[:1].lower() + text[1:]
+    )
 
 
 class SpeechLinkView(APIView):

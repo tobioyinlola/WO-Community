@@ -598,11 +598,19 @@ ELEVENLABS_MODEL = env.str("ELEVENLABS_MODEL", default="eleven_flash_v2_5")
 ELEVENLABS_BASE_URL = env.str("ELEVENLABS_BASE_URL", default="https://api.elevenlabs.io/v1")
 AI_TTS_INSTRUCTIONS = env.str(
     "AI_TTS_INSTRUCTIONS",
-    default="Voice: a warm, grounded Nigerian man in his late thirties, a founder mentoring "
-    "another founder. Accent: educated Nigerian English. Tone: friendly, confident and "
-    "encouraging, like a trusted older brother. Delivery: natural and conversational, with "
-    "relaxed pacing, short pauses between ideas and a lift at the end of a question. Never sound "
-    "like an announcer or like someone reading a script.",
+    default=(
+        "Identity: Onyeka, a Nigerian founder in his late thirties who has built and sold "
+        "companies, talking one to one with a younger founder he believes in.\n"
+        "Accent: warm, educated Nigerian English; relaxed and natural, never exaggerated.\n"
+        "Tone: friendly, calm and sure of himself, like a trusted older brother giving honest "
+        "advice over coffee. Encouraging without hype.\n"
+        "Pacing: an easy conversational pace, a touch slower on the key point. Short natural "
+        "pauses between ideas and after a question. Do not rush the ends of sentences.\n"
+        "Intonation: varied and alive, as in real speech; a gentle lift on questions; a little "
+        "warmth and a hint of a smile when encouraging; firmer and slower when warning.\n"
+        "Avoid: sounding like an announcer, a narrator or someone reading a script; flat or "
+        "sing-song delivery; over-enunciating."
+    ),
 )
 # Estimated cost per million tokens in minor units, by model (input, output). For usage reports
 # only. OpenAI's list prices when this was written; AI_PRICES (JSON, for example
