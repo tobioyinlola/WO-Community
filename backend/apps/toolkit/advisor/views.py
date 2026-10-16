@@ -278,6 +278,10 @@ class SpeechStreamView(APIView):
             )
         response["Cache-Control"] = "private, max-age=300"
         response["X-Accel-Buffering"] = "no"  # pass each piece on at once
+        # The website plays this from its own domain, which is another site than the API's. The
+        # API's default (same-site) would make the browser refuse the audio. The signed address,
+        # one answer for a few minutes, is what protects it.
+        response["Cross-Origin-Resource-Policy"] = "cross-origin"
         return response
 
 
