@@ -183,6 +183,27 @@ def test_speech_asks_for_mp3_in_the_configured_voice(member, openai, settings):
     assert b'"voice":"sage"' in seen["body"].replace(b" ", b"") and b'"mp3"' in seen["body"]
 
 
+def test_a_voice_the_model_refuses_falls_back_to_one_it_has(member, openai, settings, monkeypatch):
+    settings.AI_TTS_VOICE = "cedar"
+    voices: list[bytes] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        voices.append(request.content)
+        if b'"cedar"' in request.content.replace(b" ", b""):
+            return httpx.Response(400, json={"error": {"message": "Invalid voice"}})
+        return httpx.Response(200, content=b"ID3ash", headers={"content-type": "audio/mpeg"})
+
+    monkeypatch.setattr(
+        voice,
+        "_client",
+        lambda: httpx.Client(
+            base_url="https://llm.test/v1", transport=httpx.MockTransport(handler)
+        ),
+    )
+    assert voice.speak(owner_id=member.pk, text="Hello").audio == b"ID3ash"
+    assert len(voices) == 2 and b'"voice":"ash"' in voices[1].replace(b" ", b"")
+
+
 @pytest.mark.parametrize(("status", "error"), [(429, "TransientError"), (401, "JobFailed")])
 def test_service_failures_become_clear_errors(member, openai, status, error):
     from apps.toolkit.jobs import services as jobs

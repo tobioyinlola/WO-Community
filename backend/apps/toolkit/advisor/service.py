@@ -46,11 +46,13 @@ _LEAK = re.compile(
 # by ear; the written one can use the full length and a short list.
 TEXT_STYLE = "written: up to 250 words; short lists are fine"
 VOICE_STYLE = (
-    "spoken aloud in a conversation: at most 90 words, two or three short sentences per point, "
-    "no lists, no symbols or abbreviations that read badly aloud; weave the single most important "
-    "next step into the answer and give at most one next step"
+    "spoken aloud in a live conversation, like a mentor on a call: at most 60 words in two to "
+    "four short sentences; talk the way people speak, with contractions and plain words; no "
+    "lists, headings, symbols or abbreviations that read badly aloud; make one point well rather "
+    "than covering everything, weave in at most one next step, and when it would move things "
+    "forward end with one short question back to the founder"
 )
-VOICE_MAX_TOKENS = 600
+VOICE_MAX_TOKENS = 400
 
 GREETING = (
     "Hi, I'm Onyeka, founder of WO Community. I'm here as your AI advisor: tell me what you're "

@@ -588,7 +588,8 @@ AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per membe
 # Voice for Onyeka: speech to text and text to speech on the same service as the text models.
 AI_TRANSCRIBE_MODEL = env.str("AI_TRANSCRIBE_MODEL", default="gpt-4o-mini-transcribe")
 AI_TTS_MODEL = env.str("AI_TTS_MODEL", default="gpt-4o-mini-tts")
-AI_TTS_VOICE = env.str("AI_TTS_VOICE", default="alloy")
+# Cedar is OpenAI's most natural sounding voice, a warm male one, which suits Onyeka.
+AI_TTS_VOICE = env.str("AI_TTS_VOICE", default="cedar")
 # A voice made for Onyeka on ElevenLabs (cloned with its speaker's consent). When both are set,
 # answers are spoken in it instead of the OpenAI voice above. Flash is ElevenLabs' fastest model.
 ELEVENLABS_API_KEY = env.str("ELEVENLABS_API_KEY", default="")
@@ -597,8 +598,11 @@ ELEVENLABS_MODEL = env.str("ELEVENLABS_MODEL", default="eleven_flash_v2_5")
 ELEVENLABS_BASE_URL = env.str("ELEVENLABS_BASE_URL", default="https://api.elevenlabs.io/v1")
 AI_TTS_INSTRUCTIONS = env.str(
     "AI_TTS_INSTRUCTIONS",
-    default="Speak as a warm, confident founder mentoring another founder: clear, encouraging "
-    "and natural, at an easy conversational pace.",
+    default="Voice: a warm, grounded Nigerian man in his late thirties, a founder mentoring "
+    "another founder. Accent: educated Nigerian English. Tone: friendly, confident and "
+    "encouraging, like a trusted older brother. Delivery: natural and conversational, with "
+    "relaxed pacing, short pauses between ideas and a lift at the end of a question. Never sound "
+    "like an announcer or like someone reading a script.",
 )
 # Estimated cost per million tokens in minor units, by model (input, output). For usage reports
 # only. OpenAI's list prices when this was written; AI_PRICES (JSON, for example

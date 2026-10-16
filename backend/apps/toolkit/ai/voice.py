@@ -170,6 +170,10 @@ def _silence() -> bytes:
     return out.getvalue()
 
 
+# Every OpenAI speech model has this voice, so it stands in if the configured one is refused.
+FALLBACK_VOICE = "ash"
+
+
 def speech_voice() -> str:
     """Which voice answers are spoken in, so a change of voice is never served from the cache."""
     if _eleven():
@@ -189,7 +193,9 @@ def _eleven_client() -> httpx.Client:
     )
 
 
-def _speech_request(words: str) -> tuple[httpx.Client, httpx.Request, str, str]:
+def _speech_request(
+    words: str, voice: str | None = None
+) -> tuple[httpx.Client, httpx.Request, str, str]:
     """The client and request for the configured voice, its provider name and model."""
     if _eleven():
         client = _eleven_client()
@@ -215,7 +221,7 @@ def _speech_request(words: str) -> tuple[httpx.Client, httpx.Request, str, str]:
         "/audio/speech",
         json={
             "model": settings.AI_TTS_MODEL,
-            "voice": settings.AI_TTS_VOICE,
+            "voice": voice or settings.AI_TTS_VOICE,
             "input": words,
             "instructions": settings.AI_TTS_INSTRUCTIONS,
             "response_format": "mp3",
@@ -239,6 +245,16 @@ def open_speech(*, owner_id: UUID, text: str) -> SpeechStream:
     client, request, provider, model = _speech_request(words)
     try:
         response = client.send(request, stream=True)
+        if (
+            response.status_code == 400
+            and provider == "http"
+            and settings.AI_TTS_VOICE != FALLBACK_VOICE
+        ):
+            # A voice the model does not offer: answer in one it always has rather than not at all.
+            response.close()
+            client.close()
+            client, request, provider, model = _speech_request(words, FALLBACK_VOICE)
+            response = client.send(request, stream=True)
     except httpx.HTTPError as exc:
         client.close()
         _record(owner_id, "speak", model, started, "timeout", provider=provider)
