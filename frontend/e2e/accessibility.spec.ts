@@ -7,7 +7,7 @@ import { signIn, signInAdmin } from "./helpers";
  * narrowest and widest, for WCAG 2.2 AA rules an automated tool can judge and for sideways scroll.
  * It does not replace trying the app with a screen reader.
  */
-const PUBLIC = ["/", "/explore", "/news", "/founder", "/login", "/register", "/forgot-password", "/legal/terms", "/help"];
+const PUBLIC = ["/", "/explore", "/news", "/about", "/login", "/register", "/forgot-password", "/legal/terms", "/help"];
 const MEMBER = ["/app", "/app/feed", "/app/directory", "/app/jobs", "/app/jobs/new", "/app/events", "/app/learn", "/app/learn/my", "/app/learn/certificates", "/app/mentors", "/app/mentors/sessions", "/app/news", "/app/notifications", "/app/me", "/app/settings", "/app/launch", "/app/support", "/app/search?q=ada"];
 const TABS = ["", "/profile", "/score", "/plan", "/forecast", "/decks", "/prototypes", "/partner", "/sharing"];
 const COMBOS = [

@@ -143,7 +143,8 @@ export function App() {
               <Routes>
                 <Route element={<PublicLayout />}>
                   <Route index element={<Landing />} />
-                  <Route path="founder" element={<Founder />} />
+                  <Route path="about" element={<Founder />} />
+                  <Route path="founder" element={<Navigate to="/about" replace />} />
                   <Route path="explore" element={<Explore />} />
                   <Route path="news" element={<NewsList />} />
                   <Route path="news/:slug" element={<NewsItem />} />
