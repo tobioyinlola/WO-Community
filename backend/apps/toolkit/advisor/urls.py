@@ -4,10 +4,11 @@ from apps.toolkit.advisor import views
 
 urlpatterns = [
     path("advisor/messages", views.MessagesView.as_view(), name="tk-advisor-messages"),
-    path("advisor/transcribe", views.TranscribeView.as_view(), name="tk-advisor-transcribe"),
+    path("advisor/voice", views.VoiceTurnView.as_view(), name="tk-advisor-voice"),
     path(
         "advisor/messages/<uuid:message_id>/speech",
-        views.SpeechView.as_view(),
-        name="tk-advisor-speech",
+        views.SpeechLinkView.as_view(),
+        name="tk-advisor-speech-link",
     ),
+    path("advisor/speech/<str:token>", views.SpeechStreamView.as_view(), name="tk-advisor-speech"),
 ]

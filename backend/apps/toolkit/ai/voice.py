@@ -1,15 +1,19 @@
 """Speech in and out: turning a member's recording into text, and an answer into audio.
 
-Both use the same OpenAI compatible service as the text models (``AI_BASE_URL``, ``AI_API_KEY``):
-``/audio/transcriptions`` and ``/audio/speech``. Like every model call they count towards the
-member's daily allowance and are recorded as an ``AIRun`` with sizes only, never the words or the
-audio. With the offline stand-in (``AI_PROVIDER=fake``) they answer without any network call.
+Recordings are transcribed by the same OpenAI compatible service as the text models
+(``/audio/transcriptions``). Answers are spoken by ElevenLabs when ``ELEVENLABS_API_KEY`` and
+``ELEVENLABS_VOICE_ID`` are set (a voice made for Onyeka, cloned with its speaker's consent), and
+otherwise by the same service's ``/audio/speech``. Speech is streamed, so playback starts while the
+rest is still being made. Like every model call they count towards the member's daily allowance and
+are recorded as an ``AIRun`` with sizes only, never the words or the audio. With the offline
+stand-in (``AI_PROVIDER=fake``) they answer without any network call.
 """
 
 import io
 import struct
 import time
 import wave
+from collections.abc import Iterator
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -47,6 +51,14 @@ class Speech:
     content_type: str
 
 
+@dataclass(frozen=True)
+class SpeechStream:
+    """Audio arriving in pieces. ``chunks`` must be read to the end (or closed) to free the line."""
+
+    content_type: str
+    chunks: Iterator[bytes]
+
+
 def extension_for(content_type: str) -> str | None:
     """The file extension the service expects for a recording's type, or None if unsupported."""
     return AUDIO_TYPES.get(content_type.split(";")[0].strip().lower())
@@ -65,12 +77,18 @@ def _client() -> httpx.Client:
 
 
 def _record(
-    owner_id: UUID, what: str, model: str, started: float, outcome: str, **sizes: int
+    owner_id: UUID,
+    what: str,
+    model: str,
+    started: float,
+    outcome: str,
+    provider: str = "",
+    **sizes: int,
 ) -> None:
     AIRun.objects.create(
         owner_id=owner_id,
         agent="voice",
-        provider="fake" if _fake() else "http",
+        provider=provider or ("fake" if _fake() else "http"),
         model=model,
         prompt_id=f"voice.{what}",
         input_tokens=sizes.get("input_tokens", 0),
@@ -152,37 +170,98 @@ def _silence() -> bytes:
     return out.getvalue()
 
 
-def speak(*, owner_id: UUID, text: str) -> Speech:
-    """Spoken audio for ``text``, in Onyeka's voice. Raises like ``transcribe``."""
+def speech_voice() -> str:
+    """Which voice answers are spoken in, so a change of voice is never served from the cache."""
+    if _eleven():
+        return f"elevenlabs:{settings.ELEVENLABS_VOICE_ID}:{settings.ELEVENLABS_MODEL}"
+    return f"openai:{settings.AI_TTS_VOICE}:{settings.AI_TTS_MODEL}"
+
+
+def _eleven() -> bool:
+    return bool(settings.ELEVENLABS_API_KEY and settings.ELEVENLABS_VOICE_ID)
+
+
+def _eleven_client() -> httpx.Client:
+    return httpx.Client(
+        base_url=settings.ELEVENLABS_BASE_URL.rstrip("/"),
+        headers={"xi-api-key": settings.ELEVENLABS_API_KEY},
+        timeout=httpx.Timeout(settings.AI_REQUEST_TIMEOUT_SECONDS, connect=5.0),
+    )
+
+
+def _speech_request(words: str) -> tuple[httpx.Client, httpx.Request, str, str]:
+    """The client and request for the configured voice, its provider name and model."""
+    if _eleven():
+        client = _eleven_client()
+        request = client.build_request(
+            "POST",
+            f"/text-to-speech/{settings.ELEVENLABS_VOICE_ID}/stream",
+            params={"output_format": "mp3_44100_64"},
+            json={
+                "text": words,
+                "model_id": settings.ELEVENLABS_MODEL,
+                "voice_settings": {
+                    "stability": 0.5,
+                    "similarity_boost": 0.85,
+                    "style": 0.15,
+                    "use_speaker_boost": True,
+                },
+            },
+        )
+        return client, request, "elevenlabs", settings.ELEVENLABS_MODEL
+    client = _client()
+    request = client.build_request(
+        "POST",
+        "/audio/speech",
+        json={
+            "model": settings.AI_TTS_MODEL,
+            "voice": settings.AI_TTS_VOICE,
+            "input": words,
+            "instructions": settings.AI_TTS_INSTRUCTIONS,
+            "response_format": "mp3",
+        },
+    )
+    return client, request, "http", settings.AI_TTS_MODEL
+
+
+def open_speech(*, owner_id: UUID, text: str) -> SpeechStream:
+    """Spoken audio for ``text`` in Onyeka's voice, streamed as it is made. Raises like
+    ``transcribe`` before any audio is returned."""
     runner.require_ai()
     words = text.strip()[:MAX_SPEECH_CHARS]
     if not words:
         raise JobFailed("nothing_to_say", "There is nothing to read out.")
     runner.check_ceiling(owner_id)
-    model = settings.AI_TTS_MODEL
     started = time.monotonic()
     if _fake():
-        _record(owner_id, "speak", model, started, "ok")
-        return Speech(_silence(), "audio/wav")
+        _record(owner_id, "speak", settings.AI_TTS_MODEL, started, "ok")
+        return SpeechStream("audio/wav", iter([_silence()]))
+    client, request, provider, model = _speech_request(words)
     try:
-        with _client() as client:
-            response = client.post(
-                "/audio/speech",
-                json={
-                    "model": model,
-                    "voice": settings.AI_TTS_VOICE,
-                    "input": words,
-                    "instructions": settings.AI_TTS_INSTRUCTIONS,
-                    "response_format": "mp3",
-                },
-            )
+        response = client.send(request, stream=True)
     except httpx.HTTPError as exc:
-        _record(owner_id, "speak", model, started, "timeout")
+        client.close()
+        _record(owner_id, "speak", model, started, "timeout", provider=provider)
         raise TransientError("voice network error") from exc
-    try:
+    if response.status_code >= 400:
+        response.read()
+        response.close()
+        client.close()
+        _record(owner_id, "speak", model, started, "rejected", provider=provider)
         _check(response)
-    except (JobFailed, TransientError):
-        _record(owner_id, "speak", model, started, "rejected")
-        raise
-    _record(owner_id, "speak", model, started, "ok")
-    return Speech(response.content, "audio/mpeg")
+    _record(owner_id, "speak", model, started, "ok", provider=provider)
+
+    def chunks() -> Iterator[bytes]:
+        try:
+            yield from response.iter_bytes(8192)
+        finally:
+            response.close()
+            client.close()
+
+    return SpeechStream("audio/mpeg", chunks())
+
+
+def speak(*, owner_id: UUID, text: str) -> Speech:
+    """The whole of ``open_speech`` at once."""
+    stream = open_speech(owner_id=owner_id, text=text)
+    return Speech(b"".join(stream.chunks), stream.content_type)

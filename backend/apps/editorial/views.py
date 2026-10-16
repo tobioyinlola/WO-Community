@@ -27,6 +27,7 @@ from apps.editorial.serializers import (
     NewsCommentReportSerializer,
     PublicItemSerializer,
     PublicPageSerializer,
+    PublicTestimonialSerializer,
     WinCreateSerializer,
     WinPageSerializer,
     WinSerializer,
@@ -304,3 +305,17 @@ class PublicNewsItemView(PublicView):
     )
     def get(self, request: Request, slug: str) -> Response:
         return self.cached(request, PublicItemSerializer(selectors.public_detail(slug)).data)
+
+
+class PublicTestimonialsView(PublicView):
+    @extend_schema(
+        operation_id="public_testimonials",
+        summary="What members say, for the website",
+        description="Published testimonials, in the order chosen by the community team. Each one "
+        "was said by the person named, who agreed to it being shown.",
+        responses={200: PublicTestimonialSerializer(many=True)},
+        tags=["public"],
+    )
+    def get(self, request: Request) -> Response:
+        rows = services.public_testimonials()
+        return self.cached(request, PublicTestimonialSerializer(rows, many=True).data)

@@ -25,6 +25,7 @@ from apps.editorial.models import (
     ItemComment,
     ItemReaction,
     ItemStartup,
+    Testimonial,
     WinSubmission,
 )
 from apps.integrations.cdn import get_cache_purger
@@ -608,3 +609,68 @@ def dismiss_banner(*, user_id: UUID, item_id: UUID) -> None:
     if not EditorialItem.objects.filter(pk=item_id, show_banner=True).exists():
         raise NotFound()
     BannerDismissal.objects.get_or_create(user_id=user_id, item_id=item_id)
+
+
+# --- testimonials ----------------------------------------------------------------------------
+
+TESTIMONIAL_FIELDS = ("quote", "name", "role", "published", "position", "consent_confirmed")
+
+
+def save_testimonial(
+    *, actor: Any, data: dict[str, Any], testimonial_id: UUID | None = None, ip: str = ""
+) -> Testimonial:
+    """Create or change a testimonial. Withdrawing consent also takes it off the website."""
+    with transaction.atomic():
+        if testimonial_id is None:
+            row = Testimonial(created_by=actor)
+            action = "testimonial.created"
+        else:
+            found = Testimonial.objects.select_for_update().filter(pk=testimonial_id).first()
+            if found is None:
+                raise exceptions.NotFound()
+            row = found
+            action = "testimonial.updated"
+        before = {f: getattr(row, f) for f in TESTIMONIAL_FIELDS} if testimonial_id else None
+        for field in TESTIMONIAL_FIELDS:
+            if field in data:
+                value = data[field]
+                setattr(row, field, plain(value).strip() if isinstance(value, str) else value)
+        if data.get("published") and not row.consent_confirmed:
+            raise exceptions.ValidationError(
+                {
+                    "consent_confirmed": [
+                        "Confirm the person said this and agreed to it being shown before "
+                        "publishing."
+                    ]
+                }
+            )
+        if not row.consent_confirmed:
+            row.published = False
+        row.save()
+        audit.record(
+            actor=actor,
+            action=action,
+            target_type="testimonial",
+            target_id=row.pk,
+            before=before,
+            after={f: getattr(row, f) for f in ("published", "position", "consent_confirmed")},
+            ip=ip,
+        )
+    return row
+
+
+def delete_testimonial(*, actor: Any, testimonial_id: UUID, ip: str = "") -> None:
+    deleted, _ = Testimonial.objects.filter(pk=testimonial_id).delete()
+    if not deleted:
+        raise exceptions.NotFound()
+    audit.record(
+        actor=actor,
+        action="testimonial.deleted",
+        target_type="testimonial",
+        target_id=testimonial_id,
+        ip=ip,
+    )
+
+
+def public_testimonials() -> list[Testimonial]:
+    return list(Testimonial.objects.filter(published=True, consent_confirmed=True)[:30])

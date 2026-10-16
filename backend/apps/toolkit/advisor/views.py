@@ -1,25 +1,29 @@
+from collections.abc import Iterator
 from typing import Any
 from uuid import UUID
 
+from django.core import signing
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
+from django.http.response import HttpResponseBase
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import exceptions
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
+from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
+from apps.core import policies
 from apps.toolkit.advisor import service
 from apps.toolkit.advisor.models import AdvisorMessage
 from apps.toolkit.advisor.serializers import (
     TkAdvisorConversationSerializer,
     TkAdvisorReplySerializer,
     TkAdvisorSendSerializer,
-    TkAdvisorTranscribeSerializer,
-    TkAdvisorTranscriptSerializer,
+    TkAdvisorSpeechLinkSerializer,
+    TkAdvisorVoiceTurnSerializer,
 )
 from apps.toolkit.ai import errors as ai_errors
 from apps.toolkit.ai import providers, voice
@@ -104,17 +108,7 @@ class MessagesView(APIView):
             )
         except JobFailed as exc:
             raise ai_errors.translate(exc) from exc
-        assistant = result["assistant_message"]
-        job = result["job"]
-        data = {
-            "user_message": message_view(result["user_message"]),
-            "assistant_message": message_view(assistant) if assistant else None,
-            "job": jobs.view(job) if job else None,
-        }
-        response = Response(TkAdvisorReplySerializer(data).data, status=202 if job else 201)
-        if job:
-            response["Location"] = f"/api/v1/toolkit/jobs/{job.pk}"
-        return _private(response)
+        return reply_response(request, result)
 
     @extend_schema(
         operation_id="tk_advisor_clear",
@@ -130,28 +124,57 @@ class MessagesView(APIView):
 
 
 SPEECH_CACHE_SECONDS = 86400
+SPEECH_LINK_SECONDS = 300
+SPEECH_SALT = "toolkit.advisor.speech"
+MAX_CACHED_SPEECH = 3 * 1024 * 1024
 # A recording that cannot be used is the member's to fix, so it is a 400, not a failure of ours.
 RECORDING_PROBLEMS = ("unsupported_audio", "audio_too_long")
 
 
-class TranscribeView(APIView):
+def speech_url(owner_id: UUID, message_id: UUID) -> str:
+    """A short lived address an audio player can stream an answer from without a sign in header.
+
+    It names one answer of one member and stops working after a few minutes."""
+    token = signing.dumps({"u": str(owner_id), "m": str(message_id)}, salt=SPEECH_SALT)
+    return f"/api/v1/toolkit/advisor/speech/{token}"
+
+
+def reply_response(request: Request, result: dict[str, Any], *, spoken: bool = False) -> Response:
+    """The answer to a turn: the reply now (201), or a job to follow (202). A spoken turn also
+    carries where to stream the reply from, so playback can start without another request."""
+    assistant = result["assistant_message"]
+    job = result["job"]
+    data = {
+        "user_message": message_view(result["user_message"]),
+        "assistant_message": message_view(assistant) if assistant else None,
+        "job": jobs.view(job) if job else None,
+        "speech_url": speech_url(uid(request), assistant.pk) if spoken and assistant else None,
+    }
+    response = Response(TkAdvisorReplySerializer(data).data, status=202 if job else 201)
+    if job:
+        response["Location"] = f"/api/v1/toolkit/jobs/{job.pk}"
+    return _private(response)
+
+
+class VoiceTurnView(APIView):
     policy = member_policy("advisor")
     parser_classes = [MultiPartParser]
     throttle_classes = [UserRateThrottle, ScopedRateThrottle]
     throttle_scope = "toolkit_voice"
 
     @extend_schema(
-        operation_id="tk_advisor_transcribe",
-        summary="Turn a voice recording into text",
-        description="Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up to 4 MB). "
-        "Answers with the words, which you then send to Onyeka as a message. Nothing is kept: "
-        "neither the recording nor the words.",
-        request={"multipart/form-data": TkAdvisorTranscribeSerializer},
-        responses={200: TkAdvisorTranscriptSerializer, **ERRORS},
+        operation_id="tk_advisor_voice_turn",
+        summary="Say something to Onyeka",
+        description="Send a recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up to 4 MB). It "
+        "is turned into words, sent to Onyeka as your message, and answered like a typed message "
+        "(201 with the reply, or 202 with a job), with a short spoken answer and `speech_url` to "
+        "stream it from. The recording itself is not kept.",
+        request={"multipart/form-data": TkAdvisorVoiceTurnSerializer},
+        responses={201: TkAdvisorReplySerializer, 202: TkAdvisorReplySerializer, **ERRORS},
         tags=["toolkit"],
     )
     def post(self, request: Request) -> Response:
-        body = TkAdvisorTranscribeSerializer(data=request.data)
+        body = TkAdvisorVoiceTurnSerializer(data=request.data)
         body.is_valid(raise_exception=True)
         upload = body.validated_data["audio"]
         if upload.size > voice.MAX_AUDIO_BYTES:
@@ -164,60 +187,115 @@ class TranscribeView(APIView):
                 audio=upload.read(),
                 content_type=upload.content_type or "",
             )
+            if not text:
+                raise exceptions.ValidationError(
+                    {
+                        "audio": [
+                            "We could not hear any words. Try again a little closer to the mic."
+                        ]
+                    }
+                )
+            result = service.post_message(owner_id=uid(request), text=text, voice=True)
         except JobFailed as exc:
             if exc.code in RECORDING_PROBLEMS:
                 raise exceptions.ValidationError({"audio": [exc.detail]}) from exc
             raise ai_errors.translate(exc) from exc
         except TransientError as exc:
             raise ai_errors.translate(exc) from exc
-        if not text:
-            raise exceptions.ValidationError(
-                {"audio": ["We could not hear any words. Try again a little closer to the mic."]}
-            )
-        return _private(Response(TkAdvisorTranscriptSerializer({"text": text}).data))
+        return reply_response(request, result, spoken=True)
 
 
 def spoken_text(m: AdvisorMessage) -> str:
-    """What Onyeka reads out: the answer, then the next steps."""
-    steps = m.meta.get("next_steps") or []
+    """What Onyeka reads out: the answer, then any next steps. A spoken answer already carries its
+    one next step in its words, so only written answers have them read after."""
+    steps = [] if m.meta.get("voice") else (m.meta.get("next_steps") or [])
     if not steps:
         return m.text
     listed = " ".join(f"{n}. {step}" for n, step in enumerate(steps, start=1))
     return f"{m.text}\n\nNext steps. {listed}"
 
 
-class SpeechView(APIView):
+class SpeechLinkView(APIView):
     policy = member_policy("advisor")
-    throttle_classes = [UserRateThrottle, ScopedRateThrottle]
+
+    @extend_schema(
+        operation_id="tk_advisor_speech_link",
+        summary="Where to hear one of Onyeka's answers",
+        description="A short lived address (a few minutes) that streams the answer read aloud in "
+        "Onyeka's voice, for an audio player to start playing at once. Only Onyeka's own answers "
+        "in your conversation.",
+        request=None,
+        responses={200: TkAdvisorSpeechLinkSerializer, **ERRORS},
+        tags=["toolkit"],
+    )
+    def post(self, request: Request, message_id: UUID) -> Response:
+        exists = AdvisorMessage.objects.filter(
+            pk=message_id, owner_id=uid(request), role="assistant"
+        ).exists()
+        if not exists:
+            raise exceptions.NotFound()
+        data = {"url": speech_url(uid(request), message_id), "expires_in": SPEECH_LINK_SECONDS}
+        return _private(Response(TkAdvisorSpeechLinkSerializer(data).data))
+
+
+class SpeechStreamView(APIView):
+    # The signed address is the permission: it names one answer of one member and expires soon.
+    policy = policies.public
+    throttle_classes = [AnonRateThrottle, UserRateThrottle, ScopedRateThrottle]
     throttle_scope = "toolkit_voice"
 
     @extend_schema(
         operation_id="tk_advisor_speech",
-        summary="Hear one of Onyeka's answers",
-        description="The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's own "
-        "answers in your conversation can be heard. Kept for a day so listening again is quick.",
-        responses={
-            (200, "audio/mpeg"): OpenApiTypes.BINARY,
-            **ERRORS,
-        },
+        summary="Stream one of Onyeka's answers",
+        description="MP3 audio, sent as it is made so playback can start at once. The address "
+        "comes from a voice turn or from asking for a speech link. Kept for a day so listening "
+        "again is instant.",
+        responses={(200, "audio/mpeg"): OpenApiTypes.BINARY, 404: ERRORS[404]},
         tags=["toolkit"],
     )
-    def get(self, request: Request, message_id: UUID) -> HttpResponse:
+    def get(self, request: Request, token: str) -> HttpResponseBase:
+        try:
+            claims = signing.loads(token, salt=SPEECH_SALT, max_age=SPEECH_LINK_SECONDS)
+        except signing.BadSignature as exc:
+            raise exceptions.NotFound() from exc
         message = AdvisorMessage.objects.filter(
-            pk=message_id, owner_id=uid(request), role="assistant"
+            pk=claims.get("m"), owner_id=claims.get("u"), role="assistant"
         ).first()
         if message is None:
             raise exceptions.NotFound()
-        key = f"toolkit:advisor:speech:{message.pk}"
+        key = f"toolkit:advisor:speech:{message.pk}:{voice.speech_voice()}"
         cached = cache.get(key)
-        if cached is None:
+        if cached is not None:
+            content_type, audio = cached
+            response: HttpResponseBase = HttpResponse(audio, content_type=content_type)
+        else:
             try:
-                speech = voice.speak(owner_id=uid(request), text=spoken_text(message))
+                stream = voice.open_speech(owner_id=message.owner_id, text=spoken_text(message))
             except (JobFailed, TransientError) as exc:
                 raise ai_errors.translate(exc) from exc
-            cached = (speech.content_type, speech.audio)
-            cache.set(key, cached, SPEECH_CACHE_SECONDS)
-        content_type, audio = cached
-        response = HttpResponse(audio, content_type=content_type)
-        response["Cache-Control"] = "private, max-age=86400"
+            response = StreamingHttpResponse(
+                _keep(stream.chunks, key, stream.content_type), content_type=stream.content_type
+            )
+        response["Cache-Control"] = "private, max-age=300"
+        response["X-Accel-Buffering"] = "no"  # pass each piece on at once
         return response
+
+
+def _keep(chunks: Iterator[bytes], key: str, content_type: str) -> Iterator[bytes]:
+    """Passes the audio through as it arrives, and keeps the whole of it for the next listen."""
+    parts: list[bytes] = []
+    size = 0
+    complete = False
+    try:
+        for chunk in chunks:
+            size += len(chunk)
+            if size <= MAX_CACHED_SPEECH:
+                parts.append(chunk)
+            yield chunk
+        complete = True
+    finally:
+        close = getattr(chunks, "close", None)
+        if close is not None:
+            close()
+        if complete and size <= MAX_CACHED_SPEECH:
+            cache.set(key, (content_type, b"".join(parts)), SPEECH_CACHE_SECONDS)

@@ -7902,6 +7902,115 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: Not found
+  /api/v1/admin/testimonials:
+    get:
+      operationId: admin_testimonials_list
+      description: In the order the website shows them.
+      summary: Testimonials, published or not
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminTestimonial'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    post:
+      operationId: admin_testimonials_create
+      description: Only words a member really said, with their permission. Publishing
+        needs `consent_confirmed`.
+      summary: Add a testimonial
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestimonialWriteRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTestimonial'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+  /api/v1/admin/testimonials/{testimonial_id}:
+    patch:
+      operationId: admin_testimonials_update
+      description: Taking away `consent_confirmed` also takes it off the website.
+      summary: Change a testimonial
+      parameters:
+      - in: path
+        name: testimonial_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTestimonialWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTestimonial'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
+    delete:
+      operationId: admin_testimonials_delete
+      summary: Delete a testimonial
+      parameters:
+      - in: path
+        name: testimonial_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/win-submissions:
     get:
       operationId: admin_win_submissions_list
@@ -13679,6 +13788,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicStats'
           description: ''
+  /api/v1/public/testimonials:
+    get:
+      operationId: public_testimonials
+      description: Published testimonials, in the order chosen by the community team.
+        Each one was said by the person named, who agreed to it being shown.
+      summary: What members say, for the website
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicTestimonial'
+          description: ''
   /api/v1/questions/{question_id}/answers:
     post:
       operationId: questions_answers_create
@@ -15415,12 +15541,12 @@ paths:
         '404':
           description: The advisor is switched off
   /api/v1/toolkit/advisor/messages/{message_id}/speech:
-    get:
-      operationId: tk_advisor_speech
-      description: The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's
-        own answers in your conversation can be heard. Kept for a day so listening
-        again is quick.
-      summary: Hear one of Onyeka's answers
+    post:
+      operationId: tk_advisor_speech_link
+      description: A short lived address (a few minutes) that streams the answer read
+        aloud in Onyeka's voice, for an audio player to start playing at once. Only
+        Onyeka's own answers in your conversation.
+      summary: Where to hear one of Onyeka's answers
       parameters:
       - in: path
         name: message_id
@@ -15435,10 +15561,9 @@ paths:
       responses:
         '200':
           content:
-            audio/mpeg:
+            application/json:
               schema:
-                type: string
-                format: binary
+                $ref: '#/components/schemas/TkAdvisorSpeechLink'
           description: ''
         '401':
           description: Not authenticated
@@ -15446,29 +15571,64 @@ paths:
           description: Not an approved member
         '404':
           description: The advisor is switched off
-  /api/v1/toolkit/advisor/transcribe:
+  /api/v1/toolkit/advisor/speech/{token}:
+    get:
+      operationId: tk_advisor_speech
+      description: MP3 audio, sent as it is made so playback can start at once. The
+        address comes from a voice turn or from asking for a speech link. Kept for
+        a day so listening again is instant.
+      summary: Stream one of Onyeka's answers
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - toolkit
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        '404':
+          description: The advisor is switched off
+  /api/v1/toolkit/advisor/voice:
     post:
-      operationId: tk_advisor_transcribe
-      description: 'Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV,
-        up to 4 MB). Answers with the words, which you then send to Onyeka as a message.
-        Nothing is kept: neither the recording nor the words.'
-      summary: Turn a voice recording into text
+      operationId: tk_advisor_voice_turn
+      description: Send a recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up
+        to 4 MB). It is turned into words, sent to Onyeka as your message, and answered
+        like a typed message (201 with the reply, or 202 with a job), with a short
+        spoken answer and `speech_url` to stream it from. The recording itself is
+        not kept.
+      summary: Say something to Onyeka
       tags:
       - toolkit
       requestBody:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TkAdvisorTranscribeRequest'
+              $ref: '#/components/schemas/TkAdvisorVoiceTurnRequest'
         required: true
       security:
       - bearerAuth: []
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TkAdvisorTranscript'
+                $ref: '#/components/schemas/TkAdvisorReply'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TkAdvisorReply'
           description: ''
         '401':
           description: Not authenticated
@@ -20772,6 +20932,40 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminHit'
+    AdminTestimonial:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quote:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        published:
+          type: boolean
+        position:
+          type: integer
+        consent_confirmed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - consent_confirmed
+      - created_at
+      - id
+      - name
+      - position
+      - published
+      - quote
+      - role
+      - updated_at
     AdminTicketDetail:
       type: object
       properties:
@@ -28811,6 +29005,35 @@ components:
           type: string
           format: date-time
           nullable: true
+    PatchedTestimonialWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        quote:
+          type: string
+          minLength: 10
+          maxLength: 400
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        role:
+          type: string
+          maxLength: 160
+        published:
+          type: boolean
+        position:
+          type: integer
+          maximum: 999
+          minimum: 0
+        consent_confirmed:
+          type: boolean
+          description: The person said these words and agreed to them being shown.
+            Needed to publish.
     PatchedTkAdminPlanSectionWriteRequest:
       type: object
       description: |-
@@ -30062,6 +30285,23 @@ components:
       - slug
       - title
       - type
+    PublicTestimonial:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quote:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+      required:
+      - id
+      - name
+      - quote
+      - role
     PublishCheck:
       type: object
       properties:
@@ -32760,6 +33000,38 @@ components:
       required:
       - blocks
       - name
+    TestimonialWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        quote:
+          type: string
+          minLength: 10
+          maxLength: 400
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        role:
+          type: string
+          maxLength: 160
+        published:
+          type: boolean
+        position:
+          type: integer
+          maximum: 999
+          minimum: 0
+        consent_confirmed:
+          type: boolean
+          description: The person said these words and agreed to them being shown.
+            Needed to publish.
+      required:
+      - name
+      - quote
     Ticket:
       type: object
       properties:
@@ -33409,9 +33681,15 @@ components:
           nullable: true
           description: 'Present (with HTTP 202) when the reply is not ready yet: poll
             it, then read the conversation again'
+        speech_url:
+          type: string
+          nullable: true
+          description: 'For a spoken turn whose reply is ready: where to stream it
+            read aloud'
       required:
       - assistant_message
       - job
+      - speech_url
       - user_message
     TkAdvisorSendRequest:
       type: object
@@ -33422,7 +33700,19 @@ components:
           maxLength: 2000
       required:
       - text
-    TkAdvisorTranscribeRequest:
+    TkAdvisorSpeechLink:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Where to stream the answer from
+        expires_in:
+          type: integer
+          description: Seconds the address works for
+      required:
+      - expires_in
+      - url
+    TkAdvisorVoiceTurnRequest:
       type: object
       properties:
         audio:
@@ -33431,14 +33721,6 @@ components:
           description: The recording, up to 4 MB
       required:
       - audio
-    TkAdvisorTranscript:
-      type: object
-      properties:
-        text:
-          type: string
-          description: What was said
-      required:
-      - text
     TkAssessment:
       type: object
       properties:

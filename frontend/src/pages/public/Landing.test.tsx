@@ -12,6 +12,7 @@ vi.mock("../../api/client", () => ({
   api: {
     GET: (path: string) => {
       if (path.endsWith("/stats")) return Promise.resolve({ data: stats.value, response: { ok: true } });
+      if (path.endsWith("/testimonials")) return Promise.resolve({ data: content.testimonials, response: { ok: true } });
       return Promise.resolve({ data: { results: [] }, response: { ok: true } });
     },
   },
@@ -22,9 +23,6 @@ vi.mock("./landingContent", async (original) => {
   const real = await original<typeof import("./landingContent")>();
   return {
     ...real,
-    get TESTIMONIALS() {
-      return content.testimonials;
-    },
     get SOCIAL_LINKS() {
       return content.social;
     },
@@ -113,12 +111,14 @@ describe("member quotes", () => {
     expect(screen.queryByRole("heading", { name: /own words/i })).toBeNull();
   });
 
-  it("appear, quoted and credited, once some are supplied", () => {
-    content.testimonials = [{ quote: "It opened doors.", name: "A. Member", role: "Founder" }];
+  it("glide past before the footer, quoted and credited, once the team publishes some", async () => {
+    content.testimonials = [{ id: "t1", quote: "It opened doors.", name: "A. Member", role: "Founder" }];
     page();
-    expect(screen.getByRole("heading", { name: /own words/i })).toBeInTheDocument();
-    expect(screen.getByText(/It opened doors\./)).toBeInTheDocument();
-    expect(screen.getByText("A. Member")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /own words/i })).toBeInTheDocument();
+    const shown = screen.getAllByText(/It opened doors\./);
+    // Copies that fill the loop are hidden from screen readers, so the quote is read once.
+    expect(shown.filter((el) => !el.closest("[aria-hidden='true']"))).toHaveLength(1);
+    expect(screen.getAllByText("A. Member").length).toBeGreaterThan(0);
   });
 });
 

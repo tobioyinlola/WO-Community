@@ -8,12 +8,12 @@ import { Alert } from "../components";
 import { usePref } from "../admin/shell/prefs";
 import { useJob } from "../pages/launch/jobs";
 import { useFeature } from "../pages/launch/config";
-import { record, Speaker, transcribe, voiceSupported, type Recording } from "./onyekaVoice";
+import { record, Speaker, speechUrl, voiceSupported, voiceTurn, type Recording } from "./onyekaVoice";
 
 type Message = components["schemas"]["TkAdvisorMessage"];
 type Conversation = components["schemas"]["TkAdvisorConversation"];
 /** Where a spoken conversation is: off, or one of the turns of a back and forth. */
-type Phase = "off" | "listening" | "transcribing" | "thinking" | "speaking";
+type Phase = "off" | "listening" | "thinking" | "speaking";
 
 const KEY = ["toolkit", "advisor"];
 const FRAMEWORK_LABELS: Record<string, string> = {
@@ -31,9 +31,12 @@ const STARTERS = [
 
 /** Onyeka, the community's AI founder advisor: a chat that opens from the corner of every page. */
 export function Onyeka({ allowed }: { allowed: boolean }) {
-  const on = useFeature("advisor");
-  if (!allowed || !on) return null;
-  return <OnyekaChat />;
+  // Only people who may use the toolkit ask whether the advisor is on, so nobody else sees a 403.
+  return allowed ? <WhenSwitchedOn /> : null;
+}
+
+function WhenSwitchedOn() {
+  return useFeature("advisor") ? <OnyekaChat /> : null;
 }
 
 function OnyekaChat() {
@@ -96,14 +99,15 @@ function Panel({ onClose }: { onClose: () => void }) {
   }, []);
   useEffect(() => stopVoice, [stopVoice]);
 
-  /** Reads an answer aloud, then listens for the member's reply. */
-  const answerAloud = async (messageId: string) => {
+  /** Reads an answer aloud, then listens for the member's reply. Pass the streaming address when
+   * the server already gave it, which saves a round trip. */
+  const answerAloud = async (messageId: string, url?: string | null) => {
     if (!voiceOn.current) return;
     setPhase("speaking");
     const controller = new AbortController();
     speaking.current = controller;
     try {
-      await speaker().play(messageId, controller.signal);
+      await speaker().play(url ?? (await speechUrl(messageId)), controller.signal);
     } catch (error) {
       setVoiceError(messageOf(error));
       stopVoice();
@@ -166,12 +170,14 @@ function Panel({ onClose }: { onClose: () => void }) {
       stopVoice();
       return;
     }
-    setPhase("transcribing");
+    setPhase("thinking");
     try {
-      const words = await transcribe(blob);
+      // One request: the words, Onyeka's short spoken answer, and where to stream it from.
+      const turn = await voiceTurn(blob);
+      void refresh();
       if (!voiceOn.current) return;
-      setPhase("thinking");
-      send.mutate(words);
+      if (turn.job) setJobId(turn.job.id);
+      else if (turn.assistant_message) void answerAloud(turn.assistant_message.id, turn.speech_url);
     } catch (error) {
       setVoiceError(messageOf(error));
       stopVoice();
@@ -195,8 +201,8 @@ function Panel({ onClose }: { onClose: () => void }) {
     speaker().unlock();
     setVoiceError(null);
     setPlayingId(id);
-    speaker()
-      .play(id)
+    speechUrl(id)
+      .then((url) => speaker().play(url))
       .catch((error: unknown) => setVoiceError(messageOf(error)))
       .finally(() => setPlayingId((current) => (current === id ? null : current)));
   };
@@ -210,7 +216,7 @@ function Panel({ onClose }: { onClose: () => void }) {
   });
 
   const messages = query.data?.messages ?? [];
-  const thinking = send.isPending || running.running;
+  const thinking = send.isPending || running.running || phase === "thinking";
   const aiOn = query.data?.ai_enabled ?? true;
   const inVoice = phase !== "off";
 
@@ -329,7 +335,6 @@ function Panel({ onClose }: { onClose: () => void }) {
 
 const PHASE_TEXT: Record<Exclude<Phase, "off">, string> = {
   listening: "Listening… pause when you're done",
-  transcribing: "Getting your words…",
   thinking: "Onyeka is thinking…",
   speaking: "Onyeka is speaking",
 };

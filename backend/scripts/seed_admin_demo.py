@@ -94,7 +94,17 @@ def applicant(stamp: str, n: int, row: tuple[str, str, str, str, str, str, str])
     user.email_verified_at = timezone.now()
     user.save()
     UserRole.objects.get_or_create(user=user, role="member")
-    profiles.create_from_signup(user.pk, {"full_name": name, "country": country, "city": city})
+    # Sign up asks for LinkedIn and the company website, and approval needs LinkedIn.
+    handle = "-".join(name.lower().split())
+    profiles.create_from_signup(
+        user.pk,
+        {
+            "full_name": name,
+            "country": country,
+            "city": city,
+            "linkedin_url": f"https://www.linkedin.com/in/{handle}-{stamp}",
+        },
+    )
     startups.create_from_signup(
         user.pk,
         {
@@ -104,6 +114,7 @@ def applicant(stamp: str, n: int, row: tuple[str, str, str, str, str, str, str])
             "sector": sector,
             "stage": stage,
             "pitch": pitch,
+            "website_url": f"https://{''.join(startup.lower().split())}.example.com",
         },
     )
 

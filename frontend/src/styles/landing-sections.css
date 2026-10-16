@@ -631,3 +631,90 @@
     transform: none;
   }
 }
+
+/* ---------- members' words, gliding past before the footer ---------- */
+.site-voices {
+  overflow: hidden;
+  padding-block: var(--space-2);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+.site-voices__track {
+  display: flex;
+  width: max-content;
+}
+.site-voices__row {
+  display: flex;
+  flex: none;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0 var(--space-5) 0 0;
+  list-style: none;
+}
+.site-voices__item {
+  display: flex;
+  width: min(380px, 80vw);
+}
+.site-voice {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-5);
+  width: 100%;
+  margin: 0;
+  padding: var(--space-6);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+.site-voice blockquote {
+  margin: 0;
+}
+.site-voice p {
+  margin: 0;
+  font: 600 18px/28px var(--font-display);
+  color: var(--text-primary);
+  white-space: normal;
+}
+.site-voice figcaption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.site-voice figcaption > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.site-voice figcaption span span {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 20px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .site-voices__track {
+    animation: site-marquee var(--voices-duration, 60s) linear infinite;
+  }
+  .site-voices:hover .site-voices__track,
+  .site-voices:focus-within .site-voices__track {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-voices {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .site-voices__track {
+    width: auto;
+  }
+  .site-voices__row {
+    flex-wrap: wrap;
+    padding-inline: var(--space-4);
+  }
+  .site-voices__row[data-copy],
+  .site-voices__item[data-repeat] {
+    display: none;
+  }
+}

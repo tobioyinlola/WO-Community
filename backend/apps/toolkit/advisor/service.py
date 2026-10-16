@@ -42,6 +42,16 @@ _LEAK = re.compile(
     re.IGNORECASE,
 )
 
+# How the answer should read. A spoken answer is short, so it starts sooner and is easy to follow
+# by ear; the written one can use the full length and a short list.
+TEXT_STYLE = "written: up to 250 words; short lists are fine"
+VOICE_STYLE = (
+    "spoken aloud in a conversation: at most 90 words, two or three short sentences per point, "
+    "no lists, no symbols or abbreviations that read badly aloud; weave the single most important "
+    "next step into the answer and give at most one next step"
+)
+VOICE_MAX_TOKENS = 600
+
 GREETING = (
     "Hi, I'm Onyeka, founder of WO Community. I'm here as your AI advisor: tell me what you're "
     "building and where you're stuck, and I'll help you think it through the way Y Combinator, "
@@ -136,7 +146,9 @@ def wait_for(job_id: UUID, seconds: float) -> AIJob | None:
         time.sleep(0.25)
 
 
-def post_message(*, owner_id: UUID, text: str, key: str = "") -> dict[str, Any]:
+def post_message(
+    *, owner_id: UUID, text: str, key: str = "", voice: bool = False
+) -> dict[str, Any]:
     """Store the member's message and answer it: now if it is quick, otherwise as a job."""
     cleaned = plain(text).strip()
     if not cleaned:
@@ -162,7 +174,7 @@ def post_message(*, owner_id: UUID, text: str, key: str = "") -> dict[str, Any]:
     job, _ = jobs.start(
         owner_id=owner_id,
         kind="advisor.reply",
-        payload={"message_id": str(mine_.pk)},
+        payload={"message_id": str(mine_.pk), "voice": voice},
         idempotency_key=key,
     )
     finished = wait_for(job.pk, settings.AI_PARTNER_REPLY_TIMEOUT_SECONDS)
@@ -190,6 +202,7 @@ def reply(ctx: JobContext) -> dict[str, Any]:
         {"role": m.role, "text": m.text[:1200]}
         for m in history(ctx.owner_id, before=message)[-HISTORY_TURNS:]
     ]
+    spoken = bool(ctx.payload.get("voice"))
     ctx.progress(30, "Thinking")
     answer = runner.structured(
         prompt_id="advisor.reply",
@@ -197,15 +210,18 @@ def reply(ctx: JobContext) -> dict[str, Any]:
             "context": json.loads(json.dumps(assemble_context(ctx.owner_id), default=str)),
             "history": earlier,
             "message": message.text,
+            "style": VOICE_STYLE if spoken else TEXT_STYLE,
         },
         owner_id=ctx.owner_id,
         job=ctx.job,
+        max_tokens=VOICE_MAX_TOKENS if spoken else None,
     )
     raw = str(answer.get("reply", ""))
     text = plain(raw).strip()
     if not text or _LEAK.search(raw):
         text = "I couldn't put a good answer together. Could you tell me a little more?"
     meta: dict[str, Any] = {
+        "voice": spoken,
         "reply_to": str(message.pk),
         "next_steps": [plain(str(s))[:200] for s in answer.get("next_steps", [])][:3],
         "frameworks": [f for f in answer.get("frameworks", []) if f in FRAMEWORKS][:4],

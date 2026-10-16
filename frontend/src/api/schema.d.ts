@@ -3511,6 +3511,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/testimonials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Testimonials, published or not
+         * @description In the order the website shows them.
+         */
+        get: operations["admin_testimonials_list"];
+        put?: never;
+        /**
+         * Add a testimonial
+         * @description Only words a member really said, with their permission. Publishing needs `consent_confirmed`.
+         */
+        post: operations["admin_testimonials_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/testimonials/{testimonial_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a testimonial */
+        delete: operations["admin_testimonials_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a testimonial
+         * @description Taking away `consent_confirmed` also takes it off the website.
+         */
+        patch: operations["admin_testimonials_update"];
+        trace?: never;
+    };
     "/api/v1/admin/win-submissions": {
         parameters: {
             query?: never;
@@ -6367,6 +6412,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/testimonials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What members say, for the website
+         * @description Published testimonials, in the order chosen by the community team. Each one was said by the person named, who agreed to it being shown.
+         */
+        get: operations["public_testimonials"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/questions/{question_id}/answers": {
         parameters: {
             query?: never;
@@ -7231,9 +7296,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
-         * Hear one of Onyeka's answers
-         * @description The answer read aloud in Onyeka's voice, as MP3 audio. Only Onyeka's own answers in your conversation can be heard. Kept for a day so listening again is quick.
+         * Where to hear one of Onyeka's answers
+         * @description A short lived address (a few minutes) that streams the answer read aloud in Onyeka's voice, for an audio player to start playing at once. Only Onyeka's own answers in your conversation.
+         */
+        post: operations["tk_advisor_speech_link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toolkit/advisor/speech/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream one of Onyeka's answers
+         * @description MP3 audio, sent as it is made so playback can start at once. The address comes from a voice turn or from asking for a speech link. Kept for a day so listening again is instant.
          */
         get: operations["tk_advisor_speech"];
         put?: never;
@@ -7244,7 +7329,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/toolkit/advisor/transcribe": {
+    "/api/v1/toolkit/advisor/voice": {
         parameters: {
             query?: never;
             header?: never;
@@ -7254,10 +7339,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Turn a voice recording into text
-         * @description Send the recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up to 4 MB). Answers with the words, which you then send to Onyeka as a message. Nothing is kept: neither the recording nor the words.
+         * Say something to Onyeka
+         * @description Send a recording as `audio` (WebM, Ogg, MP4, M4A, MP3 or WAV, up to 4 MB). It is turned into words, sent to Onyeka as your message, and answered like a typed message (201 with the reply, or 202 with a job), with a short spoken answer and `speech_url` to stream it from. The recording itself is not kept.
          */
-        post: operations["tk_advisor_transcribe"];
+        post: operations["tk_advisor_voice_turn"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9510,6 +9595,20 @@ export interface components {
             events?: components["schemas"]["AdminHit"][];
             ventures?: components["schemas"]["AdminHit"][];
             tickets?: components["schemas"]["AdminHit"][];
+        };
+        AdminTestimonial: {
+            /** Format: uuid */
+            id: string;
+            quote: string;
+            name: string;
+            role: string;
+            published: boolean;
+            position: number;
+            consent_confirmed: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         AdminTicketDetail: {
             /** Format: uuid */
@@ -13125,6 +13224,21 @@ export interface components {
          *     Silently ignoring unknown input hides client bugs and makes mass
          *     assignment mistakes easy to miss.
          */
+        PatchedTestimonialWriteRequest: {
+            quote?: string;
+            name?: string;
+            role?: string;
+            published?: boolean;
+            position?: number;
+            /** @description The person said these words and agreed to them being shown. Needed to publish. */
+            consent_confirmed?: boolean;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
         PatchedTkAdminPlanSectionWriteRequest: {
             chapter?: string;
             title?: string;
@@ -13676,6 +13790,13 @@ export interface components {
             cover: components["schemas"]["Image"] | null;
             /** Format: date-time */
             published_at: string;
+        };
+        PublicTestimonial: {
+            /** Format: uuid */
+            id: string;
+            quote: string;
+            name: string;
+            role: string;
         };
         PublishCheck: {
             key: string;
@@ -14950,6 +15071,21 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        TestimonialWriteRequest: {
+            quote: string;
+            name: string;
+            role?: string;
+            published?: boolean;
+            position?: number;
+            /** @description The person said these words and agreed to them being shown. Needed to publish. */
+            consent_confirmed?: boolean;
+        };
         Ticket: {
             /** Format: uuid */
             readonly id: string;
@@ -15219,20 +15355,24 @@ export interface components {
             assistant_message: components["schemas"]["TkAdvisorMessage"] | null;
             /** @description Present (with HTTP 202) when the reply is not ready yet: poll it, then read the conversation again */
             job: components["schemas"]["TkJob"] | null;
+            /** @description For a spoken turn whose reply is ready: where to stream it read aloud */
+            speech_url: string | null;
         };
         TkAdvisorSendRequest: {
             text: string;
         };
-        TkAdvisorTranscribeRequest: {
+        TkAdvisorSpeechLink: {
+            /** @description Where to stream the answer from */
+            url: string;
+            /** @description Seconds the address works for */
+            expires_in: number;
+        };
+        TkAdvisorVoiceTurnRequest: {
             /**
              * Format: binary
              * @description The recording, up to 4 MB
              */
             audio: string;
-        };
-        TkAdvisorTranscript: {
-            /** @description What was said */
-            text: string;
         };
         TkAssessment: {
             /** Format: uuid */
@@ -26887,6 +27027,177 @@ export interface operations {
             };
         };
     };
+    admin_testimonials_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTestimonial"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_testimonials_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestimonialWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTestimonial"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_testimonials_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_testimonials_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTestimonialWriteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTestimonial"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_win_submissions_list: {
         parameters: {
             query?: {
@@ -34300,6 +34611,25 @@ export interface operations {
             };
         };
     };
+    public_testimonials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTestimonial"][];
+                };
+            };
+        };
+    };
     questions_answers_create: {
         parameters: {
             query?: never;
@@ -36807,7 +37137,7 @@ export interface operations {
             };
         };
     };
-    tk_advisor_speech: {
+    tk_advisor_speech_link: {
         parameters: {
             query?: never;
             header?: never;
@@ -36823,7 +37153,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "audio/mpeg": string;
+                    "application/json": components["schemas"]["TkAdvisorSpeechLink"];
                 };
             };
             /** @description Not authenticated */
@@ -36849,7 +37179,35 @@ export interface operations {
             };
         };
     };
-    tk_advisor_transcribe: {
+    tk_advisor_speech: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/mpeg": string;
+                };
+            };
+            /** @description The advisor is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tk_advisor_voice_turn: {
         parameters: {
             query?: never;
             header?: never;
@@ -36858,16 +37216,24 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["TkAdvisorTranscribeRequest"];
+                "multipart/form-data": components["schemas"]["TkAdvisorVoiceTurnRequest"];
             };
         };
         responses: {
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TkAdvisorTranscript"];
+                    "application/json": components["schemas"]["TkAdvisorReply"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkAdvisorReply"];
                 };
             };
             /** @description Not authenticated */

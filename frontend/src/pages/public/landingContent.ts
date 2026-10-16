@@ -57,19 +57,6 @@ export const FAQ: FaqItem[] = [
   },
 ];
 
-export interface Testimonial {
-  quote: string;
-  name: string;
-  role: string;
-}
-
-/**
- * Real words from real members, with their permission. The section shows only when this list has
- * entries, so until then the page carries no testimonials at all. Do not add anything that was not
- * said and approved by the person named.
- */
-export const TESTIMONIALS: Testimonial[] = [];
-
 export interface SocialLink {
   kind: "linkedin" | "x" | "instagram" | "youtube";
   /** The full https address of the community's own page. */
