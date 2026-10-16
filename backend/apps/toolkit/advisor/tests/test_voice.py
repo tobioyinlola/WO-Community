@@ -219,3 +219,12 @@ def test_with_onyekas_own_voice_speech_comes_from_elevenlabs(member, settings, m
     assert "mp3" in seen["query"] and b"eleven_flash_v2_5" in seen["body"]
     assert AIRun.objects.get().provider == "elevenlabs"
     assert voice.speech_voice().startswith("elevenlabs:onyeka123")
+
+
+def test_the_website_on_another_site_may_play_the_audio(client, member):
+    # The site (vercel.app) and the API (railway.app) are different sites, so the audio must not
+    # carry the API's default same-site resource policy, or the browser blocks it.
+    response, _ = hear(client, answer(member).pk)
+    assert response["Cross-Origin-Resource-Policy"] == "cross-origin"
+    again, _ = hear(client, answer(member, "Second.").pk)
+    assert again["Cross-Origin-Resource-Policy"] == "cross-origin"
