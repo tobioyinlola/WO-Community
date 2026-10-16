@@ -17,6 +17,7 @@ const SOCIAL: Record<(typeof SOCIAL_LINKS)[number]["kind"], { label: string; ico
 
 const LINKS = [
   { to: "/", label: "Home", end: true },
+  { to: "/founder", label: "About the founder" },
   { to: "/explore", label: "Explore" },
   { to: "/news", label: "News" },
 ];
@@ -127,6 +128,7 @@ export function PublicLayout() {
                 <li><Link to="/explore">Explore</Link></li>
                 <li><Link to="/explore">Public directory</Link></li>
                 <li><Link to="/news">News</Link></li>
+                <li><Link to="/founder">About the founder</Link></li>
                 <li><Link to="/register">Request access</Link></li>
               </ul>
             </div>

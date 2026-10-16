@@ -44,6 +44,7 @@ const MyLearning = lazy(() => import("./learn/MyLearning"));
 const Certificates = lazy(() => import("./learn/Certificates").then((m) => ({ default: m.Certificates })));
 const CertificatePage = lazy(() => import("./learn/Certificates"));
 const VerifyCertificate = lazy(() => import("./pages/public/VerifyCertificate"));
+const Founder = lazy(() => import("./pages/public/Founder").then((m) => ({ default: m.Founder })));
 const AdminCertificateTemplate = lazy(() => import("./admin/CertificateTemplate"));
 const AdminCertificates = lazy(() => import("./admin/AdminCertificates"));
 const CourseRedirect = lazy(() => import("./learn/Redirects").then((m) => ({ default: m.CourseRedirect })));
@@ -142,6 +143,7 @@ export function App() {
               <Routes>
                 <Route element={<PublicLayout />}>
                   <Route index element={<Landing />} />
+                  <Route path="founder" element={<Founder />} />
                   <Route path="explore" element={<Explore />} />
                   <Route path="news" element={<NewsList />} />
                   <Route path="news/:slug" element={<NewsItem />} />

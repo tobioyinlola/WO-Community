@@ -31,9 +31,9 @@ export function TestimonialMarquee({ items }: { items: MarqueeTestimonial[] }) {
               </blockquote>
               <figcaption>
                 <Avatar name={t.name} id={t.id} size="md" />
-                <span>
+                <span className="site-voice__who">
                   <strong>{t.name}</strong>
-                  {t.role ? <span>{t.role}</span> : null}
+                  {t.role ? <span className="site-voice__role">{t.role}</span> : null}
                 </span>
               </figcaption>
             </figure>
