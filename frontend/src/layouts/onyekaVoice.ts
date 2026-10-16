@@ -8,7 +8,8 @@ export type VoiceReply = components["schemas"]["TkAdvisorReply"];
 const FORMATS = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
 const MAX_MS = 90_000; // a long question, well inside the 4 MB the server takes
 const QUIET_AFTER_SPEECH_MS = 900; // this much quiet after speaking ends the turn
-const NO_SPEECH_MS = 8_000; // give up if nothing is said at all
+const NO_SPEECH_MS = 12_000; // give up if nothing is said at all
+const INTERRUPT_MS = 300; // talking this long over Onyeka stops Onyeka
 const TICK_MS = 100;
 
 export function voiceSupported(): boolean {
@@ -30,11 +31,21 @@ export interface Recording {
   done: Promise<{ blob: Blob | null; end: RecordingEnd }>;
 }
 
+export interface RecordOptions {
+  /** Gets a 0 to 1 loudness for a meter. */
+  onLevel?: (level: number) => void;
+  /**
+   * Listen while Onyeka is talking: called once the member talks over the answer, so it can stop
+   * and hear them out. Only clear, sustained speech counts, so the answer's own echo does not.
+   */
+  onInterrupt?: () => void;
+}
+
 /**
  * Records from the microphone until the speaker pauses, the time runs out, or `finish` is called.
- * `onLevel` gets a 0 to 1 loudness for a meter. Throws if the microphone cannot be opened.
+ * Throws if the microphone cannot be opened.
  */
-export async function record(onLevel?: (level: number) => void): Promise<Recording> {
+export async function record({ onLevel, onInterrupt }: RecordOptions = {}): Promise<Recording> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   const format = pickFormat();
   const recorder = new MediaRecorder(stream, format ? { mimeType: format } : undefined);
@@ -54,6 +65,7 @@ export async function record(onLevel?: (level: number) => void): Promise<Recordi
 
   let end: RecordingEnd = "finished";
   let heard = false;
+  let loudSince = 0;
   let quietSince = 0;
   let floor = 0;
   const started = performance.now();
@@ -72,22 +84,32 @@ export async function record(onLevel?: (level: number) => void): Promise<Recordi
       let sum = 0;
       for (const s of samples) sum += s * s;
       const rms = Math.sqrt(sum / samples.length);
-      if (now - started < 400) floor = Math.max(floor, rms); // the room's own noise
-      const threshold = Math.max(0.02, floor * 2.5);
+      if (now - started < 400) floor = Math.max(floor, rms); // the room's own noise, and any echo
+      const threshold = onInterrupt && !heard ? Math.max(0.05, floor * 3) : Math.max(0.02, floor * 2.5);
       onLevel?.(Math.min(1, rms / 0.2));
       if (rms > threshold) {
-        heard = true;
+        loudSince ||= now;
         quietSince = 0;
-      } else if (heard) {
-        quietSince ||= now;
-        if (now - quietSince > QUIET_AFTER_SPEECH_MS) stopAll();
+        if (!heard && (!onInterrupt || now - loudSince >= INTERRUPT_MS)) {
+          heard = true;
+          onInterrupt?.();
+        }
+      } else {
+        loudSince = 0;
+        if (heard) {
+          quietSince ||= now;
+          if (now - quietSince > QUIET_AFTER_SPEECH_MS) stopAll();
+        }
       }
-      if (!heard && now - started > NO_SPEECH_MS) {
+      if (!heard && !onInterrupt && now - started > NO_SPEECH_MS) {
         end = "silent";
         stopAll();
       }
     }
-    if (now - started > MAX_MS) stopAll();
+    if (now - started > MAX_MS) {
+      if (!heard) end = "silent";
+      stopAll();
+    }
   }, TICK_MS);
 
   const done = new Promise<{ blob: Blob | null; end: RecordingEnd }>((resolve) => {

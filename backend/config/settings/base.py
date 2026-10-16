@@ -588,7 +588,8 @@ AI_DAILY_RUN_CEILING = env.int("AI_DAILY_RUN_CEILING", default=400)  # per membe
 # Voice for Onyeka: speech to text and text to speech on the same service as the text models.
 AI_TRANSCRIBE_MODEL = env.str("AI_TRANSCRIBE_MODEL", default="gpt-4o-mini-transcribe")
 AI_TTS_MODEL = env.str("AI_TTS_MODEL", default="gpt-4o-mini-tts")
-AI_TTS_VOICE = env.str("AI_TTS_VOICE", default="alloy")
+# Cedar is OpenAI's most natural sounding voice, a warm male one, which suits Onyeka.
+AI_TTS_VOICE = env.str("AI_TTS_VOICE", default="cedar")
 # A voice made for Onyeka on ElevenLabs (cloned with its speaker's consent). When both are set,
 # answers are spoken in it instead of the OpenAI voice above. Flash is ElevenLabs' fastest model.
 ELEVENLABS_API_KEY = env.str("ELEVENLABS_API_KEY", default="")
@@ -597,8 +598,19 @@ ELEVENLABS_MODEL = env.str("ELEVENLABS_MODEL", default="eleven_flash_v2_5")
 ELEVENLABS_BASE_URL = env.str("ELEVENLABS_BASE_URL", default="https://api.elevenlabs.io/v1")
 AI_TTS_INSTRUCTIONS = env.str(
     "AI_TTS_INSTRUCTIONS",
-    default="Speak as a warm, confident founder mentoring another founder: clear, encouraging "
-    "and natural, at an easy conversational pace.",
+    default=(
+        "Identity: Onyeka, a Nigerian founder in his late thirties who has built and sold "
+        "companies, talking one to one with a younger founder he believes in.\n"
+        "Accent: warm, educated Nigerian English; relaxed and natural, never exaggerated.\n"
+        "Tone: friendly, calm and sure of himself, like a trusted older brother giving honest "
+        "advice over coffee. Encouraging without hype.\n"
+        "Pacing: an easy conversational pace, a touch slower on the key point. Short natural "
+        "pauses between ideas and after a question. Do not rush the ends of sentences.\n"
+        "Intonation: varied and alive, as in real speech; a gentle lift on questions; a little "
+        "warmth and a hint of a smile when encouraging; firmer and slower when warning.\n"
+        "Avoid: sounding like an announcer, a narrator or someone reading a script; flat or "
+        "sing-song delivery; over-enunciating."
+    ),
 )
 # Estimated cost per million tokens in minor units, by model (input, output). For usage reports
 # only. OpenAI's list prices when this was written; AI_PRICES (JSON, for example

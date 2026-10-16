@@ -13,6 +13,7 @@ import io
 import struct
 import time
 import wave
+import zlib
 from collections.abc import Iterator
 from dataclasses import dataclass
 from uuid import UUID
@@ -24,12 +25,15 @@ from django.conf import settings
 from apps.core import metrics
 from apps.toolkit.ai import runner
 from apps.toolkit.ai.models import AIRun
+from apps.toolkit.ai.spoken import for_speech
 from apps.toolkit.jobs.services import JobFailed, TransientError
 
 logger = structlog.get_logger(__name__)
 
 MAX_AUDIO_BYTES = 4 * 1024 * 1024  # about four minutes of compressed speech
 MAX_SPEECH_CHARS = 4000
+# Raise when the way text is prepared for speech changes, so old recordings are not replayed.
+SPEECH_REVISION = 2
 AUDIO_TYPES = {
     "audio/webm": "webm",
     "audio/ogg": "ogg",
@@ -170,11 +174,18 @@ def _silence() -> bytes:
     return out.getvalue()
 
 
+# Every OpenAI speech model has this voice, so it stands in if the configured one is refused.
+FALLBACK_VOICE = "ash"
+
+
 def speech_voice() -> str:
-    """Which voice answers are spoken in, so a change of voice is never served from the cache."""
+    """Which voice answers are spoken in, so a change of voice, or of how it is directed, is never
+    served from the cache."""
     if _eleven():
-        return f"elevenlabs:{settings.ELEVENLABS_VOICE_ID}:{settings.ELEVENLABS_MODEL}"
-    return f"openai:{settings.AI_TTS_VOICE}:{settings.AI_TTS_MODEL}"
+        voice = f"{settings.ELEVENLABS_VOICE_ID}:{settings.ELEVENLABS_MODEL}"
+        return f"elevenlabs:{voice}:{SPEECH_REVISION}"
+    direction = zlib.crc32(settings.AI_TTS_INSTRUCTIONS.encode())
+    return f"openai:{settings.AI_TTS_VOICE}:{settings.AI_TTS_MODEL}:{direction:x}:{SPEECH_REVISION}"
 
 
 def _eleven() -> bool:
@@ -189,7 +200,9 @@ def _eleven_client() -> httpx.Client:
     )
 
 
-def _speech_request(words: str) -> tuple[httpx.Client, httpx.Request, str, str]:
+def _speech_request(
+    words: str, voice: str | None = None
+) -> tuple[httpx.Client, httpx.Request, str, str]:
     """The client and request for the configured voice, its provider name and model."""
     if _eleven():
         client = _eleven_client()
@@ -215,7 +228,7 @@ def _speech_request(words: str) -> tuple[httpx.Client, httpx.Request, str, str]:
         "/audio/speech",
         json={
             "model": settings.AI_TTS_MODEL,
-            "voice": settings.AI_TTS_VOICE,
+            "voice": voice or settings.AI_TTS_VOICE,
             "input": words,
             "instructions": settings.AI_TTS_INSTRUCTIONS,
             "response_format": "mp3",
@@ -228,7 +241,7 @@ def open_speech(*, owner_id: UUID, text: str) -> SpeechStream:
     """Spoken audio for ``text`` in Onyeka's voice, streamed as it is made. Raises like
     ``transcribe`` before any audio is returned."""
     runner.require_ai()
-    words = text.strip()[:MAX_SPEECH_CHARS]
+    words = for_speech(text)[:MAX_SPEECH_CHARS]
     if not words:
         raise JobFailed("nothing_to_say", "There is nothing to read out.")
     runner.check_ceiling(owner_id)
@@ -239,6 +252,16 @@ def open_speech(*, owner_id: UUID, text: str) -> SpeechStream:
     client, request, provider, model = _speech_request(words)
     try:
         response = client.send(request, stream=True)
+        if (
+            response.status_code == 400
+            and provider == "http"
+            and settings.AI_TTS_VOICE != FALLBACK_VOICE
+        ):
+            # A voice the model does not offer: answer in one it always has rather than not at all.
+            response.close()
+            client.close()
+            client, request, provider, model = _speech_request(words, FALLBACK_VOICE)
+            response = client.send(request, stream=True)
     except httpx.HTTPError as exc:
         client.close()
         _record(owner_id, "speak", model, started, "timeout", provider=provider)

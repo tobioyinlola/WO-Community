@@ -130,8 +130,13 @@ def test_voice_counts_towards_the_daily_allowance(client, settings, quick):
 def test_a_spoken_answer_is_read_without_its_steps_and_a_written_one_with_them(member):
     from apps.toolkit.advisor.views import spoken_text
 
-    written = answer(member, "Do this.", next_steps=["Call", "Price"])
-    assert spoken_text(written) == "Do this.\n\nNext steps. 1. Call 2. Price"
+    written = answer(member, "Do this.", next_steps=["Call ten traders.", "Price it"])
+    assert spoken_text(written) == (
+        "Do this.\n\nIf I were you, here's where I'd start. First, call ten traders. "
+        "And then, price it."
+    )
+    one = answer(member, "Do this.", next_steps=["MVP first"])
+    assert spoken_text(one) == "Do this.\n\nSo, if I were you, I'd MVP first."
     spoken = answer(member, "Do this.", next_steps=["Call"], voice=True)
     assert spoken_text(spoken) == "Do this."
 
@@ -181,6 +186,27 @@ def test_speech_asks_for_mp3_in_the_configured_voice(member, openai, settings):
     assert speech.audio == b"ID3mp3" and speech.content_type == "audio/mpeg"
     assert seen["path"] == "/v1/audio/speech"
     assert b'"voice":"sage"' in seen["body"].replace(b" ", b"") and b'"mp3"' in seen["body"]
+
+
+def test_a_voice_the_model_refuses_falls_back_to_one_it_has(member, openai, settings, monkeypatch):
+    settings.AI_TTS_VOICE = "cedar"
+    voices: list[bytes] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        voices.append(request.content)
+        if b'"cedar"' in request.content.replace(b" ", b""):
+            return httpx.Response(400, json={"error": {"message": "Invalid voice"}})
+        return httpx.Response(200, content=b"ID3ash", headers={"content-type": "audio/mpeg"})
+
+    monkeypatch.setattr(
+        voice,
+        "_client",
+        lambda: httpx.Client(
+            base_url="https://llm.test/v1", transport=httpx.MockTransport(handler)
+        ),
+    )
+    assert voice.speak(owner_id=member.pk, text="Hello").audio == b"ID3ash"
+    assert len(voices) == 2 and b'"voice":"ash"' in voices[1].replace(b" ", b"")
 
 
 @pytest.mark.parametrize(("status", "error"), [(429, "TransientError"), (401, "JobFailed")])

@@ -99,21 +99,42 @@ function Panel({ onClose }: { onClose: () => void }) {
   }, []);
   useEffect(() => stopVoice, [stopVoice]);
 
-  /** Reads an answer aloud, then listens for the member's reply. Pass the streaming address when
-   * the server already gave it, which saves a round trip. */
+  /** Reads an answer aloud, then listens for the member's reply. While it plays the microphone stays
+   * open, so the member can talk over Onyeka as they would a person: the answer stops and their
+   * words are heard from the start. Pass the streaming address when the server already gave it. */
   const answerAloud = async (messageId: string, url?: string | null) => {
     if (!voiceOn.current) return;
     setPhase("speaking");
     const controller = new AbortController();
     speaking.current = controller;
+    let interrupted = false;
+    const playing = (async () => speaker().play(url ?? (await speechUrl(messageId)), controller.signal))();
+    const overTalk = record({
+      onLevel: setLevel,
+      onInterrupt: () => {
+        interrupted = true;
+        controller.abort();
+        setPhase("listening");
+      },
+    }).catch(() => null); // no microphone for this: the member can still tap Skip
     try {
-      await speaker().play(url ?? (await speechUrl(messageId)), controller.signal);
+      await playing;
     } catch (error) {
+      void overTalk.then((r) => r?.cancel());
       setVoiceError(messageOf(error));
       stopVoice();
       return;
     }
-    if (voiceOn.current) void listen();
+    const turn = await overTalk;
+    if (!voiceOn.current) {
+      turn?.cancel();
+      return;
+    }
+    if (interrupted && turn) void hearOut(turn);
+    else {
+      turn?.cancel(); // what it caught was Onyeka, not the member
+      void listen();
+    }
   };
 
   const running = useJob(jobId, () => {
@@ -150,7 +171,7 @@ function Panel({ onClose }: { onClose: () => void }) {
     setPhase("listening");
     let turn: Recording;
     try {
-      turn = await record(setLevel);
+      turn = await record({ onLevel: setLevel });
     } catch {
       setVoiceError("Onyeka can't hear you: allow this site to use your microphone in your browser, then try again.");
       stopVoice();
@@ -160,24 +181,30 @@ function Panel({ onClose }: { onClose: () => void }) {
       turn.cancel();
       return;
     }
+    await hearOut(turn);
+  };
+
+  /** Waits for the member to finish speaking, then asks Onyeka. */
+  const hearOut = async (turn: Recording) => {
     recording.current = turn;
+    setPhase("listening");
     const { blob, end: how } = await turn.done;
     recording.current = null;
     setLevel(0);
     if (!voiceOn.current) return;
     if (!blob) {
-      if (how === "silent") setVoiceError("I didn't hear anything. Tap the microphone when you're ready to talk.");
+      if (how === "silent") setVoiceError("I'll wait. Tap the microphone whenever you want to carry on.");
       stopVoice();
       return;
     }
     setPhase("thinking");
     try {
       // One request: the words, Onyeka's short spoken answer, and where to stream it from.
-      const turn = await voiceTurn(blob);
+      const reply = await voiceTurn(blob);
       void refresh();
       if (!voiceOn.current) return;
-      if (turn.job) setJobId(turn.job.id);
-      else if (turn.assistant_message) void answerAloud(turn.assistant_message.id, turn.speech_url);
+      if (reply.job) setJobId(reply.job.id);
+      else if (reply.assistant_message) void answerAloud(reply.assistant_message.id, reply.speech_url);
     } catch (error) {
       setVoiceError(messageOf(error));
       stopVoice();
@@ -336,7 +363,7 @@ function Panel({ onClose }: { onClose: () => void }) {
 const PHASE_TEXT: Record<Exclude<Phase, "off">, string> = {
   listening: "Listening… pause when you're done",
   thinking: "Onyeka is thinking…",
-  speaking: "Onyeka is speaking",
+  speaking: "Onyeka is speaking… talk any time to cut in",
 };
 
 function VoiceBar({ phase, level, onDone, onSkip, onStop }: { phase: Exclude<Phase, "off">; level: number; onDone: () => void; onSkip: () => void; onStop: () => void }) {
