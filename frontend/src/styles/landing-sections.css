@@ -682,12 +682,12 @@
   align-items: center;
   gap: var(--space-3);
 }
-.site-voice figcaption > span {
+.site-voice__who {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-.site-voice figcaption span span {
+.site-voice__role {
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 20px;

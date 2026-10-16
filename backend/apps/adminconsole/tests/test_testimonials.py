@@ -10,6 +10,12 @@ PUBLIC = "/api/v1/public/testimonials"
 QUOTE = "WO Community introduced me to my first investor within a month."
 
 
+@pytest.fixture(autouse=True)
+def _start_empty():
+    """The first testimonials come with a data migration; these tests start from none."""
+    Quote.objects.all().delete()
+
+
 @pytest.fixture
 def as_editor(make_user, client_for):
     return client_for(make_user(roles=("content_editor",), email="ed@example.com"), mfa_age=5)
