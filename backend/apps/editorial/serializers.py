@@ -257,3 +257,30 @@ class PublicItemSerializer(PublicSummarySerializer):
     external_url = serializers.CharField(allow_blank=True)
     share_url = serializers.CharField()
     open_graph = NewsOpenGraphSerializer()
+
+
+class PublicTestimonialSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    quote = serializers.CharField()
+    name = serializers.CharField()
+    role = serializers.CharField()
+
+
+class AdminTestimonialSerializer(PublicTestimonialSerializer):
+    published = serializers.BooleanField()
+    position = serializers.IntegerField()
+    consent_confirmed = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class TestimonialWriteSerializer(StrictSerializer):
+    quote = serializers.CharField(min_length=10, max_length=400)
+    name = serializers.CharField(min_length=2, max_length=120)
+    role = serializers.CharField(max_length=160, required=False, allow_blank=True)
+    published = serializers.BooleanField(required=False)
+    position = serializers.IntegerField(min_value=0, max_value=999, required=False)
+    consent_confirmed = serializers.BooleanField(
+        required=False,
+        help_text="The person said these words and agreed to them being shown. Needed to publish.",
+    )

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMPARE, FAQ, SOCIAL_LINKS, STEPS, TESTIMONIALS } from "./landingContent";
+import { COMPARE, FAQ, SOCIAL_LINKS, STEPS } from "./landingContent";
 
 /** Guards for the words that are edited by hand: whatever is added later still has to be sound. */
 describe("landing content", () => {
@@ -14,14 +14,6 @@ describe("landing content", () => {
 
   it("asks each question once", () => {
     expect(new Set(FAQ.map((i) => i.question)).size).toBe(FAQ.length);
-  });
-
-  it("holds only complete testimonials", () => {
-    for (const t of TESTIMONIALS) {
-      expect(t.quote.trim()).not.toBe("");
-      expect(t.name.trim()).not.toBe("");
-      expect(t.role.trim()).not.toBe("");
-    }
   });
 
   it("holds only https addresses for social links, one per network", () => {

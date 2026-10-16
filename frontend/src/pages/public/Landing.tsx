@@ -23,8 +23,9 @@ import { CountryMarquee } from "../../ui/CountryMarquee";
 import { CountUp } from "../../ui/CountUp";
 import { Faq } from "../../ui/Faq";
 import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
+import { TestimonialMarquee } from "../../ui/TestimonialMarquee";
 import { Reveal } from "../../ui/Reveal";
-import { COMPARE, FAQ, STEPS, TESTIMONIALS, MARQUEE_COUNTRIES } from "./landingContent";
+import { COMPARE, FAQ, STEPS, MARQUEE_COUNTRIES } from "./landingContent";
 
 interface Feature {
   icon: LucideIcon;
@@ -32,6 +33,9 @@ interface Feature {
   text: string;
   /** The area of the community the card is about. */
   tag: string;
+  /** The card's photo, under public/brand/features, and what it shows for screen readers. */
+  photo: string;
+  photoAlt: string;
   /** Where a visitor can go: the public page where there is one, otherwise a request for access. */
   to: string;
   cta: string;
@@ -41,6 +45,8 @@ const FEATURES: Feature[] = [
   {
     icon: Users,
     tag: "Directory",
+    photo: "/brand/features/directory.webp",
+    photoAlt: "Founders talking together at a community meetup",
     to: "/explore?tab=founders",
     cta: "Explore",
     title: "Find your people",
@@ -49,6 +55,8 @@ const FEATURES: Feature[] = [
   {
     icon: UserCheck,
     tag: "Mentors",
+    photo: "/brand/features/mentors.webp",
+    photoAlt: "A mentor and a founder in a one to one conversation",
     to: "/register",
     cta: "Request access",
     title: "Learn from people who did it",
@@ -57,6 +65,8 @@ const FEATURES: Feature[] = [
   {
     icon: Rocket,
     tag: "Launch toolkit",
+    photo: "/brand/features/launch-toolkit.webp",
+    photoAlt: "A founder working on a business plan at a laptop",
     to: "/register",
     cta: "Request access",
     title: "Launch with a plan",
@@ -65,6 +75,8 @@ const FEATURES: Feature[] = [
   {
     icon: GraduationCap,
     tag: "Courses",
+    photo: "/brand/features/courses.webp",
+    photoAlt: "Founders learning together in a workshop",
     to: "/explore?tab=courses",
     cta: "Explore",
     title: "Keep learning",
@@ -73,6 +85,8 @@ const FEATURES: Feature[] = [
   {
     icon: Briefcase,
     tag: "Jobs",
+    photo: "/brand/features/jobs.webp",
+    photoAlt: "A startup team at work",
     to: "/explore?tab=jobs",
     cta: "Explore",
     title: "Hire and get hired",
@@ -81,6 +95,8 @@ const FEATURES: Feature[] = [
   {
     icon: CalendarDays,
     tag: "Events",
+    photo: "/brand/features/events.webp",
+    photoAlt: "A founder pitching on stage at a demo day",
     to: "/explore?tab=events",
     cta: "Explore",
     title: "Meet in person",
@@ -106,6 +122,13 @@ const STAT_TILES = [
 export function Landing() {
   useDocumentTitle("");
   const { status } = useAuth();
+  // Only words members really said, published by the team with their permission.
+  const testimonials = useQuery({
+    queryKey: ["public", "testimonials"],
+    queryFn: () => unwrap(api.GET("/api/v1/public/testimonials")),
+    staleTime: 10 * 60_000,
+  });
+  const voices = testimonials.data ?? [];
   const events = useQuery({
     queryKey: ["public", "events", "home"],
     queryFn: () => unwrap(api.GET("/api/v1/public/events", { params: { query: { limit: 3 } } })),
@@ -219,7 +242,7 @@ export function Landing() {
               <li key={feature.title} className="site-carousel__slide">
                 <Card className="site-feature">
                   <div className="site-feature__media">
-                    <MediaPlaceholder icon={feature.icon} />
+                    <MediaPlaceholder icon={feature.icon} src={feature.photo} alt={feature.photoAlt} />
                     <span className="site-feature__tag">{feature.tag}</span>
                   </div>
                   <span className="app-tile site-feature__badge">
@@ -345,35 +368,6 @@ export function Landing() {
         </div>
       </section>
 
-      {TESTIMONIALS.length > 0 ? (
-        <section className="site-band" aria-labelledby="voices">
-          <div className="wo-container">
-            <div className="wo-page-rule">
-              <hr />
-              <span className="wo-eyebrow">Members</span>
-            </div>
-            <h2 className="display-md" id="voices" style={{ margin: "var(--space-8) 0 var(--space-12)" }}>
-              In their <span className="site-chip">own words</span>
-            </h2>
-            <Carousel label="What members say">
-              {TESTIMONIALS.map((item) => (
-                <li key={item.name + item.quote} className="site-carousel__slide">
-                  <figure className="site-quote">
-                    <blockquote>
-                      <p>&ldquo;{item.quote}&rdquo;</p>
-                    </blockquote>
-                    <figcaption>
-                      <strong>{item.name}</strong>
-                      <span>{item.role}</span>
-                    </figcaption>
-                  </figure>
-                </li>
-              ))}
-            </Carousel>
-          </div>
-        </section>
-      ) : null}
-
       <section className="site-band" aria-label="What is happening">
         <div className="wo-container">
           <Section
@@ -438,6 +432,21 @@ export function Landing() {
           <Faq items={FAQ} />
         </div>
       </section>
+
+      {voices.length > 0 ? (
+        <section className="site-band" aria-labelledby="voices">
+          <div className="wo-container">
+            <div className="wo-page-rule">
+              <hr />
+              <span className="wo-eyebrow">Members</span>
+            </div>
+            <h2 className="display-md" id="voices" style={{ margin: "var(--space-8) 0 var(--space-10)" }}>
+              In their <span className="site-chip">own words</span>
+            </h2>
+          </div>
+          <TestimonialMarquee items={voices} />
+        </section>
+      ) : null}
     </>
   );
 }

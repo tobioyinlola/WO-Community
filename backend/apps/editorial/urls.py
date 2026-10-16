@@ -38,5 +38,6 @@ urlpatterns = [
     ),
     path("win-submissions", views.WinSubmissionsView.as_view(), name="win-submissions"),
     path("public/news", views.PublicNewsView.as_view(), name="public-news"),
+    path("public/testimonials", views.PublicTestimonialsView.as_view(), name="public-testimonials"),
     path("public/news/<slug:slug>", views.PublicNewsItemView.as_view(), name="public-news-item"),
 ]

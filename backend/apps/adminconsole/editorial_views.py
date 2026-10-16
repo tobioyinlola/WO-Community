@@ -11,16 +11,18 @@ from apps.adminconsole.views import _actor, _ip
 from apps.core import etag, policies
 from apps.core.pagination import AdminLimitOffsetPagination
 from apps.editorial import selectors, services
-from apps.editorial.models import EditorialItem, WinSubmission
+from apps.editorial.models import EditorialItem, Testimonial, WinSubmission
 from apps.editorial.serializers import (
     AdminItemSerializer,
     AdminQuerySerializer,
+    AdminTestimonialSerializer,
     AdminWinSerializer,
     CoverSerializer,
     ItemCommentModerationSerializer,
     ItemCreateSerializer,
     ItemUpdateSerializer,
     ScheduleSerializer,
+    TestimonialWriteSerializer,
     WinQuerySerializer,
     WinReviewSerializer,
 )
@@ -303,3 +305,70 @@ class ReviewWinView(APIView):
 
 def win_view(decision: str) -> type[ReviewWinView]:
     return type(f"{decision.title()}WinView", (ReviewWinView,), {"decision": decision})
+
+
+class AdminTestimonialsView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        operation_id="admin_testimonials_list",
+        summary="Testimonials, published or not",
+        description="In the order the website shows them.",
+        responses={200: AdminTestimonialSerializer(many=True), **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> Response:
+        rows = Testimonial.objects.all()
+        return Response(AdminTestimonialSerializer(rows, many=True).data)
+
+    @extend_schema(
+        operation_id="admin_testimonials_create",
+        summary="Add a testimonial",
+        description="Only words a member really said, with their permission. Publishing needs "
+        "`consent_confirmed`.",
+        request=TestimonialWriteSerializer,
+        responses={201: AdminTestimonialSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request) -> Response:
+        body = TestimonialWriteSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        row = services.save_testimonial(
+            actor=_actor(request), data=dict(body.validated_data), ip=_ip(request)
+        )
+        return Response(AdminTestimonialSerializer(row).data, status=status.HTTP_201_CREATED)
+
+
+class AdminTestimonialView(APIView):
+    policy = MANAGE
+
+    @extend_schema(
+        operation_id="admin_testimonials_update",
+        summary="Change a testimonial",
+        description="Taking away `consent_confirmed` also takes it off the website.",
+        request=TestimonialWriteSerializer,
+        responses={200: AdminTestimonialSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def patch(self, request: Request, testimonial_id: UUID) -> Response:
+        body = TestimonialWriteSerializer(data=request.data, partial=True)
+        body.is_valid(raise_exception=True)
+        row = services.save_testimonial(
+            actor=_actor(request),
+            data=dict(body.validated_data),
+            testimonial_id=testimonial_id,
+            ip=_ip(request),
+        )
+        return Response(AdminTestimonialSerializer(row).data)
+
+    @extend_schema(
+        operation_id="admin_testimonials_delete",
+        summary="Delete a testimonial",
+        responses={204: None, **ERRORS},
+        tags=["admin"],
+    )
+    def delete(self, request: Request, testimonial_id: UUID) -> Response:
+        services.delete_testimonial(
+            actor=_actor(request), testimonial_id=testimonial_id, ip=_ip(request)
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

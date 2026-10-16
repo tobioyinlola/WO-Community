@@ -423,6 +423,16 @@ urlpatterns = [
         for action in COMMENT_ACTIONS_ITEM
     ],
     path("admin/win-submissions", editorial_views.AdminWinsView.as_view(), name="admin-wins"),
+    path(
+        "admin/testimonials",
+        editorial_views.AdminTestimonialsView.as_view(),
+        name="admin-testimonials",
+    ),
+    path(
+        "admin/testimonials/<uuid:testimonial_id>",
+        editorial_views.AdminTestimonialView.as_view(),
+        name="admin-testimonial",
+    ),
     *[
         path(
             f"admin/win-submissions/<uuid:win_id>/{decision}",

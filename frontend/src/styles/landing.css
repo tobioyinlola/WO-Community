@@ -361,3 +361,31 @@ a.wo-card .wo-card__title {
     gap: var(--space-5);
   }
 }
+
+/* Feature cards: the picture eases in and the badge lifts when a card is pointed at or focused. */
+.site-feature .wo-media img,
+.site-feature .wo-media > svg,
+.site-feature .site-feature__badge {
+  transition: transform var(--duration-slow) var(--ease-emphasized);
+}
+@media (hover: hover) {
+  .site-feature.wo-card:hover .wo-media img,
+  .site-feature.wo-card:hover .wo-media > svg {
+    transform: scale(1.06);
+  }
+  .site-feature.wo-card:hover .site-feature__badge {
+    transform: translateY(-4px) rotate(-6deg);
+  }
+}
+.site-feature.wo-card:focus-within .wo-media img,
+.site-feature.wo-card:focus-within .wo-media > svg {
+  transform: scale(1.06);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-feature .wo-media img,
+  .site-feature .wo-media > svg,
+  .site-feature .site-feature__badge {
+    transition: none;
+    transform: none !important;
+  }
+}

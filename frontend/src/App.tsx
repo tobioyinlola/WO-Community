@@ -93,6 +93,7 @@ const ToolkitTemplates = lazy(() => import("./admin/Toolkit").then((m) => ({ def
 const ToolkitRubric = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitRubric })));
 const ToolkitUsage = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitUsage })));
 const ToolkitQuality = lazy(() => import("./admin/Toolkit").then((m) => ({ default: m.ToolkitQuality })));
+const Testimonials = lazy(() => import("./admin/Testimonials").then((m) => ({ default: m.Testimonials })));
 const EmailTemplates = lazy(() => import("./admin/EmailTemplates"));
 const EmailHealth = lazy(() => import("./admin/EmailHealth"));
 const AuditLog = lazy(() => import("./admin/AuditLog"));
@@ -257,6 +258,7 @@ export function App() {
                     <Route path="toolkit/rubric" element={<ToolkitRubric />} />
                     <Route path="toolkit/usage" element={<ToolkitUsage />} />
                     <Route path="toolkit/quality" element={<ToolkitQuality />} />
+                    <Route path="testimonials" element={<Testimonials />} />
                     <Route path="*" element={<AdminStub />} />
                   </Route>
                 </Route>

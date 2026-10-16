@@ -201,3 +201,30 @@ class BannerDismissal(BaseModel):
         constraints = [
             models.UniqueConstraint(fields=["user", "item"], name="banner_dismissal_unique")
         ]
+
+
+class Testimonial(BaseModel):
+    """What a member said about the community, shown on the public website.
+
+    Only real words, with the person's permission: ``consent_confirmed`` records that an admin
+    checked both before it could be published.
+    """
+
+    quote = models.CharField(max_length=400)
+    name = models.CharField(max_length=120)
+    role = models.CharField(max_length=160, blank=True)
+    published = models.BooleanField(default=False)
+    position = models.PositiveSmallIntegerField(default=0)
+    consent_confirmed = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["position", "-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(published=False) | Q(consent_confirmed=True),
+                name="testimonial_published_with_consent",
+            )
+        ]

@@ -3511,6 +3511,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/testimonials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Testimonials, published or not
+         * @description In the order the website shows them.
+         */
+        get: operations["admin_testimonials_list"];
+        put?: never;
+        /**
+         * Add a testimonial
+         * @description Only words a member really said, with their permission. Publishing needs `consent_confirmed`.
+         */
+        post: operations["admin_testimonials_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/testimonials/{testimonial_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a testimonial */
+        delete: operations["admin_testimonials_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a testimonial
+         * @description Taking away `consent_confirmed` also takes it off the website.
+         */
+        patch: operations["admin_testimonials_update"];
+        trace?: never;
+    };
     "/api/v1/admin/win-submissions": {
         parameters: {
             query?: never;
@@ -6359,6 +6404,26 @@ export interface paths {
          * @description Counts of what a visitor can see: startups and founders listed, courses open to visitors and open roles, and up to ten countries listed founders are in (code and founder count only). Counted from the same lists as the sitemap, so every number is something a visitor can click through to. Nothing about individual members.
          */
         get: operations["public_stats_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/testimonials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What members say, for the website
+         * @description Published testimonials, in the order chosen by the community team. Each one was said by the person named, who agreed to it being shown.
+         */
+        get: operations["public_testimonials"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9530,6 +9595,20 @@ export interface components {
             events?: components["schemas"]["AdminHit"][];
             ventures?: components["schemas"]["AdminHit"][];
             tickets?: components["schemas"]["AdminHit"][];
+        };
+        AdminTestimonial: {
+            /** Format: uuid */
+            id: string;
+            quote: string;
+            name: string;
+            role: string;
+            published: boolean;
+            position: number;
+            consent_confirmed: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         AdminTicketDetail: {
             /** Format: uuid */
@@ -13145,6 +13224,21 @@ export interface components {
          *     Silently ignoring unknown input hides client bugs and makes mass
          *     assignment mistakes easy to miss.
          */
+        PatchedTestimonialWriteRequest: {
+            quote?: string;
+            name?: string;
+            role?: string;
+            published?: boolean;
+            position?: number;
+            /** @description The person said these words and agreed to them being shown. Needed to publish. */
+            consent_confirmed?: boolean;
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
         PatchedTkAdminPlanSectionWriteRequest: {
             chapter?: string;
             title?: string;
@@ -13696,6 +13790,13 @@ export interface components {
             cover: components["schemas"]["Image"] | null;
             /** Format: date-time */
             published_at: string;
+        };
+        PublicTestimonial: {
+            /** Format: uuid */
+            id: string;
+            quote: string;
+            name: string;
+            role: string;
         };
         PublishCheck: {
             key: string;
@@ -14969,6 +15070,21 @@ export interface components {
             blocks: {
                 [key: string]: unknown;
             }[];
+        };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        TestimonialWriteRequest: {
+            quote: string;
+            name: string;
+            role?: string;
+            published?: boolean;
+            position?: number;
+            /** @description The person said these words and agreed to them being shown. Needed to publish. */
+            consent_confirmed?: boolean;
         };
         Ticket: {
             /** Format: uuid */
@@ -26911,6 +27027,177 @@ export interface operations {
             };
         };
     };
+    admin_testimonials_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTestimonial"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_testimonials_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestimonialWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTestimonial"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_testimonials_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_testimonials_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testimonial_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTestimonialWriteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTestimonial"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_win_submissions_list: {
         parameters: {
             query?: {
@@ -34320,6 +34607,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicStats"];
+                };
+            };
+        };
+    };
+    public_testimonials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTestimonial"][];
                 };
             };
         };
