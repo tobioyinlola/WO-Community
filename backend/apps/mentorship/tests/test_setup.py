@@ -319,7 +319,8 @@ def test_slots_follow_length_buffer_notice_and_the_viewers_time_zone(
     assert body["length_minutes"] == 30 and body["lengths"] == [30, 60] and body["price"] is None
     slots = body["slots"]
     assert slots
-    first = slots[0]
+    # The notice period can cut into the first day, so look at the first full day after it.
+    first = next(s for s in slots if s["local_date"] != slots[0]["local_date"])
     # 09:00 Lagos is 04:00 in New York in the (UTC-4) autumn or 03:00 once clocks fall back.
     assert first["local_time"] in ("03:00", "04:00")
     earliest = timezone.now() + timedelta(hours=48)

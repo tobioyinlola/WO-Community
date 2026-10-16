@@ -31,9 +31,12 @@ const STARTERS = [
 
 /** Onyeka, the community's AI founder advisor: a chat that opens from the corner of every page. */
 export function Onyeka({ allowed }: { allowed: boolean }) {
-  const on = useFeature("advisor");
-  if (!allowed || !on) return null;
-  return <OnyekaChat />;
+  // Only people who may use the toolkit ask whether the advisor is on, so nobody else sees a 403.
+  return allowed ? <WhenSwitchedOn /> : null;
+}
+
+function WhenSwitchedOn() {
+  return useFeature("advisor") ? <OnyekaChat /> : null;
 }
 
 function OnyekaChat() {
