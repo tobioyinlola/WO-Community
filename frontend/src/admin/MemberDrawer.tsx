@@ -137,10 +137,22 @@ export function MemberDrawer({ memberId, onClose, onAct }: { memberId: string; o
   const country = (code: string) => (code ? (countries.data?.find((c) => c.value === code)?.label ?? code) : "");
 
   return (
-    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+    // While the role or delete dialog is open (and the code check it may ask for), the panel steps
+    // back: it stops trapping focus and does not close when those dialogs are used, since they sit
+    // outside it on the page. Otherwise the first click in them closed the panel and took them along.
+    <Dialog.Root open modal={dialog === null} onOpenChange={(open) => { if (!open) onClose(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="adm-scrim adm-scrim--blur" />
-        <Dialog.Content className="adm-sheet" aria-describedby={undefined} onInteractOutside={(e) => { if ((e.target as HTMLElement | null)?.closest?.(".app-toasts")) e.preventDefault(); }}>
+        <Dialog.Content
+          className="adm-sheet"
+          aria-describedby={undefined}
+          onEscapeKeyDown={(e) => {
+            if (dialog !== null) e.preventDefault(); // Esc closes the dialog on top, not the panel
+          }}
+          onInteractOutside={(e) => {
+            if (dialog !== null || (e.target as HTMLElement | null)?.closest?.(".app-toasts, .wo-scrim")) e.preventDefault();
+          }}
+        >
           <header className="adm-sheet__head">
             {m ? (
               <div className="adm-who">
