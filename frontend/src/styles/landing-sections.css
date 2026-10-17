@@ -905,3 +905,79 @@
     transition: none;
   }
 }
+
+/* About: the book link, and the community team. */
+.founder-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--text-link);
+  text-underline-offset: 3px;
+}
+.founder-team__lead {
+  margin: 0 0 var(--space-8);
+  max-width: 60ch;
+  color: var(--text-secondary);
+}
+.founder-team {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.founder-person {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: var(--stroke-1) solid var(--border-subtle);
+  background: var(--bg-card);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .founder-person:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+}
+.founder-person__photo {
+  width: 88px;
+  height: 88px;
+  margin-bottom: var(--space-2);
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--bg-subtle);
+}
+.founder-person__photo--initials {
+  display: grid;
+  place-items: center;
+  font: 700 28px/1 var(--font-display);
+  color: var(--text-on-brand);
+  background: var(--bg-brand);
+}
+.founder-person__name {
+  margin: 0;
+  font: 700 18px/24px var(--font-display);
+  color: var(--text-primary);
+}
+.founder-person__role {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+.founder-person__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-link);
+}
