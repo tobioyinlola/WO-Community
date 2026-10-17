@@ -275,7 +275,7 @@ function Panel({ onClose }: { onClose: () => void }) {
         <span className="onyeka-avatar onyeka-avatar--lg" aria-hidden="true">O</span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h2 className="onyeka-panel__title" id="onyeka-title">Onyeka</h2>
-          <p className="onyeka-panel__sub">Founder, WO Community <span className="onyeka-tag">AI advisor</span></p>
+          <p className="onyeka-panel__sub">Founder, WO Community</p>
         </div>
         {messages.length ? (
           <button type="button" className="onyeka-icon" onClick={() => { stopVoice(); clear.mutate(); }} disabled={clear.isPending || thinking} aria-label="Start over" title="Start over">
@@ -355,7 +355,6 @@ function Panel({ onClose }: { onClose: () => void }) {
           )}
         </form>
       )}
-      <p className="onyeka-panel__note">AI guidance, not legal, tax or investment advice.</p>
     </section>
   );
 }
