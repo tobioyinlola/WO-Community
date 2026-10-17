@@ -6,7 +6,7 @@ test.describe("public site", () => {
     const problems = watchConsole(page);
     await page.goto("/");
     const headline = page.getByRole("heading", { level: 1 });
-    await expect(headline).toContainText("The future of Africa is being built here.");
+    await expect(headline).toContainText("African entrepreneurship is built here together.");
     await expect(headline.locator(".wo-hl")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "Request access" }).first()).toBeVisible();
     // Real data from the public API: a seeded event and a seeded news item.

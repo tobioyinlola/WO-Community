@@ -40,7 +40,7 @@ async function showEverything(page: Page) {
 
 test("the landing page keeps its sections, copy and links", async ({ page }) => {
   await open(page);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("The future of Africa is being built here.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("African entrepreneurship is built here together.");
   for (const name of [
     "Everything a founder needs, in one place",
     "From request to member",

@@ -153,11 +153,12 @@ export function Landing() {
           <div className="site-hero__grid">
             <div className="site-hero__copy">
               <h1 className="display-xl site-hero__title" id="hero-title">
-                The future of Africa is being <span className="wo-hl">built</span> here.
+                African entrepreneurship is <span className="wo-hl">built</span> here together.
               </h1>
               <p className="body-lg site-hero__lead">
-                We are not just a community. We are a launchpad for world-class African startups: a
-                place for founders, operators and investors to meet, learn and build, on purpose.
+                WO (WithOnyeka) Community is more than a network. We are founders and operators
+                supporting Africa&rsquo;s entrepreneurial ecosystem by connecting people, sharing
+                knowledge and building world-class businesses, on purpose.
               </p>
               <div className="app-cluster">
                 {signedIn ? (

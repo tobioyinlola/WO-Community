@@ -105,8 +105,15 @@
   align-items: center;
 }
 .site-hero .site-hero__title {
-  font-size: clamp(40px, 5.6vw, 84px);
-  line-height: 0.96;
+  /* Sized so the longest word, "entrepreneurship", always fits its column. */
+  font-size: clamp(28px, 4.7vw, 72px);
+  line-height: 0.98;
+  overflow-wrap: break-word;
+}
+@media (max-width: 640px) {
+  .site-hero .site-hero__title {
+    font-size: clamp(26px, 8.2vw, 44px);
+  }
 }
 .site-hero__lead {
   font-size: clamp(16px, 1.4vw, 19px);
