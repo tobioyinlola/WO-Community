@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { ScrollToTop } from "./ui/ScrollToTop";
 import { isStatus } from "./api/errors";
 import { AuthProvider } from "./auth/AuthProvider";
 import { IdleTimeout } from "./auth/IdleTimeout";
@@ -137,6 +138,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ScrollToTop />
           <AuthProvider>
             <IdleTimeout />
             <Suspense fallback={<Fallback />}>

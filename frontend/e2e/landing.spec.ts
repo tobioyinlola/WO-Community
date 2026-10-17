@@ -248,3 +248,13 @@ test("the page describes itself to search engines, and robots.txt is plain text"
   expect(body).toContain("User-agent: *");
   expect(body).toContain("Disallow: /admin");
 });
+
+test("a page opened from the bottom of another starts at the top", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(1000);
+  await page.locator("footer").getByRole("link", { name: "About", exact: true }).click();
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});
