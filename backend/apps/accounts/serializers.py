@@ -153,7 +153,12 @@ class RegisterSerializer(StrictSerializer):
     accepted_terms = serializers.BooleanField()
     accepted_privacy = serializers.BooleanField()
     accepted_conduct = serializers.BooleanField()
-    marketing_consent = serializers.BooleanField(required=False, default=False)
+    marketing_consent = serializers.BooleanField(
+        required=False,
+        default=True,
+        help_text="Members get the community newsletter; send false to opt out from the start. "
+        "Anyone can unsubscribe later from any newsletter or in their settings.",
+    )
     also_mentor = serializers.BooleanField(
         required=False,
         default=False,
@@ -187,7 +192,12 @@ class GoogleRegistrationSerializer(StrictSerializer):
     accepted_terms = serializers.BooleanField()
     accepted_privacy = serializers.BooleanField()
     accepted_conduct = serializers.BooleanField()
-    marketing_consent = serializers.BooleanField(required=False, default=False)
+    marketing_consent = serializers.BooleanField(
+        required=False,
+        default=True,
+        help_text="Members get the community newsletter; send false to opt out from the start. "
+        "Anyone can unsubscribe later from any newsletter or in their settings.",
+    )
     also_mentor = serializers.BooleanField(
         required=False,
         default=False,

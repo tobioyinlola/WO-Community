@@ -36,8 +36,13 @@ def test_consents_are_recorded_with_versions(api_client):
     assert records["terms"].version == "1"
 
 
-def test_marketing_consent_defaults_to_not_granted(api_client):
+def test_a_new_member_joins_the_newsletter(api_client):
     api_client.post(REGISTER_URL, registration_payload())
+    assert ConsentRecord.objects.get(document="marketing").granted is True
+
+
+def test_the_newsletter_can_still_be_declined_at_sign_up(api_client):
+    api_client.post(REGISTER_URL, registration_payload(marketing_consent=False))
     assert ConsentRecord.objects.get(document="marketing").granted is False
 
 

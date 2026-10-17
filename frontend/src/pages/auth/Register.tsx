@@ -32,7 +32,6 @@ interface Draft {
   terms: boolean;
   privacy: boolean;
   conduct: boolean;
-  marketing: boolean;
   referral: ReferralDraft;
 }
 
@@ -54,7 +53,6 @@ const EMPTY: Draft = {
   terms: false,
   privacy: false,
   conduct: false,
-  marketing: false,
   referral: EMPTY_REFERRAL,
 };
 
@@ -129,7 +127,7 @@ export function Register() {
         accepted_terms: draft.terms,
         accepted_privacy: draft.privacy,
         accepted_conduct: draft.conduct,
-        marketing_consent: draft.marketing,
+        marketing_consent: true, // members get the newsletter; they can leave it any time
         also_mentor: draft.also_mentor,
         invitation_token: invitation,
         referral: referralBody(draft.referral),
@@ -412,11 +410,10 @@ export function Register() {
             onChange={(e) => set("conduct", e.target.checked)}
           />
           {err("accepted_conduct") ? <span className="wo-error">! {err("accepted_conduct")}</span> : null}
-          <Checkbox
-            label="Send me community news now and then (optional)"
-            checked={draft.marketing}
-            onChange={(e) => set("marketing", e.target.checked)}
-          />
+          <p className="body-sm app-muted" style={{ margin: 0 }}>
+            As a member you will also get the WO Community newsletter. You can unsubscribe from any
+            issue, or in your settings, at any time.
+          </p>
         </div>
       ) : null}
 

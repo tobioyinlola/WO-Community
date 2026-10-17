@@ -369,6 +369,16 @@ export function SettingsPage() {
     onSuccess: async () => { toast.show("Saved"); await client.invalidateQueries({ queryKey: ["me", "prefs"] }); },
     onError: (e) => toast.show(messageOf(e)),
   });
+  // The newsletter follows the member's marketing consent, not a notification setting.
+  const newsletter = useQuery({ queryKey: ["me", "newsletter"], queryFn: () => unwrap(api.GET("/api/v1/me/marketing-consent")) });
+  const setNewsletter = useMutation({
+    mutationFn: (granted: boolean) => unwrap(api.PUT("/api/v1/me/marketing-consent", { body: { granted } })),
+    onSuccess: async (data) => {
+      toast.show(data.granted ? "You will get the newsletter" : "You will not get the newsletter");
+      await client.invalidateQueries({ queryKey: ["me", "newsletter"] });
+    },
+    onError: (e) => toast.show(messageOf(e)),
+  });
   const setVis = useMutation({
     mutationFn: (change: Record<string, string>) => unwrap(api.PATCH("/api/v1/me/visibility", { body: change as never })),
     onSuccess: async () => { toast.show("Saved"); await client.invalidateQueries({ queryKey: ["me", "visibility"] }); },
@@ -397,13 +407,27 @@ export function SettingsPage() {
         </Card>
         <Card>
           <h2 className="h3" style={{ margin: "0 0 var(--space-4)" }}>Notifications</h2>
+          {newsletter.data ? (
+            <div className="app-cluster" style={{ justifyContent: "space-between", flexWrap: "nowrap", marginBottom: "var(--space-5)" }}>
+              <div>
+                <p className="body" style={{ margin: 0, fontWeight: 600 }}>WO Community newsletter</p>
+                <p className="body-sm app-muted" style={{ margin: 0 }}>Stories, opportunities and events, by email now and then.</p>
+              </div>
+              <Switch
+                label={<span className="wo-visually-hidden">Get the WO Community newsletter</span>}
+                checked={newsletter.data.granted}
+                disabled={setNewsletter.isPending}
+                onChange={(e) => setNewsletter.mutate(e.target.checked)}
+              />
+            </div>
+          ) : null}
           <Loaded query={prefs} skeleton={<SkeletonRows count={3} />}>
             {(data) => (
               <TableScroll label="Notification settings">
               <table className="app-table" style={{ width: "100%" }}>
                 <thead><tr><th scope="col">What</th><th scope="col">In app</th><th scope="col">Email</th></tr></thead>
                 <tbody>
-                  {Object.entries(data.preferences).map(([group, channels]) => (
+                  {Object.entries(data.preferences).filter(([group]) => group !== "newsletter").map(([group, channels]) => (
                     <tr key={group}>
                       <td>{GROUP_LABELS[group] ?? humanise(group)}</td>
                       {(["in_app", "email"] as const).map((channel) => (

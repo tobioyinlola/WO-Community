@@ -42,8 +42,9 @@ interface Person {
   role: string;
   linkedin: string;
   /**
-   * Their LinkedIn profile photo. LinkedIn issues these addresses without an expiry date; if one
-   * stops loading (say they change their photo) the card falls back to their initials.
+   * Their photo: one supplied to us under public/brand/team/, or their LinkedIn profile photo,
+   * whose addresses LinkedIn issues without an expiry date. If one stops loading (say they change
+   * their LinkedIn photo) the card falls back to their initials.
    */
   photo?: string;
 }
@@ -51,17 +52,22 @@ interface Person {
 const TEAM: Person[] = [
   {
     name: "Olusola Osinoiki",
-    role: "Partner",
+    role: "Community Partner",
     linkedin: "https://www.linkedin.com/in/solaosinoiki/",
     photo: "https://media.licdn.com/dms/image/v2/D4E03AQFE8ye0PGD1cg/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1704980471293?e=2147483647&v=beta&t=HdZ0pIl2F5EuPcNRd2oYD0W4HLmPG1KIGDyzoi-wc7w",
   },
   {
     name: "Temitope Ekundayo",
-    role: "Community Advisor",
+    role: "Community Partner",
     linkedin: "https://www.linkedin.com/in/temitope-ekundayo-/",
     photo: "https://media.licdn.com/dms/image/v2/D4D03AQHtdvs5wjgi7Q/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1693494605335?e=2147483647&v=beta&t=AJ3k0Rqry9MD59nGxuVNW4FOOhTLf2ZV1gA2q-ozyrE",
   },
-  { name: "Thara Atta", role: "Community Manager", linkedin: "https://www.linkedin.com/in/thara-atta-48297513b/" },
+  {
+    name: "Thara Atta",
+    role: "Community Manager",
+    linkedin: "https://www.linkedin.com/in/thara-atta-48297513b/",
+    photo: "/brand/team/thara-atta.webp",
+  },
   {
     name: "Enianu Eniafe",
     role: "Community Support Team",

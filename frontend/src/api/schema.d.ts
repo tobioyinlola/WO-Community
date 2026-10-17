@@ -11286,7 +11286,10 @@ export interface components {
             accepted_terms: boolean;
             accepted_privacy: boolean;
             accepted_conduct: boolean;
-            /** @default false */
+            /**
+             * @description Members get the community newsletter; send false to opt out from the start. Anyone can unsubscribe later from any newsletter or in their settings.
+             * @default true
+             */
             marketing_consent: boolean;
             /**
              * @description I am also a mentor. Only records interest; an admin still approves.
@@ -14079,7 +14082,10 @@ export interface components {
             accepted_terms: boolean;
             accepted_privacy: boolean;
             accepted_conduct: boolean;
-            /** @default false */
+            /**
+             * @description Members get the community newsletter; send false to opt out from the start. Anyone can unsubscribe later from any newsletter or in their settings.
+             * @default true
+             */
             marketing_consent: boolean;
             /**
              * @description I am also a mentor. Only records interest; an admin still approves.
