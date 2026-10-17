@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { isAdmin } from "../../admin/permissions";
 import { ApiError } from "../../api/errors";
 import { useAuth } from "../../auth/AuthProvider";
 import { wasSignedOutIdle } from "../../auth/idle";
@@ -13,10 +14,11 @@ interface LocationState {
 
 export function Login() {
   useDocumentTitle("Sign in");
-  const { status, login, verifyMfa } = useAuth();
-  const navigate = useNavigate();
+  const { status, me, login, verifyMfa } = useAuth();
   const location = useLocation();
-  const from = (location.state as LocationState | null)?.from ?? "/app";
+  // Where to go once signed in: back to the page that asked for it, or else the person's own
+  // home, which for an admin is the admin dashboard.
+  const asked = (location.state as LocationState | null)?.from;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,15 +29,17 @@ export function Login() {
   const signIn = useSubmit(async () => {
     const outcome = await login(email.trim(), password);
     if (outcome.kind === "mfa") setMfaToken(outcome.mfaToken);
-    else navigate(from, { replace: true });
+    // Signed in: the redirect below takes over once the account has loaded.
   });
   const confirm = useSubmit(async () => {
     if (!mfaToken) return;
     await verifyMfa(mfaToken, code.trim());
-    navigate(from, { replace: true });
   });
 
-  if (status === "authenticated") return <Navigate to={from} replace />;
+  if (status === "authenticated" && me) {
+    const home = isAdmin(me.roles ?? []) ? "/admin" : "/app";
+    return <Navigate to={asked && asked !== "/app" ? asked : home} replace />;
+  }
 
   const unverified = signIn.error instanceof ApiError && signIn.error.code === "email_not_verified";
 

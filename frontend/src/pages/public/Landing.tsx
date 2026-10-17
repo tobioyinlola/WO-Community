@@ -369,20 +369,25 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="site-band" aria-label="What is happening">
+      <section className="site-band" aria-label="Community Highlights">
         <div className="wo-container">
           <Section
-            title="Coming up"
+            title="Community Highlights"
             action={
-              <Link className="app-linklike" to="/explore">
-                See everything
-              </Link>
+              <span className="app-cluster" style={{ gap: "var(--space-4)" }}>
+                <Link className="app-linklike" to="/explore?tab=events">
+                  All events
+                </Link>
+                <Link className="app-linklike" to="/news">
+                  All news
+                </Link>
+              </span>
             }
           >
-            {events.data && events.data.results.length > 0 ? (
+            {(events.data?.results.length ?? 0) + (news.data?.results.length ?? 0) > 0 ? (
               <Reveal className="app-grid">
-                {events.data.results.map((event) => (
-                  <CardTo key={event.slug} to="/explore?tab=events">
+                {(events.data?.results ?? []).map((event) => (
+                  <CardTo key={`event-${event.slug}`} to="/explore?tab=events">
                     <Badge variant="investor">{humanise(event.type)}</Badge>
                     <CardTitle style={{ marginTop: "var(--space-3)" }}>{event.title}</CardTitle>
                     <CardText>
@@ -391,23 +396,8 @@ export function Landing() {
                     </CardText>
                   </CardTo>
                 ))}
-              </Reveal>
-            ) : (
-              <p className="body app-muted">New events are announced here as soon as they are set.</p>
-            )}
-          </Section>
-          <Section
-            title="From the community"
-            action={
-              <Link className="app-linklike" to="/news">
-                All news
-              </Link>
-            }
-          >
-            {news.data && news.data.results.length > 0 ? (
-              <Reveal className="app-grid">
-                {news.data.results.map((item) => (
-                  <CardTo key={item.slug} to={`/news/${item.slug}`}>
+                {(news.data?.results ?? []).map((item) => (
+                  <CardTo key={`news-${item.slug}`} to={`/news/${item.slug}`}>
                     <Badge variant="operator">{humanise(item.type)}</Badge>
                     <CardTitle style={{ marginTop: "var(--space-3)" }}>{item.title}</CardTitle>
                     <CardText>{formatDate(item.published_at)}</CardText>
@@ -415,7 +405,7 @@ export function Landing() {
                 ))}
               </Reveal>
             ) : (
-              <p className="body app-muted">Stories from members and the team appear here.</p>
+              <p className="body app-muted">Upcoming events and stories from members and the team appear here.</p>
             )}
           </Section>
         </div>

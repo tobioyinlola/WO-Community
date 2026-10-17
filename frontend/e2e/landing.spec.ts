@@ -46,8 +46,7 @@ test("the landing page keeps its sections, copy and links", async ({ page }) => 
     "From request to member",
     "On your own, or in the community",
     "Built for people who build",
-    "Coming up",
-    "From the community",
+    "Community Highlights",
     "Questions, answered",
   ]) {
     await expect(page.getByRole("heading", { level: 2, name })).toBeVisible();

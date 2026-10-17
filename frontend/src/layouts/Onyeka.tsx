@@ -275,7 +275,7 @@ function Panel({ onClose }: { onClose: () => void }) {
         <span className="onyeka-avatar onyeka-avatar--lg" aria-hidden="true">O</span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <h2 className="onyeka-panel__title" id="onyeka-title">Onyeka</h2>
-          <p className="onyeka-panel__sub">Founder, WO Community <span className="onyeka-tag">AI advisor</span></p>
+          <p className="onyeka-panel__sub">Founder, WO Community</p>
         </div>
         {messages.length ? (
           <button type="button" className="onyeka-icon" onClick={() => { stopVoice(); clear.mutate(); }} disabled={clear.isPending || thinking} aria-label="Start over" title="Start over">
@@ -290,7 +290,7 @@ function Panel({ onClose }: { onClose: () => void }) {
       <div className="onyeka-panel__body" aria-live="polite">
         {query.isError ? <Alert tone="danger" title="Could not load the conversation">{messageOf(query.error)}</Alert> : null}
         <div className="onyeka-msg" data-author="assistant">
-          <p>{query.data?.greeting ?? "Hi, I'm Onyeka, founder of WO Community, here as your AI advisor."}</p>
+          <p>{query.data?.greeting ?? "Hi, I'm Onyeka, founder of WO Community. Tell me what you're building and where you're stuck."}</p>
         </div>
         {messages.map((m) => (
           <Bubble key={m.id} message={m} playing={playingId === m.id} onListen={canSpeak && aiOn && !inVoice ? () => listenTo(m.id) : undefined} />
@@ -355,7 +355,6 @@ function Panel({ onClose }: { onClose: () => void }) {
           )}
         </form>
       )}
-      <p className="onyeka-panel__note">AI guidance, not legal, tax or investment advice.</p>
     </section>
   );
 }

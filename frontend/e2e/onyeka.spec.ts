@@ -34,7 +34,6 @@ test.describe("the member area", () => {
     // Begin from an empty conversation, whatever an earlier run left.
     const startOver = panel.getByRole("button", { name: "Start over" });
     if (await startOver.isVisible()) await startOver.click();
-    await expect(panel.getByText("AI advisor").first()).toBeVisible();
     await expect(panel.getByText(/I'm Onyeka, founder of WO Community/)).toBeVisible();
     await shot(page, "onyeka-open");
 

@@ -13,7 +13,7 @@ export async function signIn(page: Page, email = MEMBER): Promise<void> {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/app/);
+  await expect(page).toHaveURL(/\/(app|admin)/); // admins land on the admin dashboard
 }
 
 /** Fails a test if the page logged an error to the console. */
@@ -45,6 +45,7 @@ export async function signInAdmin(page: Page) {
   const codeStep = page.getByRole("heading", { name: "Enter your code" });
   await expect(codeStep.or(page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/ }))).toBeVisible();
   if (!(await codeStep.isVisible())) {
+    await expect(page).toHaveURL(/\/admin$/); // an admin lands on the admin dashboard
     await page.goto("/admin");
     await expect(page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/ })).toBeVisible();
     return;
@@ -55,11 +56,12 @@ export async function signInAdmin(page: Page) {
     await page.getByLabel("Code").fill(await freshCode(ADMIN_KEY, attempt > 0));
     await page.getByRole("button", { name: "Confirm" }).click();
     const rejected = page.getByRole("alert");
-    await expect(page).toHaveURL(/\/app/, { timeout: attempt === 0 ? 6_000 : 20_000 }).catch(async () => {
+    await expect(page).toHaveURL(/\/(app|admin)/, { timeout: attempt === 0 ? 6_000 : 20_000 }).catch(async () => {
       if (attempt > 0 || (await rejected.count()) === 0) throw new Error("The code was not accepted");
     });
-    if (/\/app/.test(page.url())) break;
+    if (/\/(app|admin)/.test(page.url())) break;
   }
+  await expect(page).toHaveURL(/\/admin$/); // an admin lands on the admin dashboard
   await page.goto("/admin");
   await expect(page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/ })).toBeVisible();
 }
