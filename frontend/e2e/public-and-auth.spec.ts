@@ -95,12 +95,12 @@ test.describe("requesting access", () => {
     await page.getByLabel("What does it do?").fill("Payments for small shops.");
     await page.getByRole("button", { name: "Continue" }).click();
 
-    await page.getByRole("button", { name: "Request access" }).click();
+    await page.getByRole("button", { name: "Become a member" }).click();
     await expect(page.getByText("Accept the terms to continue.")).toBeVisible();
     await page.getByLabel(/I accept the\s+terms/).check();
     await page.getByLabel(/privacy policy/).check();
     await page.getByLabel(/code of conduct/).check();
-    await page.getByRole("button", { name: "Request access" }).click();
+    await page.getByRole("button", { name: "Become a member" }).click();
     await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
     await expect(page.getByText("Application received")).toBeVisible();
   });

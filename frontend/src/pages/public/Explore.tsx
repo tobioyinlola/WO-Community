@@ -20,7 +20,7 @@ function JoinPrompt() {
     <p className="body app-muted" style={{ marginTop: "var(--space-8)" }}>
       Want the full picture, with contact details and introductions?{" "}
       <Link className="app-link" to="/register">
-        Request access
+        Become a member
       </Link>
       .
     </p>
@@ -42,7 +42,7 @@ function SeeMore({ what }: { what: "startups" | "members" }) {
       </div>
       <div className="app-cluster">
         <Link className="wo-btn wo-btn--accent" to="/register">
-          Request access
+          Become a member
         </Link>
         <Link className="wo-btn wo-btn--on-brand" to="/login">
           Sign in

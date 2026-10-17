@@ -43,7 +43,7 @@ test.describe("referrals", () => {
     await group.getByRole("button", { name: /Amaka Obi/ }).click();
     await expect(group.getByRole("group", { name: "The member who referred you" })).toContainText("Amaka Obi");
     await agree(page);
-    await page.getByRole("button", { name: "Request access" }).click();
+    await page.getByRole("button", { name: "Become a member" }).click();
     await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   });
 
@@ -124,7 +124,7 @@ test.describe("referrals", () => {
     await expect(group.getByText(/joining through .* link/)).toBeVisible();
     await expect(group.getByLabel("How did you hear about us?")).toHaveValue("member");
     await agree(fresh);
-    await fresh.getByRole("button", { name: "Request access" }).click();
+    await fresh.getByRole("button", { name: "Become a member" }).click();
     await expect(fresh.getByRole("heading", { name: "Check your email" })).toBeVisible();
     await visitor.close();
   });

@@ -10,7 +10,7 @@ test.describe("the public website", () => {
     const api = await page.request.get("/api/v1/public/founders");
     if ((await api.json()).has_more) {
       await expect(page.getByRole("heading", { name: "You’re seeing 10 members. Join to see them all." })).toBeVisible();
-      await expect(page.getByRole("region", { name: "See all members" }).getByRole("link", { name: "Request access" })).toHaveAttribute("href", "/register");
+      await expect(page.getByRole("region", { name: "See all members" }).getByRole("link", { name: "Become a member" })).toHaveAttribute("href", "/register");
     }
     expect((await page.request.get("/api/v1/public/founders?limit=11")).status()).toBe(400);
   });

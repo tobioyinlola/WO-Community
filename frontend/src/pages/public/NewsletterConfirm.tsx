@@ -42,7 +42,7 @@ export function NewsletterConfirm() {
           <p className="body">
             Building something?{" "}
             <Link className="app-link" to="/register">
-              Request access to the community
+              Become a member of the community
             </Link>
             .
           </p>
