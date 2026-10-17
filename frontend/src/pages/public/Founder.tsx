@@ -41,17 +41,45 @@ interface Person {
   name: string;
   role: string;
   linkedin: string;
-  /** A photo under public/brand/team/ (for example "/brand/team/thara-atta.webp"). Until one is added, their initials show. */
+  /**
+   * Their LinkedIn profile photo. LinkedIn issues these addresses without an expiry date; if one
+   * stops loading (say they change their photo) the card falls back to their initials.
+   */
   photo?: string;
 }
 
 const TEAM: Person[] = [
-  { name: "Olusola Osinoiki", role: "Partner", linkedin: "https://www.linkedin.com/in/solaosinoiki/" },
-  { name: "Temitope Ekundayo", role: "Community Advisor", linkedin: "https://www.linkedin.com/in/temitope-ekundayo-/" },
+  {
+    name: "Olusola Osinoiki",
+    role: "Partner",
+    linkedin: "https://www.linkedin.com/in/solaosinoiki/",
+    photo: "https://media.licdn.com/dms/image/v2/D4E03AQFE8ye0PGD1cg/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1704980471293?e=2147483647&v=beta&t=HdZ0pIl2F5EuPcNRd2oYD0W4HLmPG1KIGDyzoi-wc7w",
+  },
+  {
+    name: "Temitope Ekundayo",
+    role: "Community Advisor",
+    linkedin: "https://www.linkedin.com/in/temitope-ekundayo-/",
+    photo: "https://media.licdn.com/dms/image/v2/D4D03AQHtdvs5wjgi7Q/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1693494605335?e=2147483647&v=beta&t=AJ3k0Rqry9MD59nGxuVNW4FOOhTLf2ZV1gA2q-ozyrE",
+  },
   { name: "Thara Atta", role: "Community Manager", linkedin: "https://www.linkedin.com/in/thara-atta-48297513b/" },
-  { name: "Enianu Eniafe", role: "Community Support Team", linkedin: "https://www.linkedin.com/in/enianu-eniafe/" },
-  { name: "James Samuel Ihima", role: "Community Support Team", linkedin: "https://www.linkedin.com/in/james-ihima-450597272/" },
-  { name: "Justus Oyinlola", role: "Tech Support", linkedin: "https://www.linkedin.com/in/justusoyinlola/" },
+  {
+    name: "Enianu Eniafe",
+    role: "Community Support Team",
+    linkedin: "https://www.linkedin.com/in/enianu-eniafe/",
+    photo: "https://media.licdn.com/dms/image/v2/D4D03AQGK6ws3erbU8A/profile-displayphoto-scale_200_200/B4DZuMZPDZHwAY-/0/1767586985202?e=2147483647&v=beta&t=23jqMJUkSe6Y8WXimE8-hkuTO8fEIWg5IfEG6TtCMgk",
+  },
+  {
+    name: "James Samuel Ihima",
+    role: "Community Support Team",
+    linkedin: "https://www.linkedin.com/in/james-ihima-450597272/",
+    photo: "https://media.licdn.com/dms/image/v2/D4E03AQG1bo6QLCEQSw/profile-displayphoto-scale_200_200/B4EZ89WqDwHkAc-/0/1783440779045?e=2147483647&v=beta&t=ngH5Ssq8U9mUI2uOLmWSOGOIBRCg3je06-zT59YvlVQ",
+  },
+  {
+    name: "Justus Oyinlola",
+    role: "Tech Support",
+    linkedin: "https://www.linkedin.com/in/justusoyinlola/",
+    photo: "https://media.licdn.com/dms/image/v2/D4E03AQHfMIuZanwPOw/profile-displayphoto-scale_200_200/B4EZpBb5V8GYAY-/0/1762034425748?e=2147483647&v=beta&t=gHBWONooG88Gu7DNQ46Z6ShloHhtYfThNmADa0oUrhU",
+  },
 ];
 
 /** Their photo, or their initials when the photo has not been added or does not load. */
@@ -59,7 +87,7 @@ function PersonPhoto({ person }: { person: Person }) {
   const [failed, setFailed] = useState(false);
   const initials = person.name.split(" ").filter(Boolean).map((w) => w[0]).slice(0, 2).join("");
   return person.photo && !failed ? (
-    <img className="founder-person__photo" src={person.photo} alt="" width={96} height={96} loading="lazy" decoding="async" onError={() => setFailed(true)} />
+    <img className="founder-person__photo" src={person.photo} alt="" width={96} height={96} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
   ) : (
     <span className="founder-person__photo founder-person__photo--initials" aria-hidden="true">{initials}</span>
   );
