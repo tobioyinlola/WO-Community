@@ -233,7 +233,7 @@ def test_a_new_person_becomes_a_pending_member_who_is_signed_in(
     assert user.email_verified_at is not None
     assert not user.has_usable_password()
     assert SocialIdentity.objects.get().user_id == user.pk
-    assert ConsentRecord.objects.filter(user=user, granted=True).count() == 3
+    assert ConsentRecord.objects.filter(user=user, granted=True).count() == 4  # newsletter too
     run_outbox()
     assert sent_emails == []  # nothing to confirm: Google already did
     assert AuditLog.objects.filter(action="auth.registered", after={"method": "google"}).exists()

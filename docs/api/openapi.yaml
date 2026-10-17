@@ -24857,7 +24857,10 @@ components:
           type: boolean
         marketing_consent:
           type: boolean
-          default: false
+          default: true
+          description: Members get the community newsletter; send false to opt out
+            from the start. Anyone can unsubscribe later from any newsletter or in
+            their settings.
         also_mentor:
           type: boolean
           default: false
@@ -30894,7 +30897,10 @@ components:
           type: boolean
         marketing_consent:
           type: boolean
-          default: false
+          default: true
+          description: Members get the community newsletter; send false to opt out
+            from the start. Anyone can unsubscribe later from any newsletter or in
+            their settings.
         also_mentor:
           type: boolean
           default: false
