@@ -401,7 +401,7 @@ export function SettingsPage() {
             {(data) => (
               <TableScroll label="Notification settings">
               <table className="app-table" style={{ width: "100%" }}>
-                <thead><tr><th scope="col">What</th><th>In the app</th><th>By email</th></tr></thead>
+                <thead><tr><th scope="col">What</th><th scope="col">In app</th><th scope="col">Email</th></tr></thead>
                 <tbody>
                   {Object.entries(data.preferences).map(([group, channels]) => (
                     <tr key={group}>

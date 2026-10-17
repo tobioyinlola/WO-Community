@@ -120,7 +120,7 @@ export function TopBar({ limited = false, narrow, onMenu, links, onHelp, pending
           </Link>
         ) : null}
         <LocalTime />
-        <button type="button" className="adm-iconbtn adm-iconbtn--ring" onClick={onHelp} aria-label="Help and shortcuts">
+        <button type="button" className="adm-iconbtn adm-iconbtn--ring adm-top__help" onClick={onHelp} aria-label="Help and shortcuts">
           <CircleHelp size={20} strokeWidth={1.5} aria-hidden="true" />
         </button>
         <NotificationBell enabled={isMember} />

@@ -119,7 +119,7 @@ a.wo-card:hover,.wo-card--interactive:hover{box-shadow:var(--shadow-md);transfor
 .wo-tab:hover{color:var(--text-primary)}
 .wo-tab[aria-selected=true]{color:var(--text-primary);border-bottom-color:var(--text-primary)}
 .wo-segment{display:inline-flex;padding:var(--space-1);gap:var(--space-1);background:var(--bg-sunken);border-radius:var(--radius-full)}
-.wo-segment .wo-tab{padding:var(--space-2) var(--space-5);margin:0;border:0;border-radius:var(--radius-full)}
+.wo-segment .wo-tab{padding:var(--space-2) var(--space-5);margin:0;border:0;border-radius:var(--radius-full);white-space:nowrap}
 .wo-segment .wo-tab[aria-selected=true]{background:var(--action-primary);color:var(--action-primary-text)}
 
 /* Alert */
