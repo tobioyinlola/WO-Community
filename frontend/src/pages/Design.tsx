@@ -148,7 +148,7 @@ export function Design() {
         {() => (
           <>
             <div className="wo-row">
-              <Button>Request access</Button>
+              <Button>Become a member</Button>
               <Button variant="secondary">View programme</Button>
               <Button variant="ghost">Skip for now</Button>
               <Button variant="danger">Remove member</Button>
@@ -364,7 +364,7 @@ export function Design() {
               tail={
                 <>
                   <Button variant="ghost" size="sm">Sign in</Button>
-                  <Button size="sm">Request access</Button>
+                  <Button size="sm">Become a member</Button>
                 </>
               }
             />

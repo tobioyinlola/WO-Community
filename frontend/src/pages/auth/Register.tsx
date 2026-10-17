@@ -65,7 +65,7 @@ function stepOf(field: string): number {
 }
 
 export function Register() {
-  useDocumentTitle("Request access");
+  useDocumentTitle("Become a member");
   const { status } = useAuth();
   const [params] = useSearchParams();
   // Invitation emails link with ?invitation=; ?invite= is kept for links already shared.
@@ -165,7 +165,7 @@ export function Register() {
     return (
       <div className="app-stack app-stack--lg">
         <div>
-          <span className="wo-eyebrow">Request access</span>
+          <span className="wo-eyebrow">Become a member</span>
           <h1 className="h1" style={{ margin: "var(--space-2) 0" }}>
             {done === "approved" ? "You are in" : "Check your email"}
           </h1>
@@ -238,7 +238,7 @@ export function Register() {
   return (
     <form onSubmit={next} noValidate className="app-stack app-stack--lg">
       <div>
-        <span className="wo-eyebrow">Request access</span>
+        <span className="wo-eyebrow">Become a member</span>
         <h1 className="h1" style={{ margin: "var(--space-2) 0" }}>
           Join the community
         </h1>
@@ -426,7 +426,7 @@ export function Register() {
           <span />
         )}
         <Button size="lg" type="submit" loading={submit.busy}>
-          {step === STEPS.length - 1 ? "Request access" : "Continue"}
+          {step === STEPS.length - 1 ? "Become a member" : "Continue"}
         </Button>
       </div>
       <p className="body-sm app-muted" style={{ margin: 0 }}>

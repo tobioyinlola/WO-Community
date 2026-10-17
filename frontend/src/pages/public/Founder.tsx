@@ -247,7 +247,7 @@ export function Founder() {
               WO Community brings founders together with mentors, a launch toolkit and an AI advisor that coaches the way Onyeka does.
             </p>
             <Link className="wo-btn wo-btn--accent" to={signedIn ? "/app" : "/register"}>
-              {signedIn ? "Go to the community" : "Request access"}
+              {signedIn ? "Go to the community" : "Become a member"}
               <ArrowCircle />
             </Link>
           </div>

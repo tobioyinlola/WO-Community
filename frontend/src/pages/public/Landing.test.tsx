@@ -100,8 +100,8 @@ describe("the feature cards", () => {
     expect(screen.getByRole("link", { name: "Explore: Keep learning" })).toHaveAttribute("href", "/explore?tab=courses");
     expect(screen.getByRole("link", { name: "Explore: Hire and get hired" })).toHaveAttribute("href", "/explore?tab=jobs");
     expect(screen.getByRole("link", { name: "Explore: Meet in person" })).toHaveAttribute("href", "/explore?tab=events");
-    expect(screen.getByRole("link", { name: "Request access: Learn from people who did it" })).toHaveAttribute("href", "/register");
-    expect(screen.getByRole("link", { name: "Request access: Launch with a plan" })).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: "Become a member: Learn from people who did it" })).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: "Become a member: Launch with a plan" })).toHaveAttribute("href", "/register");
   });
 });
 

@@ -55,7 +55,7 @@ test("the landing page keeps its sections, copy and links", async ({ page }) => 
     await expect(page.getByRole("heading", { level: 3, name })).toBeVisible();
   }
   await expect(page.getByRole("heading", { level: 3, name: "Every member is reviewed" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /^Request access/ }).first()).toHaveAttribute("href", "/register");
+  await expect(page.getByRole("link", { name: /^Become a member/ }).first()).toHaveAttribute("href", "/register");
   await expect(page.getByRole("link", { name: "Sign in" }).first()).toHaveAttribute("href", "/login");
   // The big wordmark in the footer is decoration, not content.
   await expect(page.locator(".site-footer__mark")).toHaveAttribute("aria-hidden", "true");

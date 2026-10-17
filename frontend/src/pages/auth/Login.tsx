@@ -133,7 +133,7 @@ export function Login() {
       <p className="body app-muted" style={{ margin: 0 }}>
         New here?{" "}
         <Link className="app-link" to="/register">
-          Request access
+          Become a member
         </Link>
       </p>
     </form>

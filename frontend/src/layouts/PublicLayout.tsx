@@ -86,7 +86,7 @@ export function PublicLayout() {
                   Sign in
                 </Link>
                 <Link className="wo-btn wo-btn--accent wo-btn--sm" to="/register" onClick={closeMenu}>
-                  Request access
+                  Become a member
                   <ArrowCircle />
                 </Link>
               </>
@@ -129,7 +129,7 @@ export function PublicLayout() {
                 <li><Link to="/explore">Public directory</Link></li>
                 <li><Link to="/news">News</Link></li>
                 <li><Link to="/about">About</Link></li>
-                <li><Link to="/register">Request access</Link></li>
+                <li><Link to="/register">Become a member</Link></li>
               </ul>
             </div>
             <div>

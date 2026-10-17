@@ -58,7 +58,7 @@ const FEATURES: Feature[] = [
     photo: "/brand/features/mentors.webp",
     photoAlt: "Two women in a one to one mentoring conversation, taking notes",
     to: "/register",
-    cta: "Request access",
+    cta: "Become a member",
     title: "Learn from people who did it",
     text: "Book a session with a vetted mentor. Real experience, one conversation at a time.",
   },
@@ -68,7 +68,7 @@ const FEATURES: Feature[] = [
     photo: "/brand/features/launch-toolkit.webp",
     photoAlt: "A founder at work on a laptop, phone in hand",
     to: "/register",
-    cta: "Request access",
+    cta: "Become a member",
     title: "Launch with a plan",
     text: "Score your idea, write the plan, model the numbers and build the deck, all in one private workspace.",
   },
@@ -169,7 +169,7 @@ export function Landing() {
                 ) : (
                   <>
                     <Link className="wo-btn wo-btn--accent wo-btn--lg" to="/register">
-                      Request access
+                      Become a member
                       <ArrowCircle />
                     </Link>
                     <Link className="wo-btn wo-btn--on-brand wo-btn--lg" to="/login">
@@ -360,7 +360,7 @@ export function Landing() {
               </CardText>
               <div style={{ marginTop: "var(--space-6)" }}>
                 <Link className="wo-btn wo-btn--accent" to="/register">
-                  Request access
+                  Become a member
                   <ArrowCircle />
                 </Link>
               </div>
