@@ -29,6 +29,16 @@ const STARTERS = [
   "How do I find the right co-founder?",
 ];
 
+/** Onyeka's photo, or his initial if it cannot be loaded. */
+function OnyekaAvatar({ large = false }: { large?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className={`onyeka-avatar${large ? " onyeka-avatar--lg" : ""}`} aria-hidden="true">
+      {failed ? "O" : <img src="/brand/onyeka-avatar.webp" alt="" width={44} height={44} decoding="async" onError={() => setFailed(true)} />}
+    </span>
+  );
+}
+
 /** Onyeka, the community's AI founder advisor: a chat that opens from the corner of every page. */
 export function Onyeka({ allowed }: { allowed: boolean }) {
   // Only people who may use the toolkit ask whether the advisor is on, so nobody else sees a 403.
@@ -57,7 +67,7 @@ function OnyekaChat() {
         aria-controls="onyeka-panel"
         onClick={() => (open ? close() : setOpen(true))}
       >
-        <span className="onyeka-avatar" aria-hidden="true">O</span>
+        <OnyekaAvatar />
         <span className="onyeka-launcher__text">{open ? "Close chat" : "Ask Onyeka"}</span>
       </button>
     </>
@@ -272,7 +282,7 @@ function Panel({ onClose }: { onClose: () => void }) {
   return (
     <section className="onyeka-panel" id="onyeka-panel" role="dialog" aria-modal="false" aria-labelledby="onyeka-title">
       <header className="onyeka-panel__head">
-        <span className="onyeka-avatar onyeka-avatar--lg" aria-hidden="true">O</span>
+        <OnyekaAvatar large />
         <div style={{ minWidth: 0, flex: 1 }}>
           <h2 className="onyeka-panel__title" id="onyeka-title">Onyeka</h2>
           <p className="onyeka-panel__sub">Founder, WO Community</p>
