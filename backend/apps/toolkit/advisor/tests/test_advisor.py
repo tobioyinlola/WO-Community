@@ -34,7 +34,7 @@ def ask(client, run_jobs, text="How do I find my first ten customers?"):
 def test_the_conversation_starts_with_a_greeting_and_no_messages(client):
     body = client.get(URL).json()
     assert body["messages"] == [] and body["ai_enabled"] is True
-    assert "Onyeka" in body["greeting"] and "AI advisor" in body["greeting"]
+    assert "Onyeka" in body["greeting"] and "AI advisor" not in body["greeting"]
 
 
 def test_a_reply_arrives_as_a_job_and_lands_in_the_conversation(client, run_jobs):

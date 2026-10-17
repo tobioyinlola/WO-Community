@@ -58,7 +58,7 @@ VOICE_STYLE = (
 VOICE_MAX_TOKENS = 400
 
 GREETING = (
-    "Hi, I'm Onyeka, founder of WO Community. I'm here as your AI advisor: tell me what you're "
+    "Hi, I'm Onyeka, founder of WO Community. Tell me what you're "
     "building and where you're stuck, and I'll help you think it through the way Y Combinator, "
     "Techstars, Antler and Founder Institute would look at it."
 )

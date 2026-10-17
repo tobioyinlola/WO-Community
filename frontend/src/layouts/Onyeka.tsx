@@ -290,7 +290,7 @@ function Panel({ onClose }: { onClose: () => void }) {
       <div className="onyeka-panel__body" aria-live="polite">
         {query.isError ? <Alert tone="danger" title="Could not load the conversation">{messageOf(query.error)}</Alert> : null}
         <div className="onyeka-msg" data-author="assistant">
-          <p>{query.data?.greeting ?? "Hi, I'm Onyeka, founder of WO Community, here as your AI advisor."}</p>
+          <p>{query.data?.greeting ?? "Hi, I'm Onyeka, founder of WO Community. Tell me what you're building and where you're stuck."}</p>
         </div>
         {messages.map((m) => (
           <Bubble key={m.id} message={m} playing={playingId === m.id} onListen={canSpeak && aiOn && !inVoice ? () => listenTo(m.id) : undefined} />
