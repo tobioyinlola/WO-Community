@@ -518,7 +518,8 @@ a.adm-chip:hover {
   .adm-user__chevron {
     display: none;
   }
-  .adm-chip--quiet {
+  /* Scoped to the top bar so the address chips elsewhere (admin-ops.css) cannot bring it back. */
+  .adm-top .adm-chip--quiet {
     display: none;
   }
 }
@@ -527,11 +528,20 @@ a.adm-chip:hover {
     --adm-gap: var(--space-2);
   }
   .adm-kbd,
-  a.adm-chip {
+  .adm-top a.adm-chip {
     display: none;
   }
   .adm-top {
     gap: var(--space-2);
+  }
+}
+/* The smallest phones: help stays one tap away in the account menu, so its button gives way. */
+@media (max-width: 419px) {
+  .adm-top__help {
+    display: none;
+  }
+  .adm-user {
+    padding: var(--space-1);
   }
 }
 

@@ -157,7 +157,7 @@ function Curriculum({ course, onChanged }: { course: Course; onChanged: () => Pr
             <h3 className="h4" style={{ margin: 0 }}>
               Section {mi + 1}: {m.title}
             </h3>
-            <div className="app-cluster" style={{ flexWrap: "nowrap" }}>
+            <div className="app-cluster">
               <Button size="sm" variant="ghost" disabled={mi === 0} onClick={() => void move("modules", sectionIds, mi, mi - 1, course.id)} aria-label={`Move section ${m.title} up`}>
                 Up
               </Button>
@@ -174,11 +174,12 @@ function Curriculum({ course, onChanged }: { course: Course; onChanged: () => Pr
               const ids = m.lessons.map((x) => x.id);
               return (
                 <li key={l.id}>
-                  <span className="app-cluster" style={{ justifyContent: "space-between", flexWrap: "nowrap" }}>
-                    <span>
+                  {/* On a narrow screen the buttons drop below the title rather than off the edge. */}
+                  <span className="app-cluster" style={{ justifyContent: "space-between" }}>
+                    <span style={{ flex: "1 1 12rem", minWidth: 0 }}>
                       {l.title} <span className="caption app-muted">{humanise(l.type)}{l.is_preview ? " · preview" : ""}{l.type === "video" && !l.video_id ? " · no valid link" : ""}</span>
                     </span>
-                    <span className="app-cluster" style={{ flexWrap: "nowrap" }}>
+                    <span className="app-cluster">
                       <Button size="sm" variant="ghost" disabled={li === 0} onClick={() => void move("lessons", ids, li, li - 1, m.id)} aria-label={`Move lecture ${l.title} up`}>
                         Up
                       </Button>
