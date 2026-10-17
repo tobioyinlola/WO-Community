@@ -8,7 +8,7 @@ test.describe("public site", () => {
     const headline = page.getByRole("heading", { level: 1 });
     await expect(headline).toContainText("African entrepreneurship is built here together.");
     await expect(headline.locator(".wo-hl")).toHaveCount(1);
-    await expect(page.getByRole("link", { name: "Request access" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Become a member" }).first()).toBeVisible();
     // Real data from the public API: a seeded event and a seeded news item.
     await expect(page.getByText("Demo Day, Lagos")).toBeVisible();
     expect(problems).toEqual([]);
