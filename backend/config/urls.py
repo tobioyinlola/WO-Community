@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.urls import include, path
 
+from apps.core.sharing_views import SharePageView
 from apps.core.views import HealthLiveView, HealthReadyView, HealthView, MetricsView, SchemaView
 
 urlpatterns = [
@@ -8,6 +9,8 @@ urlpatterns = [
     path("health/live", HealthLiveView.as_view(), name="health-live"),
     path("health/ready", HealthReadyView.as_view(), name="health-ready"),
     path("metrics", MetricsView.as_view(), name="metrics"),
+    # A link shared outside the platform (the web app proxies /s/ here for link previews).
+    path("s/<slug:kind>/<str:ref>", SharePageView.as_view(), name="share-page"),
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/", include("apps.analytics.urls")),
     path("api/v1/", include("apps.reference.urls")),

@@ -6,6 +6,8 @@ class EventsConfig(AppConfig):
     label = "events"
 
     def ready(self) -> None:
-        from apps.events import handlers, tasks  # noqa: F401
+        from apps.core import shareables
+        from apps.events import handlers, sharing, tasks  # noqa: F401
 
         handlers.register()
+        shareables.register("event", sharing.event_card)

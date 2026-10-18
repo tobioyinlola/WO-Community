@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flag, Lightbulb, MessageCircle, PartyPopper, ThumbsUp, Trash2 } from "lucide-react";
+import { Flag, Lightbulb, MessageCircle, PartyPopper, Share2, ThumbsUp, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api, unwrap, unwrapTagged } from "../../api/client";
 import { messageOf } from "../../api/errors";
 import type { components } from "../../api/schema";
@@ -11,6 +11,8 @@ import { htmlToText, textToHtml } from "../../lib/html";
 import { humanise, timeAgo } from "../../lib/format";
 import { EmptyState, ErrorState, LoadMore, PageHeader, RichText, SkeletonRows } from "../../ui/blocks";
 import { FormError, useSubmit } from "../../ui/forms";
+import { ShareDialog } from "../../ui/share/ShareDialog";
+import { SharedCard } from "../../ui/share/SharedCard";
 import { useToast } from "../../ui/Toast";
 
 type Post = components["schemas"]["Post"];
@@ -227,11 +229,12 @@ function Comments({ post }: { post: Post }) {
   );
 }
 
-function PostCard({ post }: { post: Post }) {
+export function PostCard({ post, startOpen = false }: { post: Post; startOpen?: boolean }) {
   const client = useQueryClient();
   const toast = useToast();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [reporting, setReporting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [edit, setEdit] = useState("");
 
@@ -310,6 +313,8 @@ function PostCard({ post }: { post: Post }) {
         ) : (
           <RichText html={post.body} />
         )}
+        {post.shared ? <SharedCard card={post.shared} /> : null}
+        {post.shared_gone ? <p className="wo-sharecard wo-sharecard--gone">The course or event shared here is no longer available.</p> : null}
         {post.previews.map((p) => (
           <a key={p.url} className="wo-card" href={p.url} target="_blank" rel="noopener noreferrer nofollow" style={{ display: "block", marginTop: "var(--space-3)", textDecoration: "none", color: "inherit" }}>
             <strong>{p.title || p.url}</strong>
@@ -338,6 +343,12 @@ function PostCard({ post }: { post: Post }) {
             <MessageCircle size={16} strokeWidth={1.5} aria-hidden="true" />
             {post.comment_count > 0 ? `${post.comment_count} comments` : "Comment"}
           </button>
+          {post.shareable ? (
+            <button type="button" className="app-react" onClick={() => setSharing(true)}>
+              <Share2 size={16} strokeWidth={1.5} aria-hidden="true" />
+              Share
+            </button>
+          ) : null}
           <span style={{ marginLeft: "auto" }} className="app-cluster">
             {post.mine ? (
               <>
@@ -358,6 +369,7 @@ function PostCard({ post }: { post: Post }) {
         {open && post.comments_enabled ? <Comments post={post} /> : null}
         {open && !post.comments_enabled ? <p className="body-sm app-muted" style={{ margin: "var(--space-3) 0 0" }}>Comments are turned off for this post.</p> : null}
         {reporting ? <ReportDialog postId={post.id} onClose={() => setReporting(false)} /> : null}
+        {sharing ? <ShareDialog kind="post" refId={post.id} onClose={() => setSharing(false)} /> : null}
       </article>
     </Card>
   );
@@ -482,5 +494,25 @@ function FollowSuggestions() {
         ))}
       </ul>
     </Card>
+  );
+}
+
+/** One post on its own page: where a shared link to a post leads a member. */
+export function PostPage() {
+  const { postId = "" } = useParams();
+  const query = useQuery({
+    queryKey: [...FEED_KEY, "post", postId],
+    queryFn: () => unwrap(api.GET("/api/v1/posts/{post_id}", { params: { path: { post_id: postId } } })),
+  });
+  return (
+    <>
+      <PageHeader eyebrow="Feed" title="Post" />
+      <div className="app-stack" style={{ maxWidth: 720 }}>
+        {query.isPending ? <SkeletonRows /> : null}
+        {query.isError ? <ErrorState error={query.error} /> : null}
+        {query.data ? <PostCard post={query.data} startOpen /> : null}
+        <Link className="app-link" to="/app/feed">Back to the feed</Link>
+      </div>
+    </>
   );
 }

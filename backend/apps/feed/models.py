@@ -41,6 +41,9 @@ class Post(BaseModel, SoftDeleteModel):
     reaction_counts = models.JSONField(default=dict, blank=True)
     # Reactions plus twice the comments: the "most engaged" order.
     engagement = models.PositiveIntegerField(default=0)
+    # A course or event the post shares, shown as a card under the words (see core.shareables).
+    shared_kind = models.CharField(max_length=8, blank=True, db_default="")
+    shared_ref = models.CharField(max_length=120, blank=True, db_default="")
 
     class Meta:
         constraints = [

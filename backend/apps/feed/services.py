@@ -17,7 +17,7 @@ from rest_framework import exceptions
 from apps.accounts import services as accounts
 from apps.analytics import services as analytics
 from apps.audit import services as audit
-from apps.core import etag, ratelimit
+from apps.core import etag, ratelimit, shareables
 from apps.core import events as domain_events
 from apps.core.text import rich_comment, rich_post, text_of
 from apps.feed import events, links
@@ -57,6 +57,21 @@ def spend(kind: str, user_id: UUID, limit: int) -> None:
     """Count an attempt against the member's daily allowance, or refuse it."""
     if ratelimit.hit(f"feed:{kind}:{user_id}", DAY) > limit:
         raise exceptions.Throttled(wait=DAY, detail=f"Daily limit for {kind}s reached.")
+
+
+FEED_SHARE_KINDS = ("course", "event")
+
+
+def _check_share(share: dict[str, str] | None) -> shareables.Card | None:
+    if not share:
+        return None
+    kind, ref = str(share.get("kind", "")), str(share.get("ref", ""))
+    card = shareables.card(kind, ref) if kind in FEED_SHARE_KINDS else None
+    if card is None:
+        raise exceptions.ValidationError(
+            {"share": ["That course or event cannot be shared: it may not be published yet."]}
+        )
+    return card
 
 
 def _clean_post(body: str) -> tuple[str, str]:
@@ -193,11 +208,16 @@ def create_post(
     startup_id: UUID | None = None,
     mentions: list[UUID] | None = None,
     team: dict[str, Any] | None = None,
+    share: dict[str, str] | None = None,
 ) -> Post:
     """Publish a post. ``team`` carries the options only the team has: official, pin, comments,
-    audience and a time to publish. A team post skips the daily allowance and is never held."""
+    audience and a time to publish. A team post skips the daily allowance and is never held.
+    ``share`` attaches a course or event, shown as a card; the words are then optional."""
     if category not in CATEGORIES:
         raise exceptions.ValidationError({"category": ["Choose a category from the list."]})
+    shared = _check_share(share)
+    if shared is not None and not text_of(rich_post(body)):
+        body = f"<p>Sharing this {shared.kind} with the community.</p>"
     html, text = _clean_post(body)
     mention_ids = _check_mentions(mentions or [])
     if team is None:
@@ -212,6 +232,8 @@ def create_post(
             body=html,
             body_text=text,
             country=profiles.country_of(user_id),
+            shared_kind=shared.kind if shared else "",
+            shared_ref=shared.ref if shared else "",
             **options,
         )
         _attach_images(post, images, user_id)

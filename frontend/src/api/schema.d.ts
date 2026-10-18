@@ -5983,7 +5983,7 @@ export interface paths {
         put?: never;
         /**
          * Write a post
-         * @description Rich text is cleaned on the server. Images are finished uploads with purpose `post_image` (up to 10). `startup_id` posts for a startup you belong to. Mentioned members are told. Limited per member per day.
+         * @description Rich text is cleaned on the server. Images are finished uploads with purpose `post_image` (up to 10). `startup_id` posts for a startup you belong to. Mentioned members are told. `share` attaches a published course or event as a card, and the words are then optional. Limited per member per day.
          */
         post: operations["posts_create"];
         delete?: never;
@@ -6324,6 +6324,26 @@ export interface paths {
          * @description Anonymous, cookie-free and cacheable. Any Authorization header is ignored.
          */
         get: operations["public_news_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/share/{kind}/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The brief of something shared outside the platform
+         * @description What anyone may see of a published course, an event or a community post before signing in: a title, a few words and some facts. `kind` is course, event or post. Not found when it does not exist or may not be shared.
+         */
+        get: operations["public_share_card"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10339,6 +10359,18 @@ export interface components {
             /** @default true */
             active: boolean;
         };
+        Card: {
+            kind: string;
+            ref: string;
+            title: string;
+            excerpt: string;
+            url: string;
+            badge: string;
+            action: string;
+            image: string | null;
+            facts: string[];
+            by: string;
+        };
         Categories: {
             categories: string[];
         };
@@ -13436,6 +13468,12 @@ export interface components {
             };
             my_reactions: string[];
             mine: boolean;
+            /** @description The course or event it shares */
+            shared: components["schemas"]["ShareCard"] | null;
+            /** @description It shared something no longer available (unpublished, say) */
+            shared_gone: boolean;
+            /** @description Whether a link to it may be shared outside the platform */
+            shareable: boolean;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -13445,7 +13483,10 @@ export interface components {
          */
         PostCreateRequest: {
             category: components["schemas"]["CategoryEnum"];
+            /** @description Required, unless the post shares a course or event. */
             body: string;
+            /** @description A course or event to share */
+            share?: components["schemas"]["ShareInputRequest"] | null;
             images?: components["schemas"]["ImageInputRequest"][];
             /** Format: uuid */
             startup_id?: string | null;
@@ -14713,6 +14754,36 @@ export interface components {
             notice_hours: number[];
             window_days: number[];
             currencies: string[];
+        };
+        ShareCard: {
+            kind: string;
+            ref: string;
+            title: string;
+            excerpt: string;
+            /** @description Where a member opens it, within the app */
+            url: string;
+            badge: string;
+            action: string;
+            image: string | null;
+            facts: string[];
+            by: string;
+        };
+        /**
+         * @description * `course` - course
+         *     * `event` - event
+         * @enum {string}
+         */
+        ShareInputKindEnum: "course" | "event";
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        ShareInputRequest: {
+            kind: components["schemas"]["ShareInputKindEnum"];
+            /** @description The course's slug, or the event's id */
+            ref: string;
         };
         /**
          * @description * `deck` - deck
@@ -34539,6 +34610,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicItem"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    public_share_card: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Card"];
                 };
             };
             /** @description Not found */

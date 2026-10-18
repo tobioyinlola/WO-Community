@@ -6,6 +6,8 @@ class FeedConfig(AppConfig):
     label = "feed"
 
     def ready(self) -> None:
-        from apps.feed import handlers, tasks  # noqa: F401
+        from apps.core import shareables
+        from apps.feed import handlers, sharing, tasks  # noqa: F401
 
         handlers.register()
+        shareables.register("post", sharing.post_card)
