@@ -9,6 +9,7 @@ from django.utils.html import strip_tags
 from rest_framework import exceptions
 
 from apps.accounts import services as accounts
+from apps.core import shareables
 from apps.core.keyset import paginate
 from apps.core.rbac import ADMIN_ROLES
 from apps.feed import follows
@@ -125,9 +126,20 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
                 "reactions": post.reaction_counts,
                 "my_reactions": mine.get(post.pk, []),
                 "mine": is_mine,
+                **_shared(post),
+                "shareable": not post.audience_roles
+                and post.hidden_at is None
+                and post.scheduled_for is None,
             }
         )
     return views
+
+
+def _shared(post: Post) -> dict[str, Any]:
+    if not post.shared_kind:
+        return {"shared": None, "shared_gone": False}
+    card = shareables.card(post.shared_kind, post.shared_ref)
+    return {"shared": card.as_dict() if card else None, "shared_gone": card is None}
 
 
 def feed(

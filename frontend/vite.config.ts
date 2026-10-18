@@ -16,7 +16,8 @@ export default defineConfig(({ mode, command }) => {
     plugins: [react()],
     server: {
       // Development only: the API runs separately, so forward its paths and the browser sees one origin.
-      proxy: { "/api": env.VITE_DEV_API_PROXY ?? "http://localhost:8000" },
+      // /s/ is a shared link: the API serves its preview page, as the hosting does in production.
+      proxy: { "/api": env.VITE_DEV_API_PROXY ?? "http://localhost:8000", "/s/": env.VITE_DEV_API_PROXY ?? "http://localhost:8000" },
     },
     test: {
       environment: "jsdom",

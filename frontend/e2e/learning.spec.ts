@@ -73,9 +73,12 @@ test.describe("learning", () => {
     await page.getByRole("button", { name: wasSaved ? "Save for later" : "Saved" }).click();
     await expect(page.getByRole("button", { name: wasSaved ? "Saved" : "Save for later" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Share" }).click();
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    const share = page.getByRole("dialog", { name: "Share this course" });
+    await share.getByRole("button", { name: "Copy" }).click();
     await expect(page.getByText("Link copied")).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("/app/learn/courses/");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("/s/course/");
+    await share.getByRole("button", { name: "Cancel" }).click();
   });
 
   test("a lecture can be completed, moved between, asked about, noted and the course reviewed", async ({ page }) => {

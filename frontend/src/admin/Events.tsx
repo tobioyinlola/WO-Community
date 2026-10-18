@@ -9,6 +9,7 @@ import { fromLocalInput, toLocalInput, ZONES } from "../lib/zoned";
 import { EmptyState, ErrorState, LoadMore, PageHeader, SkeletonCards, SkeletonRows, TableScroll, useDocumentTitle } from "../ui/blocks";
 import { errorsFrom, FormError, useSubmit } from "../ui/forms";
 import { useToast } from "../ui/Toast";
+import { AdminShare } from "./AdminShare";
 import { ConfirmDialog, ReasonDialog } from "./dialogs";
 import { useStepUp } from "./StepUp";
 import { useOffsetList } from "./useOffsetList";
@@ -185,6 +186,7 @@ export default function Events() {
   const [status, setStatus] = useState<Status | "">("");
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [people, setPeople] = useState<Event | null>(null);
+  const [sharing, setSharing] = useState<string | null>(null);
   const [acting, setActing] = useState<{ event: Event; action: "publish" | "unpublish" | "cancel" } | null>(null);
 
   const list = useOffsetList<Event>(["admin", "events", status], (offset, limit) =>
@@ -234,6 +236,7 @@ export default function Events() {
                     {e.status === "published" && e.registered_count === 0 ? <Button size="sm" variant="ghost" onClick={() => setActing({ event: e, action: "unpublish" })}>Back to draft</Button> : null}
                     {e.status === "published" && !e.past ? <Button size="sm" variant="ghost" onClick={() => setActing({ event: e, action: "cancel" })}>Cancel event</Button> : null}
                     {e.status !== "draft" ? <Button size="sm" variant="secondary" onClick={() => setPeople(e)}>Attendees</Button> : null}
+                    {e.status === "published" ? <Button size="sm" variant="ghost" onClick={() => setSharing(e.id)} aria-label={`Share ${e.title}`}>Share</Button> : null}
                   </div>
                 </Card>
               </li>
@@ -244,6 +247,7 @@ export default function Events() {
       )}
       {editing ? <Editor id={editing === "new" ? null : editing} onClose={() => setEditing(null)} onSaved={refresh} /> : null}
       {people ? <Attendees event={people} onClose={() => setPeople(null)} /> : null}
+      {sharing ? <AdminShare kind="event" refId={sharing} onClose={() => setSharing(null)} /> : null}
       {acting && acting.action === "cancel" ? (
         <ReasonDialog title="Cancel this event?" confirmLabel="Cancel the event" tone="danger" intro="Everyone registered is emailed with your reason." onConfirm={(reason) => run(acting.event, "cancel", reason)} onClose={() => setActing(null)} />
       ) : null}

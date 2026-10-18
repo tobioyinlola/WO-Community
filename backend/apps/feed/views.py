@@ -79,7 +79,8 @@ class FeedView(APIView):
         summary="Write a post",
         description="Rich text is cleaned on the server. Images are finished uploads with "
         "purpose `post_image` (up to 10). `startup_id` posts for a startup you belong to. "
-        "Mentioned members are told. Limited per member per day.",
+        "Mentioned members are told. `share` attaches a published course or event as a card, "
+        "and the words are then optional. Limited per member per day.",
         request=PostCreateSerializer,
         responses={201: PostSerializer, **ERRORS, 429: OpenApiResponse(description="Daily limit")},
         tags=["feed"],
@@ -96,6 +97,7 @@ class FeedView(APIView):
             images=data["images"],
             startup_id=data["startup_id"],
             mentions=data["mentions"],
+            share=data["share"],
         )
         _, view = selectors.get_post(request.user, post.pk)
         return etag.add_etag(Response(PostSerializer(view).data, status=201), post)

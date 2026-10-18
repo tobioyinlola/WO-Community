@@ -6074,7 +6074,8 @@ paths:
       operationId: admin_posts_create
       description: 'Skips the daily allowance and is never held for review. Options:
         post as the WO Community team, pin (with an optional date it lapses), turn
-        comments off, limit to members or mentors, and schedule for later.'
+        comments off, limit to members or mentors, and schedule for later. `share`
+        attaches a published course or event as a card.'
       summary: Post as the team or as yourself
       tags:
       - admin
@@ -12931,7 +12932,9 @@ paths:
       operationId: posts_create
       description: Rich text is cleaned on the server. Images are finished uploads
         with purpose `post_image` (up to 10). `startup_id` posts for a startup you
-        belong to. Mentioned members are told. Limited per member per day.
+        belong to. Mentioned members are told. `share` attaches a published course
+        or event as a card, and the words are then optional. Limited per member per
+        day.
       summary: Write a post
       tags:
       - feed
@@ -13664,6 +13667,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicItem'
+          description: ''
+        '404':
+          description: Not found
+  /api/v1/public/share/{kind}/{ref}:
+    get:
+      operationId: public_share_card
+      description: 'What anyone may see of a published course, an event or a community
+        post before signing in: a title, a few words and some facts. `kind` is course,
+        event or post. Not found when it does not exist or may not be shared.'
+      summary: The brief of something shared outside the platform
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: ref
+        schema:
+          type: string
+        required: true
+      tags:
+      - public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Card'
           description: ''
         '404':
           description: Not found
@@ -22683,6 +22715,43 @@ components:
       required:
       - body
       - title
+    Card:
+      type: object
+      properties:
+        kind:
+          type: string
+        ref:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        url:
+          type: string
+        badge:
+          type: string
+        action:
+          type: string
+        image:
+          type: string
+          nullable: true
+        facts:
+          type: array
+          items:
+            type: string
+        by:
+          type: string
+      required:
+      - action
+      - badge
+      - by
+      - excerpt
+      - facts
+      - image
+      - kind
+      - ref
+      - title
+      - url
     Categories:
       type: object
       properties:
@@ -29403,6 +29472,17 @@ components:
             type: string
         mine:
           type: boolean
+        shared:
+          allOf:
+          - $ref: '#/components/schemas/ShareCard'
+          nullable: true
+          description: The course or event it shares
+        shared_gone:
+          type: boolean
+          description: It shared something no longer available (unpublished, say)
+        shareable:
+          type: boolean
+          description: Whether a link to it may be shared outside the platform
       required:
       - author
       - body
@@ -29423,6 +29503,9 @@ components:
       - previews
       - reaction_count
       - reactions
+      - shareable
+      - shared
+      - shared_gone
       - startup
     PostCreateRequest:
       type: object
@@ -29436,8 +29519,13 @@ components:
           $ref: '#/components/schemas/CategoryEnum'
         body:
           type: string
-          minLength: 1
+          description: Required, unless the post shares a course or event.
           maxLength: 20000
+        share:
+          allOf:
+          - $ref: '#/components/schemas/ShareInputRequest'
+          nullable: true
+          description: A course or event to share
         images:
           type: array
           items:
@@ -32131,6 +32219,70 @@ components:
       - lengths
       - notice_hours
       - window_days
+    ShareCard:
+      type: object
+      properties:
+        kind:
+          type: string
+        ref:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        url:
+          type: string
+          description: Where a member opens it, within the app
+        badge:
+          type: string
+        action:
+          type: string
+        image:
+          type: string
+          nullable: true
+        facts:
+          type: array
+          items:
+            type: string
+        by:
+          type: string
+      required:
+      - action
+      - badge
+      - by
+      - excerpt
+      - facts
+      - image
+      - kind
+      - ref
+      - title
+      - url
+    ShareInputKindEnum:
+      enum:
+      - course
+      - event
+      type: string
+      description: |-
+        * `course` - course
+        * `event` - event
+    ShareInputRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        kind:
+          $ref: '#/components/schemas/ShareInputKindEnum'
+        ref:
+          type: string
+          minLength: 1
+          description: The course's slug, or the event's id
+          maxLength: 120
+      required:
+      - kind
+      - ref
     ShareSubjectTypeEnum:
       enum:
       - deck
@@ -32941,13 +33093,18 @@ components:
           $ref: '#/components/schemas/CategoryEnum'
         body:
           type: string
-          minLength: 1
+          description: Required, unless the post shares a course or event.
           maxLength: 20000
         images:
           type: array
           items:
             $ref: '#/components/schemas/ImageInputRequest'
           maxItems: 10
+        share:
+          allOf:
+          - $ref: '#/components/schemas/ShareInputRequest'
+          nullable: true
+          description: A course or event to share
         official:
           type: boolean
           default: false

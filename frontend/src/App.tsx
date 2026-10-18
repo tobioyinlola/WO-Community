@@ -29,6 +29,8 @@ import { ToastProvider } from "./ui/Toast";
 
 const Home = lazy(() => import("./pages/app/Home"));
 const Feed = lazy(() => import("./pages/app/Feed"));
+const FeedPost = lazy(() => import("./pages/app/Feed").then((m) => ({ default: m.PostPage })));
+const SharePreview = lazy(() => import("./pages/public/SharePreview"));
 const LeaderboardPage = lazy(() => import("./pages/app/Leaderboard"));
 const Directory = lazy(() => import("./pages/app/Directory"));
 const MemberPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.MemberPage })));
@@ -147,6 +149,7 @@ export function App() {
                   <Route index element={<Landing />} />
                   <Route path="about" element={<Founder />} />
                   <Route path="founder" element={<Navigate to="/about" replace />} />
+                  <Route path="p/:kind/:ref" element={<SharePreview />} />
                   <Route path="explore" element={<Explore />} />
                   <Route path="news" element={<NewsList />} />
                   <Route path="news/:slug" element={<NewsItem />} />
@@ -172,6 +175,7 @@ export function App() {
                   <Route path="app" element={<AppLayout />}>
                     <Route index element={<Home />} />
                     <Route path="feed" element={<Feed />} />
+                    <Route path="feed/:postId" element={<FeedPost />} />
                     <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="directory" element={<Directory />} />
                     <Route path="members/:id" element={<MemberPage />} />

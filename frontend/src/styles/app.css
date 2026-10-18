@@ -1812,3 +1812,140 @@ a.app-outline__item:hover {
     box-shadow: var(--shadow-lg);
   }
 }
+
+/* ---------- a shared course, event or post ---------- */
+.wo-sharecard {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: var(--stroke-1) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+a.wo-sharecard:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.wo-sharecard__media {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 168px;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  color: var(--text-on-brand);
+  background: var(--bg-brand);
+}
+.wo-sharecard__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wo-sharecard__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-1) 0;
+}
+.wo-sharecard__badge {
+  font: 700 11px/16px var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-accent);
+}
+.wo-sharecard__title {
+  font: 700 17px/22px var(--font-display);
+  color: var(--text-primary);
+}
+.wo-sharecard__facts {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+.wo-sharecard__excerpt {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wo-sharecard__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-link);
+}
+.wo-sharecard--compact .wo-sharecard__media {
+  width: 112px;
+}
+.wo-sharecard--gone {
+  display: block;
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+@media (max-width: 520px) {
+  .wo-sharecard:not(.wo-sharecard--compact) {
+    flex-direction: column;
+  }
+  .wo-sharecard:not(.wo-sharecard--compact) .wo-sharecard__media {
+    width: 100%;
+  }
+  /* The preview in the Share dialog stays side by side, so the message box is in view. */
+  .wo-sharecard--compact .wo-sharecard__media {
+    width: 84px;
+  }
+}
+
+/* ---------- the Share dialog ---------- */
+.wo-share__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--stroke-1) solid var(--border-subtle);
+}
+.wo-share__h {
+  margin: 0;
+  font: 700 15px/20px var(--font-body);
+  color: var(--text-primary);
+}
+.wo-share__link {
+  display: flex;
+  gap: var(--space-2);
+}
+.wo-share__link .wo-input {
+  min-width: 0;
+  font-size: 14px;
+}
+.wo-share__apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.wo-share__app {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border: var(--stroke-1) solid var(--border-default);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 14px/1 var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+.wo-share__app:hover {
+  background: var(--bg-brand-soft);
+}

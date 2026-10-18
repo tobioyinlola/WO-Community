@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, MapPin, Users } from "lucide-react";
+import { CalendarPlus, MapPin, Share2, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, unwrap } from "../../api/client";
@@ -10,6 +10,7 @@ import { Alert, Badge, Button, Card, CardTo, CardText, CardTitle, Tabs } from ".
 import { formatDate, formatDateTime, formatTime, humanise, plural } from "../../lib/format";
 import { EmptyState, LoadMore, Loaded, PageHeader, RichText, SkeletonCards, SkeletonRows } from "../../ui/blocks";
 import { DownloadButton } from "../../ui/DownloadButton";
+import { ShareDialog } from "../../ui/share/ShareDialog";
 import { useToast } from "../../ui/Toast";
 
 type EventSummary = components["schemas"]["EventSummary"];
@@ -105,6 +106,7 @@ export default function EventsPage() {
 }
 
 export function EventDetail() {
+  const [sharing, setSharing] = useState(false);
   const { id = "" } = useParams();
   const client = useQueryClient();
   const toast = useToast();
@@ -186,6 +188,9 @@ export function EventDetail() {
                       {event.spots_left === 0 ? "Event is full" : "Register"}
                     </Button>
                   )}
+                  <Button variant="secondary" icon={<Share2 size={18} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setSharing(true)}>
+                    Share
+                  </Button>
                   <DownloadButton variant="secondary" path={`/api/v1/events/${event.id}/calendar.ics`} filename={`${event.slug}.ics`} icon={<CalendarPlus size={18} strokeWidth={1.5} aria-hidden="true" />}>
                     Add to calendar
                   </DownloadButton>
@@ -199,6 +204,7 @@ export function EventDetail() {
               <Link className="app-link" to="/app/events">All events</Link>
             </aside>
           </div>
+          {sharing ? <ShareDialog kind="event" refId={event.id} onClose={() => setSharing(false)} /> : null}
         </>
       )}
     </Loaded>

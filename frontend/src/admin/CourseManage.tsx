@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Share2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, unwrap, unwrapTagged } from "../api/client";
@@ -14,6 +14,7 @@ import { useToast } from "../ui/Toast";
 import { Announcements, Learners, Questions, Requests, Reviews } from "./CourseEngage";
 import { ConfirmDialog } from "./dialogs";
 import { StatusChip } from "./kit/TableBits";
+import { AdminShare } from "./AdminShare";
 import { CategoryField } from "./CategoryField";
 import { useStepUp } from "./StepUp";
 
@@ -343,6 +344,7 @@ export default function CourseManage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState<"unpublish" | "delete" | "archive" | null>(null);
+  const [sharing, setSharing] = useState(false);
   const tab = TABS.some((t) => t.id === params.get("tab")) ? (params.get("tab") as string) : "curriculum";
   const query = useQuery({ queryKey: ["admin", "course", id], queryFn: () => unwrap(api.GET("/api/v1/admin/courses/{course_id}", { params: { path: { course_id: id } } })) });
   const course = query.data;
@@ -387,6 +389,11 @@ export default function CourseManage() {
           <a className="wo-btn wo-btn--secondary" href={`/app/learn/courses/${course.slug}`} target="_blank" rel="noreferrer">
             View as a learner <ExternalLink size={14} strokeWidth={1.5} aria-hidden="true" />
           </a>
+          {course.status === "published" ? (
+            <Button variant="secondary" icon={<Share2 size={16} strokeWidth={1.5} aria-hidden="true" />} onClick={() => setSharing(true)}>
+              Share
+            </Button>
+          ) : null}
           <Button variant="ghost" onClick={() => setConfirm("archive")}>
             Archive
           </Button>
@@ -480,6 +487,7 @@ export default function CourseManage() {
           onClose={() => setConfirm(null)}
         />
       ) : null}
+      {sharing ? <AdminShare kind="course" refId={course.slug} onClose={() => setSharing(false)} /> : null}
     </>
   );
 }

@@ -21,9 +21,35 @@ class ImageInputSerializer(StrictSerializer):
         return attrs
 
 
+class ShareInputSerializer(StrictSerializer):
+    kind = serializers.ChoiceField(choices=["course", "event"])
+    ref = serializers.CharField(max_length=120, help_text="The course's slug, or the event's id")
+
+
+class ShareCardSerializer(serializers.Serializer):
+    kind = serializers.CharField()
+    ref = serializers.CharField()
+    title = serializers.CharField()
+    excerpt = serializers.CharField(allow_blank=True)
+    url = serializers.CharField(help_text="Where a member opens it, within the app")
+    badge = serializers.CharField()
+    action = serializers.CharField()
+    image = serializers.CharField(allow_null=True)
+    facts = serializers.ListField(child=serializers.CharField())
+    by = serializers.CharField(allow_blank=True)
+
+
 class PostCreateSerializer(StrictSerializer):
     category = serializers.ChoiceField(choices=CATEGORIES)
-    body = serializers.CharField(max_length=MAX_BODY_MARKUP, trim_whitespace=False)
+    body = serializers.CharField(
+        max_length=MAX_BODY_MARKUP,
+        trim_whitespace=False,
+        allow_blank=True,
+        help_text="Required, unless the post shares a course or event.",
+    )
+    share = ShareInputSerializer(
+        required=False, allow_null=True, default=None, help_text="A course or event to share"
+    )
     images = serializers.ListField(
         child=ImageInputSerializer(), required=False, default=list, max_length=10
     )
@@ -127,6 +153,13 @@ class PostSerializer(serializers.Serializer):
     reactions = serializers.DictField(child=serializers.IntegerField())
     my_reactions = serializers.ListField(child=serializers.CharField())
     mine = serializers.BooleanField()
+    shared = ShareCardSerializer(allow_null=True, help_text="The course or event it shares")
+    shared_gone = serializers.BooleanField(
+        help_text="It shared something no longer available (unpublished, say)"
+    )
+    shareable = serializers.BooleanField(
+        help_text="Whether a link to it may be shared outside the platform"
+    )
 
 
 class FeedSerializer(serializers.Serializer):

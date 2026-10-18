@@ -10,6 +10,7 @@ import { formatDate, formatDuration, humanise, plural } from "../lib/format";
 import { Accordion } from "../ui/Accordion";
 import { ErrorState, RichText, SkeletonRows, useDocumentTitle } from "../ui/blocks";
 import { Stars } from "../ui/Rating";
+import { ShareDialog } from "../ui/share/ShareDialog";
 import { useToast } from "../ui/Toast";
 import { CourseCard, Price } from "./CourseCard";
 import { Reviews } from "./Reviews";
@@ -94,6 +95,7 @@ export default function Landing() {
   const client = useQueryClient();
   const toast = useToast();
   const [asking, setAsking] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [message, setMessage] = useState("");
 
   const query = useQuery({
@@ -150,18 +152,6 @@ export default function Landing() {
   const lectures = course.modules.flatMap((m) => m.lessons);
   const firstOpen = lectures.find((l) => !l.locked);
   const target = course.resume?.lesson_id ?? firstOpen?.id;
-  const share = async () => {
-    const link = `${window.location.origin}/app/learn/courses/${course.slug}`;
-    try {
-      if (navigator.share) await navigator.share({ title: course.title, url: link });
-      else {
-        await navigator.clipboard.writeText(link);
-        toast.show("Link copied");
-      }
-    } catch {
-      /* a closed share sheet is not an error */
-    }
-  };
 
   const cta = <CourseAction course={course} target={target} enrolling={enrol.isPending} onEnrol={() => enrol.mutate()} onAsk={() => setAsking(true)} onLeave={() => { if (window.confirm("Leave this course? Your progress is kept if you join again.")) leave.mutate(); }} />;
 
@@ -339,7 +329,7 @@ export default function Landing() {
                 <Button variant="secondary" size="sm" icon={<Heart size={16} strokeWidth={1.5} fill={course.wishlisted ? "currentColor" : "none"} />} aria-pressed={course.wishlisted} loading={save.isPending} onClick={() => save.mutate(!course.wishlisted)}>
                   {course.wishlisted ? "Saved" : "Save for later"}
                 </Button>
-                <Button variant="secondary" size="sm" icon={<Share2 size={16} strokeWidth={1.5} />} onClick={() => void share()}>
+                <Button variant="secondary" size="sm" icon={<Share2 size={16} strokeWidth={1.5} />} onClick={() => setSharing(true)}>
                   Share
                 </Button>
               </div>
@@ -377,6 +367,7 @@ export default function Landing() {
         </aside>
       </div>
 
+      {sharing ? <ShareDialog kind="course" refId={course.slug} onClose={() => setSharing(false)} /> : null}
       <Modal
         open={asking}
         onClose={() => setAsking(false)}

@@ -5,6 +5,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/s/:path*",
+      "destination": "https://wo-community-production.up.railway.app/s/:path*"
+    },
+    {
       "source": "/((?!assets/|brand/|robots\\.txt).*)",
       "destination": "/index.html"
     }
