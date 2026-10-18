@@ -165,3 +165,21 @@ def test_a_link_to_nothing_goes_home(settings):
     settings.FRONTEND_BASE_URL = "https://community.example"
     page = Client().get("/s/course/no-such-course")
     assert page.status_code == 404 and "url=https://community.example/" in page.content.decode()
+
+
+def test_an_admin_shares_a_course_as_the_team_pinned(client_for, admin, course):
+    response = client_for(admin, mfa_age=5).post(
+        "/api/v1/admin/posts",
+        {
+            "category": "resource",
+            "body": "",
+            "share": {"kind": "course", "ref": course.slug},
+            "official": True,
+            "pin": True,
+        },
+        format="json",
+    )
+    assert response.status_code == 201, response.content
+    post = Post.objects.get(pk=response.json()["id"])
+    assert post.official and post.pinned_at is not None
+    assert (post.shared_kind, post.shared_ref) == ("course", course.slug)

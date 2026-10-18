@@ -29,7 +29,7 @@ from apps.core.serializers import StrictSerializer
 from apps.events.models import EventRegistration
 from apps.feed import services as feed_services
 from apps.feed.models import CATEGORIES, Comment, Post, Reaction, Report
-from apps.feed.serializers import ImageInputSerializer
+from apps.feed.serializers import ImageInputSerializer, ShareInputSerializer
 from apps.jobs.models import Job
 from apps.learning.models import Enrolment
 from apps.mentorship.models import MentorSession
@@ -166,9 +166,17 @@ class TeamPostSerializer(StrictSerializer):
     """A post from the team: the same fields as a member's, plus the options only the team has."""
 
     category = serializers.ChoiceField(choices=list(CATEGORIES))
-    body = serializers.CharField(max_length=20_000, trim_whitespace=False)
+    body = serializers.CharField(
+        max_length=20_000,
+        trim_whitespace=False,
+        allow_blank=True,
+        help_text="Required, unless the post shares a course or event.",
+    )
     images = serializers.ListField(
         child=ImageInputSerializer(), required=False, default=list, max_length=10
+    )
+    share = ShareInputSerializer(
+        required=False, allow_null=True, default=None, help_text="A course or event to share"
     )
     official = serializers.BooleanField(
         required=False, default=False, help_text="Post as the WO Community team"
@@ -205,7 +213,8 @@ class AdminPostsView(APIView):
         summary="Post as the team or as yourself",
         description="Skips the daily allowance and is never held for review. Options: post as "
         "the WO Community team, pin (with an optional date it lapses), turn comments off, limit "
-        "to members or mentors, and schedule for later.",
+        "to members or mentors, and schedule for later. `share` attaches a published course or "
+        "event as a card.",
         request=TeamPostSerializer,
         responses={201: AdminPostSerializer, **ERRORS},
         tags=["admin"],
@@ -219,6 +228,7 @@ class AdminPostsView(APIView):
             category=data["category"],
             body=data["body"],
             images=data["images"],
+            share=data["share"],
             team={
                 "actor": request.user,
                 "ip": BaseThrottle().get_ident(request) or "",

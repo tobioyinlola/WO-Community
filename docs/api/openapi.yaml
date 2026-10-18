@@ -6074,7 +6074,8 @@ paths:
       operationId: admin_posts_create
       description: 'Skips the daily allowance and is never held for review. Options:
         post as the WO Community team, pin (with an optional date it lapses), turn
-        comments off, limit to members or mentors, and schedule for later.'
+        comments off, limit to members or mentors, and schedule for later. `share`
+        attaches a published course or event as a card.'
       summary: Post as the team or as yourself
       tags:
       - admin
@@ -33092,13 +33093,18 @@ components:
           $ref: '#/components/schemas/CategoryEnum'
         body:
           type: string
-          minLength: 1
+          description: Required, unless the post shares a course or event.
           maxLength: 20000
         images:
           type: array
           items:
             $ref: '#/components/schemas/ImageInputRequest'
           maxItems: 10
+        share:
+          allOf:
+          - $ref: '#/components/schemas/ShareInputRequest'
+          nullable: true
+          description: A course or event to share
         official:
           type: boolean
           default: false

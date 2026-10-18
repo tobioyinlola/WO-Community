@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signIn, watchConsole } from "./helpers";
+import { signIn, signInAdmin, watchConsole } from "./helpers";
 
 const SHOTS = process.env.E2E_SHOTS ?? "";
 
@@ -93,5 +93,34 @@ test.describe("sharing", () => {
     await expect(visitor.getByText(words)).toBeVisible();
     await expect(visitor.getByText("The full post is for members")).toBeVisible();
     await visitor.close();
+  });
+
+  test("an admin shares a course from the console as the team, pinned to the top of the feed", async ({ page, browser }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/courses");
+    // A published course's own page in the console.
+    await page.getByRole("tab", { name: "Published" }).click();
+    await page.locator('a[href^="/admin/courses/"]').first().click();
+    await expect(page.getByRole("button", { name: "Share", exact: true })).toBeVisible();
+    const title = (await page.getByRole("heading", { level: 1 }).innerText()).trim();
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "Share this course" });
+    await expect(dialog.getByLabel("Post as the WO Community team")).toBeChecked();
+    const words = `New on the platform ${Date.now()}`;
+    await dialog.getByLabel("Add a few words (optional)").fill(words);
+    await dialog.getByLabel("Pin it to the top of the feed").check();
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/share-admin.png` });
+    await dialog.getByRole("button", { name: "Post to the feed" }).click();
+    await expect(page.getByText("Shared to the community feed and pinned")).toBeVisible();
+
+    // Members see it at the top, from the team, with the course card.
+    const member = await browser.newPage();
+    await signIn(member);
+    await member.goto("/app/feed");
+    const post = member.getByRole("article").filter({ hasText: words }).first();
+    await expect(post.getByText("WO Community team").first()).toBeVisible();
+    await expect(post.getByText("Pinned")).toBeVisible();
+    await expect(post.getByRole("link", { name: `View course: ${title}` })).toBeVisible();
+    await member.close();
   });
 });

@@ -2664,7 +2664,7 @@ export interface paths {
         put?: never;
         /**
          * Post as the team or as yourself
-         * @description Skips the daily allowance and is never held for review. Options: post as the WO Community team, pin (with an optional date it lapses), turn comments off, limit to members or mentors, and schedule for later.
+         * @description Skips the daily allowance and is never held for review. Options: post as the WO Community team, pin (with an optional date it lapses), turn comments off, limit to members or mentors, and schedule for later. `share` attaches a published course or event as a card.
          */
         post: operations["admin_posts_create"];
         delete?: never;
@@ -15118,8 +15118,11 @@ export interface components {
         /** @description A post from the team: the same fields as a member's, plus the options only the team has. */
         TeamPostRequest: {
             category: components["schemas"]["CategoryEnum"];
+            /** @description Required, unless the post shares a course or event. */
             body: string;
             images?: components["schemas"]["ImageInputRequest"][];
+            /** @description A course or event to share */
+            share?: components["schemas"]["ShareInputRequest"] | null;
             /**
              * @description Post as the WO Community team
              * @default false

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Linkedin, Mail, MessageCircle, Share2, Twitter } from "lucide-react";
 import { useState } from "react";
 import { api, unwrap } from "../../api/client";
-import { Alert, Button, Modal, Textarea } from "../../components";
+import { Alert, Button, Checkbox, Modal, Textarea } from "../../components";
 import { textToHtml } from "../../lib/html";
 import { SkeletonRows } from "../blocks";
 import { FormError, useSubmit } from "../forms";
@@ -25,7 +25,21 @@ const CATEGORY = { course: "resource", event: "event" } as const;
  * platform by link. Someone who is not a member who opens the link sees a short brief and is
  * invited to join.
  */
-export function ShareDialog({ kind, refId, onClose }: { kind: ShareKind; refId: string; onClose: () => void }) {
+export function ShareDialog({
+  kind,
+  refId,
+  onClose,
+  team = false,
+  feed = true,
+}: {
+  kind: ShareKind;
+  refId: string;
+  onClose: () => void;
+  /** From the admin console: post as the WO Community team, optionally pinned. */
+  team?: boolean;
+  /** Whether posting to the feed is offered (an admin may only be allowed to share links). */
+  feed?: boolean;
+}) {
   const client = useQueryClient();
   const toast = useToast();
   const card = useQuery({
@@ -34,19 +48,23 @@ export function ShareDialog({ kind, refId, onClose }: { kind: ShareKind; refId: 
     retry: false,
   });
   const [message, setMessage] = useState("");
+  const [official, setOfficial] = useState(true);
+  const [pin, setPin] = useState(false);
   const [copied, setCopied] = useState(false);
   const link = shareLink(kind, refId);
-  const toFeed = kind !== "post";
+  const toFeed = feed && kind !== "post";
 
   const post = useSubmit(async () => {
     if (kind === "post") return;
-    await unwrap(
-      api.POST("/api/v1/posts", {
-        body: { category: CATEGORY[kind], body: message.trim() ? textToHtml(message.trim()) : "", share: { kind, ref: refId } },
-      }),
-    );
+    const body = { category: CATEGORY[kind], body: message.trim() ? textToHtml(message.trim()) : "", share: { kind, ref: refId } };
+    if (team) {
+      await unwrap(api.POST("/api/v1/admin/posts", { body: { ...body, official, pin, comments_enabled: true, audience_roles: [] } }));
+      await client.invalidateQueries({ queryKey: ["admin", "posts"] });
+    } else {
+      await unwrap(api.POST("/api/v1/posts", { body }));
+    }
     await client.invalidateQueries({ queryKey: ["feed"] });
-    toast.show(`Shared to the community feed`);
+    toast.show(pin ? "Shared to the community feed and pinned" : "Shared to the community feed");
     onClose();
   });
 
@@ -117,6 +135,12 @@ export function ShareDialog({ kind, refId, onClose }: { kind: ShareKind; refId: 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 />
+                {team ? (
+                  <div className="app-stack" style={{ gap: "var(--space-2)" }}>
+                    <Checkbox label="Post as the WO Community team" checked={official} onChange={(e) => setOfficial(e.target.checked)} />
+                    <Checkbox label="Pin it to the top of the feed" checked={pin} onChange={(e) => setPin(e.target.checked)} />
+                  </div>
+                ) : null}
                 <p className="caption app-muted" style={{ margin: 0 }}>Members see the {NOUN[kind]} as a card they can open{kind === "course" ? " and enrol from" : " and register from"}.</p>
               </section>
             ) : null}
