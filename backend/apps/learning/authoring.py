@@ -18,7 +18,7 @@ from apps.core import etag
 from apps.core.errors import ConflictError
 from apps.core.text import clean_url, plain, rich_post, text_of
 from apps.integrations import youtube
-from apps.learning import lms
+from apps.learning import categories, lms
 from apps.learning.models import ACCESS, LESSON_TYPES, LEVELS, Course, Enrolment, Lesson, Module
 from apps.uploads import services as uploads
 from apps.uploads.models import UploadPurpose
@@ -75,6 +75,8 @@ def _apply(course: Course, data: dict[str, Any]) -> None:
             value = plain(data[field])
             if not value:
                 raise _invalid(field, "This field may not be blank.")
+            if field == "category":
+                value = categories.checked(value, current=course.category)
             setattr(course, field, value)
     if "level" in data:
         if data["level"] not in LEVELS:

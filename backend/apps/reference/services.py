@@ -1,4 +1,4 @@
-"""Managing the sector, stage and skill lists.
+"""Managing the sector, stage, skill and course category lists.
 
 Slugs are fixed once created because they appear in URLs, filters and stored
 records. Names, order and the active flag can change. An entry in use is
@@ -19,10 +19,15 @@ from apps.core import events as domain_events
 from apps.core.errors import ConflictError
 from apps.core.text import plain
 from apps.reference import events, usage
-from apps.reference.models import ReferenceItem, Sector, Skill, Stage
+from apps.reference.models import CourseCategory, ReferenceItem, Sector, Skill, Stage
 
 # Typed loosely: the three models share ReferenceItem, which is abstract and has no manager.
-KINDS: dict[str, Any] = {"sectors": Sector, "stages": Stage, "skills": Skill}
+KINDS: dict[str, Any] = {
+    "sectors": Sector,
+    "stages": Stage,
+    "skills": Skill,
+    "course_categories": CourseCategory,
+}
 MAX_ITEMS = 200
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -105,6 +110,8 @@ def update_item(
             cleaned = _clean_name(name)
             if _name_taken(model, cleaned, exclude=item.pk):
                 raise ConflictError("An entry with this name already exists.", code="name_taken")
+            if cleaned != item.name:
+                usage.renamed(kind, item.name, cleaned)
             item.name = cleaned
         if active is not None:
             item.active = active

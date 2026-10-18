@@ -10,6 +10,7 @@ import "../styles/learn.css";
 import { Drawer } from "../ui/Drawer";
 import { errorsFrom, FormError, useSubmit } from "../ui/forms";
 import { useToast } from "../ui/Toast";
+import { CategoryField } from "./CategoryField";
 import { useStepUp } from "./StepUp";
 
 const LEVELS = [
@@ -214,7 +215,6 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
     setOver(null);
   };
 
-  const categories = useQuery({ queryKey: ["course-categories"], queryFn: () => unwrap(api.GET("/api/v1/courses/categories")) });
   // Each module's links, checked as they are typed: the line number and what is wrong.
   const checkedModules = modules.map((m) => {
     const lines = linesOf(m.links);
@@ -366,7 +366,7 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
             <Textarea label="What it covers" rows={5} hint="Leave a blank line between paragraphs." value={draft.description} onChange={(e) => set("description", e.target.value)} error={errors.description} />
             <div className="app-formgrid">
               <Input label="Taught by" value={draft.instructor} placeholder="WO Community faculty" onChange={(e) => set("instructor", e.target.value)} error={errors.instructor} />
-              <Input label="Category" list="course-categories" value={draft.category} onChange={(e) => set("category", e.target.value)} error={errors.category} />
+              <CategoryField value={draft.category} onChange={(v) => set("category", v)} error={errors.category} />
               <Select label="Level" options={LEVELS} value={draft.level} onChange={(e) => set("level", e.target.value)} error={errors.level} />
               <Select label="Language" options={LANGUAGES} value={draft.language} onChange={(e) => set("language", e.target.value)} error={errors.language} />
             </div>
@@ -378,11 +378,6 @@ export function AddCourse({ onClose, onCreated }: { onClose: () => void; onCreat
               <p className="wo-hint">Optional. JPEG, PNG or WebP.</p>
             </div>
             <Textarea label="What members will learn (optional)" rows={3} hint="One outcome per line." value={draft.outcomes} onChange={(e) => set("outcomes", e.target.value)} />
-            <datalist id="course-categories">
-              {(categories.data?.categories ?? []).map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
           </>
         ) : null}
 

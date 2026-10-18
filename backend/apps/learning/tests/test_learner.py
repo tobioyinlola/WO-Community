@@ -76,7 +76,7 @@ def test_the_catalogue_filters_and_pages(editor, learner_client):
         == 1
     )
     assert learner_client.get(f"{COURSES}/categories").json() == {
-        "categories": ["finance", "product"]
+        "categories": ["Finance", "product"]  # spelled as the category list has it
     }
 
 

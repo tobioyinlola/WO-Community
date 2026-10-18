@@ -16,7 +16,7 @@ async function details(page: Page, title: string) {
   await expect(drawer.getByRole("list", { name: "Progress" })).toBeVisible();
   await drawer.getByLabel("Title", { exact: true }).fill(title);
   await drawer.getByLabel("What it covers").fill("A course made by the creator test.");
-  await drawer.getByLabel("Category").fill("Foundations");
+  await drawer.getByLabel("Category").selectOption("Project Management"); // from the category list
   await drawer.getByRole("button", { name: "Continue" }).click();
   return drawer;
 }

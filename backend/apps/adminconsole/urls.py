@@ -26,7 +26,7 @@ from apps.adminconsole import (
     views,
 )
 
-KINDS = "sectors|stages|skills"
+KINDS = "sectors|stages|skills|course_categories"
 
 COURSE_ACTIONS = ("publish", "unpublish", "archive", "duplicate")
 CAMPAIGN_ACTIONS = ("send", "schedule", "unschedule", "pause", "resume", "cancel", "test")
@@ -200,6 +200,11 @@ urlpatterns = [
     ),
     path("admin/search", search_views.AdminSearchView.as_view(), name="admin-search"),
     path("admin/courses", course_views.AdminCoursesView.as_view(), name="admin-courses"),
+    path(
+        "admin/course-categories",
+        course_views.AdminCourseCategoriesView.as_view(),
+        name="admin-course-categories",
+    ),
     path(
         "admin/courses/<uuid:course_id>",
         course_views.AdminCourseView.as_view(),

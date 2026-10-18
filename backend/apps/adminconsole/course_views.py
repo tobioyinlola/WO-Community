@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
-from rest_framework import exceptions, status
+from rest_framework import exceptions, serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -30,6 +30,7 @@ from apps.learning.serializers import (
     ModuleWriteSerializer,
     OrderSerializer,
 )
+from apps.reference import selectors as reference
 
 MANAGE = policies.admin_permission("courses.manage")
 IF_MATCH = OpenApiParameter("If-Match", str, OpenApiParameter.HEADER, required=True)
@@ -53,6 +54,29 @@ def _one(course: Course, status_code: int = 200) -> Response:
         Response(AdminCourseSerializer(selectors.admin_course(fresh)).data, status=status_code),
         fresh,
     )
+
+
+class CourseCategoryOptionSerializer(serializers.Serializer):
+    slug = serializers.CharField()
+    name = serializers.CharField()
+
+
+class AdminCourseCategoriesView(APIView):
+    """The categories a course can be given, for the course forms. Managed under Lists."""
+
+    policy = MANAGE
+
+    @extend_schema(
+        operation_id="admin_course_categories",
+        summary="Course categories to choose from",
+        description="The active entries of the course category list, in the admins' order. "
+        "A name not on the list can still be typed on a course; it then joins the list.",
+        responses={200: CourseCategoryOptionSerializer(many=True), **ERRORS},
+        tags=["admin"],
+    )
+    def get(self, request: Request) -> Response:
+        rows = reference.course_categories().order_by("sort_order", "name")
+        return Response(CourseCategoryOptionSerializer(rows, many=True).data)
 
 
 class AdminCoursesView(APIView):

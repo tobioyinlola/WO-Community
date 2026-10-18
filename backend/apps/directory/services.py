@@ -164,6 +164,8 @@ def refresh_for_reference(kind: str, slug: str) -> None:
     The cached public list for that kind is purged either way, since a reorder
     or a retired entry changes it without changing any page.
     """
+    if kind not in ("sectors", "stages", "skills"):
+        return  # a list the directory does not show, such as course categories
     if slug:
         if kind == "sectors":
             affected = PublicStartup.objects.filter(sector_slug=slug)

@@ -1278,6 +1278,32 @@ paths:
           description: Not allowed, or MFA missing
         '404':
           description: No such post
+  /api/v1/admin/course-categories:
+    get:
+      operationId: admin_course_categories
+      description: The active entries of the course category list, in the admins'
+        order. A name not on the list can still be typed on a course; it then joins
+        the list.
+      summary: Course categories to choose from
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseCategoryOption'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: Not found
   /api/v1/admin/course-requests:
     get:
       operationId: admin_course_requests_all
@@ -6514,6 +6540,7 @@ paths:
         schema:
           type: string
           enum:
+          - course_categories
           - sectors
           - skills
           - stages
@@ -6549,6 +6576,7 @@ paths:
         schema:
           type: string
           enum:
+          - course_categories
           - sectors
           - skills
           - stages
@@ -6596,6 +6624,7 @@ paths:
         schema:
           type: string
           enum:
+          - course_categories
           - sectors
           - skills
           - stages
@@ -6640,6 +6669,7 @@ paths:
         schema:
           type: string
           enum:
+          - course_categories
           - sectors
           - skills
           - stages
@@ -6670,6 +6700,7 @@ paths:
         schema:
           type: string
           enum:
+          - course_categories
           - sectors
           - skills
           - stages
@@ -23221,6 +23252,16 @@ components:
       - resolved_this_week
       - total
       - working
+    CourseCategoryOption:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
     CourseCoverRequest:
       type: object
       description: |-

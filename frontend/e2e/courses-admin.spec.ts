@@ -18,7 +18,9 @@ test.describe("course administration", () => {
     await expect(drawer.getByRole("button", { name: "Continue" })).toBeDisabled();
     await drawer.getByLabel("Title", { exact: true }).fill(title);
     await drawer.getByLabel("What it covers", { exact: true }).fill("A short course for the browser tests.");
-    await drawer.getByLabel("Category", { exact: true }).fill("Testing");
+    // A category not on the list yet is typed in, and joins the list when the course is saved.
+    await drawer.getByLabel("Category", { exact: true }).selectOption({ label: "Add a new category…" });
+    await drawer.getByLabel("New category name").fill("Testing");
     const axe = await new AxeBuilder({ page }).include('[role="dialog"]').withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(axe.violations.map((v) => `${v.id} ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
     await drawer.getByRole("button", { name: "Continue" }).click();
@@ -72,5 +74,35 @@ test.describe("course administration", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Enrolment requests" })).toBeVisible();
     await page.getByRole("button", { name: "Approved" }).click();
     await expect(page.getByRole("button", { name: "Approved" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("course categories are managed under Lists and offered on every course", async ({ page }) => {
+    await signInAdmin(page);
+    await page.goto("/admin/lists?list=course_categories");
+    await expect(page.getByRole("tab", { name: "Course categories" })).toHaveAttribute("aria-selected", "true");
+    for (const name of ["Masterclasses", "Investor Classes", "Marketing, Sales and Public Relations", "Project Management", "AI Training", "Finance"]) {
+      await expect(page.locator("tbody").getByText(name, { exact: true })).toBeVisible();
+    }
+    const name = `E2E category ${Date.now()}`;
+    await page.getByRole("button", { name: "Add an entry" }).click();
+    await page.getByRole("dialog", { name: "Add an entry" }).getByLabel("Name").fill(name);
+    await page.getByRole("dialog", { name: "Add an entry" }).getByRole("button", { name: "Add" }).click();
+    await expect(page.locator("tbody").getByText(name, { exact: true })).toBeVisible();
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/course-categories.png`, fullPage: true });
+
+    // It is offered at once when a course is made.
+    await page.goto("/admin/courses");
+    await page.getByRole("button", { name: "Add course" }).first().click();
+    const drawer = page.getByRole("dialog", { name: "Add course" });
+    await expect(drawer.getByLabel("Category", { exact: true }).locator("option", { hasText: name })).toHaveCount(1);
+    await drawer.getByLabel("Category", { exact: true }).selectOption(name);
+    if (process.env.E2E_SHOTS) await drawer.screenshot({ path: `${process.env.E2E_SHOTS}/course-category-picker.png` });
+    await page.keyboard.press("Escape");
+
+    // Not used by any course, so it can be deleted.
+    await page.goto("/admin/lists?list=course_categories");
+    await page.getByRole("button", { name: `Delete ${name}` }).click();
+    await page.getByRole("dialog", { name: "Delete this entry?" }).getByRole("button", { name: "Delete" }).click();
+    await expect(page.locator("tbody").getByText(name, { exact: true })).toHaveCount(0);
   });
 });
