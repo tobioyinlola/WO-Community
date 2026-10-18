@@ -33,3 +33,10 @@ class Stage(ReferenceItem):
 
 class Skill(ReferenceItem):
     pass
+
+
+class CourseCategory(ReferenceItem):
+    """What a course is about, as offered in the course forms and the course filters."""
+
+    class Meta(ReferenceItem.Meta):
+        verbose_name_plural = "course categories"

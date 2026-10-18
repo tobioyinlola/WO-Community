@@ -14,6 +14,7 @@ import { useToast } from "../ui/Toast";
 import { Announcements, Learners, Questions, Requests, Reviews } from "./CourseEngage";
 import { ConfirmDialog } from "./dialogs";
 import { StatusChip } from "./kit/TableBits";
+import { CategoryField } from "./CategoryField";
 import { useStepUp } from "./StepUp";
 
 type Course = components["schemas"]["AdminCourse"];
@@ -310,7 +311,7 @@ function Settings({ id, onSaved }: { id: string; onSaved: () => Promise<void> })
       <Textarea label="Who it is for" rows={2} value={String(draft.audience)} onChange={(e) => set("audience", e.target.value)} error={errors.audience} />
       <div className="app-formgrid">
         <Input label="Taught by" value={String(draft.instructor)} onChange={(e) => set("instructor", e.target.value)} error={errors.instructor} />
-        <Input label="Category" value={String(draft.category)} onChange={(e) => set("category", e.target.value)} error={errors.category} />
+        <CategoryField value={String(draft.category)} onChange={(v) => set("category", v)} error={errors.category} />
         <Select label="Level" options={LEVELS.map((l) => ({ value: l, label: humanise(l) }))} value={String(draft.level)} onChange={(e) => set("level", e.target.value)} error={errors.level} />
         <Input label="Language code" value={String(draft.language)} onChange={(e) => set("language", e.target.value)} error={errors.language} />
       </div>

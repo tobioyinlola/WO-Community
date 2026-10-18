@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from apps.reference.countries import COUNTRIES
-from apps.reference.models import Sector, Skill, Stage
+from apps.reference.models import CourseCategory, Sector, Skill, Stage
 
 
 def countries() -> list[dict[str, str]]:
@@ -31,6 +31,21 @@ def stages() -> Any:
 
 def skills() -> Any:
     return Skill.objects.filter(active=True)
+
+
+def course_categories() -> Any:
+    return CourseCategory.objects.filter(active=True)
+
+
+def course_category_named(name: str, *, include_retired: bool = False) -> str | None:
+    """The list's own spelling of a course category, matched without regard to case."""
+    entries = CourseCategory.objects.all() if include_retired else course_categories()
+    found = entries.filter(name__iexact=name.strip()).first()
+    return found.name if found else None
+
+
+def course_category_names(slugs: Iterable[str]) -> dict[str, str]:
+    return dict(CourseCategory.objects.filter(slug__in=list(slugs)).values_list("slug", "name"))
 
 
 def get_sector(slug: str) -> Sector | None:

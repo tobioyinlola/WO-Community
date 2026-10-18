@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api, unwrap } from "../api/client";
 import type { components } from "../api/schema";
 import { Badge, Button, Card, Input, Modal } from "../components";
@@ -10,13 +11,14 @@ import { useToast } from "../ui/Toast";
 import { ConfirmDialog } from "./dialogs";
 import { useStepUp } from "./StepUp";
 
-type Kind = "sectors" | "stages" | "skills";
+type Kind = "sectors" | "stages" | "skills" | "course_categories";
 type Entry = components["schemas"]["ReferenceItem"];
 
 const KINDS: Array<{ id: Kind; label: string; blurb: string }> = [
   { id: "sectors", label: "Sectors", blurb: "The industries startups and members can pick." },
   { id: "stages", label: "Stages", blurb: "How far along a startup is." },
   { id: "skills", label: "Skills", blurb: "What members can say they are good at." },
+  { id: "course_categories", label: "Course categories", blurb: "What courses are about. Admins pick one for each course, and members filter the catalogue by them." },
 ];
 
 function AddEntry({ kind, onClose, onSaved }: { kind: Kind; onClose: () => void; onSaved: () => Promise<void> }) {
@@ -115,7 +117,13 @@ function List({ kind }: { kind: Kind }) {
 
 export default function Reference() {
   useDocumentTitle("Lists");
-  const [kind, setKind] = useState<Kind>("sectors");
+  const [params, setParams] = useSearchParams();
+  const asked = params.get("list");
+  const [kind, setKindState] = useState<Kind>(KINDS.some((k) => k.id === asked) ? (asked as Kind) : "sectors");
+  const setKind = (next: Kind) => {
+    setKindState(next);
+    setParams(next === "sectors" ? {} : { list: next }, { replace: true });
+  };
   const current = KINDS.find((k) => k.id === kind);
   return (
     <>

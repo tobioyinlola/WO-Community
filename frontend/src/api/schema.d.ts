@@ -575,6 +575,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/course-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Course categories to choose from
+         * @description The active entries of the course category list, in the admins' order. A name not on the list can still be typed on a course; it then joins the list.
+         */
+        get: operations["admin_course_categories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/course-requests": {
         parameters: {
             query?: never;
@@ -10596,6 +10616,10 @@ export interface components {
             working: number;
             total: number;
         };
+        CourseCategoryOption: {
+            slug: string;
+            name: string;
+        };
         /**
          * @description Rejects fields the serializer does not declare.
          *
@@ -18400,6 +18424,46 @@ export interface operations {
             };
         };
     };
+    admin_course_categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseCategoryOption"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     admin_course_requests_all: {
         parameters: {
             query?: {
@@ -25187,7 +25251,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                kind: "sectors" | "skills" | "stages";
+                kind: "course_categories" | "sectors" | "skills" | "stages";
             };
             cookie?: never;
         };
@@ -25236,7 +25300,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                kind: "sectors" | "skills" | "stages";
+                kind: "course_categories" | "sectors" | "skills" | "stages";
             };
             cookie?: never;
         };
@@ -25290,7 +25354,7 @@ export interface operations {
             header?: never;
             path: {
                 item_id: string;
-                kind: "sectors" | "skills" | "stages";
+                kind: "course_categories" | "sectors" | "skills" | "stages";
             };
             cookie?: never;
         };
@@ -25339,7 +25403,7 @@ export interface operations {
             header?: never;
             path: {
                 item_id: string;
-                kind: "sectors" | "skills" | "stages";
+                kind: "course_categories" | "sectors" | "skills" | "stages";
             };
             cookie?: never;
         };
@@ -25392,7 +25456,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                kind: "sectors" | "skills" | "stages";
+                kind: "course_categories" | "sectors" | "skills" | "stages";
             };
             cookie?: never;
         };
