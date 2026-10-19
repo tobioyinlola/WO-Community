@@ -11,7 +11,7 @@ layers =
     apps.adminconsole
     apps.memberarea | apps.campaigns | apps.globalsearch | apps.referrals
     apps.toolkit
-    apps.directory | apps.feed | apps.jobs | apps.editorial | apps.events | apps.learning | apps.mentorship | apps.support
+    apps.directory | apps.feed | apps.groups | apps.jobs | apps.editorial | apps.events | apps.learning | apps.mentorship | apps.support
     apps.notifications
     apps.profiles | apps.startups
     apps.uploads

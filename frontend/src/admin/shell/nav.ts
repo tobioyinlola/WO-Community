@@ -72,6 +72,7 @@ export const NAV: NavEntry[] = [
     icon: FileText,
     children: [
       { id: "feed", label: "Posts and feed", to: "/admin/feed", needs: "feed.moderate" },
+      { id: "groups", label: "Groups", to: "/admin/groups", needs: "feed.moderate" },
       { id: "news", label: "News and awards", to: "/admin/news", needs: "editorial.manage" },
       { id: "wins", label: "Win submissions", to: "/admin/wins", needs: "editorial.manage", badge: "wins_awaiting_review" },
       { id: "testimonials", label: "Testimonials", to: "/admin/testimonials", needs: "editorial.manage" },

@@ -94,3 +94,21 @@ def test_course_editors_see_the_categories_to_choose_from(editor, client_for):
         for c in client_for(editor, mfa_age=5).get("/api/v1/admin/course-categories").json()
     ]
     assert "Project Management" in names
+
+
+def test_a_published_course_moves_to_another_category(editor, client_for, make_user):
+    made = course(editor, "0-to-1")
+    Course.objects.filter(pk=made.pk).update(status=Course.Status.PUBLISHED)
+    client = client_for(editor, mfa_age=5)
+    url = f"/api/v1/admin/courses/{made.pk}"
+    for target in ("Investor Classes", "AI Training", "0-to-1"):
+        tag = client.get(url)["ETag"]
+        response = client.patch(url, {"category": target}, format="json", HTTP_IF_MATCH=tag)
+        assert response.status_code == 200, response.content
+        assert Course.objects.get(pk=made.pk).category == target
+    # Members find it under its new category, and no longer under the old one.
+    member = client_for(make_user(email="member@example.com"))
+    Course.objects.filter(pk=made.pk).update(category="AI Training")
+    found = member.get("/api/v1/courses", {"category": "AI Training"}).json()["results"]
+    assert [c["title"] for c in found] == ["Raising a seed round"]
+    assert member.get("/api/v1/courses", {"category": "0-to-1"}).json()["results"] == []
