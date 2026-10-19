@@ -7,6 +7,8 @@ export const CATEGORIES: Array<{ value: string; label: string }> = [
   { value: "jobs_events", label: "Jobs and events" },
   { value: "payments", label: "Payments" },
   { value: "problem", label: "Report a problem" },
+  { value: "privacy", label: "Privacy request" },
+  { value: "appeal", label: "Appeal a decision" },
   { value: "other", label: "Other" },
 ];
 

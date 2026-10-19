@@ -15041,10 +15041,12 @@ export interface components {
          *     * `jobs_events` - jobs_events
          *     * `payments` - payments
          *     * `problem` - problem
+         *     * `privacy` - privacy
+         *     * `appeal` - appeal
          *     * `other` - other
          * @enum {string}
          */
-        SupportCategoryEnum: "account" | "approval" | "profile" | "learning" | "mentorship" | "jobs_events" | "payments" | "problem" | "other";
+        SupportCategoryEnum: "account" | "approval" | "profile" | "learning" | "mentorship" | "jobs_events" | "payments" | "problem" | "privacy" | "appeal" | "other";
         SupportMessage: {
             /** Format: uuid */
             readonly id: string;
