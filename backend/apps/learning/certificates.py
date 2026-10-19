@@ -132,6 +132,7 @@ def hours_of(seconds: int) -> Decimal:
 
 def content_for(certificate: Certificate) -> CertificateContent:
     template = certificate.template or {}
+    row = current_settings()
     return CertificateContent(
         holder=certificate.holder_name,
         course=certificate.course_title,
@@ -139,9 +140,10 @@ def content_for(certificate: Certificate) -> CertificateContent:
         number=certificate.code,
         hours=certificate.hours,
         title_text=template.get("title_text") or DEFAULT_TITLE,
-        # The name on the sheet is the one in the settings today, so a reissue or a new download
-        # always carries the current signatory.
-        signatory_name=current_settings().signatory_name or template.get("signatory_name", ""),
+        # The name and signature on the sheet are the ones in the settings today, so a reissue or
+        # a new download always carries the current signatory.
+        signatory_name=row.signatory_name or template.get("signatory_name", ""),
+        signature_png=_signature_png(row.signature_key),
     )
 
 
@@ -156,6 +158,7 @@ def preview_pdf(*, data: dict[str, Any]) -> bytes:
         hours=Decimal("4.5"),
         title_text=plain(data.get("title_text") or row.title_text) or DEFAULT_TITLE,
         signatory_name=plain(data.get("signatory_name", row.signatory_name)),
+        signature_png=None if data.get("remove_signature") else _signature_png(row.signature_key),
     )
     return render_certificate(content)
 

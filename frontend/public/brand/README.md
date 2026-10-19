@@ -4,3 +4,4 @@ The logo files (served from /brand/, which is not cached for a year like /assets
 - `wo-mark-on-light.png`, `wo-mark-on-dark.png`: the mark alone, for places under 120 px wide
 - `email-logo.png`: the full logo on a white rounded panel, for the top of every email
 - `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`: the mark on forest, for browser tabs and home screens
+- `signature-onyeka.png`: Onyeka Akumah's signature, ink on a transparent ground, for certificates (the PDF uses its own copy in `backend/apps/learning/assets/`)
