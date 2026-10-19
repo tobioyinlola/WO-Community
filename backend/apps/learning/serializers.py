@@ -377,6 +377,7 @@ class PublicCourseSummarySerializer(serializers.Serializer):
     level = serializers.CharField()
     cover = ImageSerializer(allow_null=True)
     lesson_count = serializers.IntegerField()
+    access = serializers.CharField(help_text="free or paid")
 
 
 class PublicCoursePageSerializer(serializers.Serializer):

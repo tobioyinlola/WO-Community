@@ -159,3 +159,19 @@ def test_the_same_notice_triggered_twice_carries_the_same_key(
         run_outbox()
     first, second = resend_calls
     assert first.headers["idempotency-key"] == second.headers["idempotency-key"]
+
+
+def test_the_applicant_is_told_their_application_is_in_only_when_those_emails_are_on(
+    make_user, run_outbox, sent_emails, settings
+):
+    from apps.accounts import events
+    from apps.core import events as domain_events
+
+    user = make_user(email="applicant@example.com", status="pending")
+    for on, expected in ((False, 0), (True, 1)):
+        settings.EMAIL_PENDING_APPROVAL_NOTICES = on
+        sent_emails.clear()
+        domain_events.publish(events.RegistrationAwaitingApproval(user_id=str(user.pk)))
+        run_outbox()
+        got = [m for m in sent_emails if m.to == "applicant@example.com"]
+        assert len(got) == expected

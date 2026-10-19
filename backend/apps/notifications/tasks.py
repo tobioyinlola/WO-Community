@@ -4,6 +4,7 @@ from uuid import UUID
 
 import structlog
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 
 from apps.accounts import services as accounts
@@ -114,6 +115,8 @@ def send_password_reset_email(event_id: str) -> None:
 
 @shared_task(name="notifications.send_application_received_email")
 def send_application_received_email(event_id: str) -> None:
+    if not settings.EMAIL_PENDING_APPROVAL_NOTICES:
+        return
     user_id = _user_id(event_id)
     contact = accounts.get_contact(user_id) if user_id else None
     if contact is not None and contact.status == "pending":

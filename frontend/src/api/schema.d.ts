@@ -6314,8 +6314,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Free courses open to visitors
-         * @description Anonymous, cookie-free and cacheable. Any Authorization header is ignored.
+         * Published courses, for visitors to browse
+         * @description A short card for every published course. Opening one needs an account; the full outline is public only for free courses marked open to visitors.
          */
         get: operations["public_courses_list"];
         put?: never;
@@ -11501,16 +11501,6 @@ export interface components {
             /** Format: email */
             email: string;
         };
-        FounderCard: {
-            slug: string;
-            full_name: string;
-            badges: string[];
-            headline?: string;
-            photo?: components["schemas"]["Image"] | null;
-            country?: string;
-            city?: string;
-            skills?: components["schemas"]["DirectorySkill"][];
-        };
         FounderDetail: {
             slug: string;
             full_name: string;
@@ -11531,7 +11521,7 @@ export interface components {
             structured_data: unknown;
         };
         FounderPage: {
-            results: components["schemas"]["FounderCard"][];
+            results: components["schemas"]["PublicFounderCard"][];
             /** @description More are listed: members can see them all. */
             has_more: boolean;
         };
@@ -14050,6 +14040,8 @@ export interface components {
             level: string;
             cover: components["schemas"]["Image"] | null;
             lesson_count: number;
+            /** @description free or paid */
+            access: string;
         };
         PublicEvent: {
             slug: string;
@@ -14087,6 +14079,14 @@ export interface components {
             timezone: string;
             location: string;
             past: boolean;
+        };
+        /** @description What a visitor sees of a member in the list: no full name and no link to the profile. */
+        PublicFounderCard: {
+            /** @description First name and the initial of the last name */
+            name: string;
+            badges: string[];
+            headline?: string;
+            photo?: components["schemas"]["Image"] | null;
         };
         PublicItem: {
             slug: string;

@@ -12,6 +12,8 @@ from apps.core.serializers import ImageSerializer, StrictSerializer
 
 MAX_SKILL_FILTERS = 5
 PUBLIC_PREVIEW = 10
+# Members are a longer shelf than startups, and visitors see them by first name and last initial.
+PUBLIC_FOUNDERS = 12
 
 
 class _Query(StrictSerializer):
@@ -40,7 +42,9 @@ class StartupQuerySerializer(_Query):
 
 
 class FounderQuerySerializer(_Query):
-    pass
+    limit = serializers.IntegerField(
+        min_value=1, max_value=PUBLIC_FOUNDERS, default=PUBLIC_FOUNDERS
+    )
 
 
 class SitemapQuerySerializer(StrictSerializer):
@@ -134,8 +138,35 @@ def startup_page(results: list[dict[str, Any]], has_more: bool) -> dict[str, Any
     return {"results": StartupCardSerializer(results, many=True).data, "has_more": has_more}
 
 
+def short_name(full_name: str) -> str:
+    """First name and the initial of the last: "Saviour Emmanuel Udoh" becomes "Saviour U."."""
+    parts = full_name.split()
+    if not parts:
+        return "Member"
+    first = parts[0].capitalize() if parts[0].isupper() and len(parts[0]) > 1 else parts[0]
+    initial = next((c for c in parts[-1] if c.isalpha()), "")
+    return f"{first} {initial.upper()}." if len(parts) > 1 and initial else first
+
+
+class PublicFounderCardSerializer(serializers.Serializer):
+    """What a visitor sees of a member in the list: no full name and no link to the profile."""
+
+    name = serializers.CharField(help_text="First name and the initial of the last name")
+    badges = serializers.ListField(child=serializers.CharField())
+    headline = serializers.CharField(required=False)
+    photo = ImageSerializer(required=False, allow_null=True)
+
+
 def founder_page(results: list[dict[str, Any]], has_more: bool) -> dict[str, Any]:
-    return {"results": FounderCardSerializer(results, many=True).data, "has_more": has_more}
+    cards = [
+        {
+            "name": short_name(row["full_name"]),
+            "badges": row["badges"],
+            **{k: row[k] for k in ("headline", "photo") if k in row},
+        }
+        for row in results
+    ]
+    return {"results": PublicFounderCardSerializer(cards, many=True).data, "has_more": has_more}
 
 
 class StartupPageSerializer(serializers.Serializer):
@@ -144,7 +175,7 @@ class StartupPageSerializer(serializers.Serializer):
 
 
 class FounderPageSerializer(serializers.Serializer):
-    results = FounderCardSerializer(many=True)
+    results = PublicFounderCardSerializer(many=True)
     has_more = serializers.BooleanField(help_text="More are listed: members can see them all.")
 
 

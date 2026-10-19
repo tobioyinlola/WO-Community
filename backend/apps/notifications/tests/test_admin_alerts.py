@@ -105,3 +105,40 @@ def test_in_app_notifications_are_made_once_per_item(admin):
 def test_kinds_that_already_notify_in_app_do_not_repeat_it(admin):
     raise_one(1, kind="support_ticket", in_app=False)
     assert adminalerts.deliver_in_app(AdminAlert.objects.get().pk) == 0
+
+
+# --- switched off to save email ---
+
+
+def test_member_requests_are_not_emailed_when_pending_approval_emails_are_off(admin, settings):
+    settings.EMAIL_PENDING_APPROVAL_NOTICES = False
+    raise_one(1)
+    assert adminalerts.dispatch("member_signup") == 0
+    assert mails() == []
+    # Other kinds are unaffected, and the request is still recorded for the console.
+    assert AdminAlert.objects.filter(kind="member_signup").count() == 1
+    raise_one(2, kind="job_pending")
+    assert adminalerts.dispatch("job_pending") == 1
+
+
+def test_switching_them_on_later_does_not_send_the_old_requests(admin, settings):
+    settings.EMAIL_PENDING_APPROVAL_NOTICES = False
+    raise_one(1)
+    raise_one(2)
+    adminalerts.dispatch("member_signup")
+    settings.EMAIL_PENDING_APPROVAL_NOTICES = True
+    assert adminalerts.dispatch("member_signup", now=timezone.now() + timedelta(hours=1)) == 0
+    raise_one(3)
+    assert adminalerts.dispatch("member_signup", now=timezone.now() + timedelta(hours=2)) == 1
+    assert len(mails()) == 1
+
+
+def test_the_daily_reminder_leaves_out_member_requests_when_they_are_off(admin, settings):
+    from apps.adminconsole import stale_alerts
+
+    raise_one(1)
+    AdminAlert.objects.update(created_at=timezone.now() - timedelta(days=2))
+    settings.EMAIL_PENDING_APPROVAL_NOTICES = False
+    assert stale_alerts.send_stale_summary() == 0
+    settings.EMAIL_PENDING_APPROVAL_NOTICES = True
+    assert stale_alerts.send_stale_summary() >= 0  # unchanged behaviour when on

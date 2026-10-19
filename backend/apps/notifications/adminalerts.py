@@ -150,6 +150,12 @@ def dispatch(kind: str, *, now: datetime | None = None) -> int:
             )
             if not unsent:
                 continue
+            if kind == "member_signup" and not settings.EMAIL_PENDING_APPROVAL_NOTICES:
+                # Switched off to save email: mark them as covered so that switching it on later
+                # does not send a digest of old requests.
+                cursor.covered_until = unsent[-1].created_at
+                cursor.save(update_fields=["covered_until", "updated_at"])
+                continue
             if cursor.last_sent_at and now - cursor.last_sent_at < WINDOW:
                 continue  # inside the window: wait for the digest
             if len(unsent) == 1:

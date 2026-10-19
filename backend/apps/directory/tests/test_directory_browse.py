@@ -232,12 +232,12 @@ def test_the_featured_filter_lists_only_pinned_startups(api_client, listed):
 
 
 def test_visitors_see_at_most_ten_and_are_told_there_are_more(api_client, listed):
-    for n in range(12):
+    for n in range(14):
         listed(f"Company {n}", founder=f"Founder {n}")
     startups = api_client.get(STARTUPS).json()
     founders = api_client.get(FOUNDERS).json()
     assert len(startups["results"]) == 10 and startups["has_more"] is True
-    assert len(founders["results"]) == 10 and founders["has_more"] is True
+    assert len(founders["results"]) == 12 and founders["has_more"] is True
     assert len(api_client.get(STARTUPS, {"q": "Company"}).json()["results"]) <= 10
 
 
@@ -344,7 +344,7 @@ def test_listing_uses_a_fixed_number_of_queries(api_client, listed, django_asser
     with django_assert_max_num_queries(3):
         assert api_client.get(STARTUPS, {"limit": 10}).status_code == 200
     with django_assert_max_num_queries(3):
-        assert api_client.get(FOUNDERS, {"limit": 10}).status_code == 200
+        assert api_client.get(FOUNDERS, {"limit": 12}).status_code == 200
 
 
 def test_cached_pages_serialise_to_stable_json(api_client, listed):
@@ -352,3 +352,38 @@ def test_cached_pages_serialise_to_stable_json(api_client, listed):
     one = api_client.get(STARTUPS).content
     two = api_client.get(STARTUPS).content
     assert json.loads(one) == json.loads(two)
+
+
+def test_visitors_see_members_by_first_name_and_last_initial_only(api_client, listed):
+    listed("Company A", founder="Saviour Emmanuel Udoh")
+    listed("Company B", founder="SAMUEL OBARINE NGEKEDA")
+    listed("Company C", founder="Madonna")
+    results = api_client.get(FOUNDERS).json()["results"]
+    assert sorted(r["name"] for r in results) == ["Madonna", "Samuel N.", "Saviour U."]
+    body = str(results)
+    # No full name, and no slug (which carries the name) to open their profile with.
+    assert "Udoh" not in body and "NGEKEDA" not in body and "slug" not in body
+    assert set(results[0]) <= {"name", "badges", "headline", "photo"}
+
+
+def test_visitors_can_not_ask_for_more_than_twelve_members(api_client, listed):
+    for n in range(15):
+        listed(f"Company {n}", founder=f"Founder {n}")
+    assert api_client.get(FOUNDERS, {"limit": 13}).status_code == 400
+    assert len(api_client.get(FOUNDERS, {"limit": 12}).json()["results"]) == 12
+
+
+@pytest.mark.parametrize(
+    ("full", "short"),
+    [
+        ("Whitney GINIKANWA obianujuaku onuigbo", "Whitney O."),
+        ("  Ada   Obi ", "Ada O."),
+        ("Onyeka", "Onyeka"),
+        ("", "Member"),
+        ("Chidi Ọkafor", "Chidi Ọ."),
+    ],
+)
+def test_short_names(full, short):
+    from apps.directory.serializers import short_name
+
+    assert short_name(full) == short

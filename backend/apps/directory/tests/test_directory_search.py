@@ -8,8 +8,8 @@ pytestmark = pytest.mark.django_db
 def found(client, q, url=STARTUPS, **extra):
     response = client.get(url, {"q": q, **extra})
     assert response.status_code == 200
-    key = "name" if url == STARTUPS else "full_name"
-    return [item[key] for item in response.json()["results"]]
+    # Visitors see members as a first name and a last initial.
+    return [item["name"] for item in response.json()["results"]]
 
 
 @pytest.fixture
@@ -172,9 +172,9 @@ def test_unlisted_startups_are_not_searchable(api_client, listed):
 
 
 def test_founders_are_found_by_name_skill_and_startup(api_client, catalogue):
-    assert found(api_client, "Chidi", url=FOUNDERS) == ["Chidi Okeke"]
+    assert found(api_client, "Chidi", url=FOUNDERS) == ["Chidi O."]
     assert found(api_client, "payments", url=FOUNDERS)  # a public skill
-    assert found(api_client, "FarmLink", url=FOUNDERS) == ["Wanjiru Kamau"]
+    assert found(api_client, "FarmLink", url=FOUNDERS) == ["Wanjiru K."]
 
 
 def test_edits_reach_search_once_the_refresh_has_run(api_client, listed, run_outbox):

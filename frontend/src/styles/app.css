@@ -2064,3 +2064,14 @@ a.wo-sharecard:hover {
     color: var(--text-secondary);
   }
 }
+
+/* A course card on the public Explore page is one link: it asks the visitor to join to open it. */
+.explore-course {
+  display: block;
+  border-radius: var(--radius-lg);
+}
+.explore-course:hover .wo-card,
+.explore-course:focus-visible .wo-card {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}

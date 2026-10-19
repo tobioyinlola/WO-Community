@@ -452,11 +452,23 @@ def verify(code: str) -> dict[str, Any]:
 
 
 def public_courses(*, cursor: str, limit: int) -> dict[str, Any]:
-    queryset = published().filter(access="free", open_to_visitors=True)
+    """Every published course, as a short card. Visitors see what is on offer; opening one asks
+    them to join first (only free courses marked open to visitors have a public outline)."""
+    queryset = published()
     rows, next_cursor = paginate(
         queryset, fields=("published_at", "id"), sort="public-courses", cursor=cursor, limit=limit
     )
-    keep = ("slug", "title", "excerpt", "instructor", "category", "level", "cover", "lesson_count")
+    keep = (
+        "slug",
+        "title",
+        "excerpt",
+        "instructor",
+        "category",
+        "level",
+        "cover",
+        "lesson_count",
+        "access",
+    )
     return {
         "results": [{k: course_summary(c, None)[k] for k in keep} for c in rows],
         "next_cursor": next_cursor,
