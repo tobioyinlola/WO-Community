@@ -80,7 +80,10 @@ test.describe("the admin changes", () => {
     await expect(page.getByText("Post published")).toBeVisible();
     await page.goto("/app/feed");
     await expect(page.getByText(`Welcome from the team ${stamp}`)).toBeVisible();
-    await expect(page.getByText("WO Community team").first()).toBeVisible();
+    // The post carries the admin's own name, never a team name.
+    const post = page.getByRole("article").filter({ hasText: `Welcome from the team ${stamp}` });
+    await expect(post).not.toContainText("WO Community team");
+    await expect(post.getByText("Pinned")).toBeVisible();
   });
 
   test("a news item with a banner scrolls on the dashboard, pauses on hover, and can be closed", async ({ page }) => {

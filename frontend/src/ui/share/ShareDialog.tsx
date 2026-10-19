@@ -35,7 +35,7 @@ export function ShareDialog({
   kind: ShareKind;
   refId: string;
   onClose: () => void;
-  /** From the admin console: post as the WO Community team, optionally pinned. */
+  /** From the admin console: post with admin options (official marker, pin). The post carries the admin's own name. */
   team?: boolean;
   /** Whether posting to the feed is offered (an admin may only be allowed to share links). */
   feed?: boolean;
@@ -48,7 +48,7 @@ export function ShareDialog({
     retry: false,
   });
   const [message, setMessage] = useState("");
-  const [official, setOfficial] = useState(true);
+  const [official, setOfficial] = useState(false);
   const [pin, setPin] = useState(false);
   const [copied, setCopied] = useState(false);
   const link = shareLink(kind, refId);
@@ -137,7 +137,7 @@ export function ShareDialog({
                 />
                 {team ? (
                   <div className="app-stack" style={{ gap: "var(--space-2)" }}>
-                    <Checkbox label="Post as the WO Community team" checked={official} onChange={(e) => setOfficial(e.target.checked)} />
+                    <Checkbox label="Mark as an official announcement" checked={official} onChange={(e) => setOfficial(e.target.checked)} />
                     <Checkbox label="Pin it to the top of the feed" checked={pin} onChange={(e) => setPin(e.target.checked)} />
                   </div>
                 ) : null}

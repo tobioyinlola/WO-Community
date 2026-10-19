@@ -292,7 +292,7 @@ export function PostCard({ post, startOpen = false }: { post: Post; startOpen?: 
             </p>
           </div>
           <div className="app-post__badges">
-            {post.official ? <Badge variant="solid">WO Community team</Badge> : null}
+            {post.official ? <Badge variant="solid">Official</Badge> : null}
             {post.pinned ? <Badge variant="solid">Pinned</Badge> : null}
             <Badge variant="mentor">{humanise(post.category)}</Badge>
           </div>

@@ -20,14 +20,14 @@ const toLocal = (iso: string | null | undefined) => {
   return d.toISOString().slice(0, 16);
 };
 
-/** Write a post as the team or as yourself, or change one. Team posts are never held for review. */
+/** Write a post as an admin, or change one. Admin posts carry the author's own name and are never held for review. */
 export function TeamPostForm({ post, onClose, onSaved }: { post?: Post; onClose: () => void; onSaved: () => Promise<void> }) {
   const toast = useToast();
   const scheduled = Boolean(post?.scheduled_for);
   const [f, setF] = useState({
     category: post?.category ?? "update",
     text: post ? post.excerpt : "",
-    official: post?.official ?? true,
+    official: post?.official ?? false,
     pin: post?.pinned ?? false,
     pinnedUntil: toLocal(post?.pinned_until),
     comments: post?.comments_enabled ?? true,
@@ -92,7 +92,7 @@ export function TeamPostForm({ post, onClose, onSaved }: { post?: Post; onClose:
         <Textarea label="What do you want to say?" rows={6} value={f.text} onChange={(e) => set("text", e.target.value)} />
         <fieldset className="app-stack" style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className="wo-label">Options</legend>
-          <Checkbox label="Post as the WO Community team" checked={f.official} onChange={(e) => set("official", e.target.checked)} />
+          <Checkbox label="Mark as an official announcement" checked={f.official} onChange={(e) => set("official", e.target.checked)} />
           <Checkbox label="Pin to the top of the feed" checked={f.pin} onChange={(e) => set("pin", e.target.checked)} />
           {f.pin ? <Input label="Unpin on (optional)" type="datetime-local" value={f.pinnedUntil} onChange={(e) => set("pinnedUntil", e.target.value)} /> : null}
           <Checkbox label="Allow comments" checked={f.comments} onChange={(e) => set("comments", e.target.checked)} />

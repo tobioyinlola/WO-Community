@@ -2741,8 +2741,8 @@ export interface paths {
         get: operations["admin_posts_list"];
         put?: never;
         /**
-         * Post as the team or as yourself
-         * @description Skips the daily allowance and is never held for review. Options: post as the WO Community team, pin (with an optional date it lapses), turn comments off, limit to members or mentors, and schedule for later. `share` attaches a published course or event as a card.
+         * Post as an admin
+         * @description Skips the daily allowance and is never held for review. The post carries your own name. Options: mark it official, pin (with an optional date it lapses), turn comments off, limit to members or mentors, and schedule for later. `share` attaches a published course or event as a card.
          */
         post: operations["admin_posts_create"];
         delete?: never;
@@ -13768,7 +13768,7 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             edited_at: string | null;
-            /** @description Posted by the WO Community team */
+            /** @description Marked as an official announcement */
             official: boolean;
             comments_enabled: boolean;
             pinned: boolean;
@@ -15450,7 +15450,7 @@ export interface components {
             /** @description A course or event to share */
             share?: components["schemas"]["ShareInputRequest"] | null;
             /**
-             * @description Post as the WO Community team
+             * @description Mark as an official announcement
              * @default false
              */
             official: boolean;
