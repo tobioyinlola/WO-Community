@@ -32931,6 +32931,8 @@ components:
       - jobs_events
       - payments
       - problem
+      - privacy
+      - appeal
       - other
       type: string
       description: |-
@@ -32942,6 +32944,8 @@ components:
         * `jobs_events` - jobs_events
         * `payments` - payments
         * `problem` - problem
+        * `privacy` - privacy
+        * `appeal` - appeal
         * `other` - other
     SupportMessage:
       type: object

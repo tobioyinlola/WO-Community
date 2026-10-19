@@ -9,6 +9,8 @@ CATEGORY_LABELS = {
     "jobs_events": "Jobs and events",
     "payments": "Payments",
     "problem": "Report a problem",
+    "privacy": "Privacy request",
+    "appeal": "Appeal a decision",
     "other": "Other",
 }
 CATEGORIES = tuple(CATEGORY_LABELS)
