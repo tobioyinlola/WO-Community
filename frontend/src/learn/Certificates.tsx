@@ -191,6 +191,7 @@ export default function CertificatePage() {
           number={certificate.number}
           hours={certificate.hours}
           titleText={certificate.title_text}
+          signatureUrl={certificate.signature_url}
           signatoryName={certificate.signatory_name}
         />
         <aside className="app-stack" aria-label="About this certificate">

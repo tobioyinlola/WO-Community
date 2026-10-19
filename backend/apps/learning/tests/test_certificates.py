@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from PIL import Image
 from pypdf import PdfReader
 
 from apps.analytics.models import AnalyticsEvent
@@ -284,14 +285,30 @@ def text_of(pdf: bytes) -> str:
     return " ".join(page.extract_text() for page in reader.pages)
 
 
-def test_the_signatory_is_a_name_only_and_defaults_to_onyeka_akumah():
+def images_in(pdf: bytes) -> int:
+    return len(PdfReader(io.BytesIO(pdf)).pages[0].images)
+
+
+def test_the_signatory_defaults_to_onyeka_akumah_with_his_signature():
     pdf = render_certificate(sample())
     text = text_of(pdf)
     assert "Onyeka Akumah" in text
     assert "http" not in text and "verify" not in text.lower()
-    # The logo is the only picture: no signature image and no QR code.
-    assert len(PdfReader(io.BytesIO(pdf)).pages[0].images) == 1
-    assert "Dr A. Other" in text_of(render_certificate(sample(signatory_name="Dr A. Other")))
+    # The logo and his signature, and no QR code.
+    assert images_in(pdf) == 2
+
+
+def test_another_signatory_gets_no_borrowed_signature():
+    pdf = render_certificate(sample(signatory_name="Dr A. Other"))
+    assert "Dr A. Other" in text_of(pdf)
+    assert images_in(pdf) == 1  # only the logo
+
+
+def test_an_uploaded_signature_is_drawn_for_any_signatory():
+    out = io.BytesIO()
+    Image.new("RGBA", (300, 90), (20, 30, 90, 255)).save(out, "PNG")
+    pdf = render_certificate(sample(signatory_name="Dr A. Other", signature_png=out.getvalue()))
+    assert images_in(pdf) == 2
 
 
 @pytest.mark.parametrize(

@@ -10,7 +10,12 @@ export interface CertificateSheetProps {
   hours: number;
   titleText: string;
   signatoryName: string;
+  /** An uploaded signature. Without one, Onyeka's own signature is shown when the certificate names him. */
+  signatureUrl?: string | null;
 }
+
+const DEFAULT_SIGNATORY = "Onyeka Akumah";
+const DEFAULT_SIGNATURE = "/brand/signature-onyeka.png";
 
 const hoursText = (hours: number) => `${Number.isInteger(hours) ? hours : hours.toFixed(1)} ${hours === 1 ? "hour" : "hours"}`;
 
@@ -19,7 +24,9 @@ const hoursText = (hours: number) => `${Number.isInteger(hours) ? hours : hours.
  * the learner and course on the left, the brand shapes on the right and the signatory's name. It scales with its container, and it never follows the dark theme because a
  * certificate is a printed object.
  */
-export function CertificateSheet({ holder, course, issuedAt, number, hours, titleText, signatoryName }: CertificateSheetProps) {
+export function CertificateSheet({ holder, course, issuedAt, number, hours, titleText, signatoryName, signatureUrl }: CertificateSheetProps) {
+  const signer = signatoryName.trim() || DEFAULT_SIGNATORY;
+  const signature = signatureUrl || (signer === DEFAULT_SIGNATORY ? DEFAULT_SIGNATURE : null);
   return (
     <figure className="wo-certwrap" aria-label={`${titleText} for ${holder}`}>
       <div className="wo-cert">
@@ -55,9 +62,9 @@ export function CertificateSheet({ holder, course, issuedAt, number, hours, titl
           </dl>
         </div>
         <div className="wo-cert__sign">
-          <span className="wo-cert__signature" />
+          {signature ? <img className="wo-cert__signature" src={signature} alt={`Signature of ${signer}`} /> : <span className="wo-cert__signature" />}
           <span className="wo-cert__line" />
-          <strong>{signatoryName || "Onyeka Akumah"}</strong>
+          <strong>{signer}</strong>
           <span className="wo-cert__label">WO COMMUNITY</span>
         </div>
         <p className="wo-cert__footer">The future of Africa is being built here.</p>

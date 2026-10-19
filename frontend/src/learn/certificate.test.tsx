@@ -47,6 +47,17 @@ describe("CertificateSheet", () => {
     expect(screen.getByText("1 hour")).toBeInTheDocument();
     expect(screen.getByText("Onyeka Akumah")).toBeInTheDocument();
   });
+
+  it("signs with Onyeka's signature only when he is the signatory, unless one was uploaded", () => {
+    const { unmount } = render(<CertificateSheet {...sheet} signatoryName="Onyeka Akumah" />);
+    expect(screen.getByRole("img", { name: "Signature of Onyeka Akumah" })).toHaveAttribute("src", "/brand/signature-onyeka.png");
+    unmount();
+    const other = render(<CertificateSheet {...sheet} signatoryName="Dr A. Other" />);
+    expect(screen.queryByRole("img", { name: /Signature/ })).not.toBeInTheDocument();
+    other.unmount();
+    render(<CertificateSheet {...sheet} signatoryName="Dr A. Other" signatureUrl="https://cdn.test/sig.webp" />);
+    expect(screen.getByRole("img", { name: "Signature of Dr A. Other" })).toHaveAttribute("src", "https://cdn.test/sig.webp");
+  });
 });
 
 function verify(status: number, body: unknown) {

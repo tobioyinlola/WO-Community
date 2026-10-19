@@ -31,6 +31,9 @@ from reportlab.pdfgen import canvas
 ASSETS = Path(__file__).parent / "assets"
 FONT_DIR = ASSETS / "fonts"
 LOGO = ASSETS / "wo-logo-on-light.png"  # from the design system; a wordmark stands in if missing
+# Onyeka's own signature, signed over the line whenever the certificate names him and no other
+# signature has been uploaded.
+DEFAULT_SIGNATURE = ASSETS / "signature-onyeka.png"
 
 PAGE_WIDTH, PAGE_HEIGHT = 842, 595  # A4 landscape in points (297 by 210 mm)
 MM = 72 / 25.4
@@ -67,6 +70,7 @@ class CertificateContent:
     hours: Decimal
     title_text: str = "Certificate of completion"
     signatory_name: str = ""
+    signature_png: bytes | None = None  # an uploaded signature; None falls back to the default
 
 
 def _c(name: str) -> HexColor:
@@ -193,9 +197,23 @@ def _details(pdf: canvas.Canvas, content: CertificateContent, y: float) -> None:
         )
 
 
+def _signature_image(content: CertificateContent) -> ImageReader | None:
+    if content.signature_png:
+        return ImageReader(io.BytesIO(content.signature_png))
+    named = content.signatory_name or DEFAULT_SIGNATORY
+    if named == DEFAULT_SIGNATORY and DEFAULT_SIGNATURE.exists():
+        return ImageReader(str(DEFAULT_SIGNATURE))
+    return None
+
+
 def _signature(pdf: canvas.Canvas, content: CertificateContent) -> None:
-    """The signatory as a name only, over a rule, with a small uppercase label under it."""
+    """The signature over a rule, the signatory's name under it and a small uppercase label."""
     line_y = 112
+    image = _signature_image(content)
+    if image is not None:
+        width, height = image.getSize()
+        scale = min(170 / width, 46 / height)
+        pdf.drawImage(image, LEFT, line_y + 2, width * scale, height * scale, mask="auto")
     pdf.setStrokeColor(_c("forest-700"))
     pdf.setLineWidth(0.8)
     pdf.line(LEFT, line_y, LEFT + 190, line_y)
