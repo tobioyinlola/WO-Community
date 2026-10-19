@@ -2,17 +2,29 @@ import { expect, test } from "@playwright/test";
 import { PASSWORD, signIn, signInAdmin } from "./helpers";
 
 test.describe("the public website", () => {
-  test("visitors see at most ten members and startups, then an invitation to join", async ({ page }) => {
+  test("visitors see at most twelve members, by first name and last initial, then an invitation to join", async ({ page }) => {
     await page.goto("/explore?tab=founders");
     const cards = page.locator(".app-grid > *");
     await expect(cards.first()).toBeVisible();
-    expect(await cards.count()).toBeLessThanOrEqual(10);
+    expect(await cards.count()).toBeLessThanOrEqual(12);
+    // Every name is a first name and an initial ("Amaka O."), never a full name.
+    for (const name of await cards.locator("h3").allInnerTexts()) expect(name).toMatch(/^\S+( \p{L}\.)?$/u);
     const api = await page.request.get("/api/v1/public/founders");
     if ((await api.json()).has_more) {
-      await expect(page.getByRole("heading", { name: "You’re seeing 10 members. Join to see them all." })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "You’re seeing 12 members. Join to see them all." })).toBeVisible();
       await expect(page.getByRole("region", { name: "See all members" }).getByRole("link", { name: "Become a member" })).toHaveAttribute("href", "/register");
     }
-    expect((await page.request.get("/api/v1/public/founders?limit=11")).status()).toBe(400);
+    expect((await page.request.get("/api/v1/public/founders?limit=13")).status()).toBe(400);
+  });
+
+  test("visitors browse the courses, and opening one asks them to join", async ({ page }) => {
+    await page.goto("/explore?tab=courses");
+    const card = page.locator("a.explore-course").first();
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("Join to open this course");
+    await card.click();
+    await expect(page).toHaveURL(/\/p\/course\//);
+    await expect(page.getByRole("link", { name: /become a member/i }).first()).toBeVisible();
   });
 
   test("anyone can sign up for the newsletter in the footer", async ({ page }) => {

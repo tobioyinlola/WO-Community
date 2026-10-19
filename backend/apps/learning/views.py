@@ -375,7 +375,9 @@ class CertificateDownloadView(APIView):
 class PublicCoursesView(PublicView):
     @extend_schema(
         operation_id="public_courses_list",
-        summary="Free courses open to visitors",
+        summary="Published courses, for visitors to browse",
+        description="A short card for every published course. Opening one needs an account; the "
+        "full outline is public only for free courses marked open to visitors.",
         parameters=[PageQuerySerializer],
         responses={200: PublicCoursePageSerializer, 400: OpenApiResponse(description="Bad query")},
         tags=["public"],

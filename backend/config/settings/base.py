@@ -675,6 +675,11 @@ EMAIL_SIGNOFF = env.str("EMAIL_SIGNOFF", default="Best regards,\nThe WO Communit
 EMAIL_LOGO_URL = env.str("EMAIL_LOGO_URL", default=f"{FRONTEND_BASE_URL}/brand/email-logo.png")
 
 # Warming up a new sending domain (see apps/notifications/warmup.py).
+# Emails about members waiting for approval: the admins' "new member request" alerts, digests and
+# 24 hour reminders, and the applicant's "we have your application" note. Off by default to keep
+# email use down; admins still see requests in the console and in their notifications, and the
+# approved and not approved emails to the applicant are always sent.
+EMAIL_PENDING_APPROVAL_NOTICES = env.bool("EMAIL_PENDING_APPROVAL_NOTICES", default=False)
 EMAIL_WARMUP_START = env.str("EMAIL_WARMUP_START", default="")
 EMAIL_HOURLY_CAP = env.int("EMAIL_HOURLY_CAP", default=-1)
 # The DKIM selectors the provider asks you to publish, checked by the email health page.

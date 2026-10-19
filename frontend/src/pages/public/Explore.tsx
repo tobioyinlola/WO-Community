@@ -27,13 +27,16 @@ function JoinPrompt() {
   );
 }
 
-/** Visitors see a preview of ten; the rest of the directory is for members. */
-function SeeMore({ what }: { what: "startups" | "members" }) {
+const STARTUPS_SHOWN = 10;
+const MEMBERS_SHOWN = 12;
+
+/** Visitors see a preview; the rest of the directory is for members. */
+function SeeMore({ what, shown }: { what: "startups" | "members"; shown: number }) {
   return (
     <section className="explore-more wo-on-brand" aria-label={`See all ${what}`}>
       <div>
         <h2 className="h3" style={{ margin: 0 }}>
-          You&rsquo;re seeing 10 {what}. Join to see them all.
+          You&rsquo;re seeing {shown} {what}. Join to see them all.
         </h2>
         <p className="body" style={{ margin: "var(--space-2) 0 0", color: "var(--text-on-brand-muted)" }}>
           Members can browse every {what === "startups" ? "startup" : "member"} in the community, filter the directory and
@@ -55,7 +58,7 @@ function SeeMore({ what }: { what: "startups" | "members" }) {
 function Startups() {
   const query = useQuery({
     queryKey: ["public", "startups"],
-    queryFn: () => unwrap(api.GET("/api/v1/public/startups", { params: { query: { limit: 10 } } })),
+    queryFn: () => unwrap(api.GET("/api/v1/public/startups", { params: { query: { limit: STARTUPS_SHOWN } } })),
   });
   return (
     <Loaded
@@ -84,7 +87,7 @@ function Startups() {
               </Card>
             ))}
           </div>
-          {data.has_more ? <SeeMore what="startups" /> : null}
+          {data.has_more ? <SeeMore what="startups" shown={STARTUPS_SHOWN} /> : null}
         </>
       )}
     </Loaded>
@@ -94,7 +97,7 @@ function Startups() {
 function Founders() {
   const query = useQuery({
     queryKey: ["public", "founders"],
-    queryFn: () => unwrap(api.GET("/api/v1/public/founders", { params: { query: { limit: 10 } } })),
+    queryFn: () => unwrap(api.GET("/api/v1/public/founders", { params: { query: { limit: MEMBERS_SHOWN } } })),
   });
   return (
     <Loaded
@@ -106,12 +109,12 @@ function Founders() {
       {(data) => (
         <>
           <div className="app-grid">
-            {data.results.map((f) => (
-              <Card key={f.slug}>
+            {data.results.map((f, i) => (
+              <Card key={`${f.name}-${i}`}>
                 <div className="app-cluster" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
-                  <Avatar name={f.full_name} id={f.slug} src={f.photo?.thumb} shape="arch" size="lg" />
+                  <Avatar name={f.name} id={`${f.name}-${i}`} src={f.photo?.thumb} shape="arch" size="lg" />
                   <div>
-                    <CardTitle>{f.full_name}</CardTitle>
+                    <CardTitle>{f.name}</CardTitle>
                     <CardText>{f.headline}</CardText>
                     <div className="app-cluster" style={{ marginTop: "var(--space-3)" }}>
                       {f.badges.map((b) => (
@@ -125,7 +128,7 @@ function Founders() {
               </Card>
             ))}
           </div>
-          {data.has_more ? <SeeMore what="members" /> : null}
+          {data.has_more ? <SeeMore what="members" shown={MEMBERS_SHOWN} /> : null}
         </>
       )}
     </Loaded>
@@ -205,25 +208,37 @@ function Courses() {
       query={query}
       skeleton={<SkeletonCards />}
       isEmpty={(d) => d.results.length === 0}
-      empty={<EmptyState title="No free courses yet">Members get the whole catalogue.</EmptyState>}
+      empty={<EmptyState title="No courses yet">Courses appear here as they are published.</EmptyState>}
     >
       {(data) => (
-        <div className="app-grid">
-          {data.results.map((c) => (
-            <Card key={c.slug}>
-              <div className="app-cluster" style={{ marginBottom: "var(--space-3)" }}>
-                <Badge variant="mentor">{humanise(c.level)}</Badge>
-                <Badge>{c.category}</Badge>
-              </div>
-              <CardTitle>{c.title}</CardTitle>
-              <CardText>{c.excerpt}</CardText>
-              <ul className="app-meta" style={{ marginTop: "var(--space-3)" }}>
-                <li>{c.instructor}</li>
-                <li>{c.lesson_count} lessons</li>
-              </ul>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="app-grid">
+            {data.results.map((c) => (
+              // A visitor sees what is on offer; opening a course asks them to join first.
+              <Link key={c.slug} to={`/p/course/${c.slug}`} className="explore-course" style={{ textDecoration: "none", color: "inherit" }}>
+                <Card>
+                  <div className="app-cluster" style={{ marginBottom: "var(--space-3)" }}>
+                    <Badge variant="mentor">{humanise(c.level)}</Badge>
+                    <Badge>{c.category}</Badge>
+                    {c.access === "paid" ? <Badge variant="pro">Paid</Badge> : <Badge variant="founder">Free</Badge>}
+                  </div>
+                  <CardTitle>{c.title}</CardTitle>
+                  <CardText>{c.excerpt}</CardText>
+                  <ul className="app-meta" style={{ marginTop: "var(--space-3)" }}>
+                    <li>{c.instructor}</li>
+                    <li>{c.lesson_count} lessons</li>
+                  </ul>
+                  <p className="caption app-muted" style={{ margin: "var(--space-3) 0 0" }}>Join to open this course</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+          {data.next_cursor ? (
+            <p className="body app-muted" style={{ marginTop: "var(--space-6)" }}>
+              There are more courses inside. <Link className="app-link" to="/register">Become a member</Link> to see them all.
+            </p>
+          ) : null}
+        </>
       )}
     </Loaded>
   );

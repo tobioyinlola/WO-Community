@@ -13674,9 +13674,9 @@ paths:
   /api/v1/public/courses:
     get:
       operationId: public_courses_list
-      description: Anonymous, cookie-free and cacheable. Any Authorization header
-        is ignored.
-      summary: Free courses open to visitors
+      description: A short card for every published course. Opening one needs an account;
+        the full outline is public only for free courses marked open to visitors.
+      summary: Published courses, for visitors to browse
       parameters:
       - in: query
         name: cursor
@@ -13825,9 +13825,9 @@ paths:
         name: limit
         schema:
           type: integer
-          maximum: 10
+          maximum: 12
           minimum: 1
-          default: 10
+          default: 12
       - in: query
         name: q
         schema:
@@ -25267,35 +25267,6 @@ components:
           maxLength: 254
       required:
       - email
-    FounderCard:
-      type: object
-      properties:
-        slug:
-          type: string
-        full_name:
-          type: string
-        badges:
-          type: array
-          items:
-            type: string
-        headline:
-          type: string
-        photo:
-          allOf:
-          - $ref: '#/components/schemas/Image'
-          nullable: true
-        country:
-          type: string
-        city:
-          type: string
-        skills:
-          type: array
-          items:
-            $ref: '#/components/schemas/DirectorySkill'
-      required:
-      - badges
-      - full_name
-      - slug
     FounderDetail:
       type: object
       properties:
@@ -25357,7 +25328,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/FounderCard'
+            $ref: '#/components/schemas/PublicFounderCard'
         has_more:
           type: boolean
           description: 'More are listed: members can see them all.'
@@ -30736,7 +30707,11 @@ components:
           nullable: true
         lesson_count:
           type: integer
+        access:
+          type: string
+          description: free or paid
       required:
+      - access
       - category
       - cover
       - excerpt
@@ -30845,6 +30820,27 @@ components:
       - timezone
       - title
       - type
+    PublicFounderCard:
+      type: object
+      description: 'What a visitor sees of a member in the list: no full name and
+        no link to the profile.'
+      properties:
+        name:
+          type: string
+          description: First name and the initial of the last name
+        badges:
+          type: array
+          items:
+            type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+      required:
+      - badges
+      - name
     PublicItem:
       type: object
       properties:

@@ -10,6 +10,8 @@ from .base import REST_FRAMEWORK as _REST_FRAMEWORK  # noqa: E402
 from .keys import ephemeral_jwt_keys  # noqa: E402
 
 DEBUG = False
+# Production keeps these emails off; the tests turn them on, and off where they check that.
+EMAIL_PENDING_APPROVAL_NOTICES = True
 # Dev only (see make lint-migrations): the production image does not install it.
 INSTALLED_APPS = [*INSTALLED_APPS, "django_migration_linter"]  # noqa: F405
 # No collected static files exist in tests.

@@ -61,10 +61,11 @@ def test_renaming_a_stage_updates_the_public_pages(api_client, as_admin, listed,
 def test_renaming_a_skill_updates_founder_pages_and_startup_search(
     api_client, as_admin, listed, run_outbox
 ):
-    listed("Acme Pay", skills=("payments",))
+    fixture = listed("Acme Pay", skills=("payments",))
     rename(as_admin, "skills", Skill, "payments", "Payment rails")
     run_outbox()
-    founder = api_client.get(FOUNDERS).json()["results"][0]
+    slug = api_client.get(f"{STARTUPS}/{fixture.slug}").json()["founders"][0]["slug"]
+    founder = api_client.get(f"{FOUNDERS}/{slug}").json()
     assert founder["skills"] == [{"slug": "payments", "name": "Payment rails"}]
     assert [c["name"] for c in api_client.get(STARTUPS, {"q": "rails"}).json()["results"]] == [
         "Acme Pay"

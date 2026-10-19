@@ -69,7 +69,8 @@ def test_the_founder_photo_appears_on_the_founder_card_and_page(
     run_outbox()
     card = api_client.get(FOUNDERS).json()["results"][0]
     assert card["photo"]["thumb"] == f"https://media.test/{upload.base_key}/thumb.webp"
-    page = api_client.get(f"{FOUNDERS}/{card['slug']}").json()
+    slug = api_client.get(f"{STARTUPS}/{fixture.slug}").json()["founders"][0]["slug"]
+    page = api_client.get(f"{FOUNDERS}/{slug}").json()
     assert page["photo"]["large"].endswith("/large.webp")
 
 

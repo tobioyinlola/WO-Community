@@ -244,12 +244,33 @@ def test_visitors_are_throttled_harder_than_members(
     assert learner_client.get(lesson_url(video)).status_code == 200  # members are not held to it
 
 
-def test_the_public_catalogue_lists_only_free_courses_open_to_visitors(editor, api_client):
+def test_visitors_can_browse_every_published_course_but_only_open_ones_have_an_outline(
+    editor, api_client
+):
     shown = build_course(editor, title="Open one", open_to_visitors=True)
-    build_course(editor, title="Members only")
-    build_course(editor, title="Paid", access="paid", price_minor=100, currency="USD")
+    members = build_course(editor, title="Members only")
+    paid = build_course(editor, title="Paid", access="paid", price_minor=100, currency="USD")
+    draft = build_course(editor, title="Draft")
+    Course.objects.filter(pk=draft.pk).update(status=Course.Status.DRAFT)
     page = api_client.get("/api/v1/public/courses").json()
-    assert [c["slug"] for c in page["results"]] == [shown.slug]
+    assert {c["slug"]: c["access"] for c in page["results"]} == {
+        shown.slug: "free",
+        members.slug: "free",
+        paid.slug: "paid",
+    }
+    # A card carries no more than a title, a few words and facts: no outline, no price.
+    assert set(page["results"][0]) == {
+        "slug",
+        "title",
+        "excerpt",
+        "instructor",
+        "category",
+        "level",
+        "cover",
+        "lesson_count",
+        "access",
+    }
+    assert api_client.get(f"/api/v1/public/courses/{members.slug}").status_code == 404
     detail = api_client.get(f"/api/v1/public/courses/{shown.slug}").json()
     assert [m["title"] for m in detail["modules"]] == ["Getting started", "Going deeper"]
     assert "video_id" not in str(detail) and "dQw4w9WgXcQ" not in str(detail)

@@ -25,6 +25,8 @@ def send_stale_summary() -> int:
     counts = selectors.queue_counts()
     lines: dict[str, str] = {}
     for kind, figure in STILL_WAITING.items():
+        if kind == "member_signup" and not settings.EMAIL_PENDING_APPROVAL_NOTICES:
+            continue
         waiting = int(counts.get(figure, 0))
         if waiting and AdminAlert.objects.filter(kind=kind, created_at__lt=cutoff).exists():
             lines[kind] = f"{adminalerts.KINDS[kind].label}: {waiting} still waiting"
