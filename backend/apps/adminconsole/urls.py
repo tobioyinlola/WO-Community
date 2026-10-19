@@ -13,6 +13,7 @@ from apps.adminconsole import (
     event_views,
     featured_views,
     feed_views,
+    group_views,
     invitation_views,
     job_views,
     lms_views,
@@ -482,6 +483,18 @@ urlpatterns = [
         "admin/blocked-domains/<uuid:entry_id>",
         feed_views.BlockedDomainView.as_view(),
         name="admin-blocked-domain",
+    ),
+    path("admin/groups", group_views.AdminGroupsView.as_view(), name="admin-groups"),
+    path("admin/groups/<uuid:group_id>", group_views.AdminGroupView.as_view(), name="admin-group"),
+    path(
+        "admin/groups/<uuid:group_id>/messages",
+        group_views.AdminGroupMessagesView.as_view(),
+        name="admin-group-messages",
+    ),
+    path(
+        "admin/group-messages/<uuid:message_id>",
+        group_views.AdminGroupMessageView.as_view(),
+        name="admin-group-message",
     ),
     path("admin/reports", feed_views.ReportListView.as_view(), name="admin-reports"),
     path(

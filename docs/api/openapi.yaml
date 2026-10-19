@@ -3758,6 +3758,156 @@ paths:
           description: Not found
         '409':
           description: Not in a state that allows this
+  /api/v1/admin/group-messages/{message_id}:
+    delete:
+      operationId: admin_group_messages_destroy
+      description: Members see that a message was removed. Written to the audit log.
+      summary: Remove a message from a group chat
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such group or message
+  /api/v1/admin/groups:
+    get:
+      operationId: admin_groups_list
+      description: Every group, archived ones last, with members and messages.
+      summary: Group chats
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminChatGroup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such group or message
+    post:
+      operationId: admin_groups_create
+      summary: Create a group chat
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminGroupWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminChatGroup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such group or message
+  /api/v1/admin/groups/{group_id}:
+    patch:
+      operationId: admin_groups_partial_update
+      description: 'Rename it, change its description, emoji or place in the list,
+        or archive it (`archived: true`). An archived group disappears for members;
+        its messages are kept.'
+      summary: Change a group chat
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminGroupWriteRequest'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminChatGroup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such group or message
+  /api/v1/admin/groups/{group_id}/messages:
+    get:
+      operationId: admin_groups_messages_retrieve
+      summary: Messages in a group chat, for moderation
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+      tags:
+      - admin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessagePage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not allowed, or MFA missing
+        '404':
+          description: No such group or message
   /api/v1/admin/invitations:
     get:
       operationId: admin_invitations_list
@@ -10197,6 +10347,252 @@ paths:
           description: Not an active member
         '404':
           description: Not found, or not visible to you
+  /api/v1/group-messages/{message_id}:
+    delete:
+      operationId: group_messages_destroy
+      summary: Delete your message
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - groups
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+  /api/v1/group-messages/{message_id}/reactions:
+    post:
+      operationId: group_messages_reactions_create
+      description: 'Toggles: the same emoji again takes your reaction back.'
+      summary: React to a message with an emoji
+      parameters:
+      - in: path
+        name: message_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupReactionRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupReactionResult'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+  /api/v1/groups:
+    get:
+      operationId: groups_list
+      description: The open groups, whether you are in each, and how many messages
+        you have not read.
+      summary: Group chats
+      tags:
+      - groups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatGroup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+  /api/v1/groups/{group_id}:
+    get:
+      operationId: groups_retrieve
+      summary: One group chat
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - groups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatGroup'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+  /api/v1/groups/{group_id}/membership:
+    post:
+      operationId: groups_membership_create
+      summary: Join a group
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - groups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMembership'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+    delete:
+      operationId: groups_membership_destroy
+      summary: Leave a group
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - groups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMembership'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+  /api/v1/groups/{group_id}/messages:
+    get:
+      operationId: groups_messages_retrieve
+      description: The latest messages, oldest first. Pass `older` from a page as
+        `cursor` for the messages before it. Reading marks the group as read.
+      summary: Messages in a group
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          default: ''
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+      tags:
+      - groups
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessagePage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+    post:
+      operationId: groups_messages_create
+      description: Plain text with emoji, up to 2000 characters. `reply_to` quotes
+        an earlier message in the same group.
+      summary: Send a message
+      parameters:
+      - in: path
+        name: group_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - groups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupMessageCreateRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessage'
+          description: ''
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not an active member, or not in this group
+        '404':
+          description: No such group or message
+        '429':
+          description: Sending too fast
   /api/v1/job-alerts:
     get:
       operationId: job_alerts_list
@@ -19565,6 +19961,44 @@ components:
       - revoked_reason
       - status
       - template_version
+    AdminChatGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        emoji:
+          type: string
+        sort:
+          type: integer
+        archived:
+          type: boolean
+        member_count:
+          type: integer
+        message_count:
+          type: integer
+        last_activity_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - archived
+      - created_at
+      - description
+      - emoji
+      - id
+      - last_activity_at
+      - member_count
+      - message_count
+      - name
+      - sort
     AdminCourse:
       type: object
       properties:
@@ -19837,6 +20271,29 @@ components:
       - timezone
       - title
       - type
+    AdminGroupWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 300
+        emoji:
+          type: string
+          maxLength: 16
+        sort:
+          type: integer
+          minimum: 0
+        archived:
+          type: boolean
     AdminHit:
       type: object
       properties:
@@ -22985,6 +23442,67 @@ components:
         * `applied` - applied
         * `undone` - undone
         * `dismissed` - dismissed
+    ChatAuthor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        headline:
+          type: string
+        photo:
+          allOf:
+          - $ref: '#/components/schemas/Image'
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+      required:
+      - headline
+      - id
+      - name
+      - photo
+      - slug
+    ChatGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        emoji:
+          type: string
+        member_count:
+          type: integer
+        joined:
+          type: boolean
+        unread:
+          type: integer
+          description: Messages from others since you last read, up to 99
+        last_message:
+          allOf:
+          - $ref: '#/components/schemas/GroupLastMessage'
+          nullable: true
+          description: Only for groups you are in
+        last_activity_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - description
+      - emoji
+      - id
+      - joined
+      - last_activity_at
+      - last_message
+      - member_count
+      - name
+      - unread
     CheckInRequest:
       type: object
       description: |-
@@ -25045,6 +25563,155 @@ components:
           format: uuid
       required:
       - user_id
+    GroupLastMessage:
+      type: object
+      properties:
+        author:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author
+      - created_at
+      - text
+    GroupMembership:
+      type: object
+      properties:
+        joined:
+          type: boolean
+      required:
+      - joined
+    GroupMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/ChatAuthor'
+        body:
+          type: string
+          description: Blank once deleted
+        deleted:
+          type: boolean
+        removed:
+          type: boolean
+          description: Taken down by an admin
+        mine:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        reply_to:
+          allOf:
+          - $ref: '#/components/schemas/GroupReply'
+          nullable: true
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupReactionCount'
+      required:
+      - author
+      - body
+      - created_at
+      - deleted
+      - id
+      - mine
+      - reactions
+      - removed
+      - reply_to
+    GroupMessageCreateRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        reply_to:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - body
+    GroupMessagePage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMessage'
+        older:
+          type: string
+          nullable: true
+          description: Cursor for earlier messages
+      required:
+      - older
+      - results
+    GroupReactionCount:
+      type: object
+      properties:
+        emoji:
+          type: string
+        count:
+          type: integer
+        mine:
+          type: boolean
+      required:
+      - count
+      - emoji
+      - mine
+    GroupReactionRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        emoji:
+          type: string
+          minLength: 1
+          maxLength: 16
+      required:
+      - emoji
+    GroupReactionResult:
+      type: object
+      properties:
+        'on':
+          type: boolean
+          description: Whether your reaction is now there
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupReactionCount'
+      required:
+      - 'on'
+      - reactions
+    GroupReply:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          type: string
+        text:
+          type: string
+        deleted:
+          type: boolean
+      required:
+      - author
+      - deleted
+      - id
+      - text
     Health:
       type: object
       properties:
@@ -28483,6 +29150,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Ticket'
+    PatchedAdminGroupWriteRequest:
+      type: object
+      description: |-
+        Rejects fields the serializer does not declare.
+
+        Silently ignoring unknown input hides client bugs and makes mass
+        assignment mistakes easy to miss.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          maxLength: 300
+        emoji:
+          type: string
+          maxLength: 16
+        sort:
+          type: integer
+          minimum: 0
+        archived:
+          type: boolean
     PatchedAdminTicketUpdateRequest:
       type: object
       description: |-

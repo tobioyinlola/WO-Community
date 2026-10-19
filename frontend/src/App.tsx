@@ -32,6 +32,7 @@ const Feed = lazy(() => import("./pages/app/Feed"));
 const FeedPost = lazy(() => import("./pages/app/Feed").then((m) => ({ default: m.PostPage })));
 const SharePreview = lazy(() => import("./pages/public/SharePreview"));
 const LeaderboardPage = lazy(() => import("./pages/app/Leaderboard"));
+const Groups = lazy(() => import("./pages/app/Groups"));
 const Directory = lazy(() => import("./pages/app/Directory"));
 const MemberPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.MemberPage })));
 const StartupPage = lazy(() => import("./pages/app/Directory").then((m) => ({ default: m.StartupPage })));
@@ -102,6 +103,7 @@ const EmailTemplates = lazy(() => import("./admin/EmailTemplates"));
 const EmailHealth = lazy(() => import("./admin/EmailHealth"));
 const AuditLog = lazy(() => import("./admin/AuditLog"));
 const AdminFeed = lazy(() => import("./admin/AdminFeed"));
+const AdminGroups = lazy(() => import("./admin/AdminGroups"));
 const AdminSessions = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringSessions })));
 const AdminMatches = lazy(() => import("./admin/MentoringSessions").then((m) => ({ default: m.MentoringMatches })));
 const AdminAnalytics = lazy(() => import("./admin/Analytics").then((m) => ({ default: m.AnalyticsOverview })));
@@ -176,6 +178,8 @@ export function App() {
                     <Route index element={<Home />} />
                     <Route path="feed" element={<Feed />} />
                     <Route path="feed/:postId" element={<FeedPost />} />
+                    <Route path="groups" element={<Groups />} />
+                    <Route path="groups/:groupId" element={<Groups />} />
                     <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="directory" element={<Directory />} />
                     <Route path="members/:id" element={<MemberPage />} />
@@ -239,6 +243,7 @@ export function App() {
                     <Route path="jobs" element={<AdminJobs />} />
                     <Route path="wins" element={<AdminWins />} />
                     <Route path="feed" element={<AdminFeed />} />
+                    <Route path="groups" element={<AdminGroups />} />
                     <Route path="audit" element={<AuditLog />} />
                     <Route path="email-templates" element={<EmailTemplates />} />
                     <Route path="email-health" element={<EmailHealth />} />
