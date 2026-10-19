@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/s/:path*",
-      "destination": "https://wo-community-production.up.railway.app/s/:path*"
+      "destination": "https://api.community.withonyeka.com/s/:path*"
     },
     {
       "source": "/((?!assets/|brand/|robots\\.txt).*)",
