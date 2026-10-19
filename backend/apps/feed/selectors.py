@@ -79,18 +79,9 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
     views = []
     for post in posts:
         is_mine = post.author_id == viewer.pk
+        # Whoever wrote it, admin or not, a post carries the author's own name and photo; an
+        # official post is only marked as one.
         author = cards[post.author_id]
-        if post.official:
-            # The team speaks as one voice: no name, photo or profile of the admin who wrote it.
-            author = {
-                "id": post.author_id,
-                "name": "WO Community team",
-                "headline": "Official",
-                "photo": None,
-                "slug": None,
-                "hidden": False,
-                "following": False,
-            }
         views.append(
             {
                 "id": post.pk,

@@ -3,8 +3,9 @@ import { ShareDialog, type ShareKind } from "../ui/share/ShareDialog";
 import { permissionsFor } from "./permissions";
 
 /**
- * The Share dialog from the admin console: posting to the feed is as the team (and can be
- * pinned), offered to admins who may post to the feed; anyone here can share the link.
+ * The Share dialog from the admin console: posting to the feed carries the admin's own name (and
+ * can be marked official or pinned), offered to admins who may post to the feed; anyone here can
+ * share the link.
  */
 export function AdminShare({ kind, refId, onClose }: { kind: ShareKind; refId: string; onClose: () => void }) {
   const { me } = useAuth();

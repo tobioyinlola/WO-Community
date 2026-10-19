@@ -49,11 +49,8 @@ def post_card(ref: str) -> shareables.Card | None:
     )
     if post is None:
         return None
-    if post.official:
-        by = "WO Community team"
-    else:
-        author = profiles.cards_for(None, [post.author_id])[post.author_id]
-        by = author["name"] if not author["hidden"] else "Community member"
+    author = profiles.cards_for(None, [post.author_id])[post.author_id]
+    by = author["name"] if not author["hidden"] else "Community member"
     image = next(iter(post.images.all()), None)
     urls = uploads.image_urls(image.base_key) if image else None
     return shareables.Card(

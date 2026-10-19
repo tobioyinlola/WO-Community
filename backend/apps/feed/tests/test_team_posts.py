@@ -41,19 +41,26 @@ def soon(**delta):
 # --- posting as the team ---
 
 
-def test_a_team_post_goes_live_at_once_with_the_team_as_author(admin_client, reader_client):
+def test_an_official_post_goes_live_at_once_under_its_authors_own_name(
+    admin_client, reader_client, admin
+):
     made = team_post(admin_client, official=True).json()
     assert made["official"] is True
     seen = reader_client.get(f"{POSTS}/{made['id']}").json()
     assert seen["official"] is True
-    assert seen["author"]["name"] == "WO Community team" and seen["author"]["slug"] is None
+    # The admin is not hidden behind the team: their name, photo and profile show.
+    assert seen["author"]["id"] == str(admin.pk)
+    assert seen["author"]["name"] != "WO Community team"
     assert made["id"] in in_feed(reader_client)
 
 
-def test_posting_as_yourself_shows_your_own_name(admin_client, reader_client, admin):
-    made = team_post(admin_client).json()
-    seen = reader_client.get(f"{POSTS}/{made['id']}").json()
-    assert seen["official"] is False and seen["author"]["name"] != "WO Community team"
+def test_every_admin_post_shows_the_admins_name_official_or_not(admin_client, reader_client, admin):
+    plain = team_post(admin_client).json()
+    official = team_post(admin_client, official=True).json()
+    names = {
+        reader_client.get(f"{POSTS}/{p['id']}").json()["author"]["name"] for p in (plain, official)
+    }
+    assert len(names) == 1 and "WO Community team" not in names
 
 
 def test_a_team_post_is_not_limited_by_the_daily_allowance(admin_client, settings):
