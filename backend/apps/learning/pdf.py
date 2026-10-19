@@ -212,7 +212,7 @@ def _signature(pdf: canvas.Canvas, content: CertificateContent) -> None:
     image = _signature_image(content)
     if image is not None:
         width, height = image.getSize()
-        scale = min(170 / width, 46 / height)
+        scale = min(165 / width, 66 / height)
         pdf.drawImage(image, LEFT, line_y + 2, width * scale, height * scale, mask="auto")
     pdf.setStrokeColor(_c("forest-700"))
     pdf.setLineWidth(0.8)
