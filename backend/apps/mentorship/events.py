@@ -28,6 +28,19 @@ class MentorRevoked(DomainEvent):
 
 
 @dataclass(frozen=True)
+class MentorSetPending(DomainEvent):
+    topic: ClassVar[str] = "mentorship.mentor_set_pending"
+    user_id: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class MentorReinstated(DomainEvent):
+    topic: ClassVar[str] = "mentorship.mentor_reinstated"
+    user_id: str
+
+
+@dataclass(frozen=True)
 class SessionRequested(DomainEvent):
     topic: ClassVar[str] = "mentorship.session_requested"
     session_id: str

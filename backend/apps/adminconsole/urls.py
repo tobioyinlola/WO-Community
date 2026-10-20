@@ -730,6 +730,11 @@ urlpatterns = [
         name="admin-mentor-revoke",
     ),
     path(
+        "admin/mentors/<uuid:user_id>/pending",
+        mentor_views.AdminMentorPendingView.as_view(),
+        name="admin-mentor-pending",
+    ),
+    path(
         "admin/mentors/<uuid:user_id>/restore",
         mentor_views.AdminMentorRestoreView.as_view(),
         name="admin-mentor-restore",

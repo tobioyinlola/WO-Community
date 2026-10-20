@@ -2115,3 +2115,74 @@ a.wo-sharecard:hover {
     font-size: 13px;
   }
 }
+
+/* The card for a link in a post: site, title and a few words, with a picture when there is one. */
+.wo-linkcard {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  min-width: 0;
+}
+.wo-linkcard:hover,
+.wo-linkcard:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+.wo-linkcard__img {
+  flex: none;
+  width: 112px;
+  min-height: 88px;
+  object-fit: cover;
+  background: var(--bg-subtle);
+}
+.wo-linkcard__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+}
+.wo-linkcard__img + .wo-linkcard__body {
+  padding-left: 0;
+}
+.wo-linkcard__site {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.wo-linkcard__title,
+.wo-linkcard__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.wo-linkcard__title {
+  -webkit-line-clamp: 2;
+}
+.wo-linkcard__desc {
+  -webkit-line-clamp: 2;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.wo-linkcard__icon {
+  flex: none;
+  align-self: center;
+  margin-right: var(--space-4);
+  color: var(--text-secondary);
+}
+@media (max-width: 480px) {
+  .wo-linkcard__img {
+    width: 84px;
+  }
+}

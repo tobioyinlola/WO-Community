@@ -174,13 +174,27 @@ export function Loaded<T>({
   return <>{children(data)}</>;
 }
 
+function openOutsideLinksInANewTab(node: Element): void {
+  if (node.tagName === "A" && /^https?:/i.test(node.getAttribute("href") ?? "")) {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer nofollow");
+  }
+}
+
 /** Server HTML is already cleaned; this cleans it again before it reaches the page. */
 export function RichText({ html, className }: { html: string; className?: string }) {
-  const clean = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ["p", "br", "strong", "em", "b", "i", "u", "ul", "ol", "li", "a", "blockquote", "h3", "h4", "code"],
-    ALLOWED_ATTR: ["href", "title"],
-    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i,
-  });
+  // Links to other websites open in a new tab, so a reader keeps their place in the community.
+  DOMPurify.addHook("afterSanitizeAttributes", openOutsideLinksInANewTab);
+  let clean: string;
+  try {
+    clean = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ["p", "br", "strong", "em", "b", "i", "u", "ul", "ol", "li", "a", "blockquote", "h3", "h4", "code"],
+      ALLOWED_ATTR: ["href", "title"],
+      ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i,
+    });
+  } finally {
+    DOMPurify.removeHook("afterSanitizeAttributes", openOutsideLinksInANewTab);
+  }
   return <div className={cx("app-richtext", className)} dangerouslySetInnerHTML={{ __html: clean }} />;
 }
 

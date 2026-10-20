@@ -38,7 +38,9 @@ def test_a_post_with_a_link_gets_a_preview_after_a_worker_runs(
     author_client, reader_client, run_outbox
 ):
     post = create(author_client, "https://example.com/story")
-    assert previews(reader_client, post) == []  # nothing until the worker has fetched it
+    # Until the worker has read the page, the card says which site the link leads to.
+    [waiting] = previews(reader_client, post)
+    assert waiting["site_name"] == "example.com" and waiting["description"] == ""
     assert LinkPreview.objects.get().status == "pending"
     run_outbox()
     [card] = previews(reader_client, post)
@@ -104,7 +106,8 @@ def test_a_link_to_a_name_that_resolves_inside_is_stopped_by_the_fetcher(author_
     run_outbox()
     preview = LinkPreview.objects.get()
     assert preview.status == "failed" and preview.fail_code == "blocked_address"
-    assert previews(author_client, post) == []
+    [card] = previews(author_client, post)  # the link still says where it goes, and nothing more
+    assert card["title"] == "sneaky.example.com" and card["description"] == ""
 
 
 # --- sharing and refreshing ---
@@ -126,7 +129,8 @@ def test_a_failed_fetch_leaves_the_post_fine_and_is_tried_again_after_an_hour(
     run_outbox()
     preview = LinkPreview.objects.get()
     assert preview.status == "failed" and preview.fail_code == "unreachable"
-    assert previews(author_client, post) == []
+    [card] = previews(author_client, post)
+    assert card["site_name"] == "unreachable.example.com" and card["image"] is None
     create(author_client, "https://unreachable.example.com/")
     run_outbox()
     assert len(FakeFetcher.fetched) == 1  # too soon to try again
@@ -249,3 +253,48 @@ def test_recent_unlinked_previews_are_kept(author_client, run_outbox):
     run_outbox()
     PostLink.objects.filter(post_id=post).delete()
     assert links.purge_unused() == 0
+
+
+# --- addresses typed as plain text ---
+
+
+def test_a_pasted_address_becomes_a_link_with_a_card(author_client, reader_client, run_outbox):
+    made = write_post(
+        author_client, "<p>Worth a read: https://example.com/story. Thanks!</p>"
+    ).json()
+    seen = reader_client.get(post_url(made["id"])).json()
+    assert 'href="https://example.com/story"' in seen["body"]
+    assert seen["body"].count("<a ") == 1 and "story</a>. Thanks!" in seen["body"]
+    assert [c["site_name"] for c in seen["previews"]] == ["example.com"]
+    run_outbox()
+    [card] = previews(reader_client, made["id"])
+    assert card["title"] == "Title of https://example.com/story"
+
+
+def test_only_real_addresses_are_linked(author_client):
+    made = write_post(
+        author_client, "<p>javascript:alert(1) http://localhost:3000 http://a/b example</p>"
+    ).json()
+    body = author_client.get(post_url(made["id"])).json()
+    assert "<a " not in body["body"] and body["previews"] == []
+
+
+def test_two_pasted_addresses_get_two_cards_and_a_third_only_a_link(author_client):
+    made = write_post(
+        author_client,
+        "<p>https://one.example.com/a https://two.example.com/b https://three.example.com/c</p>",
+    ).json()
+    seen = author_client.get(post_url(made["id"])).json()
+    assert seen["body"].count("<a ") == 3
+    assert [c["site_name"] for c in seen["previews"]] == ["one.example.com", "two.example.com"]
+
+
+def test_an_address_in_a_comment_is_a_link(author_client, reader_client):
+    post = write_post(author_client, "<p>hello</p>").json()["id"]
+    done = reader_client.post(
+        f"/api/v1/posts/{post}/comments",
+        {"body": "<p>See https://example.com/x</p>"},
+        format="json",
+    )
+    assert done.status_code == 201, done.content
+    assert 'href="https://example.com/x"' in done.json()["body"]

@@ -10,6 +10,7 @@ import { Avatar, Badge, Button, Card, Modal, Select, Tabs, Textarea } from "../.
 import { htmlToText, textToHtml } from "../../lib/html";
 import { humanise, timeAgo } from "../../lib/format";
 import { EmptyState, ErrorState, LoadMore, PageHeader, RichText, SkeletonRows } from "../../ui/blocks";
+import { LinkCard } from "../../ui/LinkCard";
 import { FormError, useSubmit } from "../../ui/forms";
 import { ShareDialog } from "../../ui/share/ShareDialog";
 import { SharedCard } from "../../ui/share/SharedCard";
@@ -316,10 +317,7 @@ export function PostCard({ post, startOpen = false }: { post: Post; startOpen?: 
         {post.shared ? <SharedCard card={post.shared} /> : null}
         {post.shared_gone ? <p className="wo-sharecard wo-sharecard--gone">The course or event shared here is no longer available.</p> : null}
         {post.previews.map((p) => (
-          <a key={p.url} className="wo-card" href={p.url} target="_blank" rel="noopener noreferrer nofollow" style={{ display: "block", marginTop: "var(--space-3)", textDecoration: "none", color: "inherit" }}>
-            <strong>{p.title || p.url}</strong>
-            {p.description ? <p className="body-sm app-muted" style={{ margin: "var(--space-1) 0 0" }}>{p.description}</p> : null}
-          </a>
+          <LinkCard key={p.url} preview={p} />
         ))}
         <div className="app-post__bar">
           {REACTIONS.map(({ kind, label, icon: Icon }) => {
@@ -341,7 +339,7 @@ export function PostCard({ post, startOpen = false }: { post: Post; startOpen?: 
           })}
           <button type="button" className="app-react" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
             <MessageCircle size={16} strokeWidth={1.5} aria-hidden="true" />
-            {post.comment_count > 0 ? `${post.comment_count} comments` : "Comment"}
+            {post.comment_count > 0 ? `${post.comment_count} ${post.comment_count === 1 ? "comment" : "comments"}` : "Comment"}
           </button>
           {post.shareable ? (
             <button type="button" className="app-react" onClick={() => setSharing(true)}>

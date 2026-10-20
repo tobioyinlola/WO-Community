@@ -2564,11 +2564,31 @@ export interface paths {
         };
         /**
          * Mentors
-         * @description Filter by `status` (`active` or `revoked`) and name.
+         * @description Filter by `status` (`active`, `pending` or `revoked`) and name.
          */
         get: operations["admin_mentors_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mentors/{user_id}/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an approved mentor to pending
+         * @description Takes the mentor off the platform's mentor list and cancels open sessions. The note is optional. Approve them again with the restore action.
+         */
+        post: operations["admin_mentors_pending_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2584,7 +2604,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Restore a revoked mentor */
+        /** Approve a pending or revoked mentor again */
         post: operations["admin_mentors_restore_create"];
         delete?: never;
         options?: never;
@@ -12404,6 +12424,15 @@ export interface components {
             code: string;
             name: string;
         };
+        /**
+         * @description Rejects fields the serializer does not declare.
+         *
+         *     Silently ignoring unknown input hides client bugs and makes mass
+         *     assignment mistakes easy to miss.
+         */
+        MentorNoteRequest: {
+            reason?: string;
+        };
         MentorPage: {
             results: components["schemas"]["Mentor"][];
             next_cursor: string | null;
@@ -13762,7 +13791,7 @@ export interface components {
             author: components["schemas"]["Author"];
             startup: components["schemas"]["PostStartup"] | null;
             images: components["schemas"]["PostImage"][];
-            /** @description Cards for links, once fetched */
+            /** @description A card for each link: its page if it could be read, else the site it leads to */
             previews: components["schemas"]["LinkPreview"][];
             /** Format: date-time */
             created_at: string;
@@ -24735,6 +24764,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedAdminMentorList"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed, or MFA missing */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    admin_mentors_pending_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MentorNoteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMentor"];
                 };
             };
             /** @description Not authenticated */

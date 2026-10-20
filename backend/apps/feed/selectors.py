@@ -1,6 +1,7 @@
 """Read side of the feed. Who may see what is decided here."""
 
 from typing import Any
+from urllib.parse import urlparse
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
@@ -66,6 +67,31 @@ def _my_reactions(viewer: Any, target_type: str, ids: list[UUID]) -> dict[UUID, 
     return mine
 
 
+def _site_of(url: str) -> str:
+    return (urlparse(url).hostname or "").removeprefix("www.")
+
+
+def _preview_card(preview: Any) -> dict[str, Any] | None:
+    """What to show for a link before it is opened.
+
+    A fetched page gives its title, a few words and a picture. A page that has not been fetched
+    yet, or could not be, still gets a card with the site it leads to, so every link says where it
+    goes. A site the team blocked gets no card (the link in the text stays).
+    """
+    if preview.status == "ready":
+        return {
+            "url": preview.url,
+            "title": preview.title,
+            "description": preview.description,
+            "site_name": preview.site_name or _site_of(preview.url),
+            "image": uploads.image_urls(preview.image_key),
+        }
+    if preview.fail_code == "blocked_domain":
+        return None
+    site = _site_of(preview.url)
+    return {"url": preview.url, "title": site, "description": "", "site_name": site, "image": None}
+
+
 def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
     cards = profiles.cards_for(viewer, list({p.author_id for p in posts}))
     startup_cards = startups.cards_for(viewer, [p.startup_id for p in posts if p.startup_id])
@@ -97,15 +123,9 @@ def _post_views(viewer: Any, posts: list[Post]) -> list[dict[str, Any]]:
                     for i in post.images.all()
                 ],
                 "previews": [
-                    {
-                        "url": link.preview.url,
-                        "title": link.preview.title,
-                        "description": link.preview.description,
-                        "site_name": link.preview.site_name,
-                        "image": uploads.image_urls(link.preview.image_key),
-                    }
+                    shown
                     for link in post.links.all()
-                    if link.preview.status == "ready"
+                    if (shown := _preview_card(link.preview)) is not None
                 ],
                 "created_at": post.created_at,
                 "edited_at": post.edited_at,

@@ -16,6 +16,7 @@ from apps.mentorship.serializers import (
     AdminMentorSerializer,
     AdminQuerySerializer,
     DecisionSerializer,
+    MentorNoteSerializer,
     MentorReasonSerializer,
 )
 from apps.mentorship.session_serializers import (
@@ -111,7 +112,7 @@ class AdminMentorsView(APIView):
 
     @extend_schema(
         summary="Mentors",
-        description="Filter by `status` (`active` or `revoked`) and name.",
+        description="Filter by `status` (`active`, `pending` or `revoked`) and name.",
         parameters=[AdminQuerySerializer],
         responses={200: AdminMentorSerializer(many=True), **ERRORS},
         tags=["admin"],
@@ -147,11 +148,34 @@ class AdminMentorRevokeView(APIView):
         return _mentor(request, profile)
 
 
+class AdminMentorPendingView(APIView):
+    policy = DECIDE
+
+    @extend_schema(
+        summary="Move an approved mentor to pending",
+        description="Takes the mentor off the platform's mentor list and cancels open sessions. "
+        "The note is optional. Approve them again with the restore action.",
+        request=MentorNoteSerializer,
+        responses={200: AdminMentorSerializer, **ERRORS},
+        tags=["admin"],
+    )
+    def post(self, request: Request, user_id: UUID) -> Response:
+        serializer = MentorNoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile = mentors.set_pending(
+            actor=_actor(request),
+            user_id=user_id,
+            reason=serializer.validated_data.get("reason", ""),
+            ip=_ip(request),
+        )
+        return _mentor(request, profile)
+
+
 class AdminMentorRestoreView(APIView):
     policy = DECIDE
 
     @extend_schema(
-        summary="Restore a revoked mentor",
+        summary="Approve a pending or revoked mentor again",
         request=None,
         responses={200: AdminMentorSerializer, **ERRORS},
         tags=["admin"],

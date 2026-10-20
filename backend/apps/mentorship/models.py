@@ -71,6 +71,7 @@ class MentorProfile(BaseModel):
     class Status(models.TextChoices):
         ACTIVE = "active"
         REVOKED = "revoked"
+        PENDING = "pending"  # approved earlier, set aside by an admin; can be approved again
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mentor_profile"
@@ -105,7 +106,8 @@ class MentorProfile(BaseModel):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                condition=Q(status__in=["active", "revoked"]), name="mentorprofile_status_valid"
+                condition=Q(status__in=["active", "revoked", "pending"]),
+                name="mentorprofile_status_valid",
             ),
             models.CheckConstraint(
                 condition=Q(capacity_per_week__gte=1, capacity_per_week__lte=20),
