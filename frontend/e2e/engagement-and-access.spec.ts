@@ -17,6 +17,26 @@ test.describe("the public website", () => {
     expect((await page.request.get("/api/v1/public/founders?limit=13")).status()).toBe(400);
   });
 
+  test("the public cards line up in every row and nothing scrolls sideways, on a phone or a desktop", async ({ page }) => {
+    for (const width of [1280, 768, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const tab of ["startups", "founders", "courses"]) {
+        await page.goto(`/explore?tab=${tab}`);
+        await expect(page.locator(".app-grid > *").first()).toBeVisible();
+        const shape = await page.evaluate(() => {
+          const rows: Record<number, Set<number>> = {};
+          for (const card of document.querySelectorAll(".app-grid > *")) {
+            const box = card.getBoundingClientRect();
+            (rows[Math.round(box.top)] ??= new Set()).add(Math.round(box.height));
+          }
+          const root = document.documentElement;
+          return { unevenRows: Object.values(rows).filter((heights) => heights.size > 1).length, sideways: root.scrollWidth > root.clientWidth };
+        });
+        expect(shape, `${tab} at ${width}px`).toEqual({ unevenRows: 0, sideways: false });
+      }
+    }
+  });
+
   test("visitors browse the courses, and opening one asks them to join", async ({ page }) => {
     await page.goto("/explore?tab=courses");
     const card = page.locator("a.explore-course").first();

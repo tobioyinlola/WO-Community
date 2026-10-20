@@ -2067,11 +2067,51 @@ a.wo-sharecard:hover {
 
 /* A course card on the public Explore page is one link: it asks the visitor to join to open it. */
 .explore-course {
-  display: block;
+  display: flex; /* so the card inside fills the link, and so the grid row */
   border-radius: var(--radius-lg);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+.explore-course .wo-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+/* Long titles and descriptions are trimmed so cards in a row stay the same shape. */
+.explore-course__title,
+.explore-course__text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.explore-course__title {
+  -webkit-line-clamp: 3;
+}
+.explore-course__text {
+  -webkit-line-clamp: 4;
+}
+.explore-course__foot {
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+.explore-course__foot .caption {
+  margin: var(--space-3) 0 0;
 }
 .explore-course:hover .wo-card,
 .explore-course:focus-visible .wo-card {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-md);
+}
+
+/* On a phone the five Explore tabs sit closer together so all of them show without scrolling. */
+@media (max-width: 480px) {
+  .app-tabs-scroll .wo-tabs {
+    gap: var(--space-4);
+  }
+  .app-tabs-scroll .wo-tab {
+    font-size: 13px;
+  }
 }

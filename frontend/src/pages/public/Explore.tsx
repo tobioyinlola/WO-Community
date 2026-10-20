@@ -215,20 +215,23 @@ function Courses() {
           <div className="app-grid">
             {data.results.map((c) => (
               // A visitor sees what is on offer; opening a course asks them to join first.
-              <Link key={c.slug} to={`/p/course/${c.slug}`} className="explore-course" style={{ textDecoration: "none", color: "inherit" }}>
+              <Link key={c.slug} to={`/p/course/${c.slug}`} className="explore-course">
                 <Card>
                   <div className="app-cluster" style={{ marginBottom: "var(--space-3)" }}>
                     <Badge variant="mentor">{humanise(c.level)}</Badge>
                     <Badge>{c.category}</Badge>
                     {c.access === "paid" ? <Badge variant="pro">Paid</Badge> : <Badge variant="founder">Free</Badge>}
                   </div>
-                  <CardTitle>{c.title}</CardTitle>
-                  <CardText>{c.excerpt}</CardText>
-                  <ul className="app-meta" style={{ marginTop: "var(--space-3)" }}>
-                    <li>{c.instructor}</li>
-                    <li>{c.lesson_count} lessons</li>
-                  </ul>
-                  <p className="caption app-muted" style={{ margin: "var(--space-3) 0 0" }}>Join to open this course</p>
+                  <CardTitle className="explore-course__title">{c.title}</CardTitle>
+                  <CardText className="explore-course__text">{c.excerpt}</CardText>
+                  {/* The facts and the invitation sit at the foot of every card, so a row lines up. */}
+                  <div className="explore-course__foot">
+                    <ul className="app-meta">
+                      <li>{c.instructor}</li>
+                      <li>{c.lesson_count} {c.lesson_count === 1 ? "lesson" : "lessons"}</li>
+                    </ul>
+                    <p className="caption app-muted">Join to open this course</p>
+                  </div>
                 </Card>
               </Link>
             ))}
