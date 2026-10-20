@@ -48,8 +48,8 @@ _COMMENT_TAGS = {"p", "br", "strong", "em", "a"}
 _SCHEMES = {"http", "https"}
 
 
-def _rich(value: str, tags: set[str]) -> str:
-    cleaned = nh3.clean(
+def _clean_rich(value: str, tags: set[str]) -> str:
+    return nh3.clean(
         value,
         tags=tags,
         attributes={"a": {"href"}},
@@ -57,6 +57,50 @@ def _rich(value: str, tags: set[str]) -> str:
         link_rel="noopener nofollow ugc",
         strip_comments=True,
     )
+
+
+# A web address typed or pasted as text: http(s):// or www., up to a space or the end of the text.
+_BARE_URL = re.compile(r"(?:https?://|www\.)(?:(?!&lt;|&gt;|&quot;)[^\s<>\"'])+", re.IGNORECASE)
+_HTML_PART = re.compile(r"(<[^>]*>)")
+_TRAILING = ".,;:!?"
+MAX_LINK = 2000
+
+
+def _link_one(match: re.Match[str]) -> str:
+    shown = match.group(0)
+    tail = ""
+    # Punctuation that ends a sentence, or a closing bracket, is not part of the address.
+    while shown and (shown[-1] in _TRAILING or (shown[-1] == ")" and "(" not in shown)):
+        tail = shown[-1] + tail
+        shown = shown[:-1]
+    if len(shown) > MAX_LINK or "." not in shown:
+        return match.group(0)
+    href = shown if shown.lower().startswith("http") else f"https://{shown}"
+    return f'<a href="{href}">{shown}</a>{tail}'
+
+
+def linkify(cleaned: str) -> str:
+    """Turn web addresses in already cleaned HTML into links, leaving existing links alone."""
+    out: list[str] = []
+    inside_link = False
+    for part in _HTML_PART.split(cleaned):
+        if part.startswith("<"):
+            tag = (
+                part[1:].lstrip("/").split(None, 1)[0].rstrip(">").lower() if len(part) > 1 else ""
+            )
+            if tag == "a":
+                inside_link = not part.startswith("</")
+            out.append(part)
+        else:
+            out.append(part if inside_link else _BARE_URL.sub(_link_one, part))
+    return "".join(out)
+
+
+def _rich(value: str, tags: set[str]) -> str:
+    cleaned = _clean_rich(value, tags)
+    linked = linkify(cleaned)
+    if linked != cleaned:
+        cleaned = _clean_rich(linked, tags)  # the links we made go through the same rules
     return _CONTROL.sub("", cleaned).strip()
 
 

@@ -13762,7 +13762,7 @@ export interface components {
             author: components["schemas"]["Author"];
             startup: components["schemas"]["PostStartup"] | null;
             images: components["schemas"]["PostImage"][];
-            /** @description Cards for links, once fetched */
+            /** @description A card for each link: its page if it could be read, else the site it leads to */
             previews: components["schemas"]["LinkPreview"][];
             /** Format: date-time */
             created_at: string;

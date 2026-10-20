@@ -30099,7 +30099,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LinkPreview'
-          description: Cards for links, once fetched
+          description: 'A card for each link: its page if it could be read, else the
+            site it leads to'
         created_at:
           type: string
           format: date-time

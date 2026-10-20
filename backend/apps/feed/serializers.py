@@ -140,7 +140,10 @@ class PostSerializer(serializers.Serializer):
     author = AuthorSerializer()
     startup = PostStartupSerializer(allow_null=True)
     images = PostImageSerializer(many=True)
-    previews = LinkPreviewSerializer(many=True, help_text="Cards for links, once fetched")
+    previews = LinkPreviewSerializer(
+        many=True,
+        help_text="A card for each link: its page if it could be read, else the site it leads to",
+    )
     created_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField(allow_null=True)
     official = serializers.BooleanField(help_text="Marked as an official announcement")
