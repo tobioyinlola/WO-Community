@@ -244,6 +244,18 @@ TYPES: dict[str, Spec] = {
         lambda p: "/home",
         email=True,
     ),
+    "mentor_pending": Spec(
+        "mentorship",
+        lambda who, p: "Your mentor status is on hold",
+        lambda p: "/home",
+        email=True,
+    ),
+    "mentor_reinstated": Spec(
+        "mentorship",
+        lambda who, p: "You are an approved mentor again",
+        lambda p: "/settings/mentorship",
+        email=True,
+    ),
     "session_requested": Spec(
         "mentorship",
         lambda who, p: f"{who} asked you for a mentoring session{_arranged(p)}",

@@ -88,6 +88,32 @@ def notify_revoked(event_id: str) -> None:
     )
 
 
+@shared_task(name="mentorship.notify_pending")
+def notify_pending(event_id: str) -> None:
+    data = _payload(event_id)
+    if data is None:
+        return
+    notify.notify(
+        UUID(data["user_id"]),
+        "mentor_pending",
+        {"reason": data["reason"]},
+        dedupe_key=f"{event_id}:pending",
+    )
+
+
+@shared_task(name="mentorship.notify_reinstated")
+def notify_reinstated(event_id: str) -> None:
+    data = _payload(event_id)
+    if data is None:
+        return
+    notify.notify(
+        UUID(data["user_id"]),
+        "mentor_reinstated",
+        {},
+        dedupe_key=f"{event_id}:reinstated",
+    )
+
+
 @shared_task(name="mentorship.record_interest")
 def record_interest(event_id: str) -> None:
     data = _payload(event_id)

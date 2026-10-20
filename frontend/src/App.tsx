@@ -82,6 +82,7 @@ const AdminMembers = lazy(() => import("./admin/Members"));
 const AdminApprovals = lazy(() => import("./admin/Approvals"));
 const AdminInvitations = lazy(() => import("./admin/Invitations"));
 const AdminMentors = lazy(() => import("./admin/MentorApplications"));
+const AdminApprovedMentors = lazy(() => import("./admin/ApprovedMentors"));
 const AdminReports = lazy(() => import("./admin/Reports"));
 const AdminJobs = lazy(() => import("./admin/AdminJobs"));
 const AdminWins = lazy(() => import("./admin/Queues").then((m) => ({ default: m.WinsReview })));
@@ -239,6 +240,7 @@ export function App() {
                     <Route path="approvals" element={<AdminApprovals />} />
                     <Route path="invitations" element={<AdminInvitations />} />
                     <Route path="mentors" element={<AdminMentors />} />
+                    <Route path="mentors/approved" element={<AdminApprovedMentors />} />
                     <Route path="reports" element={<AdminReports />} />
                     <Route path="jobs" element={<AdminJobs />} />
                     <Route path="wins" element={<AdminWins />} />

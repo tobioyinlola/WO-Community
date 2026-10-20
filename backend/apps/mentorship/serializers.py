@@ -170,6 +170,10 @@ class MentorReasonSerializer(StrictSerializer):
     reason = serializers.CharField(max_length=1000)
 
 
+class MentorNoteSerializer(StrictSerializer):
+    reason = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+
+
 class AdminQuerySerializer(serializers.Serializer):
     status = serializers.CharField(max_length=14, required=False, allow_blank=True)
     q = serializers.CharField(max_length=80, required=False, allow_blank=True)

@@ -11,7 +11,7 @@ from apps.accounts import services as accounts
 from apps.audit import services as audit
 from apps.core import events as domain_events
 from apps.integrations import meetings
-from apps.mentorship import domain, events
+from apps.mentorship import cache, domain, events
 from apps.mentorship.applications import Conflict, Forbidden, NotFound
 from apps.mentorship.models import MentorProfile
 
@@ -99,16 +99,44 @@ def revoke(*, actor: Any, user_id: UUID, reason: str, ip: str = "") -> MentorPro
             ip=ip,
         )
         domain_events.publish(events.MentorRevoked(user_id=str(user_id), reason=note))
+        transaction.on_commit(cache.bump)
     return profile
 
 
-def restore(*, actor: Any, user_id: UUID, ip: str = "") -> MentorProfile:
+def set_pending(*, actor: Any, user_id: UUID, reason: str = "", ip: str = "") -> MentorProfile:
+    """Set an approved mentor aside: off the platform's mentor list until approved again."""
+    note = domain.text("reason", reason, limit=1000, minimum=0)
     with transaction.atomic():
         profile = MentorProfile.objects.select_for_update().filter(user_id=user_id).first()
         if profile is None:
             raise NotFound()
-        if profile.status != MentorProfile.Status.REVOKED:
-            raise Conflict("This mentor is not revoked.")
+        if profile.status != MentorProfile.Status.ACTIVE:
+            raise Conflict("Only an approved mentor can be moved to pending.")
+        profile.status = MentorProfile.Status.PENDING
+        profile.revoked_at, profile.revoked_by, profile.revoke_reason = None, None, note
+        profile.save()
+        accounts.revoke_role(user_id, "mentor")
+        audit.record(
+            actor=actor,
+            action="mentors.pending",
+            target_type="mentor",
+            target_id=user_id,
+            reason=note,
+            ip=ip,
+        )
+        domain_events.publish(events.MentorSetPending(user_id=str(user_id), reason=note))
+        transaction.on_commit(cache.bump)
+    return profile
+
+
+def restore(*, actor: Any, user_id: UUID, ip: str = "") -> MentorProfile:
+    """Approve a pending (or revoked) mentor again."""
+    with transaction.atomic():
+        profile = MentorProfile.objects.select_for_update().filter(user_id=user_id).first()
+        if profile is None:
+            raise NotFound()
+        if profile.status == MentorProfile.Status.ACTIVE:
+            raise Conflict("This mentor is already approved.")
         if not accounts.is_active(user_id):
             raise Conflict("The account is not active.")
         profile.status = MentorProfile.Status.ACTIVE
@@ -123,4 +151,6 @@ def restore(*, actor: Any, user_id: UUID, ip: str = "") -> MentorProfile:
             target_id=user_id,
             ip=ip,
         )
+        domain_events.publish(events.MentorReinstated(user_id=str(user_id)))
+        transaction.on_commit(cache.bump)
     return profile

@@ -19,6 +19,13 @@ def register() -> None:
     outbox.register_handler(
         events.MentorRevoked.topic, "mentorship.cancel_revoked_sessions", "default"
     )
+    outbox.register_handler(events.MentorSetPending.topic, "mentorship.notify_pending", "default")
+    outbox.register_handler(
+        events.MentorSetPending.topic, "mentorship.cancel_revoked_sessions", "default"
+    )
+    outbox.register_handler(
+        events.MentorReinstated.topic, "mentorship.notify_reinstated", "default"
+    )
     for topic in (account_events.MemberSuspended.topic, account_events.MemberRemoved.topic):
         outbox.register_handler(topic, "mentorship.cancel_sessions_of_member", "default")
     outbox.register_handler(

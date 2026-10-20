@@ -275,3 +275,36 @@ def test_segments_and_dashboard_know_about_mentors(mentor, as_admin):
     assert mentor.pk in selectors.mentor_ids() and mentor.pk in selectors.applicant_ids()
     snapshot = as_admin.get("/api/v1/admin/dashboard").json()["mentorship"]
     assert snapshot["available"] is True and snapshot["active_mentors"] == 1
+
+
+# --- moving to pending and back ---
+
+
+def test_an_approved_mentor_can_go_to_pending_and_back_again(
+    mentor, as_admin, seeker_client, applicant_client, run_outbox
+):
+    response = as_admin.post(f"{ADMIN}/{mentor.pk}/pending", {"reason": "Checking"}, format="json")
+    assert response.status_code == 200 and response.json()["status"] == "pending"
+    assert not UserRole.objects.filter(user=mentor, role="mentor").exists()
+    assert seeker_client.get(f"{LIST}/{mentor.pk}").status_code == 404
+    assert applicant_client.put(MINE, {"paused": True}, format="json").status_code == 403
+    assert AuditLog.objects.get(action="mentors.pending").reason == "Checking"
+    run_outbox()
+    from apps.notifications.models import Notification
+
+    assert Notification.objects.filter(user=mentor, type="mentor_pending").exists()
+
+    assert as_admin.post(f"{ADMIN}/{mentor.pk}/restore").status_code == 200
+    assert UserRole.objects.filter(user=mentor, role="mentor").exists()
+    assert seeker_client.get(f"{LIST}/{mentor.pk}").status_code == 200
+    run_outbox()
+    assert Notification.objects.filter(user=mentor, type="mentor_reinstated").exists()
+    assert as_admin.post(f"{ADMIN}/{mentor.pk}/pending", format="json").status_code == 200
+
+
+def test_only_an_approved_mentor_can_go_to_pending(mentor, as_admin):
+    assert as_admin.post(f"{ADMIN}/{mentor.pk}/pending", format="json").status_code == 200
+    assert as_admin.post(f"{ADMIN}/{mentor.pk}/pending", format="json").status_code == 409
+    listed = as_admin.get(ADMIN, {"status": "pending"}).json()["results"]
+    assert [row["status"] for row in listed] == ["pending"]
+    assert as_admin.get(ADMIN, {"status": "active"}).json()["results"] == []
