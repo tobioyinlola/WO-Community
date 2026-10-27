@@ -175,3 +175,23 @@ def test_the_applicant_is_told_their_application_is_in_only_when_those_emails_ar
         run_outbox()
         got = [m for m in sent_emails if m.to == "applicant@example.com"]
         assert len(got) == expected
+
+
+def test_the_approval_email_links_to_the_whatsapp_community(sent_emails, settings):
+    settings.WHATSAPP_COMMUNITY_URL = "https://chat.whatsapp.com/abc?s=sw"
+    emails.send_approved("ada@example.com")
+    assert "https://chat.whatsapp.com/abc?s=sw" in sent_emails[0].text_body
+
+
+def test_an_edited_approval_email_still_gets_the_whatsapp_link(sent_emails, settings):
+    from apps.notifications.models import EmailTemplate
+
+    settings.WHATSAPP_COMMUNITY_URL = "https://chat.whatsapp.com/abc?s=sw"
+    EmailTemplate.objects.create(
+        key="account_approved",
+        subject="Welcome",
+        preheader="Hi",
+        body="Hello {{first_name|there}}.\n\n[button: Go | {{login_url}}]",
+    )
+    emails.send_approved("ada@example.com")
+    assert "https://chat.whatsapp.com/abc?s=sw" in sent_emails[0].text_body

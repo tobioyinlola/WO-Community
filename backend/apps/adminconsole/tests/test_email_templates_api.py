@@ -38,7 +38,7 @@ def test_lists_every_template(admin_client):
 def test_one_template_comes_with_its_variables_and_defaults(admin_client):
     one = admin_client.get(f"{BASE}/account_approved").json()
     assert one["body"] == one["default_body"]
-    assert [v["name"] for v in one["variables"]] == ["first_name", "login_url"]
+    assert [v["name"] for v in one["variables"]] == ["first_name", "login_url", "whatsapp_url"]
     assert one["variables"][1]["must_appear"] is True and one["variables"][1]["is_required"]
 
 

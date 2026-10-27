@@ -77,13 +77,17 @@ def preferences_url() -> str:
 
 
 def render_template(
-    key: str, values: dict[str, Any], *, with_preferences: bool = True
+    key: str,
+    values: dict[str, Any],
+    *,
+    with_preferences: bool = True,
+    copy: mt.Copy | None = None,
 ) -> mt.Rendered:
     """The email for a template, in the wording currently in force."""
     return mt.render(
         key,
         values,
-        copy=templatestore.effective_copy(key),
+        copy=copy or templatestore.effective_copy(key),
         preferences_url=preferences_url() if with_preferences else "",
     )
 
@@ -119,11 +123,12 @@ def send_templated(
     category: str,
     no_reply: bool = False,
     with_preferences: bool = False,
+    copy: mt.Copy | None = None,
 ) -> None:
     tpl = mt.TEMPLATES.get(key)
     if tpl is not None and tpl.var("first_name") and not values.get("first_name"):
         values = {**values, "first_name": first_name_for(to)}
-    rendered = render_template(key, values, with_preferences=with_preferences)
+    rendered = render_template(key, values, with_preferences=with_preferences, copy=copy)
     _send(
         to,
         rendered.subject,
@@ -188,7 +193,16 @@ def send_invitation(to: str, token: str, message: str, expires_at: datetime) -> 
 
 
 def send_approved(to: str) -> None:
-    send_templated(to, "account_approved", {"login_url": _app("/login")}, category="approved")
+    values = {"login_url": _app("/login"), "whatsapp_url": settings.WHATSAPP_COMMUNITY_URL}
+    copy = templatestore.effective_copy("account_approved")
+    if settings.WHATSAPP_COMMUNITY_URL and "{{whatsapp_url}}" not in copy.body:
+        # Wording an admin edited before the invitation existed still carries it.
+        copy = mt.Copy(
+            copy.subject,
+            copy.preheader,
+            copy.body + "\n\n[Join our WhatsApp community]({{whatsapp_url}}) and say hello.",
+        )
+    send_templated(to, "account_approved", values, category="approved", copy=copy)
 
 
 def send_rejected(to: str, reason: str) -> None:

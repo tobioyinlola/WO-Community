@@ -8,7 +8,9 @@ export const MENTOR = "ada@demo.test";
 export const PENDING = "pending@demo.test";
 
 /** Signs in through the real form and waits until the app has loaded. */
-export async function signIn(page: Page, email = MEMBER): Promise<void> {
+export async function signIn(page: Page, email = MEMBER, options: { invite?: boolean } = {}): Promise<void> {
+  // The WhatsApp invitation shows once per sign-in; keep it out of the way unless a test wants it.
+  if (!options.invite) await page.addInitScript(() => sessionStorage.setItem("wo-community-invite-seen", "1"));
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);

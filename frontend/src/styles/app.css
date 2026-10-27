@@ -2186,3 +2186,18 @@ a.wo-sharecard:hover {
     width: 84px;
   }
 }
+
+/* The WhatsApp community invitation shown at sign-in */
+.wo-invite__join {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  min-height: 44px;
+  border-radius: var(--radius-pill, 999px);
+  background: #128c4a;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.wo-invite__join:hover { background: #0e7a40; }

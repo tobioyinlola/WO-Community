@@ -1,10 +1,20 @@
 from django.urls import path
 
 from apps.accounts import auth_views, mfa_views
-from apps.accounts.views import MeView
+from apps.accounts.views import CommunityInviteJoinedView, CommunityInviteShownView, MeView
 
 urlpatterns = [
     path("me", MeView.as_view(), name="me"),
+    path(
+        "me/community-invite/shown",
+        CommunityInviteShownView.as_view(),
+        name="community-invite-shown",
+    ),
+    path(
+        "me/community-invite/joined",
+        CommunityInviteJoinedView.as_view(),
+        name="community-invite-joined",
+    ),
     path("me/sessions", auth_views.SessionListView.as_view(), name="sessions"),
     path(
         "me/sessions/<uuid:session_id>",
