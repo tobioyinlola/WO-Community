@@ -16,6 +16,7 @@ import { ErrorBoundary } from "../ui/ErrorBoundary";
 import { MemberTopBar } from "./shell/MemberTopBar";
 import { SupportProvider, useSupport } from "../support/SupportProvider";
 import { MEMBER_NAV } from "./shell/memberNav";
+import { CommunityInvite } from "./CommunityInvite";
 import { Onyeka } from "./Onyeka";
 
 /**
@@ -119,6 +120,7 @@ function Frame() {
         </main>
       </div>
       <ErrorBoundary resetKey="onyeka">
+        {isPending ? null : <CommunityInvite />}
         <Onyeka allowed={!isPending && permissionsFor(roles).has("toolkit.use")} />
       </ErrorBoundary>
     </div>

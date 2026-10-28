@@ -175,9 +175,17 @@ TEMPLATES: dict[str, TemplateDef] = {
             "- **Finish your profile** so the right people can find you in the directory.\n"
             "- **Introduce yourself** in the community feed.\n"
             "- **Look at what's coming up**: events, courses and mentors.\n\n"
-            "[button: Go to the community | {{login_url}}]",
+            "[button: Go to the community | {{login_url}}]\n\n"
+            "One more thing: our members chat on WhatsApp, share wins and help each other out. "
+            "[Join our WhatsApp community]({{whatsapp_url}}) and say hello.",
             FIRST,
             Var("login_url", "url", sample="https://app.example.com/login", must_appear=True),
+            Var(
+                "whatsapp_url",
+                "url",
+                sample="https://chat.whatsapp.com/example",
+                required=False,
+            ),
         ),
         _t(
             "account_not_approved",

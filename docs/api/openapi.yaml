@@ -11532,6 +11532,28 @@ paths:
           description: Not an active member, or not enrolled
         '404':
           description: Not found
+  /api/v1/me/community-invite/joined:
+    post:
+      operationId: me_community_invite_joined_create
+      summary: Record that the member followed the WhatsApp community link
+      tags:
+      - me
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/me/community-invite/shown:
+    post:
+      operationId: me_community_invite_shown_create
+      summary: Record that the WhatsApp community invitation was shown
+      tags:
+      - me
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/me/courses:
     get:
       operationId: me_courses_retrieve
@@ -26958,7 +26980,13 @@ components:
           type: array
           items:
             type: string
+        community_invite_url:
+          type: string
+          nullable: true
+          description: WhatsApp community link to offer at sign-in; null when not
+            to be shown.
       required:
+      - community_invite_url
       - email
       - id
       - roles

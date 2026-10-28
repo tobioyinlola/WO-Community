@@ -5270,6 +5270,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/community-invite/joined": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that the member followed the WhatsApp community link */
+        post: operations["me_community_invite_joined_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/community-invite/shown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that the WhatsApp community invitation was shown */
+        post: operations["me_community_invite_shown_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/courses": {
         parameters: {
             query?: never;
@@ -12263,6 +12297,8 @@ export interface components {
             email: string;
             status: string;
             roles: string[];
+            /** @description WhatsApp community link to offer at sign-in; null when not to be shown. */
+            community_invite_url: string | null;
         };
         /**
          * @description Rejects fields the serializer does not declare.
@@ -32431,6 +32467,42 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_community_invite_joined_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me_community_invite_shown_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

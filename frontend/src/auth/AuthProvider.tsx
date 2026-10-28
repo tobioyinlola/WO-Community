@@ -105,6 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.POST("/api/v1/auth/logout");
     } finally {
+      try {
+        sessionStorage.removeItem("wo-community-invite-seen"); // the next sign-in is shown it again
+      } catch {
+        // Nothing stored, nothing to clear.
+      }
       setAccessToken(null);
       setMe(null);
       setStatus("anonymous");

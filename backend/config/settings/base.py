@@ -251,6 +251,12 @@ JWT_PUBLIC_KEY = env.str("JWT_PUBLIC_KEY", default="").replace("\\n", "\n")
 JWT_ACCESS_LIFETIME = timedelta(minutes=10)
 
 # --- Accounts ----------------------------------------------------------------
+# The invitation to the members' WhatsApp group: in the approval email and in a prompt at sign-in.
+WHATSAPP_COMMUNITY_URL = first(
+    "WHATSAPP_COMMUNITY_URL",
+    default="https://chat.whatsapp.com/DEXdqbUnYgkCGY0rI6XL6m?s=sw&p=a&mlu=4&ilr=4&iam=2",
+)
+COMMUNITY_INVITE_SHOWINGS = 3
 FRONTEND_BASE_URL = first("FRONTEND_URL", "FRONTEND_BASE_URL", default="http://localhost:5173")
 EMAIL_VERIFY_TTL = timedelta(hours=24)
 PASSWORD_RESET_TTL = timedelta(hours=1)

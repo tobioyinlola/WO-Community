@@ -68,6 +68,10 @@ class User(BaseModel, AbstractBaseUser):
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="referrals"
     )
     referral_code_used = models.CharField(max_length=12, blank=True)
+    # The WhatsApp community invitation: shown at sign-in up to COMMUNITY_INVITE_SHOWINGS times,
+    # and not at all once the person has used the link.
+    community_invite_shown = models.PositiveSmallIntegerField(default=0)
+    community_invite_joined_at = models.DateTimeField(null=True, blank=True)
     locale = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=64, default="UTC")
     # Bumped on role change or suspension so already issued access tokens stop working.

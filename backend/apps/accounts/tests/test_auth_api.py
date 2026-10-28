@@ -19,6 +19,7 @@ def test_me_returns_account_for_valid_token(make_user, client_for):
         "email": user.email,
         "status": "active",
         "roles": ["member", "mentor"],
+        "community_invite_url": settings.WHATSAPP_COMMUNITY_URL,
     }
 
 
@@ -92,3 +93,30 @@ def test_new_token_works_after_version_bump(make_user, client_for):
     user.bump_token_version()
     tokens.revoke_older_tokens(user)
     assert client_for(user).get(ME).status_code == 200
+
+
+# --- the WhatsApp community invitation ---
+
+SHOWN = "/api/v1/me/community-invite/shown"
+JOINED = "/api/v1/me/community-invite/joined"
+
+
+def test_the_community_invitation_is_offered_three_times_then_stops(make_user, client_for):
+    client = client_for(make_user())
+    for _ in range(3):
+        assert client.get(ME).json()["community_invite_url"] == settings.WHATSAPP_COMMUNITY_URL
+        assert client.post(SHOWN).status_code == 204
+    assert client.get(ME).json()["community_invite_url"] is None
+    assert client.post(SHOWN).status_code == 204  # never counts past three
+    assert client.get(ME).json()["community_invite_url"] is None
+
+
+def test_following_the_community_link_stops_the_invitation(make_user, client_for):
+    client = client_for(make_user())
+    assert client.post(JOINED).status_code == 204
+    assert client.get(ME).json()["community_invite_url"] is None
+
+
+def test_the_invitation_needs_a_signed_in_member(api_client):
+    assert api_client.post(SHOWN).status_code == 401
+    assert api_client.post(JOINED).status_code == 401
